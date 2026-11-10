@@ -58,3 +58,36 @@ class AccountReadAPI:
             session.principal.subject_id,now=now)
         return {'signed_out':True,'sessions_revoked':count,
                 'publishing_enabled':False}
+
+    def create_held_draft(self, *, session_token, server_now,
+                          channel, draft_text, suggestion, required_items,
+                          priority=0):
+        """Create a business-scoped content request, never a scheduled post."""
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content Requests not configured')
+        if (not isinstance(channel,str) or channel not in
+                ('facebook','instagram','linkedin','pinterest','tiktok','youtube')):
+            raise ValueError('Unsupported content channel')
+        for value in (draft_text,suggestion):
+            if not isinstance(value,str) or not value.strip() or len(value)>2000:
+                raise ValueError('Invalid draft or content suggestion')
+        if (not isinstance(required_items,list) or not 1<=len(required_items)<=12
+                or any(not isinstance(item,str) or not item.strip()
+                       or len(item)>80 for item in required_items)
+                or len(set(required_items))!=len(required_items)):
+            raise ValueError('Invalid required content items')
+        if type(priority) is not int or not -10<=priority<=10:
+            raise ValueError('Invalid priority')
+        request_id=service.create(token=token,tenant_id=session.principal.tenant_id,
+            channel=channel,draft_text=draft_text,suggestion=suggestion,
+            required_items=required_items,priority=priority,now=now)
+        return {'tenant_id':session.principal.tenant_id,
+                'request_id':request_id,'status':'needs_content',
+                'publishing_enabled':False}
