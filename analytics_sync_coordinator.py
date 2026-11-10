@@ -41,6 +41,7 @@ class AnalyticsSyncCoordinator:
         self.importer.authorize(tenant_id=tenant_id,platform=platform,
                                 account_id=account_id,import_secret=import_secret)
         with self.db:
+            self.db.execute('BEGIN IMMEDIATE')
             current=self.checkpoint(tenant_id=tenant_id,platform=platform,
                                     account_id=account_id)
             if (None if current is None else current['cursor'])!=expected_cursor:
