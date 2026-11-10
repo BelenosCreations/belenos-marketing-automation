@@ -150,3 +150,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.6 authenticated editorial review
 
 `editorial_review_service.py` enforces an active owner or marketing-manager role in the requested business before the review-only `EditorialInbox.recheck_for_editorial_review` operation. It checks current membership rather than trusting stale session roles, and a revoked or expired session cannot review. It does **not** approve, schedule or publish content. A trusted backend must resolve and verify creator identity and competitor status independently of client input before exposing any API. Tests were added but have not been confirmed passing in CI. No live publishing is enabled.
+
+## Phase 4.7 server-attested editorial screening
+
+`editorial_attestations.py` stores expiring creator identity and local competitor screening attestations by business and original link. `EditorialReviewService` now looks up current server-side attestations and does not accept client-provided clearance flags. Missing or expired attestations hold content for review. A future trusted verification worker must produce these attestations; this implementation is **not** itself an identity verification service. No scheduling or publishing is authorized. Tests are committed but execution remains unverified.
