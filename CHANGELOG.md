@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 7.8 — 2026-11-10 (development branch)
+
+### Added
+- Offline tenant-scoped candidate ranking using supplied observed engagement rates and minimum sample thresholds.
+- Optional smart-preview integration with explicit insufficient-data fallback; manual selection remains independent.
+- Seven regression cases for ranking, malformed/cross-tenant data and nonpublishing previews.
+
+### Limitations
+- No connected analytics ingestion, statistical confidence adjustment, prediction or publishing.
+
+
 ## Phase 7.7 — 2026-11-10 (development branch)
 
 ### Added
