@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.9. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.0. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -327,3 +327,9 @@ The new `schedule_readiness.py` assesses a proposed post time against the authen
 `audience_observation_store.py` adds a SQLite-backed, platform-scoped record of observed post engagement rates. Each record carries a business ID, platform, external post identifier, candidate posting window, measured engagement rate, measurement timestamp, and source label. Uniqueness by business/platform/post ID prevents duplicate ingestion, and bounded date-range queries return only observations for the requested business, platform, and candidate windows. Query results can be passed to the existing empirical smart-scheduling ranker; seven regression cases cover ingestion, deduplication, isolation, invalid inputs, and ranking integration.
 
 **Security and provenance boundary:** `ingest_trusted` is an offline server-side interface only; its name is a contract for a future authenticated provider adapter, **not evidence that source authenticity is verified today**. The store has no provider OAuth, signed webhook, remote API synchronization, metric normalization across platforms, retention policy, or production access-control boundary. Never expose ingestion or raw tenant queries to mobile clients. Engagement observations must be validated against authorized platform accounts and a consistent measurement definition before production use. Scheduling and publishing remain disabled.
+
+## Phase 8.0 — Authenticated offline analytics import boundary
+
+`analytics_import_boundary.py` provides a server-side import boundary that requires a tenant/platform-specific configured account identifier and an injected import secret before accepting an engagement observation. The caller supplies integer engagement and impression counts; the boundary validates them, computes a bounded engagement/impression ratio, and records the observation through the tenant/platform-isolated store. It rejects unknown accounts, missing/wrong secrets, impossible counts, malformed source post identifiers, and duplicate post IDs. Nine regression tests cover those cases.
+
+**Important distinction:** This authenticates a configured **import caller**, not a social platform. It does not verify that imported metrics genuinely came from Facebook or another provider. The server must obtain account bindings and secrets from trusted configuration/secret management, never from mobile app input or source control. A production connector still needs provider OAuth, account ownership checks, trusted API fetching, consistent metric definitions, error/retry handling and authorization to read analytics. No publishing or scheduling is enabled.
