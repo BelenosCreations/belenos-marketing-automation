@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.3. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.4. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -351,3 +351,9 @@ The fetcher is injected for testing; **no Facebook, Instagram, Metricool or othe
 `analytics_sync_health.py` adds an authenticated, read-only assessment of a business/platform/account's last synchronization checkpoint. The assessment distinguishes imports that have not started, current checkpoints, stale checkpoints, and invalid future-dated checkpoints. A configurable age threshold controls freshness; stale records prompt review of the provider connection, rather than silently claiming the data is current. Credential authorization happens before checkpoint lookup. The assessment does not reveal import secrets or raw checkpoint cursor values, trigger retries, contact external providers, schedule posts, or publish. Eight regression cases cover missing/current/stale/invalid states, authorization and input validation.
 
 **Remaining integration prerequisites:** Provider-issued read-only OAuth permissions, secure token lifecycle and rotation, real account ownership verification, API quota handling, backoff/retries, metric provenance and comparability, and operational monitoring. A stale checkpoint may reflect an inactive account or lack of new posts, so it is a prompt for review rather than proof of provider failure.
+
+## Phase 8.4 — Provider connection metadata and credential lifecycle states
+
+`provider_connection_registry.py` introduces an offline, tenant/platform/account-scoped registry for **metadata** about analytics connections. It stores a reference intended for a future server-side secret vault (not the OAuth token), declared analytics scope, connection state, expiry and update timestamps. Status reports distinguish not-connected, pending, connected, refresh-required, expired and revoked connections; they omit the vault reference and cannot enable publishing. The prototype rejects scopes containing publishing or write permissions. Nine regression cases cover lifecycle status, isolation, metadata validation and nonpublishing behavior.
+
+**Security boundary:** This registry does not implement OAuth, token encryption, token refresh, a secret vault, provider permission verification or authenticated caller access. `register_trusted` must only be invoked behind a trusted server authorization layer. Its scope validation is a defensive prototype check, not a provider-specific allowlist; production integration must explicitly allowlist the exact read-only scopes for each provider. Never place actual tokens or passwords in the registry or GitHub. No live connections were created.
