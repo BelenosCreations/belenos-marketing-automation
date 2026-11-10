@@ -37,10 +37,21 @@ assert.equal(read('counts().content'),2,'Belenos content-needed count');
 assert.equal(read('counts().approval'),1,'Belenos approval count');
 assert.equal(nodes.view.children.length,2,'Home cards and attention panel');
 
-nodes.themeToggle.listeners.click();
+assert.equal(read('state.theme'),'auto','Auto follows device by default');
+nodes.settingsButton.listeners.click();
+assert.equal(nodes.heading.textContent,'Settings');
+assert.equal(nodes.view.children.length,2,'Appearance and preferences sections');
+const appearance=nodes.view.children[0];
+const choices=appearance.children.find(node=>node.className==='setting-options');
+assert.ok(choices,'Appearance options exist in Settings');
+assert.equal(choices.children.length,3);
+choices.children[0].listeners.click();
 assert.equal(document.documentElement.dataset.theme,'light');
-nodes.themeToggle.listeners.click();
+choices.children[1].listeners.click();
 assert.equal(document.documentElement.dataset.theme,'dark');
+const updated=nodes.view.children[0].children.find(node=>node.className==='setting-options');
+updated.children[2].listeners.click();
+assert.equal(read('state.theme'),'auto');
 
 read("navigate('content')");
 assert.equal(nodes.heading.textContent,'Content Studio');
