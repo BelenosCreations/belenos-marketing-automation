@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with TruthGuard hardening through Phase 6.9. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with TruthGuard review receipt support through Phase 7.1. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -289,3 +289,7 @@ TruthGuard knowledge lookup now requires `approved_at <= review_time` in additio
 ## Phase 7.0 — Risk-signal review coverage
 
 Authenticated TruthGuard content review now correlates heuristic high-risk phrases with source-span annotations in the **stored draft**. The report includes `uncovered_risk_signals` and `risk_signals_annotated`, allowing an editor to distinguish flagged pricing, urgency, availability and other risk signals that have not been annotated. Annotation coverage is not evidence of accuracy, complete factual extraction, owner approval or publishing eligibility. Two regression tests cover uncovered statements and covered-but-still-held statements. Publishing remains disabled. The existing GitHub Actions workflow runs offline unit tests on push and pull requests; an independently confirmed current-branch result is not available from the connected workflow-run interface.
+
+## Phase 7.1 — Draft-bound review receipts
+
+`truthguard_review_receipt.py` creates deterministic SHA-256 review receipts binding a **held** TruthGuard report to its business, Content Request ID, draft fingerprint, and review timestamp. Validation rejects stale draft text, wrong tenant/request, changed report contents, and altered receipt flags. Eight regression tests cover these boundaries. Receipts are **integrity checks, not cryptographic signatures or proof of authentic approval**: a party able to replace both payload and digest can forge them. Production use requires trusted server-side persistence, access control, immutable audit storage and a separate owner-approval workflow. Receipt generation never enables scheduling or publishing.
