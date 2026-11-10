@@ -51,6 +51,35 @@ class EditorialInbox:
                  candidate.summary,'review',reason))
         return 'review',reason
 
+    def recheck_for_editorial_review(self, *, tenant_id, topic, candidate, platform,
+                                    account_id, identity_verified=False,
+                                    local_competitor_risk='unknown'):
+        """Fresh policy decision; not a publish/schedule authorization.
+
+        Verification and competitor clearance must be supplied by a trusted
+        server-side resolver, not a client request or stale queue fields.
+        """
+        row=self.db.execute("""SELECT topic,platform,account_id FROM editorial_inbox
+            WHERE tenant_id=? AND original_url=? AND status='review'""",
+            (tenant_id,candidate.original_url)).fetchone()
+        if row is None:
+            return 'blocked','not_in_review_queue'
+        if row!=(topic,platform,account_id):
+            return 'blocked','queued_identity_or_topic_mismatch'
+        result,reason=self.gate.evaluate(
+            tenant_id=tenant_id,topic=topic,candidate=candidate,
+            platform=platform,account_id=account_id,
+            identity_verified=identity_verified,
+            local_competitor_risk=local_competitor_risk)
+        if result=='blocked':
+            with self.db:
+                self.db.execute("""DELETE FROM editorial_inbox
+                    WHERE tenant_id=? AND original_url=?""",(tenant_id,candidate.original_url))
+            return 'blocked',reason
+        if result!='eligible_link_only':
+            return 'approval_required',reason
+        return 'eligible_for_human_review','not_authorized_to_publish'
+
     def list_for_business(self, tenant_id):
         if not isinstance(tenant_id,str) or not tenant_id.strip():
             raise ValueError('Business required')
