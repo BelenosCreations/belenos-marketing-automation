@@ -36,6 +36,10 @@ class AccountDashboard:
             token=token,tenant_id=target_tenant_id,now=now)
         # Session token returned only to authenticated client over future HTTPS;
         # do not log or persist it in an analytics/audit payload.
-        overview=self.overview(token=activated['token'],now=now)
+        try:
+            overview=self.overview(token=activated['token'],now=now)
+        except Exception:
+            self.sessions.revoke(activated['token'],now=now)
+            raise
         return {'session_token':activated['token'],'overview':overview,
                 'publishing_enabled':False}
