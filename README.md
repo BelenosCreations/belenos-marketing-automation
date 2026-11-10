@@ -2,7 +2,7 @@
 
 A custom marketing automation system for **Belenos Creations**, a 3D-printing and personalized-products business in Marion, Ohio. The project is designed to coordinate Facebook marketing, community engagement, relevant third-party 3D-printing content, and performance-informed scheduling while preserving clear human control over promotional claims and publishing.
 
-> **Development status:** Offline prototype through Phase 3.2. **Publishing is disabled.** The repository was newly created and the prototype source files have not yet been imported. Nothing in this README indicates a deployed or connected publishing service.
+> **Development status:** Offline prototype through Phase 3.2. **Publishing is disabled.** The Phase 3.2 offline prototype source and tests are now imported into this repository. Nothing in this README indicates a deployed or connected publishing service.
 
 ## Project goals
 
@@ -61,7 +61,7 @@ Key safeguards:
 - **Testing:** Unit tests, followed by integration tests, failure recovery, and dry-run verification before activation.
 - **Source control:** This private GitHub repository is intended to become the primary source of truth.
 
-### Phase 3.2 prototype (developed locally, pending import)
+### Phase 3.2 prototype (imported)
 
 The current offline package contains:
 - `engine.py`: basic post staging, authorization records, deduplication, and publishing gate.
@@ -74,7 +74,7 @@ The prototype **does not** yet implement live discovery, secure approval identit
 
 ## Development roadmap
 
-1. **Import and baseline:** Commit the Phase 3.2 source package, preserve its changelog, and configure repeatable automated tests.
+1. **Import and baseline (completed):** Phase 3.2 source, changelog, and GitHub Actions test workflow committed. Verify the first remote CI run.
 2. **Validation and authorization:** Replace naive text matching and caller-controlled trust indicators with structured, authenticated facts and approval evidence.
 3. **Content discovery:** Implement vetted source feeds, creator whitelisting, deduplication, attribution, and rights-aware rendering.
 4. **Analytics and optimization:** Retrieve Metricool timing and performance data, score windows, and measure outcomes with controlled adjustments.
