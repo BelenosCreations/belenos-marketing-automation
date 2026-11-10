@@ -110,3 +110,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 ## Phase 3.6 approval gateway (development branch)
 
 `approval_gateway.py` combines session validation with current account-directory membership to gate draft approvals and event confirmation. This is an offline integration prototype only. **Security blocker:** the original `posts` and `discovered_events` tables have no tenant ID, so this gateway must not be exposed over HTTP or used in a multi-tenant deployment until resource ownership is enforced in storage and queries. Direct calls to legacy workflow functions also bypass the gateway; production must provide a single enforced authorization boundary. No publishing or scheduling integration is active.
+
+## Phase 3.7 content ownership (development branch)
+
+`tenant_resources.py` introduces immutable tenant ownership for legacy posts and discovered events. The approval gateway now rejects unowned and cross-tenant resources. Trusted ingestion must register ownership; the ownership registry must never be exposed as a client-controlled API. This is a transitional safeguard, not complete multi-tenant storage isolation: production still requires tenant columns, foreign keys, tenant-filtered queries, and a single enforced authorization boundary. Facebook publishing remains disabled.
