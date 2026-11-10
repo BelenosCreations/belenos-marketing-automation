@@ -6,10 +6,11 @@ Production must supply a verified Google verifier and network-level rate limits.
 import time
 
 class AuthLoginAPI:
-    def __init__(self,*,auth,google_verifier,challenges):
+    def __init__(self,*,auth,google_verifier,challenges,throttle=None):
         self.auth=auth
         self.google_verifier=google_verifier
         self.challenges=challenges
+        self.throttle=throttle
 
     @staticmethod
     def _now(now):
@@ -19,8 +20,18 @@ class AuthLoginAPI:
         return timestamp
 
     def password_login(self,*,email,password,tenant_id,server_now):
-        token=self.auth.login_password(email=email,password=password,
-            tenant_id=tenant_id,now=self._now(server_now))
+        timestamp=self._now(server_now)
+        if self.throttle is not None:
+            self.throttle.check(email=email,now=timestamp)
+        try:
+            token=self.auth.login_password(email=email,password=password,
+                tenant_id=tenant_id,now=timestamp)
+        except PermissionError:
+            if self.throttle is not None:
+                self.throttle.failure(email=email,now=timestamp)
+            raise
+        if self.throttle is not None:
+            self.throttle.success(email=email)
         return {'session_token':token,'publishing_enabled':False}
 
     def begin_google(self,*,server_now):
