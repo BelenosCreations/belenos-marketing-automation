@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 7.4 — 2026-11-10 (development branch)
+
+### Added
+- Approval-intent snapshot digest of channel, required items and supplied content references.
+- Inspection flag `content_unchanged`; changed supporting content requires new review.
+- Schema migration for existing intent tables, with missing historical digests treated as stale.
+- Three regression cases for replacement, unchanged content and legacy records.
+
+### Limitations
+- Metadata fingerprinting does not independently verify underlying media or grant publishing rights.
+
+
 ## Phase 7.3 — 2026-11-10 (development branch)
 
 ### Changed
