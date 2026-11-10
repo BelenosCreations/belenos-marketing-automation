@@ -1,5 +1,15 @@
 # Changelog
 
+## Authenticated UI integration checkpoint — 2026-11-10
+
+### Added
+- End-to-end offline WSGI integration regression covering real account sessions and cross-business restricted dashboard views.
+- `AUTHENTICATED_UI_INTEGRATION.md` with architecture boundaries, production prerequisites and test commands.
+
+### Status
+- Components committed; automated CI outcomes and live deployment remain unverified.
+
+
 ## Read-only HTTPS transport foundation — 2026-11-10
 
 ### Added
