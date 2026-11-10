@@ -48,7 +48,7 @@ def run(port,token):
             continue
         if choice=='q':
             try:
-                request(port,'POST','/api/account/logout',token,{})
+                request(port,'POST','/api/account/logout-everywhere',token,{})
             except (OSError,ValueError,RuntimeError):
                 print('Could not confirm server logout; session may remain active.')
             return
