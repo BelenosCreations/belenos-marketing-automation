@@ -98,3 +98,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 **Business:** Belenos Creations · Marion, Ohio  
 **Project:** Belenos Marketing Automation  
 **Status:** Active development · publishing disabled
+
+## Phase 3.4 session prototype
+
+`sessions.py` provides an **offline, server-side** session storage prototype with opaque random bearer tokens, SHA-256 hashes at rest, expiry, and revocation. This is not a login system: identity verification, employee enrollment, role freshness, secure HTTPS transport, credential handling, API middleware, CSRF protection (if cookies are used), and mobile biometric unlock still require implementation and security review. Production access must validate current account membership and role on every request; a session's stored role alone is insufficient. No publishing capability has been enabled.
