@@ -59,6 +59,28 @@ class AuthLoginAPITests(unittest.TestCase):
             id_token='x'*24,tenant_id='shop',server_now=103)
         self.assertIsNotNone(self.sessions.resolve(logged['session_token'],now=104))
 
+    def test_google_only_signup_has_no_business_access(self):
+        challenge=self.challenge()
+        self.claims['sub']='new-google-sub'
+        self.claims['email']='newperson@example.com'
+        result=self.api.register_google(challenge_id=challenge['challenge_id'],
+            id_token='x'*24,server_now=102)
+        self.assertTrue(result['business_membership_required'])
+        self.assertIsNone(result['session_token'])
+        self.assertIsNone(self.directory.resolve('shop',result['subject_id']))
+        new_challenge=self.challenge()
+        self.claims['sub']='new-google-sub'
+        self.claims['email']='newperson@example.com'
+        with self.assertRaises(PermissionError):
+            self.api.google_login(challenge_id=new_challenge['challenge_id'],
+                id_token='x'*24,tenant_id='shop',server_now=103)
+
+    def test_google_signup_never_auto_merges_email(self):
+        challenge=self.challenge()
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.api.register_google(challenge_id=challenge['challenge_id'],
+                id_token='x'*24,server_now=102)
+
     def test_wrong_password_does_not_link(self):
         token=self.password()
         challenge=self.challenge()
