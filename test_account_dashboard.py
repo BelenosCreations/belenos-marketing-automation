@@ -68,6 +68,29 @@ class AccountDashboardTests(unittest.TestCase):
                          ['Second draft'])
         self.assertFalse(second['publishing_enabled'])
 
+    def test_all_held_draft_statuses_are_tenant_scoped(self):
+        api=AccountReadAPI(self.dashboard)
+        self.assertEqual(len(api.list_held_drafts(
+            session_token=self.owner,server_now=101)['drafts']),1)
+        api.update_draft_hold(session_token=self.owner,server_now=102,
+            request_id=self.first_request,status='postponed')
+        overview=api.get_dashboard_view(session_token=self.owner,server_now=103)
+        self.assertEqual(overview['drafts'],[])
+        postponed=api.list_held_drafts(session_token=self.owner,
+            server_now=103,status='postponed')['drafts']
+        self.assertEqual(len(postponed),1)
+        self.assertEqual(postponed[0]['draft_text'],'First draft')
+        self.assertNotIn('provided_items',postponed[0])
+        switched=api.activate_business(session_token=self.owner,
+            target_tenant_id='second',server_now=103)
+        other=api.list_held_drafts(session_token=switched['session_token'],
+            server_now=104)['drafts']
+        self.assertEqual([item['draft_text'] for item in other],['Second draft'])
+        self.assertNotIn('First draft',str(other))
+        with self.assertRaises(ValueError):
+            api.list_held_drafts(session_token=self.owner,server_now=104,
+                status='published')
+
     def test_authenticated_ui_payload_is_business_scoped(self):
         api=AccountReadAPI(self.dashboard)
         first=api.get_dashboard_view(session_token=self.owner,server_now=101)
