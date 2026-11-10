@@ -118,3 +118,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 ## Phase 3.8 native tenant storage (development branch)
 
 `tenant_content.py` implements separate tenant-keyed posts, approvals and discovered events. `tenant_approval_service.py` checks session validity and current account permissions before changing these tenant-scoped records. The same post or event ID can exist in different tenants without crossing data. This is a new offline storage path, **not** a migration or production-ready API. Legacy workflow entry points remain unscoped and must be isolated from future external interfaces. Test cases are committed but full execution has not been verified. Publishing is disabled.
+
+## Phase 3.9 employee invitations (draft PR #1)
+
+`invitations.py` provides an offline, owner-authorized invitation lifecycle: single-use bearer token, expiry, revocation, and role-limited enrollment. Invitation tokens are hashed in storage. Redemption is **not** a signup/login system: it must be invoked only after an independent server-side identity verifier has authenticated the intended employee. No invitation email is sent and no employee account has been created outside test fixtures. Draft [pull request #1](https://github.com/BelenosCreations/belenos-marketing-automation/pull/1) is open for review and CI; it is not merged. Production remains disabled.
