@@ -1,5 +1,14 @@
 # Changelog
 
+## Read-only Content Studio browser components — 2026-11-10
+
+### Added
+- Strict client-side held-draft list contract covering all four hold statuses.
+- Safe read-only Content Studio DOM renderer grouping drafts by status.
+- HTTPS read client validates Content Studio responses.
+- Node regression tests added to CI for invalid states, cross-business responses and safe text insertion.
+
+
 ## Business-switch UI isolation hardening — 2026-11-10
 
 ### Changed
