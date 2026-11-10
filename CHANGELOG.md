@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 5.1 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated Content Request application service with fresh per-operation membership and role checks.
+- Session revocation, expiry, cross-business access, role downgrade and viewer-read-only test cases (14 tests).
+- Content completion continues to mean ready for review, never scheduled or published.
+
+### Test status and limitations
+- Tests committed; execution and CI results not independently verified.
+- Internal offline service only; trusted asset validation, external login and HTTP endpoints remain future work.
+
+
 ## Phase 5.0 — 2026-11-10 (development branch)
 
 ### Added
