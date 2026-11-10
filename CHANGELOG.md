@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 8.5 — 2026-11-10 (development branch)
+
+### Added
+- Fail-closed provider connection gate before analytics preview and import.
+- Rejection of unconnected, expired, refresh-required and revoked connections before fetching.
+- Eight regression cases for connected access, invalid connection states and tenant/caller isolation.
+
+### Limitations
+- The underlying adapter is internal and can be called directly unless a production server enforces the gated interface. No OAuth or live provider integration.
+
+
 ## Phase 8.4 — 2026-11-10 (development branch)
 
 ### Added
