@@ -35,6 +35,16 @@ class AuthLoginAPI:
             **claims)
         return {'session_token':token,'publishing_enabled':False}
 
+    def register_google(self,*,challenge_id,id_token,server_now):
+        """Create Google-only BAM identity, pending business invitation."""
+        timestamp=self._now(server_now)
+        nonce=self.challenges.consume(challenge_id=challenge_id,now=timestamp)
+        claims=self.google_verifier.verify(id_token=id_token,
+            expected_nonce=nonce,now=timestamp)
+        subject=self.auth.register_google_verified(now=timestamp,**claims)
+        return {'subject_id':subject,'business_membership_required':True,
+                'session_token':None,'publishing_enabled':False}
+
     def link_google_with_password(self,*,session_token,password,
                                   challenge_id,id_token,server_now):
         """Explicit link with a fresh password proof; never email auto-link."""
