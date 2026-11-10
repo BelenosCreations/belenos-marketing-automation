@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.1. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.2. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -339,3 +339,9 @@ The new `schedule_readiness.py` assesses a proposed post time against the authen
 `analytics_sync_coordinator.py` adds a bounded offline batch-import coordinator and per-business/platform/account synchronization checkpoints. Each batch requires the configured import credentials, the exact previous cursor, a new cursor and 1–100 observations. A SQLite write transaction protects the observations and checkpoint together: a duplicate source post, malformed observation or stale cursor prevents checkpoint advancement; partially imported batches roll back. The import boundary now exposes a reusable authorization check, and the observation store respects transactions opened by the caller. Seven regression cases cover checkpoint progression, credential isolation, stale cursors, duplicate batches, partial rollback, invalid batches and cross-business access.
 
 This is **not** a connected provider sync service. Cursors are opaque adapter-provided values; no external requests, provider OAuth, retry/backoff scheduler, token storage or webhook verification exist yet. The prototype assumes the coordinator and store share the same SQLite connection and must not be exposed as a public API. Publishing remains disabled.
+
+## Phase 8.2 — Provider-neutral analytics page adapter
+
+`analytics_page_adapter.py` defines an offline integration seam between a future trusted social analytics fetcher and BAM's transactional import coordinator. The adapter authorizes the configured tenant/platform/account **before** invoking the injected fetcher, reads the existing checkpoint, validates a bounded page of post metrics, and normalizes each post's publication timestamp into a business-local weekday/hour bucket using an IANA timezone. It supports preview without writing and an import operation that delegates to the atomic checkpoint coordinator. Seven regression cases cover authorization-before-fetch, tenant separation, local-time bucketing, malformed pages, future timestamps, and checkpoint advancement.
+
+The fetcher is injected for testing; **no Facebook, Instagram, Metricool or other live provider connector exists yet**. A real integration must verify account ownership, fetch metrics using provider-issued read-only credentials, define engagement metrics per platform, handle page exhaustion and retries, validate source authenticity, and protect credentials using server-side secret management. Weekday/hour buckets are a preliminary normalization, not proof of an optimal posting time. This adapter cannot publish posts or create scheduled jobs.
