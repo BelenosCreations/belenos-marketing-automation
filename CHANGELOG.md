@@ -1,5 +1,17 @@
 # Changelog
 
+## Read-only HTTPS transport foundation — 2026-11-10
+
+### Added
+- HTTPS-gated, GET-only WSGI endpoints for authenticated dashboard, held drafts and posting preferences.
+- No-cache and restrictive response headers, generic authentication/service errors and no CORS exposure.
+- Browser HTTPS read client using memory-supplied bearer tokens, no cookie credentials, no storage and no redirects.
+- Offline WSGI and JavaScript transport tests; frontend tests added to CI.
+
+### Limitations
+- No deployed server, production TLS proxy, login screen or browser-to-server integration yet; no posting or scheduling.
+
+
 ## Authenticated dashboard DOM renderer — 2026-11-10
 
 ### Added
