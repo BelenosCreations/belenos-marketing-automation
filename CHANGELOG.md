@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 3.9 — 2026-11-10 (draft PR #1)
+
+### Added
+- Owner-authorized, one-use, expiring, revocable employee invitation tokens (hashes stored at rest).
+- 12 invitation lifecycle tests; 98 tests defined across repository.
+- Draft pull request #1 for code review and CI without merging to main.
+
+### Test status
+- GitHub Actions run not yet visible for the draft PR; new tests unverified.
+
+### Known limitations
+- Invitation redemption requires externally authenticated verified subject identity; no authentication provider implemented.
+- Invitation delivery, rate limits, audit and transactional concurrency hardening remain.
+- Production exposure of legacy workflow prohibited; publishing disabled.
+
+
 ## Phase 3.8 — 2026-11-10 (development branch)
 
 ### Added
