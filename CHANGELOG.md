@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 6.1 — 2026-11-10 (development branch)
+
+### Added
+- Read-only multi-post schedule preview from authenticated per-business Manual/Smart settings.
+- Distinct proposed slots, held-draft visibility and settings revision metadata.
+- Six regression tests.
+
+### Limitations
+- Preview readiness flags are caller-provided; they are not trusted for actual publishing.
+- No scheduling jobs, Android UI, HTTP API or publishing. Tests not independently executed.
+
+
 ## Phase 6.0 — 2026-11-10 (development branch)
 
 ### Added
