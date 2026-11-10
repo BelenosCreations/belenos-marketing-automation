@@ -80,6 +80,8 @@ class BusinessCuration:
         host=self._host(source_url)
         if not host or '.' not in host:
             raise ValueError('Valid HTTPS competitor URL required')
+        if host in {'facebook.com','instagram.com','youtube.com','youtu.be','tiktok.com','x.com','twitter.com','linkedin.com'}:
+            raise ValueError('Shared social hosts require creator account-level blocking')
         if not self.db.execute('SELECT 1 FROM business_profiles WHERE tenant_id=?',(tenant_id,)).fetchone():
             raise PermissionError('Unknown business')
         with self.db:
