@@ -1,5 +1,15 @@
 # Changelog
 
+## Automated GUI smoke-test gate — 2026-11-10
+
+### Added
+- Dependency-free Node.js dashboard smoke test for sample-business isolation, navigation, content drilldowns and theme switching.
+- GitHub Actions Node.js 22 setup and dashboard smoke-test step ahead of Python unit tests.
+
+### Verification
+- Matching dashboard interactions passed a local V8 stub-DOM smoke check. The committed Node test and full CI result remain unverified.
+
+
 ## Authenticated dashboard card contract — 2026-11-10
 
 ### Added
