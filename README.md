@@ -1,15 +1,32 @@
 # Belenos Marketing Automation
 
-A general-purpose, multi-business marketing automation platform, initially developed for **Belenos Creations** and **Busy B Cleaning Service** in Marion, Ohio. The project is designed to coordinate Facebook marketing, community engagement, relevant third-party 3D-printing content, and performance-informed scheduling while preserving clear human control over promotional claims and publishing.
+**Belenos Marketing Automation is a general-purpose, multi-tenant marketing management and automation platform for businesses of any industry.** The working project name reflects its origin, not a restriction on which businesses can use it.
 
-> **Development status:** Offline prototype through Phase 4.6. **Publishing is disabled.** The Phase 3.2 offline prototype source and tests are now imported into this repository. Nothing in this README indicates a deployed or connected publishing service.
+The platform is being designed to support independent organizations, multiple businesses under one owner login, and eventually separate business owners and employee teams. Each business maintains isolated branding, industry topics, creator recommendations, competitor exclusions, campaigns, social accounts, content approvals, schedules, analytics, and access permissions.
 
-## Project goals
+**Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-- Maintain a consistent, recognizable Belenos voice without repetitive or generic posts.
-- Share original product highlights, creative projects, community questions, and useful 3D-printing discoveries.
-- Use audience engagement data to choose better posting windows rather than relying on the owner's availability.
-- Protect business accuracy: do not invent discounts, prices, special hours, promotions, giveaways, events, or order promises.
+> **Development status:** Offline prototype through Phase 4.7. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+
+## Platform-wide design principles
+
+- **Industry-agnostic:** Any business can define its own categories, sources, audience, brand voice, marketing goals, and policies; 3D printing and commercial cleaning are only sample configurations.
+- **Multi-tenant isolation:** Data and permissions for one business cannot be reused by another without explicit authorization.
+- **Flexible account structure:** One person can manage several businesses; separate owners can have independent accounts and installations; staff roles remain scoped to their business.
+- **Creator and competitor safety:** A relevant creator for one industry is not automatically relevant for another, and local competitors are excluded or held for review.
+- **Controlled automation:** Business owners control publishing policies; no live publishing is enabled during prototype development.
+- **Future-ready architecture:** Mobile and backend components should avoid assumptions about a particular brand, city, industry, or sole operator.
+
+## Project history and examples
+
+The initial pilot businesses are Belenos Creations (custom creations and 3D printing) and Busy B Cleaning Service (commercial cleaning), both in Marion, Ohio. Their existing marketing workflows provide practical test cases for tenant isolation, content relevance, and role-based permissions. Business-specific examples elsewhere in this README are illustrative, not platform requirements.
+
+## Platform goals
+
+- Maintain a consistent, recognizable voice for each business without repetitive or generic posts.
+- Support industry-specific product and service highlights, community questions, educational resources, and relevant creator discoveries.
+- Use each business's audience engagement data to choose posting windows rather than relying on an owner's availability.
+- Protect each business's accuracy: do not invent discounts, prices, special hours, promotions, giveaways, events, or order promises.
 - Keep an auditable distinction between drafts, approvals, scheduled posts, and published posts.
 - Make future operation reliable, recoverable, and maintainable as marketing needs evolve.
 
