@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.9. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through the account dashboard integration milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -389,3 +389,9 @@ The existing `BusinessSwitcher` already listed businesses available to an authen
 BAM's offline session store now supports `resolve_current`, which checks both the session and the latest business membership, rejecting sessions whose roles have changed or whose membership has been removed. Business switching and social connection listings use this stricter check to avoid relying on stale session roles. `revoke_identity` provides a trusted administrative primitive to invalidate one person's sessions across every business, useful for global sign-out or compromised-credential response. These actions are independent of social platform sign-in.
 
 Three additional regression cases cover identity-wide revocation, stale-role and inactive-member denial, and stale source-role denial during business switching. **Production limitations:** BAM still requires verified identity login, trusted administrator authorization for global revocation, token storage protections on devices, and independent session invalidation on account recovery. `resolve` remains available for legacy internal paths and must not be used alone as proof of current authorization. No publishing is enabled.
+
+## Account dashboard integration milestone — 2026-11-10
+
+`account_dashboard.py` composes existing BAM session, business-switching, and social-connection services into a single read-only dashboard model for a future mobile/web client. Every request rechecks current membership and session role. The active business determines which social connections are visible; content creators and other roles lacking analytics access see a restricted status rather than account metadata. Switching businesses issues a separately scoped session and immediately renders the target business's actual role and permissions. The response cannot enable publishing. Five focused regression tests cover tenant-scoped listings, role-filtered connection visibility, unauthorized switching, revoked sessions and stale roles.
+
+A security review also corrected `BusinessSwitcher.select_business` to require a current-role session rather than merely an unexpired one. This closes a stale-role bypass of the source-business membership check. The dashboard is an **offline service composition**, not a running API, authenticated web UI, or Android app. Before deployment, implement secure transport, CSRF/session protections where applicable, user identity verification, authorization at every endpoint, and integration tests against the real runtime. The test files are committed but have not been independently executed in this session.
