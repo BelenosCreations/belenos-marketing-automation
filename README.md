@@ -114,3 +114,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 ## Phase 3.7 content ownership (development branch)
 
 `tenant_resources.py` introduces immutable tenant ownership for legacy posts and discovered events. The approval gateway now rejects unowned and cross-tenant resources. Trusted ingestion must register ownership; the ownership registry must never be exposed as a client-controlled API. This is a transitional safeguard, not complete multi-tenant storage isolation: production still requires tenant columns, foreign keys, tenant-filtered queries, and a single enforced authorization boundary. Facebook publishing remains disabled.
+
+## Phase 3.8 native tenant storage (development branch)
+
+`tenant_content.py` implements separate tenant-keyed posts, approvals and discovered events. `tenant_approval_service.py` checks session validity and current account permissions before changing these tenant-scoped records. The same post or event ID can exist in different tenants without crossing data. This is a new offline storage path, **not** a migration or production-ready API. Legacy workflow entry points remain unscoped and must be isolated from future external interfaces. Test cases are committed but full execution has not been verified. Publishing is disabled.
