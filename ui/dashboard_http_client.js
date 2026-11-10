@@ -13,7 +13,7 @@
     drafts:'/api/v1/drafts',
     preferences:'/api/v1/posting-preferences'
   });
-  async function read({kind,token,fetchImpl,origin}){
+  async function read({kind,token,fetchImpl,origin,expectedTenantId}){
     if(!Object.prototype.hasOwnProperty.call(routes,kind))
       throw new TypeError('Unknown read route');
     if(typeof token!=='string'||!token.trim()||token.length>2048)
@@ -32,6 +32,11 @@
     });
     if(!response||!response.ok)throw new Error('BAM read request failed');
     const body=await response.json();
+    if(expectedTenantId!==undefined){
+      if(typeof expectedTenantId!=='string'||!expectedTenantId||
+         !body||body.tenant_id!==expectedTenantId)
+        throw new TypeError('Unexpected business response');
+    }
     if(kind==='dashboard')return contract.normalize(body);
     if(!body||typeof body!=='object'||body.publishing_enabled!==false)
       throw new TypeError('Invalid read-only response');
