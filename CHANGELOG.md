@@ -1,5 +1,11 @@
 # Changelog
 
+## Verification workflow update — 2026-11-10
+
+- Added Python compile-all validation before GitHub Actions unit-test discovery.
+- CI pass status for the current development branch remains unconfirmed.
+
+
 ## Held-draft lifecycle controls — 2026-11-10 (development branch)
 
 ### Added
