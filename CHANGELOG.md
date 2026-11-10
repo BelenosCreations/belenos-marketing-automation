@@ -1,5 +1,15 @@
 # Changelog
 
+## Password login throttling — 2026-11-10
+
+### Added
+- Persistent hashed-email failed-login counter and lockout window for password authentication.
+- Optional trusted AuthLoginAPI throttle integration and lockout/expiry/privacy regression tests.
+
+### Limitations
+- Not a substitute for mandatory production per-IP/device/global rate limits or concurrency-safe storage; no public authentication endpoints enabled.
+
+
 ## Account enrollment and recovery primitives — 2026-11-10
 
 ### Added
