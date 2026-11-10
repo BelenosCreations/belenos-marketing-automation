@@ -1,5 +1,18 @@
 # Changelog
 
+## Phase 5.2 — 2026-11-10 (development branch)
+
+### Added
+- Tenant-scoped attachment metadata and pending/verified/rejected lifecycle.
+- Authenticated Content Request completion now requires a matching verified attachment ID, rather than an arbitrary user-supplied reference.
+- Ten attachment tests and two additional authenticated service tests.
+
+### Limitations and test status
+- No actual file uploader, scanning worker, consent verification or private object storage integration.
+- Tests committed; execution and CI status remain unverified.
+- Publishing disabled.
+
+
 ## Phase 5.1 — 2026-11-10 (development branch)
 
 ### Added
