@@ -1,4 +1,4 @@
-"""Fail-closed request adapter for the offline BAM account dashboard.
+"""Fail-closed request adapter for BAM account and held-draft workflows.
 
 This is not an HTTP server. A future HTTPS transport must authenticate the
 caller, provide a bearer session token and perform rate limiting/CSRF controls.
