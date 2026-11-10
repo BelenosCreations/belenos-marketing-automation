@@ -1,5 +1,16 @@
 # Changelog
 
+## Business invitation foundation — 2026-11-10
+
+### Added
+- One-use seven-day business invitation tokens bound to verified BAM identity email and an owner-authorized non-owner role.
+- Tenant-scoped membership creation only after trusted identity proof and valid inviter authorization.
+- Invitation tests for tenant isolation, forbidden owner grants, identity mismatch, expiry and replay.
+
+### Limitations
+- No live email delivery, public invitation acceptance flow or production-grade concurrency/abuse protection.
+
+
 ## Password login throttling — 2026-11-10
 
 ### Added
