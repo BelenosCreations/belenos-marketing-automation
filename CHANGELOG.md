@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 8.0 — 2026-11-10 (development branch)
+
+### Added
+- Tenant/platform/account-bound offline analytics import interface using server-injected credentials.
+- Validation and normalization of integer engagement and impression counts, with duplicate post protection through the observation store.
+- Nine regression cases for authentication, isolation, malformed metrics and duplicate ingestion.
+
+### Limitations
+- Caller authentication is not provider-origin verification; no OAuth, external API synchronization or publishing.
+
+
 ## Phase 7.9 — 2026-11-10 (development branch)
 
 ### Added
