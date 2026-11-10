@@ -52,7 +52,7 @@ class EditorialIntakeTests(unittest.TestCase):
 
     def test_unverified_creator_holds(self):
         self.attest(verified=False)
-        self.assertEqual(self.consider()[0],'review')
+        self.assertEqual(self.consider(),('review','identity_not_verified'))
         self.assertEqual(self.inbox.list_for_business('shop')[0][3],'review')
 
     def test_expired_attestation_holds(self):
