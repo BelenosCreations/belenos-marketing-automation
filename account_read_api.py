@@ -25,8 +25,10 @@ class AccountReadAPI:
 
     def get_overview(self, *, session_token, server_now):
         """Read-only current business overview; no caller-supplied tenant."""
-        return self.dashboard.overview(
+        overview=self.dashboard.overview(
             token=self._token(session_token),now=self._now(server_now))
+        overview['dashboard_cards']=build_dashboard_cards(overview)['cards']
+        return overview
 
     def activate_business(self, *, session_token, target_tenant_id, server_now):
         """Change business only after verifying target membership.
@@ -37,9 +39,11 @@ class AccountReadAPI:
                 or not target_tenant_id.strip()
                 or len(target_tenant_id)>128):
             raise ValueError('Valid target business required')
-        return self.dashboard.switch_and_overview(
+        result=self.dashboard.switch_and_overview(
             token=self._token(session_token),
             target_tenant_id=target_tenant_id,now=self._now(server_now))
+        result['overview']['dashboard_cards']=build_dashboard_cards(result['overview'])['cards']
+        return result
 
     def logout(self, *, session_token, server_now):
         token=self._token(session_token)
