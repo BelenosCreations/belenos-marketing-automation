@@ -50,6 +50,19 @@ class RecommendationGateTests(unittest.TestCase):
         self.gate.sources.block_competitor(tenant_id='belenos',source_url=self.url)
         self.assertEqual(self.check()[0],'blocked')
 
+    def test_commercial_cleaning_category_supported(self):
+        self.gate.sources.add_source(tenant_id='busy_b',source_url='https://example.org/facility',
+                                     source_name='Facility Educator',topic='facility_care',approved=True)
+        self.gate.creators.set_status(tenant_id='busy_b',platform='youtube',
+                                      account_id='facility123',status='approved',reason='industry educator')
+        candidate=Candidate(source_name='Facility Educator',source_url='https://example.org/facility',
+                            original_url='https://example.org/facility/article',
+                            category='facility_care',summary='Facility cleaning practices',
+                            source_approved=True,verified_facts=True)
+        self.assertEqual(self.check(tenant_id='busy_b',topic='facility_care',
+                                    candidate=candidate,account_id='facility123')[0],
+                         'eligible_link_only')
+
     def test_wrong_topic_denied(self):
         self.assertNotEqual(self.check(topic='facility_care')[0],'eligible_link_only')
 
