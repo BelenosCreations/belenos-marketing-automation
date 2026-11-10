@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.5. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.6. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -363,3 +363,9 @@ The fetcher is injected for testing; **no Facebook, Instagram, Metricool or othe
 `connection_gated_analytics.py` adds a fail-closed wrapper for the existing offline provider-neutral page adapter. Before previewing or importing any analytics, it authenticates the configured import caller, checks the business/account binding, and requires a registry status of `connected` with an unexpired credential reference. Unconnected, pending, refresh-required, revoked and expired connections are denied before the fetcher is invoked. Eight regression cases cover allowed connected access and denial of inactive, expired, revoked, cross-tenant and unauthorized attempts.
 
 **Deployment boundary:** Callers must use the gated adapter rather than invoking the underlying `AnalyticsPageAdapter` directly. The registry and import boundary remain internal server components and must not be exposed to clients. The check is performed before fetching, not atomically with provider-side revocation; production integrations require provider OAuth validation, credential vault, account ownership verification, concurrent revocation handling and network-level protections. This is still an offline prototype with injected fake fetchers, no live provider connection, no scheduled jobs and no publishing.
+
+## Phase 8.6 — Offline OAuth authorization attempt protection
+
+`oauth_attempt_ledger.py` implements a backend-only OAuth attempt ledger with cryptographically random one-time state and a PKCE S256 code challenge. Each attempt is scoped to a business, provider and expected account; it expires after a bounded interval (60–900 seconds) and may be consumed only once. Only SHA-256 hashes of state and code verifier are persisted in SQLite. Consumption uses a serialized SQLite write transaction to prevent replay. Ten regression cases cover successful one-time use, tenant/platform/account mismatches, expiry, invalid verifiers, unknown state, PKCE challenge computation and absence of raw secrets in the database.
+
+**Important:** This is an offline prerequisite, not a functioning OAuth flow. A production server must bind the state to an authenticated user session, securely retain the verifier until callback, validate the exact redirect URI and provider response, perform the authorization-code exchange over HTTPS, confirm the returned account identity and read-only permissions, and store access/refresh tokens in an actual secret vault. The returned verifier must never be logged or placed in a public client URL. No live provider connection, scheduled job or publishing is enabled.
