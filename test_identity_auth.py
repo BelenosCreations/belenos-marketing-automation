@@ -102,6 +102,21 @@ class IdentityAuthTests(unittest.TestCase):
             self.auth.login_password(email='owner@example.com',
                 password='correct horse battery staple',tenant_id='shop',now=104)
 
+    def test_rotation_revokes_sessions(self):
+        self.verify()
+        first=self.auth.login_password(email='owner@example.com',
+            password='correct horse battery staple',tenant_id='shop',now=101)
+        second=self.auth.login_password(email='owner@example.com',
+            password='correct horse battery staple',tenant_id='shop',now=101)
+        self.auth.change_password(session_token=first,
+            current_password='correct horse battery staple',
+            new_password='replacement passphrase 12345',now=102)
+        self.assertIsNone(self.sessions.resolve(first,now=103))
+        self.assertIsNone(self.sessions.resolve(second,now=103))
+        replacement=self.auth.login_password(email='owner@example.com',
+            password='replacement passphrase 12345',tenant_id='shop',now=103)
+        self.assertIsNotNone(self.sessions.resolve(replacement,now=104))
+
     def test_password_policy(self):
         with self.assertRaises(ValueError):
             self.auth.register_password(email='short@example.com',
