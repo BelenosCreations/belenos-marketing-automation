@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 8.9 — 2026-11-10 (development branch)
+
+### Added
+- Fresh membership and role validation for privileged BAM session resolution.
+- Identity-wide session revocation across businesses for trusted administrative flows.
+- Stronger session checks in business switching and social connection directory.
+- Three additional regression cases for role freshness, inactive memberships and global sign-out.
+
+### Limitations
+- Offline security primitives only; no live identity provider, mobile token vault or publishing.
+
+
 ## Phase 8.8 — 2026-11-10 (development branch)
 
 ### Added
