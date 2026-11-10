@@ -1,5 +1,6 @@
 """Offline owner approval intent ledger. Never grants publishing access."""
 import hashlib
+import json
 import sqlite3
 import time
 import uuid
@@ -17,7 +18,19 @@ class ApprovalIntentService:
             request_id TEXT NOT NULL, draft_sha256 TEXT NOT NULL,
             receipt_sha256 TEXT NOT NULL, approved_by TEXT NOT NULL,
             created_at INTEGER NOT NULL, revoked_at INTEGER)""")
+        columns={row[1] for row in db.execute("PRAGMA table_info(approval_intents)")}
+        if 'content_sha256' not in columns:
+            db.execute("ALTER TABLE approval_intents ADD COLUMN content_sha256 TEXT")
         db.commit()
+
+    @staticmethod
+    def _content_digest(request):
+        snapshot={'channel':request['channel'],
+                  'required_items':request['required_items'],
+                  'provided_items':request['provided_items']}
+        serialized=json.dumps(snapshot,sort_keys=True,separators=(',',':'),
+                              ensure_ascii=False,allow_nan=False)
+        return hashlib.sha256(serialized.encode('utf-8')).hexdigest()
 
     def _owner(self,token,tenant_id,now):
         session=self.sessions.resolve(token,now=now)
@@ -42,10 +55,10 @@ class ApprovalIntentService:
             raise ValueError('Invalid or stale review receipt')
         intent_id=uuid.uuid4().hex
         with self.db:
-            self.db.execute("""INSERT INTO approval_intents VALUES (?,?,?,?,?,?,?,NULL)""",
+            self.db.execute("""INSERT INTO approval_intents (intent_id,tenant_id,request_id,draft_sha256,receipt_sha256,approved_by,created_at,revoked_at,content_sha256) VALUES (?,?,?,?,?,?,?,NULL,?)""",
                 (intent_id,tenant_id,request_id,
                  hashlib.sha256(request['draft_text'].encode('utf-8')).hexdigest(),
-                 receipt['receipt_sha256'],actor,timestamp))
+                 receipt['receipt_sha256'],actor,timestamp,self._content_digest(request)))
         return {'intent_id':intent_id,'status':'recorded_for_review',
                 'publishing_enabled':False}
 
@@ -61,7 +74,7 @@ class ApprovalIntentService:
     def inspect(self,*,token,tenant_id,intent_id,now=None):
         timestamp=int(time.time()) if now is None else now
         self._owner(token,tenant_id,timestamp)
-        row=self.db.execute("""SELECT request_id,draft_sha256,revoked_at
+        row=self.db.execute("""SELECT request_id,draft_sha256,revoked_at,content_sha256
             FROM approval_intents WHERE tenant_id=? AND intent_id=?""",
             (tenant_id,intent_id)).fetchone()
         if row is None:
@@ -71,8 +84,11 @@ class ApprovalIntentService:
         current=(request is not None and
                  hashlib.sha256(request['draft_text'].encode('utf-8')).hexdigest()==row[1])
         content_complete=(request is not None and request['status']=='ready_for_review')
+        content_unchanged=(request is not None and row[3] is not None and
+                           self._content_digest(request)==row[3])
         return {'intent_id':intent_id,'request_id':row[0],
                 'active':row[2] is None,'draft_unchanged':current,
                 'content_complete':content_complete,
-                'requires_new_review':not current or not content_complete,
+                'content_unchanged':content_unchanged,
+                'requires_new_review':not current or not content_complete or not content_unchanged,
                 'publishing_enabled':False}
