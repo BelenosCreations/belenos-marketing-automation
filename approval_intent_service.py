@@ -70,6 +70,9 @@ class ApprovalIntentService:
                                          request_id=row[0],now=timestamp)
         current=(request is not None and
                  hashlib.sha256(request['draft_text'].encode('utf-8')).hexdigest()==row[1])
+        content_complete=(request is not None and request['status']=='ready_for_review')
         return {'intent_id':intent_id,'request_id':row[0],
                 'active':row[2] is None,'draft_unchanged':current,
+                'content_complete':content_complete,
+                'requires_new_review':not current or not content_complete,
                 'publishing_enabled':False}
