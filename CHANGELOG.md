@@ -1,5 +1,22 @@
 # Changelog
 
+## Phase 4.2 — 2026-11-10 (development branch)
+
+### Added
+- Business-scoped verified creator identity policy keyed by platform and account ID.
+- Explicit blocked, review and approved states, with unknown identities held.
+- 12 additional identity policy regression tests.
+
+### Test status
+- Tests committed but not independently executed; remote GitHub Actions results still unverified.
+
+### Known limitations
+- Creator identity verification is not implemented; trusted external verification must supply it.
+- Legacy URL/host-based curation is still separate; production must combine both checks before recommending content.
+- Approved creator identity does not authorize publishing, reposting, or use of copyrighted media.
+- Publishing remains disabled.
+
+
 ## Phase 4.1 — 2026-11-10 (development branch)
 
 ### Added
