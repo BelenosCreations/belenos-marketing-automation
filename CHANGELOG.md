@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 4.8 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated editorial intake facade that reads server-side creator attestations instead of client clearance flags.
+- Business-role authorization, expired-attestation hold, and competitor re-screening safeguards.
+- Ten intake regression tests.
+
+### Test status
+- Committed, not yet independently executed or confirmed by CI.
+
+### Limitations
+- No real external identity verification worker, public API, Android client or publishing integration.
+- Legacy direct inbox entry points remain internal-only; production must not expose them.
+- Publishing disabled.
+
+
 ## Product naming decision — 2026-11-10
 
 - Adopted **BAM — Belenos Automatic Marketing** as the official product and future Android app name.
