@@ -11,6 +11,9 @@ from account_dashboard import AccountDashboard
 from account_read_api import AccountReadAPI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
+from content_requests import ContentRequests
+from content_request_service import ContentRequestService
+from content_attachments import AttachmentRegistry
 from dev_http_gateway import create_loopback_server
 from provider_connection_registry import ProviderConnectionRegistry
 from sessions import SessionStore
@@ -36,10 +39,14 @@ class AccountHTTPIntegrationTests(unittest.TestCase):
         registry.register_trusted(tenant_id='cleaning',platform='instagram',
             account_id='cleaning_page',vault_reference='vault/cleaning',
             scope='read_insights',state='connected',expires_at=2000,now=100)
+        requests=ContentRequests(self.db)
+        content=ContentRequestService(requests=requests,sessions=self.sessions,
+            directory=self.directory,attachments=AttachmentRegistry(self.db))
         dashboard=AccountDashboard(sessions=self.sessions,directory=self.directory,
             switcher=BusinessSwitcher(self.db,self.sessions,self.directory),
             social_connections=SocialConnectionDirectory(
-                registry=registry,directory=self.directory,sessions=self.sessions))
+                registry=registry,directory=self.directory,sessions=self.sessions),
+            content_service=content)
         self.server=create_loopback_server(AccountReadAPI(dashboard),clock=lambda:101)
         self.thread=threading.Thread(target=self.server.serve_forever,daemon=True)
         self.thread.start()
@@ -81,6 +88,27 @@ class AccountHTTPIntegrationTests(unittest.TestCase):
         self.assertEqual(status,200)
         self.assertEqual(self.request('GET','/api/account/overview',target_token)[0],403)
         self.assertEqual(self.request('GET','/api/account/overview',self.token)[0],200)
+
+    def test_create_held_draft_and_tenant_isolation(self):
+        payload={'channel':'facebook','draft_text':'New product preview',
+                 'suggestion':'Take a product photograph',
+                 'required_items':['photo']}
+        status,created=self.request('POST','/api/content/drafts',self.token,payload)
+        self.assertEqual(status,200)
+        self.assertEqual(created['status'],'needs_content')
+        self.assertFalse(created['publishing_enabled'])
+        _,first=self.request('GET','/api/account/overview',self.token)
+        self.assertEqual(first['pending_content_requests'][0]['draft_text'],
+                         'New product preview')
+        _,switched=self.request('POST','/api/account/activate',self.token,
+                                {'target_tenant_id':'cleaning'})
+        _,second=self.request('GET','/api/account/overview',
+                              switched['session_token'])
+        self.assertEqual(second['pending_content_requests'],[])
+        self.assertEqual(self.request('POST','/api/content/drafts',
+                         switched['session_token'],payload)[0],200)
+        _,first_again=self.request('GET','/api/account/overview',self.token)
+        self.assertEqual(len(first_again['pending_content_requests']),1)
 
     def test_role_revocation_rejects_source_token(self):
         self.db.execute('UPDATE members SET role=? WHERE tenant_id=? AND subject_id=?',
