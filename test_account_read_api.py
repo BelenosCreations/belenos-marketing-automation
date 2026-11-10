@@ -9,6 +9,7 @@ from provider_connection_registry import ProviderConnectionRegistry
 from social_connection_directory import SocialConnectionDirectory
 from account_dashboard import AccountDashboard
 from account_read_api import AccountReadAPI
+from posting_preferences import PostingPreferences
 
 class AccountReadAPITests(unittest.TestCase):
     def setUp(self):
@@ -34,7 +35,8 @@ class AccountReadAPITests(unittest.TestCase):
             switcher=BusinessSwitcher(self.db,self.sessions,directory),
             social_connections=SocialConnectionDirectory(
                 registry=registry,directory=directory,sessions=self.sessions))
-        self.api=AccountReadAPI(dashboard)
+        self.api=AccountReadAPI(dashboard,posting_preferences=PostingPreferences(
+            db=self.db,sessions=self.sessions,directory=directory))
 
     def tearDown(self):
         self.db.close()
@@ -71,6 +73,35 @@ class AccountReadAPITests(unittest.TestCase):
         self.assertNotIn('vault/',str(view))
         with self.assertRaises(PermissionError):
             self.api.get_dashboard_view(session_token='wrong',server_now=101)
+
+    def test_posting_preferences_read_write_and_switch_isolation(self):
+        initial=self.api.get_posting_preferences(
+            session_token=self.token,server_now=101)
+        self.assertFalse(initial['configured'])
+        self.assertIsNone(initial['timezone'])
+        updated=self.api.set_posting_preferences(
+            session_token=self.token,server_now=102,mode='manual',
+            timezone='America/New_York',manual_times=['18:30','10:00'])
+        self.assertEqual(updated['manual_times'],['10:00','18:30'])
+        self.assertFalse(updated['publishing_enabled'])
+        switched=self.api.activate_business(session_token=self.token,
+            target_tenant_id='b',server_now=103)
+        second=self.api.get_posting_preferences(
+            session_token=switched['session_token'],server_now=103)
+        self.assertFalse(second['configured'])
+        with self.assertRaises(PermissionError):
+            self.api.set_posting_preferences(
+                session_token=switched['session_token'],server_now=104,
+                mode='manual',timezone='America/New_York',
+                manual_times=['11:30'])
+        original=self.api.get_posting_preferences(
+            session_token=self.token,server_now=104)
+        self.assertEqual(original['manual_times'],['10:00','18:30'])
+
+    def test_posting_preferences_require_valid_session(self):
+        with self.assertRaises(PermissionError):
+            self.api.get_posting_preferences(
+                session_token='bad',server_now=101)
 
     def test_logout_revokes_token(self):
         self.assertTrue(self.api.logout(session_token=self.token,server_now=101)['signed_out'])
