@@ -4,7 +4,7 @@ from truthguard_span_audit import ClaimSpanAudit
 class ClaimSpanAuditTests(unittest.TestCase):
     def setUp(self):
         self.draft='Custom prints available. Same-day pickup guaranteed.'
-        self.first={'start':0,'end':23,'key':'product',
+        self.first={'start':0,'end':24,'key':'product',
                     'text':'Custom prints available.'}
 
     def test_valid_span(self):
@@ -23,7 +23,7 @@ class ClaimSpanAuditTests(unittest.TestCase):
         self.assertEqual(result['issues'][0]['reason'],'span_mismatch')
 
     def test_overlapping_spans_rejected(self):
-        other={'start':7,'end':23,'key':'other','text':self.draft[7:23]}
+        other={'start':7,'end':24,'key':'other','text':self.draft[7:24]}
         result=ClaimSpanAudit.audit(draft_text=self.draft,
                                     annotations=[self.first,other])
         self.assertEqual(result['issues'][0]['reason'],'overlapping_spans')
