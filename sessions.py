@@ -92,3 +92,36 @@ class SessionStore:
         )
         self.db.commit()
         return cursor.rowcount
+
+    def revoke_identity(self, subject_id: str, *, now: int | None = None) -> int:
+        """Revoke every BAM session for one identity across all businesses.
+
+        Trusted administrative action only; callers must authenticate and
+        authorize the identity-level revocation before invoking this method.
+        """
+        if not isinstance(subject_id, str) or not subject_id.strip():
+            raise ValueError("Subject required")
+        timestamp = int(time.time()) if now is None else now
+        if type(timestamp) is not int or timestamp < 0:
+            raise ValueError("Invalid revocation time")
+        cursor = self.db.execute(
+            """UPDATE sessions SET revoked_at=?
+               WHERE subject_id=? AND revoked_at IS NULL""",
+            (timestamp, subject_id),
+        )
+        self.db.commit()
+        return cursor.rowcount
+
+    def resolve_current(self, token: str, *, directory, now: int | None = None) -> Session | None:
+        """Resolve a session against current tenant membership and role.
+
+        Fail closed on removed members or stale roles. Unlike resolve(), this
+        must be used at privileged API boundaries requiring fresh permissions.
+        """
+        session = self.resolve(token, now=now)
+        if session is None:
+            return None
+        current = directory.resolve(session.principal.tenant_id, session.principal.subject_id)
+        if current is None or current.role != session.principal.role:
+            return None
+        return Session(current, session.expires_at)
