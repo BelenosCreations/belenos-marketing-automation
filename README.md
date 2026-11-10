@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 4.7. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype through Phase 4.8. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -44,10 +44,10 @@ The initial pilot businesses are Belenos Creations (custom creations and 3D prin
 
 | Stream | Intended behavior | Approval policy |
 | --- | --- | --- |
-| Belenos products and services | Short, Facebook-first showcases of custom work, 3D prints, tumblers, apparel, and resin-printed artwork | New promotional claims require approval |
+| Business-specific products and services | Short, Facebook-first showcases of custom work, 3D prints, tumblers, apparel, and resin-printed artwork | New promotional claims require approval |
 | Community engagement | Local, conversational posts and questions for Marion-area followers | Routine non-promotional content can become auto-eligible after activation |
 | Authorized promotions and events | Use only terms and dates explicitly supplied or confirmed by the owner | Previously authorized exact terms may be reused within their scope and validity |
-| Curated 3D-printing content | Mix of impressive prints, creative projects, industry news, and educational tips | Trusted-source, verified link posts may become auto-eligible; unfamiliar, sponsored, or sensitive items require approval |
+| Curated industry-specific content | Mix of impressive prints, creative projects, industry news, and educational tips | Trusted-source, verified link posts may become auto-eligible; unfamiliar, sponsored, or sensitive items require approval |
 | Operational reminders | Store openings, pickup expectations, order deadlines, and closures | Bound to confirmed operational facts and relevant times |
 
 Curated content must credit its creator, distinguish outside work from Belenos work, avoid copying media without permission, and respect the capabilities and restrictions of Facebook and any scheduling provider.
@@ -181,3 +181,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.7 server-attested editorial screening
 
 `editorial_attestations.py` stores expiring creator identity and local competitor screening attestations by business and original link. `EditorialReviewService` now looks up current server-side attestations and does not accept client-provided clearance flags. Missing or expired attestations hold content for review. A future trusted verification worker must produce these attestations; this implementation is **not** itself an identity verification service. No scheduling or publishing is authorized. Tests are committed but execution remains unverified.
+
+## Phase 4.8 — authenticated editorial intake
+
+`editorial_intake_service.py` connects the review-only discovery inbox to current tenant membership and expiring server-side creator attestations. An authorized owner or marketing manager can submit a candidate for editorial consideration, but the interface does **not** accept client-provided creator-verification or competitor-clearance flags. Unknown or expired attestations do not enter the queue. A later competitor block removes the matching queued item when re-evaluated. This remains an offline application service, not a public HTTP endpoint or live content crawler. **No scheduling, auto-sharing or publishing is enabled.** Ten additional tests were committed but their execution has not been verified. Future work must supply real trusted attestations and independently re-evaluate policies at publication time.
