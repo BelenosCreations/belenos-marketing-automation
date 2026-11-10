@@ -4,6 +4,7 @@ This is a review report, not an approval or publishing authorization.
 """
 from truthguard_review import TruthGuardReviewer
 from truthguard_span_audit import ClaimSpanAudit
+from truthguard_risk_signals import scan_risk_signals
 
 class TruthGuardContentReview:
     def __init__(self,*,content_service,reviewer):
@@ -24,6 +25,7 @@ class TruthGuardContentReview:
                   for claim in claims
                   if isinstance(claim,dict) and
                   (claim.get('key'),claim.get('text')) not in matched]
+        risk_signals=scan_risk_signals(request['draft_text'])
         result=self.reviewer.review_draft(
             tenant_id=tenant_id,draft_text=request['draft_text'],
             claims=claims,now=timestamp)
@@ -31,6 +33,7 @@ class TruthGuardContentReview:
                 'content_status':request['status'],
                 'content_complete':request['status']=='ready_for_review',
                 'truthguard':result,'span_audit':span_audit,
+                'risk_signals':risk_signals,
                 'detached_claims':detached,
                 'claims_grounded_in_draft':not detached and bool(claims)
                     and span_audit['annotation_integrity'],
