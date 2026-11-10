@@ -1,5 +1,18 @@
 # Changelog
 
+## Account dashboard integration — 2026-11-10 (development branch)
+
+### Added
+- Read-only, role-aware account dashboard composed from BAM sessions, business switching and social account directory.
+- Five focused regression cases for tenant visibility, permission filtering, switching, session revocation and stale roles.
+
+### Fixed
+- Business selection now requires a current-role session; a role change invalidates stale source sessions before switching.
+
+### Limitations
+- No deployed API or mobile UI; tests committed but not independently executed. Live provider connections and publishing remain disabled.
+
+
 ## Phase 8.9 — 2026-11-10 (development branch)
 
 ### Added
