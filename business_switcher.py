@@ -27,7 +27,7 @@ class BusinessSwitcher:
                     else self.directory.resolve(tenant,subject),Action.READ_DRAFTS,tenant)]
 
     def select_business(self, *, token, tenant_id, now=None):
-        session=self.sessions.resolve(token,now=now)
+        session=self.sessions.resolve_current(token,directory=self.directory,now=now)
         if session is None:
             raise PermissionError('Authentication required')
         if self.directory.resolve(session.principal.tenant_id,session.principal.subject_id) is None:
