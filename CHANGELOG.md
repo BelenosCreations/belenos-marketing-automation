@@ -1,5 +1,23 @@
 # Changelog
 
+## Phase 3.5 — 2026-11-10 (development branch)
+
+### Added
+- Offline tenant-scoped account directory and one-time owner bootstrap.
+- Owner-managed employee role assignment and deactivation.
+- Authorization against current directory membership rather than stale role claims in sessions.
+- 10 account-directory unit tests.
+
+### Test status
+- Changes committed to development branch; CI and local test results not yet verified.
+
+### Known limitations
+- No authenticated login, secure invitation workflow, API middleware, or Android client.
+- Bootstrap must be restricted to trusted server setup in production.
+- Production implementation must use transactional database operations and enforce last-owner safeguards.
+- Publishing remains disabled.
+
+
 ## Phase 3.4 — 2026-11-10 (session prototype)
 
 ### Added
