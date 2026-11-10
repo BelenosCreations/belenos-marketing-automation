@@ -34,6 +34,14 @@ def make_handler(api, *, clock=None):
             self.end_headers()
             self.wfile.write(raw)
 
+        def _local_request(self):
+            # Reject browser-origin cross-site requests and DNS-rebinding hosts.
+            host=self.headers.get('Host','').split(':',1)[0].lower()
+            if host not in ('127.0.0.1','localhost','[::1]'):
+                raise PermissionError('Local host required')
+            if self.headers.get('Origin') is not None:
+                raise PermissionError('Browser-origin requests disabled')
+
         def _session(self):
             header=self.headers.get('Authorization','')
             if not header.startswith('Bearer '):
@@ -60,6 +68,7 @@ def make_handler(api, *, clock=None):
                 self._respond(404,{'error':'not_found'})
                 return
             try:
+                self._local_request()
                 result=api.get_overview(session_token=self._session(),server_now=clock())
                 self._respond(200,result)
             except PermissionError:
@@ -74,6 +83,7 @@ def make_handler(api, *, clock=None):
                 self._respond(404,{'error':'not_found'})
                 return
             try:
+                self._local_request()
                 token=self._session()
                 body=self._body()
                 if path.path=='/api/account/activate':
