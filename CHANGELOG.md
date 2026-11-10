@@ -3,6 +3,18 @@
 ## Persistent posting preferences — 2026-11-10
 
 ### Added
+- SQLite-backed, business-scoped Smart/Manual posting preferences with explicit IANA timezone.
+- Authenticated read/update API methods deriving the tenant from the active session.
+- Tests for persistence, owner-only mutation, cross-business isolation, invalid timezones/times and session revocation.
+
+### Security and accuracy
+- Strict Smart/Manual input pairing; Smart mode has no fabricated recommendations.
+- Preference storage never triggers scheduling or publishing.
+
+
+## Persistent posting preferences — 2026-11-10
+
+### Added
 - Tenant-scoped offline Smart/Manual posting preference persistence with validated IANA timezone and sorted unique manual times.
 - Authenticated read and owner-only update methods in `AccountReadAPI`.
 - Unit and API tests for authorization, tenant isolation, malformed times, timezone and disabled publishing.
