@@ -1,5 +1,17 @@
 # Changelog
 
+## Local held-draft workflow integration — 2026-11-10 (development branch)
+
+### Added
+- Tenant-scoped held Content Requests and missing-content suggestions in the account dashboard and terminal demo.
+- Authenticated HTTP creation of manually entered held drafts, with strict request validation and server-derived tenant.
+- Demo drafts for each example business and interactive terminal draft creation.
+- HTTP integration regression cases for draft creation, tenant isolation and rejection of client-supplied business IDs.
+
+### Limitations
+- No AI draft generation, actual media upload, public server, production authentication, social OAuth or publishing. Current branch test run not independently verified.
+
+
 ## Cross-workflow authorization hardening — 2026-11-10 (development branch)
 
 ### Fixed
