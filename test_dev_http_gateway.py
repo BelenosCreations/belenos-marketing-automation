@@ -24,6 +24,13 @@ class FakeAPI:
             raise PermissionError('denied')
         return {'signed_out':True,'sessions_revoked':2,'publishing_enabled':False}
 
+    def create_held_draft(self,*,session_token,server_now,channel,
+                          draft_text,suggestion,required_items,priority=0):
+        if session_token!='valid':
+            raise PermissionError('denied')
+        return {'request_id':'draft1','status':'needs_content',
+                'publishing_enabled':False}
+
 class GatewayTests(unittest.TestCase):
     def setUp(self):
         self.server=create_loopback_server(FakeAPI(),clock=lambda:101)
@@ -59,6 +66,15 @@ class GatewayTests(unittest.TestCase):
         status,_,body=self.request('POST','/api/account/logout-everywhere',body={})
         self.assertEqual(status,200)
         self.assertEqual(body['sessions_revoked'],2)
+
+    def test_held_draft_route(self):
+        body={'channel':'facebook','draft_text':'Product',
+              'suggestion':'Photo','required_items':['photo']}
+        status,_,response=self.request('POST','/api/content/drafts',body=body)
+        self.assertEqual(status,200)
+        self.assertEqual(response['status'],'needs_content')
+        body['tenant_id']='other'
+        self.assertEqual(self.request('POST','/api/content/drafts',body=body)[0],400)
 
     def test_bad_token_denied(self):
         self.assertEqual(self.request('GET','/api/account/overview',token='bad')[0],403)
