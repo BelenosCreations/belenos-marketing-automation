@@ -1,5 +1,18 @@
 # Changelog
 
+## Phase 8.7 — 2026-11-10 (development branch)
+
+### Added
+- Read-only multi-platform social connection directory behind BAM session and tenant-scoped analytics permissions.
+- Seven regression cases for independent business/platform listings, role checks, session expiry and metadata privacy.
+
+### Architecture
+- BAM authentication remains independent from optional social platform account connections.
+
+### Limitations
+- No live provider OAuth, global BAM account-switching interface, production identity verification or publishing.
+
+
 ## Phase 8.6 — 2026-11-10 (development branch)
 
 ### Added
