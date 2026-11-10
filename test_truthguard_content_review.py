@@ -64,6 +64,19 @@ class TruthGuardContentReviewTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.inspect(now=4000)
 
+    def test_span_audit_exposes_unannotated_text(self):
+        report=self.inspect()
+        self.assertFalse(report['span_audit']['all_text_annotated'])
+        self.assertFalse(report['span_audit']['publish_eligible'])
+
+    def test_span_annotation_remains_nonpublishing(self):
+        text='Custom resin-printed artwork'
+        report=self.inspect(annotations=[{'start':0,'end':len(text),
+            'key':'product','text':text}])
+        self.assertTrue(report['span_audit']['all_text_annotated'])
+        self.assertFalse(report['span_audit']['fact_extraction_complete'])
+        self.assertEqual(report['status'],'held')
+
     def test_unknown_request_denied(self):
         with self.assertRaises(KeyError):
             self.inspect(request_id='missing')
