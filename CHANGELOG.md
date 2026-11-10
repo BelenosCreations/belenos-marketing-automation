@@ -1,5 +1,18 @@
 # Changelog
 
+## Held-draft lifecycle controls — 2026-11-10 (development branch)
+
+### Added
+- Authenticated hold-state API and local terminal controls for postponing, marking unavailable, and reopening incomplete drafts.
+- Regression tests for hold/reopen lifecycle, cross-tenant access denial, viewer permissions and strict request validation.
+
+### Fixed
+- Return a not-found HTTP response instead of an unhandled exception when a draft ID does not exist in the active business.
+
+### Limitations
+- Local prototype only; no upload, AI generation, scheduling or publishing.
+
+
 ## Local held-draft workflow integration — 2026-11-10 (development branch)
 
 ### Added
