@@ -12,7 +12,8 @@
 - Updated project introduction to describe a multi-business marketing platform rather than a Belenos Creations-only system.
 
 ### Test status
-- Four new branding tests and asset generation passed locally; remote CI status pending.
+- Four new branding tests and asset generation passed locally.
+- GitHub Actions offline test workflow **passed** for branding commit `0a5d1be57d420b3a810651754af1f3fc4be31510`.
 
 ### Known limitations
 - No Android app, manifest, or APK exists yet. Launcher resources are integration-ready source templates, not installed app assets.
