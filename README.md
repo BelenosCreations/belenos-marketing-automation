@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through the local account and held-draft workflow milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through the password-and-Google authentication foundation milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Current functional capabilities (offline development build)
 
@@ -19,7 +19,7 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **Content safeguards:** approved-fact evidence, TruthGuard review receipts, attachment verification metadata, owner approval-intent records, and a scheduling readiness gate that explicitly refuses publishing.
 - **Local developer interface:** `dev_server.py` plus `dev_client.py` let developers inspect business accounts and held drafts over a loopback-only HTTP gateway without production credentials.
 
-**Not yet implemented:** a real BAM login and recovery system, native Android user interface, hosted API, provider token exchange, actual media uploads, AI draft generation, production scheduler, or automatic social posting. The latest integrated code and tests are committed but a passing current-branch test run has not been independently verified.
+**Not yet implemented:** production BAM login enrollment and recovery, native Android user interface, hosted API, provider token exchange, actual media uploads, AI draft generation, production scheduler, or automatic social posting. The latest integrated code and tests are committed but a passing current-branch test run has not been independently verified.
 
 ## Product identity
 
@@ -452,3 +452,14 @@ These actions affect **draft holding state only**. No content is uploaded, no Tr
 ## Verification workflow update — 2026-11-10
 
 The existing GitHub Actions offline test workflow now compiles all Python files with `python -m compileall -q .` before running `python -m unittest discover -s . -p 'test_*.py' -v`. This catches syntax errors in new modules as well as behavioral regressions when CI actually runs. **No passing CI result has been independently confirmed for the latest development commit.** Until then, the integrated local account demo is an unverified prototype, not a release candidate.
+
+## Authentication foundation — email/password and Google (approved, 2026-11-10)
+
+BAM's approved sign-in architecture supports **both email/password and Google sign-in**, independent of connecting Facebook, Instagram or other social media accounts. The initial backend foundation has been committed:
+
+- `identity_auth.py` stores unique BAM identities, PBKDF2-HMAC-SHA256 password hashes with 600,000 iterations and random salts, verified-email state, explicit Google subject-to-BAM identity links, and active account state. Registration **does not automatically verify email, assign a business role, or issue a session**. A password login succeeds only after email verification and current membership in the requested business. Password changes require the existing password and revoke all BAM sessions.
+- `google_token_verifier.py` uses Google's `google-auth` verification library in a trusted server environment and independently checks issuer, configured OAuth client ID/audience, expiration, issued-at time, verified email, and an expected nonce. No unverified Google profile data is accepted as proof of identity. The optional dependency must be installed in a future hosted backend.
+- `google_login_challenges.py` issues short-lived, one-use random challenges and nonces; `auth_login_api.py` joins those challenges to verified Google ID tokens and BAM membership. Google accounts are **never automatically linked solely because their email matches**. Explicit linking requires an existing BAM session and fresh password reauthentication.
+- Tests cover verified versus unverified accounts, wrong passwords, missing business membership, Google claim tampering, nonce mismatch/replay/expiry, explicit linking, disabled identities, and password rotation.
+
+**Implementation boundary:** These are backend service modules and offline tests, **not a working Google sign-in button or publicly available login endpoint**. The existing loopback demo still uses disposable development sessions. Real user enrollment, verification emails, password recovery, Google OAuth client configuration, secure mobile sign-in, request throttling, production-grade database concurrency, and deployment security remain separate required work. No live social account authorization or publishing has been enabled. The latest current-branch test suite has not yet been independently verified as passing.
