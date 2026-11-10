@@ -5,6 +5,8 @@ client. This module does not itself verify external social identities.
 """
 import sqlite3
 
+MAX_ATTESTATION_SECONDS = 24 * 60 * 60
+
 class EditorialAttestations:
     def __init__(self,db):
         self.db=db
@@ -31,7 +33,9 @@ class EditorialAttestations:
             raise ValueError('Verification must be boolean')
         if competitor_status not in ('cleared','possible','unknown'):
             raise ValueError('Invalid competitor status')
-        if type(verified_at) is not int or type(expires_at) is not int or expires_at<=verified_at:
+        if (type(verified_at) is not int or type(expires_at) is not int
+                or expires_at<=verified_at
+                or expires_at-verified_at>MAX_ATTESTATION_SECONDS):
             raise ValueError('Invalid attestation lifetime')
         with self.db:
             self.db.execute("""INSERT INTO editorial_attestations VALUES (?,?,?,?,?,?,?,?)
