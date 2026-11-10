@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 6.0 — 2026-11-10 (development branch)
+
+### Added
+- Strict Manual/Smart scheduling settings screen data contract.
+- Validated mode switching, exact weekly time editing and revision metadata.
+- Seven tests for data roundtrip, access restrictions and stale updates.
+
+### Limitations
+- No rendered Android screen or HTTP API; publishing disabled.
+- Test execution unverified.
+
+
 ## Phase 5.9 — 2026-11-10 (development branch)
 
 ### Added
