@@ -35,6 +35,12 @@ class EditorialInboxTests(unittest.TestCase):
         self.assertEqual(self.consider()[0],'blocked')
         self.assertEqual(self.inbox.list_for_business('belenos'),[])
 
+    def test_blocked_rescreen_removes_prior_queue_entry(self):
+        self.consider()
+        self.gate.creators.set_status(tenant_id='belenos',platform='youtube',account_id='maker',status='blocked',reason='competitor')
+        self.assertEqual(self.consider()[0],'blocked')
+        self.assertEqual(self.inbox.list_for_business('belenos'),[])
+
     def test_unknown_creator_held_for_review(self):
         self.assertEqual(self.consider(account_id='unknown')[0],'review')
 
