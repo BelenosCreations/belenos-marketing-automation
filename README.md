@@ -285,3 +285,7 @@ The authenticated Content Request review now validates the full caller-supplied 
 ## Phase 6.9 — Temporal validity of approved facts
 
 TruthGuard knowledge lookup now requires `approved_at <= review_time` in addition to non-revocation and unexpired validity. This prevents a fact with a future approval timestamp from being treated as already authorized evidence. Five regression cases cover future approvals, boundary-time activation, expiration, tenant separation and revocation. Review reports remain nonpublishing; no live publishing integration is enabled.
+
+## Phase 7.0 — Risk-signal review coverage
+
+Authenticated TruthGuard content review now correlates heuristic high-risk phrases with source-span annotations in the **stored draft**. The report includes `uncovered_risk_signals` and `risk_signals_annotated`, allowing an editor to distinguish flagged pricing, urgency, availability and other risk signals that have not been annotated. Annotation coverage is not evidence of accuracy, complete factual extraction, owner approval or publishing eligibility. Two regression tests cover uncovered statements and covered-but-still-held statements. Publishing remains disabled. The existing GitHub Actions workflow runs offline unit tests on push and pull requests; an independently confirmed current-branch result is not available from the connected workflow-run interface.
