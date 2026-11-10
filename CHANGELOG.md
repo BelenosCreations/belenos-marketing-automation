@@ -1,5 +1,15 @@
 # Changelog
 
+## Phase 7.6 — 2026-11-10 (development branch)
+
+### Added
+- Read-only schedule-readiness assessment with explicit safety blockers and owner/tenant authorization inherited from the intent ledger.
+- Seven regression tests for held scheduling, revoked intent, stale content, unverified media, invalid time and tenant isolation.
+
+### Limitations
+- All proposed schedules remain held; final approval and publishing integrations are not implemented.
+
+
 ## Phase 7.5 — 2026-11-10 (development branch)
 
 ### Security
