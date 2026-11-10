@@ -49,6 +49,20 @@ class AccountDashboardTests(unittest.TestCase):
         self.assertIsNone(result['overview']['social_connections'])
         self.assertEqual(result['overview']['connection_visibility'],'restricted')
 
+    def test_activation_failure_revokes_new_session(self):
+        original=self.dashboard.overview
+        def failing_overview(*,token,now):
+            raise RuntimeError('Injected dashboard failure')
+        self.dashboard.overview=failing_overview
+        with self.assertRaises(RuntimeError):
+            self.dashboard.switch_and_overview(
+                token=self.owner,target_tenant_id='second',now=101)
+        rows=self.db.execute(
+            "SELECT revoked_at FROM sessions WHERE tenant_id='second' AND subject_id='owner'"
+        ).fetchall()
+        self.assertEqual(rows,[(101,)])
+        self.dashboard.overview=original
+
     def test_unknown_target_denied(self):
         with self.assertRaises(PermissionError):
             self.dashboard.switch_and_overview(
