@@ -1,5 +1,12 @@
 # Changelog
 
+## Posting preference browser validation — 2026-11-10
+
+### Added
+- Strict browser validator for per-business posting preference responses.
+- HTTPS client validation and CI tests for unconfigured timezone, manual time validation and disabled publishing.
+
+
 ## Read-only Content Studio browser components — 2026-11-10
 
 ### Added
