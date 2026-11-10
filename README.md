@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 4.8. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype through Phase 4.9. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -185,3 +185,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.8 — authenticated editorial intake
 
 `editorial_intake_service.py` connects the review-only discovery inbox to current tenant membership and expiring server-side creator attestations. An authorized owner or marketing manager can submit a candidate for editorial consideration, but the interface does **not** accept client-provided creator-verification or competitor-clearance flags. Unknown or expired attestations do not enter the queue. A later competitor block removes the matching queued item when re-evaluated. This remains an offline application service, not a public HTTP endpoint or live content crawler. **No scheduling, auto-sharing or publishing is enabled.** Ten additional tests were committed but their execution has not been verified. Future work must supply real trusted attestations and independently re-evaluate policies at publication time.
+
+## Phase 4.9 — review integrity and verification freshness
+
+Editorial inbox entries now persist a SHA-256 digest of the original candidate's source, URL, topic category, summary, claim-verification flags, and content safety flags. Review rechecks fail closed when a candidate has been modified after intake; an existing database row without a digest must be re-enqueued and cannot be silently grandfathered in. This prevents substituting a different summary or source after initial screening. Trusted creator/competitor attestations are capped at **24 hours**, with expiration still enforced at use time. Additional regression tests cover changed summaries, changed source URLs, changed verification flags, and overlong attestation lifetimes. The digest is an integrity comparison, **not** proof that the original claims are true. Test execution and CI status remain unverified; external verification and publishing are not connected.
