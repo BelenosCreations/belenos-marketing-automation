@@ -1,5 +1,22 @@
 # Changelog
 
+## Phase 3.8 — 2026-11-10 (development branch)
+
+### Added
+- Native tenant-keyed post, approval and event tables in `tenant_content.py`.
+- Session and current-role authorized `TenantApprovalService` for native tenant records.
+- 12 new isolation and permission tests; 86 tests defined across repository.
+
+### Test status
+- Commits completed; GitHub combined status returned no checks. Tests not independently verified.
+
+### Known limitations
+- Legacy workflow remains separately available and must not be exposed as production API.
+- Native storage is an independent development path, not yet a migration of legacy records.
+- Trusted ingestion, classification and user authentication are not production-ready.
+- No API, Android client, or live publishing; publishing disabled.
+
+
 ## Phase 3.7 — 2026-11-10 (development branch)
 
 ### Added
