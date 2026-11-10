@@ -126,3 +126,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 ## Phase 4.0 general-purpose business curation
 
 The platform targets independent businesses and multiple businesses under one owner account. `business_curation.py` stores separate industry/topic/source allowlists for each business; approving a 3D-printing creator for Belenos does not approve that creator for Busy B Cleaning Service. Known competitor source domains can be blocked per business, and unknown or possibly competing local sources require review. This is offline policy scaffolding, not a verified competitor-discovery service. Trusted administration, platform profile identity matching and authenticated APIs remain future work. No automatic content sharing or publishing is enabled.
+
+## Phase 4.1 multiple businesses per login
+
+`business_switcher.py` provides a read-only, server-side business selector for one authenticated identity with different roles across business tenants. It immediately reflects membership deactivation. This is not an Android UI or a finished login flow. Curation remains strictly business-specific; competitor screening status must come from trusted review, not client input. For social networks with shared domains, future blocking must use verified creator/page IDs rather than blanket host blocking. Tests and CI execution remain unverified. Publishing remains disabled.
