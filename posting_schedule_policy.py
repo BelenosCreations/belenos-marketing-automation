@@ -51,7 +51,7 @@ class SchedulingPlanner:
         for offset in range(days+1):
             day=(local+timedelta(days=offset)).date()
             for hour in range(24):
-                for minute in (0,30):
+                for minute in range(60):
                     candidate=datetime(day.year,day.month,day.day,hour,minute,tzinfo=tz)
                     # Reject nonexistent DST times and avoid ambiguous fold=1.
                     if candidate.astimezone(timezone.utc).astimezone(tz).replace(fold=0)!=candidate:
@@ -75,6 +75,8 @@ class SchedulingPlanner:
             if override_local.tzinfo is None:
                 raise ValueError('Override must include timezone')
             local=override_local.astimezone(tz)
+            if (local.astimezone(timezone.utc).astimezone(tz).replace(fold=0)!=local.replace(fold=0)):
+                raise ValueError('Override is not a valid local wall-clock time')
             if local.astimezone(timezone.utc)<=start_utc:
                 raise ValueError('Override must be in the future')
             return {'status':'proposed','scheduled_at':local.isoformat(),
@@ -94,7 +96,7 @@ class SchedulingPlanner:
         # Explainable heuristics are fallback suggestions, not claimed engagement data.
         engagement_by_hour=engagement_by_hour or {}
         if any(type(h) is not int or h not in range(24) or
-               not isinstance(score,(int,float)) or isinstance(score,bool)
+               not isinstance(score,(int,float)) or isinstance(score,bool) or score!=score
                for h,score in engagement_by_hour.items()):
             raise ValueError('Invalid engagement observations')
         subject=post.subject.lower()
