@@ -58,6 +58,20 @@ class AccountReadAPITests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.api.get_overview(session_token=self.token,server_now=102)
 
+    def test_logout_everywhere_revokes_all_business_sessions(self):
+        other=self.sessions.issue(Principal('owner','b',Role.VIEWER),now=100)
+        unrelated=self.sessions.issue(Principal('someone','a',Role.VIEWER),now=100)
+        result=self.api.logout_everywhere(session_token=self.token,server_now=101)
+        self.assertEqual(result['sessions_revoked'],2)
+        self.assertIsNone(self.sessions.resolve(self.token,now=102))
+        self.assertIsNone(self.sessions.resolve(other,now=102))
+        self.assertIsNotNone(self.sessions.resolve(unrelated,now=102))
+
+    def test_logout_everywhere_denies_revoked_session(self):
+        self.sessions.revoke(self.token,now=101)
+        with self.assertRaises(PermissionError):
+            self.api.logout_everywhere(session_token=self.token,server_now=102)
+
     def test_invalid_tokens_fail_closed(self):
         for token in (None,'','not-a-real-session',42):
             with self.assertRaises(PermissionError):
