@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 8.4 — 2026-11-10 (development branch)
+
+### Added
+- Offline per-tenant/provider/account connection metadata registry with secret-vault references, scope and lifecycle states.
+- Expiry-aware status responses that do not expose vault references.
+- Nine regression cases for lifecycle, isolation, read-only scopes and validation.
+
+### Limitations
+- No OAuth, real secret vault, token refresh, provider verification or live connection.
+
+
 ## Phase 8.3 — 2026-11-10 (development branch)
 
 ### Added
