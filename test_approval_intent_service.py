@@ -68,6 +68,16 @@ class ApprovalIntentTests(unittest.TestCase):
         self.assertTrue(self.ledger.inspect(token=self.owner,tenant_id='shop',
             intent_id=record['intent_id'],now=103)['active'])
 
+    def test_new_owner_role_requires_new_session(self):
+        self.directory.set_member(Principal('owner','shop',Role.OWNER),
+                                  'new_owner',Role.VIEWER)
+        stale=self.sessions.issue(Principal('new_owner','shop',Role.VIEWER),now=100)
+        self.directory.set_member(Principal('owner','shop',Role.OWNER),
+                                  'new_owner',Role.OWNER)
+        self.complete()
+        with self.assertRaises(PermissionError):
+            self.record(token=stale)
+
     def test_other_business_denied(self):
         self.complete()
         with self.assertRaises(PermissionError):self.record(token=self.other)
