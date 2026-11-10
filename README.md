@@ -2,11 +2,13 @@
 
 **BAM (Belenos Automatic Marketing)** is a planned multi-business marketing automation platform. It is designed to manage separate brand profiles, audience engagement, curated creator content, scheduling intelligence, and approval controls for businesses in distinct industries. Belenos Creations in Marion, Ohio is the initial business profile; additional businesses and independent installations are part of the product direction.
 
-> **Development status:** Offline prototype through Phase 3.2. **Publishing is disabled.** The Phase 3.2 offline prototype source and tests are now imported into this repository. Nothing in this README indicates a deployed or connected publishing service.
+> **Development status:** Offline automation prototype through Phase 3.4, with approved BAM brand assets integrated in Phase 3.5. **Publishing is disabled.** There is no native Android app, APK, or connected publishing service yet.
 
 ## Project goals
 
-- Maintain a consistent, recognizable Belenos voice without repetitive or generic posts.
+- Maintain an accurate voice for each configured business without repetitive or generic posts.
+- Isolate business profiles, audiences, creator categories, and local-competitor exclusions so unrelated industries never cross-promote by accident.
+- Hold drafts when user-supplied photos or other assets are required, with clear content-creation suggestions instead of publishing incomplete posts.
 - Share original product highlights, creative projects, community questions, and useful 3D-printing discoveries.
 - Use audience engagement data to choose better posting windows rather than relying on the owner's availability.
 - Protect business accuracy: do not invent discounts, prices, special hours, promotions, giveaways, events, or order promises.
