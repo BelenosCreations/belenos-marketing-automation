@@ -4,9 +4,9 @@
  */
 (function(root,factory){
   'use strict';
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./dashboard_data_contract.js'));
-  else root.BAMReadClient=factory(root.BAMDashboardData);
-})(typeof globalThis!=='undefined'?globalThis:this,function(contract){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./dashboard_data_contract.js'),require('./content_studio_contract.js'));
+  else root.BAMReadClient=factory(root.BAMDashboardData,root.BAMContentStudioData);
+})(typeof globalThis!=='undefined'?globalThis:this,function(contract,studioContract){
   'use strict';
   const routes=Object.freeze({
     dashboard:'/api/v1/dashboard',
@@ -38,6 +38,7 @@
         throw new TypeError('Unexpected business response');
     }
     if(kind==='dashboard')return contract.normalize(body);
+    if(kind==='drafts')return studioContract.normalize(body);
     if(!body||typeof body!=='object'||body.publishing_enabled!==false)
       throw new TypeError('Invalid read-only response');
     return body;
