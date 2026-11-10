@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.6. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.7. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -313,3 +313,7 @@ The owner approval-intent boundary now verifies every required content reference
 ## Phase 7.6 — Read-only scheduling readiness
 
 The new `schedule_readiness.py` assesses a proposed post time against the authenticated, tenant-scoped approval-intent ledger. It reports explicit blockers for revoked intent, changed draft, incomplete or changed supporting content, unverified attachments and nonfuture timestamps. Even with no such blockers, it **always holds** the request because final approval, complete TruthGuard publication gating and live integration are not implemented. It neither creates a scheduled job nor invokes social platforms. Seven regression tests cover held status, blocker reporting, access isolation and invalid time input. A green-looking review or recorded intent is never treated as publishing authorization.
+
+## Phase 7.7 — Manual and smart scheduling preview
+
+`schedule_preview.py` provides a nonexecuting scheduling preview for either an owner-supplied manual local time or a bounded set of candidate times from a future smart-scheduling engine. All inputs are interpreted in an explicitly selected IANA timezone. The preview rejects nonexistent daylight-saving transition times and ambiguous repeated local times, as well as duplicate candidates and mixed manual/smart input. Smart preview currently selects the **earliest supplied candidate** for deterministic demonstration, **not an optimized engagement window**. The selected UTC timestamp is assessed by the fail-closed scheduling readiness layer; no scheduled job, publication authorization, or social platform request is created. Eight regression tests cover both modes, daylight-saving boundaries, tenant isolation and invalid inputs. Real audience-aware ranking and owner publishing permissions remain future work.
