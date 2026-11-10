@@ -15,11 +15,18 @@
     if(text!==undefined)node.textContent=String(text);
     return node;
   }
-  function render({document,container,payload}){
+  function clear({container}){
+    if(!container||typeof container.replaceChildren!=='function')
+      throw new TypeError('Valid dashboard mount required');
+    container.replaceChildren();
+  }
+  function render({document,container,payload,expectedTenantId}){
     if(!document||!container||typeof container.replaceChildren!=='function')
       throw new TypeError('Valid dashboard mount required');
     // Fail closed: validation completes before changing the DOM.
     const model=contract.normalize(payload);
+    if(expectedTenantId!==undefined&&model.tenantId!==expectedTenantId)
+      throw new TypeError('Unexpected business response');
     const wrapper=make(document,'section','bam-live-dashboard');
     const business=model.businesses.find(b=>b.tenant_id===model.tenantId);
     wrapper.append(make(document,'h2','bam-live-heading',business.name));
@@ -56,5 +63,5 @@
     container.replaceChildren(wrapper);
     return model;
   }
-  return Object.freeze({render});
+  return Object.freeze({render,clear});
 });
