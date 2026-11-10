@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 4.6 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated editorial review facade requiring an active owner or marketing-manager membership.
+- Fresh creator/source/competitor recheck before human review, with no scheduling or publishing action.
+- Ten role, revocation, cross-tenant and policy-change tests.
+
+### Test status
+- Code and tests committed; full test execution not verified. GitHub Actions push and pull-request triggers exist but successful runs have not been confirmed.
+
+### Known limitations
+- The facade accepts identity verification and competitor clearance from its caller: production must derive these solely from a trusted resolver, never mobile/client parameters.
+- No authenticated HTTP endpoint, Android UI, scheduling authorization, or publishing integration yet.
+- Publishing disabled.
+
+
 ## Phase 4.5 — 2026-11-10 (development branch)
 
 ### Added
