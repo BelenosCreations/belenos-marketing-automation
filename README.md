@@ -277,3 +277,7 @@ TruthGuard now distinguishes **a fact that exists in the approved knowledge base
 ## Phase 6.7 — TruthGuard high-risk marketing claim signals
 
 `truthguard_risk_signals.py` performs a deterministic, conservative scan for potential price/discount, guarantee, time-sensitive availability, business-hour and testimonial statements. It returns matching source spans for editorial review. Authenticated TruthGuard Content Request reports now include these signals alongside approved-fact matches, exact claim-span integrity, and unannotated text. Ten regression tests were committed. **Important:** this is a heuristic warning layer, not comprehensive claim extraction, independent fact verification or a publishing authorization. An empty signal list does not prove accuracy. Drafts remain held, and publishing stays disabled. Current-branch test execution is not yet verified.
+
+## Phase 6.8 — TruthGuard untrusted-input hardening
+
+The authenticated Content Request review now validates the full caller-supplied claim collection before draft-span comparison: at most 100 entries, exact `key` and `text` fields, and nonempty string values. This prevents malformed nested or unhashable values from triggering unexpected errors and keeps the review boundary fail-closed. Two regression cases cover malformed and oversized claim inputs. The existing review remains nonpublishing and tenant-scoped. The GitHub connector can commit source and tests but does not expose a workflow-dispatch operation; no production release is implied.
