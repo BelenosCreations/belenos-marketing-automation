@@ -14,5 +14,10 @@ jobs:
           python-version: '3.12'
       - name: Compile all Python modules
         run: python -m compileall -q .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run dashboard interaction smoke tests
+        run: node ui/dashboard_smoke_test.js
       - name: Run offline tests
         run: python -m unittest discover -s . -p 'test_*.py' -v
