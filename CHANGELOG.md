@@ -1,5 +1,23 @@
 # Changelog
 
+## Phase 4.5 — 2026-11-10 (development branch)
+
+### Added
+- Fresh policy re-evaluation before a queued link can be considered for editorial review; blocked creators are removed.
+- Business-neutral curation categories, including facility care and case studies.
+- Guard against accidental whole-platform competitor blocks on common social domains.
+- Eleven additional regression tests covering rechecks, commercial cleaning and shared social platforms.
+
+### Test status
+- Code and test definitions committed; full suite execution and GitHub CI status not yet verified.
+
+### Known limitations
+- Review check is not yet bound to an authenticated API, approval, scheduler or publication transaction.
+- Trusted identity verification and competitor clearance remain external dependencies.
+- Existing queue records are not automatically swept when policies change; review check must be called on use.
+- No live discovery or publishing enabled.
+
+
 ## Phase 4.4 — 2026-11-10 (development branch)
 
 ### Added
