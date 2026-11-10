@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 4.0 — 2026-11-10 (development branch)
+
+### Added
+- General-purpose per-business industry/topic/source curation, independent across business tenants.
+- Local competitor blocklist by business and conservative review for unknown or possible local competitors.
+- Business-specific curation and competitor regression tests.
+
+### Test status
+- Tests committed; full suite and CI results not yet verified.
+
+### Known limitations
+- Competitor detection is not automated: trusted configuration and human screening are required. Domain blocking alone cannot identify all competitors, social profiles, syndicated content, or mirrors.
+- Business profiles and source settings lack authenticated owner-facing API; no automatic sharing enabled.
+- Publishing remains disabled.
+
+
 ## Phase 3.9 — 2026-11-10 (draft PR #1)
 
 ### Added
