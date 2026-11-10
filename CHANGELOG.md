@@ -1,5 +1,16 @@
 # Changelog
 
+## Authenticated dashboard DOM renderer — 2026-11-10
+
+### Added
+- Read-only browser DOM renderer for validated tenant-scoped dashboard data.
+- Explicit Not connected/Restricted card states and attention-list display.
+- Tests for safe text rendering and rejection of malformed payloads before DOM replacement; included in CI.
+
+### Limitations
+- Backend HTTP transport, browser authentication, and live integration remain future milestones.
+
+
 ## Persistent posting preferences — 2026-11-10
 
 ### Added
