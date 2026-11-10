@@ -44,6 +44,10 @@ class AccountReadAPITests(unittest.TestCase):
         self.assertEqual(response['tenant_id'],'a')
         self.assertEqual([x['platform'] for x in response['social_connections']],['facebook'])
         self.assertNotIn('vault/',str(response))
+        cards={card['id']:card for card in response['dashboard_cards']}
+        self.assertEqual(cards['connections']['value'],1)
+        self.assertIsNone(cards['scheduled']['value'])
+        self.assertEqual(cards['scheduled']['availability'],'not_connected')
 
     def test_switch_uses_target_permissions(self):
         response=self.api.activate_business(session_token=self.token,
@@ -52,6 +56,9 @@ class AccountReadAPITests(unittest.TestCase):
         self.assertEqual([x['platform'] for x in response['overview']['social_connections']],['instagram'])
         self.assertNotEqual(response['session_token'],self.token)
         self.assertFalse(response['publishing_enabled'])
+        switched_cards={card['id']:card for card in response['overview']['dashboard_cards']}
+        self.assertEqual(switched_cards['connections']['value'],1)
+        self.assertEqual(switched_cards['content']['value'],0)
 
     def test_logout_revokes_token(self):
         self.assertTrue(self.api.logout(session_token=self.token,server_now=101)['signed_out'])
