@@ -134,3 +134,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.2 verified creator identities
 
 `creator_identities.py` adds business-specific allow/review/block decisions keyed by social platform and verified creator account ID. This avoids blocking all of Facebook or YouTube when excluding one local competitor. An identity approved for Belenos does not become approved for Busy B. Missing verification or unknown identities are held. The module is an offline policy only: a trusted identity-verification provider, combination with topic curation, and authorization-gated management are still required. Creator approval is not permission to copy content or to publish automatically. No publishing is enabled.
+
+## Phase 4.3 combined recommendation gate
+
+`recommendation_gate.py` requires both a verified creator account approved for the selected business and an approved source/topic match. Known competitor blocks override approvals, and uncertain local competition remains review-required. The result `eligible_link_only` means *eligible for editorial consideration*, never permission to publish or reproduce media. Integration into real discovery, verified screening, and authenticated administration remain future work. Publishing remains disabled.
