@@ -130,3 +130,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.1 multiple businesses per login
 
 `business_switcher.py` provides a read-only, server-side business selector for one authenticated identity with different roles across business tenants. It immediately reflects membership deactivation. This is not an Android UI or a finished login flow. Curation remains strictly business-specific; competitor screening status must come from trusted review, not client input. For social networks with shared domains, future blocking must use verified creator/page IDs rather than blanket host blocking. Tests and CI execution remain unverified. Publishing remains disabled.
+
+## Phase 4.2 verified creator identities
+
+`creator_identities.py` adds business-specific allow/review/block decisions keyed by social platform and verified creator account ID. This avoids blocking all of Facebook or YouTube when excluding one local competitor. An identity approved for Belenos does not become approved for Busy B. Missing verification or unknown identities are held. The module is an offline policy only: a trusted identity-verification provider, combination with topic curation, and authorization-gated management are still required. Creator approval is not permission to copy content or to publish automatically. No publishing is enabled.
