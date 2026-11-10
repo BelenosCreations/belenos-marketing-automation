@@ -110,6 +110,35 @@ class AccountHTTPIntegrationTests(unittest.TestCase):
         _,first_again=self.request('GET','/api/account/overview',self.token)
         self.assertEqual(len(first_again['pending_content_requests']),1)
 
+    def test_hold_status_changes_and_reopening(self):
+        payload={'channel':'facebook','draft_text':'Need a photo',
+                 'suggestion':'Photograph item','required_items':['photo']}
+        _,created=self.request('POST','/api/content/drafts',self.token,payload)
+        request_id=created['request_id']
+        status,held=self.request('POST','/api/content/hold',self.token,
+                                {'request_id':request_id,'status':'postponed'})
+        self.assertEqual(status,200)
+        self.assertEqual(held['status'],'postponed')
+        _,overview=self.request('GET','/api/account/overview',self.token)
+        self.assertEqual(overview['pending_content_requests'],[])
+        status,reopened=self.request('POST','/api/content/hold',self.token,
+                                    {'request_id':request_id,'status':'needs_content'})
+        self.assertEqual(status,200)
+        self.assertEqual(reopened['status'],'needs_content')
+        _,overview=self.request('GET','/api/account/overview',self.token)
+        self.assertEqual(len(overview['pending_content_requests']),1)
+
+    def test_hold_does_not_cross_business_boundary(self):
+        payload={'channel':'facebook','draft_text':'Tenant one',
+                 'suggestion':'Photo','required_items':['photo']}
+        _,created=self.request('POST','/api/content/drafts',self.token,payload)
+        _,switched=self.request('POST','/api/account/activate',self.token,
+                                {'target_tenant_id':'cleaning'})
+        status,_=self.request('POST','/api/content/hold',
+            switched['session_token'],
+            {'request_id':created['request_id'],'status':'postponed'})
+        self.assertEqual(status,404)
+
     def test_role_revocation_rejects_source_token(self):
         self.db.execute('UPDATE members SET role=? WHERE tenant_id=? AND subject_id=?',
                         (Role.VIEWER.value,'retail','owner'))
