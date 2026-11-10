@@ -1,5 +1,19 @@
 # Changelog
 
+## Phase 5.4 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated upload preflight for active business-specific content requests.
+- File-type allowlist and size limits; server-generated private storage identifiers.
+- Pending-only attachment registration with no upload URL or publish capability.
+- Ten regression tests for authorization, limits and session handling.
+
+### Test status and limitations
+- Tests committed; execution unverified.
+- No actual byte transfer, object storage, scanning, hash verification or Android UI.
+- Publishing remains disabled.
+
+
 ## Phase 5.3 — 2026-11-10 (development branch)
 
 ### Added
