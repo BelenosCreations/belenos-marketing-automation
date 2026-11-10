@@ -5,11 +5,12 @@ Trusted server code supplies services. Every view revalidates BAM membership.
 from access_policy import Action, Resource, require_permission
 
 class AccountDashboard:
-    def __init__(self, *, sessions, directory, switcher, social_connections):
+    def __init__(self, *, sessions, directory, switcher, social_connections, content_service=None):
         self.sessions=sessions
         self.directory=directory
         self.switcher=switcher
         self.social_connections=social_connections
+        self.content_service=content_service
 
     def overview(self, *, token, now):
         session=self.sessions.resolve_current(token,directory=self.directory,now=now)
@@ -26,8 +27,23 @@ class AccountDashboard:
                 token=token,tenant_id=tenant_id,now=now)['connections']
         else:
             social=None
+        pending=[]
+        if self.content_service is not None:
+            for request in self.content_service.list_for_business(
+                    token=token,tenant_id=tenant_id,now=now):
+                if request['status'] in ('needs_content','ready_for_review'):
+                    pending.append({
+                        'request_id':request['request_id'],
+                        'channel':request['channel'],
+                        'draft_text':request['draft_text'],
+                        'suggestion':request['suggestion'],
+                        'status':request['status'],
+                        'missing_items':[item for item in request['required_items']
+                                         if item not in request['provided_items']],
+                        'priority':request['priority']})
         return {'tenant_id':tenant_id,'role':session.principal.role.value,
                 'businesses':businesses,'social_connections':social,
+                'pending_content_requests':pending,
                 'connection_visibility':'authorized' if social is not None else 'restricted',
                 'publishing_enabled':False}
 
