@@ -139,6 +139,18 @@ class AccountHTTPIntegrationTests(unittest.TestCase):
             {'request_id':created['request_id'],'status':'postponed'})
         self.assertEqual(status,404)
 
+    def test_viewer_cannot_create_or_hold(self):
+        self.directory.set_member(Principal('owner','retail',Role.OWNER),
+                                  'viewer',Role.VIEWER)
+        viewer=self.sessions.issue(Principal('viewer','retail',Role.VIEWER),now=100)
+        payload={'channel':'facebook','draft_text':'Restricted',
+                 'suggestion':'Photo','required_items':['photo']}
+        self.assertEqual(self.request('POST','/api/content/drafts',viewer,payload)[0],403)
+        _,created=self.request('POST','/api/content/drafts',self.token,payload)
+        self.assertEqual(self.request('POST','/api/content/hold',viewer,
+                         {'request_id':created['request_id'],
+                          'status':'postponed'})[0],403)
+
     def test_role_revocation_rejects_source_token(self):
         self.db.execute('UPDATE members SET role=? WHERE tenant_id=? AND subject_id=?',
                         (Role.VIEWER.value,'retail','owner'))
