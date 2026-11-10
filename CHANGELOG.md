@@ -1,5 +1,17 @@
 # Changelog
 
+## Verified content and frontend contract — 2026-11-10
+
+### Added
+- Authenticated `supply_verified_content` API for existing scanner-approved attachments; completed drafts move to review without publishing.
+- Regression test for rejecting unverified attachments and safe transition to review.
+- Strict JavaScript adapter for authenticated dashboard payloads, including tenant/card/draft and unavailable-metric validation.
+- Frontend data-contract tests added to GitHub Actions.
+
+### Limitations
+- Real media uploads, trusted scanner workers, hosted HTTPS transport and frontend-to-backend fetching are not implemented.
+
+
 ## Complete held-draft list API — 2026-11-10
 
 ### Added
