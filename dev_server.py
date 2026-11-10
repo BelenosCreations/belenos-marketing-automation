@@ -11,6 +11,9 @@ from account_dashboard import AccountDashboard
 from account_read_api import AccountReadAPI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
+from content_requests import ContentRequests
+from content_attachments import AttachmentRegistry
+from content_request_service import ContentRequestService
 from dev_http_gateway import create_loopback_server
 from provider_connection_registry import ProviderConnectionRegistry
 from sessions import SessionStore
@@ -33,11 +36,26 @@ def create_demo():
     token=sessions.issue(Principal('demo_user','belenos_demo',Role.OWNER),
                          ttl_seconds=3600)
     registry=ProviderConnectionRegistry(db)
+    requests=ContentRequests(db)
+    import time
+    now=int(time.time())
+    requests.create(tenant_id='belenos_demo',channel='facebook',
+        draft_text='See our latest custom creations!',
+        suggestion='Take a photo of the finished item in good lighting.',
+        required_items=['product_photo','photo_permission'],now=now)
+    requests.create(tenant_id='busy_b_demo',channel='facebook',
+        draft_text='A behind-the-scenes look at commercial cleaning.',
+        suggestion='Provide an approved photo of the team or equipment.',
+        required_items=['approved_team_photo'],now=now)
+    content_service=ContentRequestService(requests=requests,
+        sessions=sessions,directory=directory,
+        attachments=AttachmentRegistry(db))
     dashboard=AccountDashboard(
         sessions=sessions,directory=directory,
         switcher=BusinessSwitcher(db,sessions,directory),
         social_connections=SocialConnectionDirectory(
-            registry=registry,directory=directory,sessions=sessions))
+            registry=registry,directory=directory,sessions=sessions),
+        content_service=content_service)
     server=create_loopback_server(AccountReadAPI(dashboard))
     return db,server,token
 
