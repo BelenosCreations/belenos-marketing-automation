@@ -5,6 +5,7 @@ from accounts import AccountDirectory
 from sessions import SessionStore
 from content_requests import ContentRequests
 from content_request_service import ContentRequestService
+from content_attachments import AttachmentRegistry
 
 class ContentRequestServiceTests(unittest.TestCase):
     def setUp(self):
@@ -22,11 +23,19 @@ class ContentRequestServiceTests(unittest.TestCase):
                         ('manager',Role.MARKETING_MANAGER),
                         ('creator',Role.CONTENT_CREATOR),
                         ('viewer',Role.VIEWER)]}
+        self.attachments=AttachmentRegistry(self.db)
         self.service=ContentRequestService(requests=ContentRequests(self.db),
-            sessions=self.sessions,directory=self.directory)
+            sessions=self.sessions,directory=self.directory,attachments=self.attachments)
         self.args=dict(tenant_id='shop',channel='facebook',draft_text='Custom work',
                        suggestion='Photograph finished product',
                        required_items=['photo','permission'],now=101)
+
+    def verified(self, rid, item, tenant='shop'):
+        attachment_id=self.attachments.register_pending(
+            tenant_id=tenant,request_id=rid,item=item,media_type='image/png',
+            sha256='a'*64,storage_key='private/'+rid+'/'+item,now=101)
+        self.attachments.validate_trusted(tenant_id=tenant,attachment_id=attachment_id,approved=True)
+        return attachment_id
 
     def create(self,user='owner',**kwargs):
         args=dict(self.args)
@@ -54,7 +63,7 @@ class ContentRequestServiceTests(unittest.TestCase):
         rid=self.create()
         with self.assertRaises(PermissionError):
             self.service.provide(token=self.tokens['viewer'],tenant_id='shop',
-                request_id=rid,item='photo',content_reference='asset:1',now=101)
+                request_id=rid,item='photo',attachment_id='unverified',now=101)
 
     def test_cross_tenant_rejected(self):
         with self.assertRaises(PermissionError):self.create(tenant_id='other')
@@ -90,7 +99,21 @@ class ContentRequestServiceTests(unittest.TestCase):
             content_reference='asset:1',now=102),'needs_content')
         self.assertEqual(self.service.provide(token=self.tokens['owner'],
             tenant_id='shop',request_id=rid,item='permission',
-            content_reference='permission:2',now=103),'ready_for_review')
+            attachment_id=self.verified(rid,'permission'),now=103),'ready_for_review')
+
+    def test_unverified_attachment_denied(self):
+        rid=self.create()
+        with self.assertRaises(PermissionError):
+            self.service.provide(token=self.tokens['owner'],tenant_id='shop',
+                request_id=rid,item='photo',attachment_id='unverified',now=102)
+
+    def test_wrong_request_attachment_denied(self):
+        rid=self.create()
+        other=self.create()
+        attachment=self.verified(other,'photo')
+        with self.assertRaises(PermissionError):
+            self.service.provide(token=self.tokens['owner'],tenant_id='shop',
+                request_id=rid,item='photo',attachment_id=attachment,now=102)
 
     def test_owner_can_postpone(self):
         rid=self.create()
