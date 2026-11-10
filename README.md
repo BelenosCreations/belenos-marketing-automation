@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.8. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.9. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -383,3 +383,9 @@ This is an offline directory, not a production identity provider, account switch
 The existing `BusinessSwitcher` already listed businesses available to an authenticated BAM user and selected a business role. Phase 8.8 extends it with `activate_business`: after validating the current session, current membership and target membership, BAM issues a **new tenant-scoped session** carrying the target business's actual current role. The source session remains valid, so the app can support switching back without using Facebook or other social sign-in. A removed current-business membership now prevents listing, selecting or activating a different business through that stale session. Three additional regression cases cover target session issuance, unauthorized target denial and revoked source membership.
 
 **Limitations:** BAM user authentication and account recovery are still prototypes, and `activate_business` is an internal server operation, not a finished UI. Production must protect session issuance, consider session revocation on membership changes, bind verified identities across businesses and avoid exposing tokens in logs. This phase does not grant publishing access or create provider connections.
+
+## Phase 8.9 — Session freshness and identity-wide sign-out
+
+BAM's offline session store now supports `resolve_current`, which checks both the session and the latest business membership, rejecting sessions whose roles have changed or whose membership has been removed. Business switching and social connection listings use this stricter check to avoid relying on stale session roles. `revoke_identity` provides a trusted administrative primitive to invalidate one person's sessions across every business, useful for global sign-out or compromised-credential response. These actions are independent of social platform sign-in.
+
+Three additional regression cases cover identity-wide revocation, stale-role and inactive-member denial, and stale source-role denial during business switching. **Production limitations:** BAM still requires verified identity login, trusted administrator authorization for global revocation, token storage protections on devices, and independent session invalidation on account recovery. `resolve` remains available for legacy internal paths and must not be used alone as proof of current authorization. No publishing is enabled.
