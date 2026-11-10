@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 7.1 — 2026-11-10 (development branch)
+
+### Added
+- Draft-bound, deterministic TruthGuard review receipt and stale/tampered report validation.
+- Eight regression cases covering integrity, cross-tenant/request mismatch and held-only receipts.
+
+### Limitations
+- SHA-256 receipts are not signed authorization; production audit storage and separate approvals are future work.
+- No publishing or scheduling capability is enabled by receipts.
+
+
 ## Phase 7.0 — 2026-11-10 (development branch)
 
 ### Added
