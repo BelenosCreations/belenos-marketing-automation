@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 3.4 — 2026-11-10 (session prototype)
+
+### Added
+- SQLite-backed opaque session tokens with SHA-256 token hashes at rest.
+- Server-side expiry, single-session revocation, and tenant-scoped user-wide revocation.
+- 10 unit tests for issuance, expiry, revocation, and invalid inputs.
+
+### Test status
+- Tests committed; local execution and GitHub Actions results not yet verified.
+
+### Known limitations
+- No real login, identity provider, password handling, biometric implementation, API authorization middleware, or employee directory.
+- Sessions currently capture a role at issuance; a production API must recheck current user/tenant membership and permissions on each request, or revoke sessions on role changes.
+- SQLite prototype is not configured for production cloud hosting. Publishing remains disabled.
+
+
 ## Phase 3.3 — 2026-11-10 (authorization foundation)
 
 ### Added
