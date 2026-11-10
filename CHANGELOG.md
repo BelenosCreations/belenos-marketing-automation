@@ -1,5 +1,18 @@
 # Changelog
 
+## Authentication foundation — 2026-11-10 (development branch)
+
+### Added
+- Verified-email password identity storage using salted PBKDF2-HMAC-SHA256 hashes; no automatic business access on registration.
+- Google ID-token verifier with issuer, audience, expiry, issued-at, email verification and nonce checks; optional trusted google-auth integration.
+- Single-use, five-minute Google nonce challenge ledger and sign-in API boundary.
+- Explicit Google-to-BAM identity linking requiring authenticated BAM session and fresh password proof; no email-only auto-linking.
+- Authenticated password rotation with global session invalidation and authentication security regression tests.
+
+### Limitations
+- Backend foundation only: no actual Google OAuth client, verified email delivery, password reset, public login routes, mobile UI or deployed production identity service. Current-branch tests not independently confirmed passing.
+
+
 ## Verification workflow update — 2026-11-10
 
 - Added Python compile-all validation before GitHub Actions unit-test discovery.
