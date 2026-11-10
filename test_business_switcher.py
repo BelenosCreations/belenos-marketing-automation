@@ -21,6 +21,27 @@ class SwitcherTests(unittest.TestCase):
         self.curation.create_profile('busy_b','Busy B Cleaning','commercial cleaning',['facility_care'])
         self.switcher=BusinessSwitcher(self.db,self.sessions,self.directory)
 
+    def test_activation_issues_target_business_session(self):
+        result=self.switcher.activate_business(token=self.token,
+            tenant_id='busy_b',now=101)
+        session=self.sessions.resolve(result['token'],now=102)
+        self.assertEqual(session.principal.tenant_id,'busy_b')
+        self.assertEqual(session.principal.role,Role.MARKETING_MANAGER)
+        self.assertFalse(result['publishing_enabled'])
+
+    def test_activation_cannot_cross_to_unjoined_business(self):
+        with self.assertRaises(PermissionError):
+            self.switcher.activate_business(token=self.token,
+                tenant_id='unknown',now=101)
+
+    def test_removed_source_membership_blocks_switch(self):
+        self.db.execute('UPDATE members SET active=0 WHERE tenant_id=? AND subject_id=?',
+                        ('belenos','owner'))
+        self.db.commit()
+        with self.assertRaises(PermissionError):
+            self.switcher.activate_business(token=self.token,
+                tenant_id='busy_b',now=101)
+
     def test_one_login_lists_both_businesses(self):
         names=[x['display_name'] for x in self.switcher.list_businesses(token=self.token,now=101)]
         self.assertEqual(names,['Belenos Creations','Busy B Cleaning'])
