@@ -34,6 +34,7 @@ class AccountDashboardTests(unittest.TestCase):
             account_id='ig',vault_reference='vault/second/ig',
             scope='read_insights',state='connected',expires_at=1000,now=100)
         requests=ContentRequests(self.db)
+        self.attachments=AttachmentRegistry(self.db)
         self.first_request=requests.create(tenant_id='first',channel='facebook',
             draft_text='First draft',suggestion='Photograph product',
             required_items=['photo'],now=100)
@@ -41,7 +42,7 @@ class AccountDashboardTests(unittest.TestCase):
             draft_text='Second draft',suggestion='Photograph cleaning team',
             required_items=['team_photo'],now=100)
         content=ContentRequestService(requests=requests,sessions=self.sessions,
-            directory=self.directory,attachments=AttachmentRegistry(self.db))
+            directory=self.directory,attachments=self.attachments)
         switcher=BusinessSwitcher(self.db,self.sessions,self.directory)
         social=SocialConnectionDirectory(registry=self.registry,
             directory=self.directory,sessions=self.sessions)
@@ -67,6 +68,32 @@ class AccountDashboardTests(unittest.TestCase):
                           second['overview']['pending_content_requests']],
                          ['Second draft'])
         self.assertFalse(second['publishing_enabled'])
+
+    def test_verified_content_completion_requires_trusted_attachment(self):
+        api=AccountReadAPI(self.dashboard)
+        with self.assertRaises((PermissionError,ValueError)):
+            api.supply_verified_content(session_token=self.owner,server_now=102,
+                request_id=self.first_request,item='photo',
+                attachment_id='0'*32)
+        attachment=self.attachments.register_pending(
+            tenant_id='first',request_id=self.first_request,item='photo',
+            media_type='image/png',sha256='a'*64,
+            storage_key='private/test-photo',now=102)
+        with self.assertRaises(PermissionError):
+            api.supply_verified_content(session_token=self.owner,server_now=103,
+                request_id=self.first_request,item='photo',
+                attachment_id=attachment)
+        self.attachments.validate_trusted(tenant_id='first',
+            attachment_id=attachment,approved=True)
+        result=api.supply_verified_content(session_token=self.owner,
+            server_now=104,request_id=self.first_request,
+            item='photo',attachment_id=attachment)
+        self.assertEqual(result['status'],'ready_for_review')
+        self.assertFalse(result['publishing_enabled'])
+        view=api.get_dashboard_view(session_token=self.owner,server_now=105)
+        self.assertEqual(view['cards'][1]['value'],1)
+        self.assertEqual(view['cards'][2]['value'],0)
+        self.assertNotIn('private/test-photo',str(view))
 
     def test_all_held_draft_statuses_are_tenant_scoped(self):
         api=AccountReadAPI(self.dashboard)
