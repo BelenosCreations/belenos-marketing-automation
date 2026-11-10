@@ -1,12 +1,22 @@
-# Belenos Marketing Automation
+# BAM — Belenos Automatic Marketing
 
-**Belenos Marketing Automation is a general-purpose, multi-tenant marketing management and automation platform for businesses of any industry.** The working project name reflects its origin, not a restriction on which businesses can use it.
+**BAM (Belenos Automatic Marketing) is a general-purpose, multi-tenant marketing management and automation platform for businesses of any industry.** Belenos is the software brand, not a restriction on which businesses can use BAM.
 
 The platform is being designed to support independent organizations, multiple businesses under one owner login, and eventually separate business owners and employee teams. Each business maintains isolated branding, industry topics, creator recommendations, competitor exclusions, campaigns, social accounts, content approvals, schedules, analytics, and access permissions.
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
 > **Development status:** Offline prototype through Phase 4.7. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+
+## Product identity
+
+- **Official product name:** BAM
+- **Expanded name:** Belenos Automatic Marketing
+- **Tagline (working):** Your marketing. On autopilot.
+- **App display name:** BAM
+- **Brand positioning:** An industry-independent marketing automation platform for multiple businesses and independent owners.
+- **Existing GitHub repository:** `BelenosCreations/belenos-marketing-automation` (retained to preserve links and development history; repository renaming is not part of this documentation change).
+- **Trademark and app-store availability:** Not yet verified; perform checks before public launch.
 
 ## Platform-wide design principles
 
@@ -113,7 +123,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 ---
 
 **Business:** Belenos Creations · Marion, Ohio  
-**Project:** Belenos Marketing Automation  
+**Project:** BAM (Belenos Automatic Marketing)  
 **Status:** Active development · publishing disabled
 
 ## Phase 3.4 session prototype
