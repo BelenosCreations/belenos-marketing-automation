@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 5.0. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype through Phase 5.1. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -195,3 +195,7 @@ Editorial inbox entries now persist a SHA-256 digest of the original candidate's
 BAM can now preserve a prepared, business-specific marketing draft while requesting missing user material instead of inventing details or discarding the idea. The offline `content_requests.py` service stores the draft, channel, actionable capture suggestions, required items, content references, priority, and timestamps per tenant. Drafts begin in **needs_content**; supplying some requirements does not unlock them. Only when all required items have nonempty content references does a draft transition to **ready_for_review**—never automatically to scheduled or published. Requests can be postponed or marked unavailable and resumed as appropriate. Other businesses' requests cannot be retrieved or completed through this tenant-scoped storage interface. The implementation has nine committed regression tests, but execution is not yet verified.
 
 **Planned UI:** A Content Requests inbox with cards showing the prepared post, missing photo/video/detail/permission checklist, suggested shots and questions, upload or attach actions, priority, and business filters. Missing-content posts must not block other eligible marketing work. Future integration must validate uploads and permission evidence server-side, enforce authenticated membership on every action, and re-run the publishing policy after completion. The present storage service does not authenticate users, upload media, schedule, or publish posts.
+
+## Phase 5.1 — authenticated Content Requests boundary
+
+The offline `content_request_service.py` now wraps Content Requests creation, retrieval, listing, supplying materials and hold-state updates with session validation and **fresh business membership checks on every operation**. Owners, marketing managers and content creators may prepare and update drafts according to the existing role policy; viewers can read but cannot modify them. Expired or revoked sessions, deactivated staff, role downgrades and cross-business requests are denied. Fourteen regression tests cover these behaviors and confirm that providing all required content results only in `ready_for_review`, not publication. Tests are committed but not yet independently verified. The storage class remains an internal trusted component; no public API, actual media-upload verification or publishing permission is provided.
