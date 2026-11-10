@@ -45,14 +45,25 @@ def run(port,token):
             print('Held drafts awaiting content or review:')
             for item in pending:
                 print('  [%s] %s' % (item['status'],item['draft_text']))
+                print('  Request ID:',item['request_id'])
                 print('  Suggested content:',item['suggestion'])
                 if item['missing_items']:
                     print('  Missing:',', '.join(item['missing_items']))
         businesses=overview['businesses']
         for index,item in enumerate(businesses,1):
             print('%s. %s (%s)' % (index,item['display_name'],item['role']))
-        choice=input('Business number, [n]ew held draft, [r]efresh, or [q]uit: ').strip().lower()
+        choice=input('Business number, [n]ew draft, [h]old status, [r]efresh, [q]uit: ').strip().lower()
         if choice=='r':
+            continue
+        if choice=='h':
+            request_id=input('Request ID: ').strip()
+            status=input('Status (postponed/unavailable/needs_content): ').strip()
+            try:
+                result=request(port,'POST','/api/content/hold',token,
+                    {'request_id':request_id,'status':status})
+                print('Draft status:',result['status'])
+            except (OSError,ValueError,RuntimeError) as exc:
+                print('Could not change hold:',str(exc))
             continue
         if choice=='n':
             channel=input('Channel (facebook/instagram/etc): ').strip().lower()
