@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 7.9 — 2026-11-10 (development branch)
+
+### Added
+- Offline SQLite engagement observation store keyed by tenant, platform and source post ID.
+- Bounded time-window and candidate queries with tenant/platform filtering.
+- Seven regression cases for deduplication, scope isolation, validation and ranker integration.
+
+### Limitations
+- Ingestion is not authenticated against a social provider and is not a live analytics connection. No scheduling or publishing.
+
+
 ## Phase 7.8 — 2026-11-10 (development branch)
 
 ### Added
