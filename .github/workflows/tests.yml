@@ -21,5 +21,6 @@ jobs:
         run: |
           node ui/dashboard_smoke_test.js
           node ui/dashboard_data_contract_test.js
+          node ui/dashboard_live_view_test.js
       - name: Run offline tests
         run: python -m unittest discover -s . -p 'test_*.py' -v
