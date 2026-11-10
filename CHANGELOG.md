@@ -1,5 +1,17 @@
 # Changelog
 
+## Authenticated dashboard card contract — 2026-11-10
+
+### Added
+- Server-side card view model exposing authorized content and review counts, plus permission-aware connection counts.
+- Explicit unavailable scheduling metric rather than invented zero or fabricated scheduled-post data.
+- Card view model added to account overview and business-switch API responses, with regression tests.
+- Verified GUI JavaScript syntax and initial render, theme switch, and business-switch behavior using a minimal V8 DOM stub.
+
+### Limitations
+- HTML UI still uses sample data and is not connected to authenticated API; full browser tests and CI remain pending.
+
+
 ## Mobile-first GUI prototype — 2026-11-10
 
 ### Added
