@@ -32,12 +32,14 @@ class AudienceObservationStore:
             raise ValueError('Invalid engagement rate')
         if type(measured_at) is not int or measured_at<0:
             raise ValueError('Invalid measurement timestamp')
-        with self.db:
-            self.db.execute("""INSERT INTO audience_observations
+        already_in_transaction=self.db.in_transaction
+        self.db.execute("""INSERT INTO audience_observations
                 (tenant_id,platform,source_post_id,candidate,engagement_rate,
                  measured_at,source_name) VALUES (?,?,?,?,?,?,?)""",
                 (tenant_id,platform,source_post_id,candidate,
                  float(engagement_rate),measured_at,source_name))
+        if not already_in_transaction:
+            self.db.commit()
         return {'stored':True,'publishing_enabled':False}
 
     def for_candidates(self, *, tenant_id, platform, candidates,
