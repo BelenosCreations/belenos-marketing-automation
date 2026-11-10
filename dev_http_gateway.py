@@ -79,7 +79,8 @@ def make_handler(api, *, clock=None):
         def do_POST(self):
             path=urlsplit(self.path)
             if path.query or path.fragment or path.path not in (
-                    '/api/account/activate','/api/account/logout'):
+                    '/api/account/activate','/api/account/logout',
+                    '/api/account/logout-everywhere'):
                 self._respond(404,{'error':'not_found'})
                 return
             try:
@@ -91,10 +92,14 @@ def make_handler(api, *, clock=None):
                         raise ValueError('Unexpected fields')
                     result=api.activate_business(session_token=token,
                         target_tenant_id=body['target_tenant_id'],server_now=clock())
-                else:
+                elif path.path=='/api/account/logout':
                     if body:
                         raise ValueError('Unexpected fields')
                     result=api.logout(session_token=token,server_now=clock())
+                else:
+                    if body:
+                        raise ValueError('Unexpected fields')
+                    result=api.logout_everywhere(session_token=token,server_now=clock())
                 self._respond(200,result)
             except PermissionError:
                 self._respond(403,{'error':'access_denied'})
