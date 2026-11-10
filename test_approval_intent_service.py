@@ -66,6 +66,17 @@ class ApprovalIntentTests(unittest.TestCase):
         self.receipt['payload']['draft_sha256']='bad'
         with self.assertRaises(ValueError):self.record()
 
+    def test_content_hold_requires_new_review(self):
+        self.complete()
+        record=self.record()
+        self.requests.set_hold(tenant_id='shop',request_id=self.id,
+                               status='postponed',now=103)
+        result=self.ledger.inspect(token=self.owner,tenant_id='shop',
+            intent_id=record['intent_id'],now=104)
+        self.assertFalse(result['content_complete'])
+        self.assertTrue(result['requires_new_review'])
+        self.assertFalse(result['publishing_enabled'])
+
     def test_revocation(self):
         self.complete()
         record=self.record()
