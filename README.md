@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 5.2. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype through Phase 5.3. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -205,3 +205,7 @@ The offline `content_request_service.py` now wraps Content Requests creation, re
 `content_attachments.py` introduces tenant- and request-scoped attachment metadata with pending, verified, and rejected states. The authenticated Content Request service now requires a **verified attachment ID matching the exact business, request and checklist item** before marking a requirement supplied. Pending, rejected, cross-tenant, cross-request and wrong-item references cannot satisfy a requirement. A SHA-256 format check and supported media-type allowlist are included; finalized attachment decisions cannot be silently reversed. Ten new attachment tests and two service tests cover these controls.
 
 **Security and product limitations:** This is a database-backed *validation boundary*, not an implemented uploader or real scanner. The `validate_trusted` method is an internal privileged operation and must not be exposed to mobile clients. A production worker must actually inspect bytes, verify hashes, scan media, validate permissions/consent and protect private storage before it can mark an attachment verified. The lower-level `ContentRequests.provide` method is also internal-only; external callers must use the authenticated service. No posts can be scheduled or published from this feature. Tests are committed but have not yet been independently executed.
+
+## Phase 5.3 — Content Requests dashboard read model
+
+`content_request_dashboard.py` provides a read-only, authenticated dashboard projection using the existing Content Request service rather than querying tenant data directly. It returns business-scoped counts by hold/review status and per-draft cards with prepared post text, capture suggestions, missing versus supplied checklist items, priority and timestamps. Each card explicitly indicates that it **cannot publish or schedule**, and the overall projection keeps publishing disabled. Five additional tests cover missing-item tracking, partial completion, cross-business isolation, revoked sessions and postponed drafts. This is a backend dashboard view model, **not a rendered Android UI**. Tests are committed but execution remains unverified. Actual uploads, scanner/consent verification, and deployment are not yet implemented.
