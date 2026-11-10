@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" version="1.1">
+  <text x="540" y="638" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="260" font-weight="bold" letter-spacing="-17" fill="#FFFFFF">BAM</text>
+  <path d="M345 687 Q540 790 737 677" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round"/>
+  <path d="M722 661 L766 661 L748 713 Z" fill="#FFFFFF"/>
+</svg>

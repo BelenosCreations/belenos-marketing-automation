@@ -1,6 +1,6 @@
-# Belenos Marketing Automation
+# BAM — Belenos Automatic Marketing
 
-A custom marketing automation system for **Belenos Creations**, a 3D-printing and personalized-products business in Marion, Ohio. The project is designed to coordinate Facebook marketing, community engagement, relevant third-party 3D-printing content, and performance-informed scheduling while preserving clear human control over promotional claims and publishing.
+**BAM (Belenos Automatic Marketing)** is a planned multi-business marketing automation platform. It is designed to manage separate brand profiles, audience engagement, curated creator content, scheduling intelligence, and approval controls for businesses in distinct industries. Belenos Creations in Marion, Ohio is the initial business profile; additional businesses and independent installations are part of the product direction.
 
 > **Development status:** Offline prototype through Phase 3.2. **Publishing is disabled.** The Phase 3.2 offline prototype source and tests are now imported into this repository. Nothing in this README indicates a deployed or connected publishing service.
 
@@ -40,7 +40,7 @@ These are planning baselines, not promises of active automatic publishing.
 
 ## Android application and account architecture
 
-The target experience is a native Android application (Kotlin / Jetpack Compose) backed by a separately hosted Python automation service. The server will own identities, permissions, approval decisions, audit logs, and integration credentials; the phone is a client, not the unattended scheduler. The first account will be the sole Belenos owner, with additional employee roles available later. `access_policy.py` is the initial **offline authorization policy**, not a login system or a working Android application. Biometric sign-in is a planned client capability subject to secure server-side session management.
+The target experience is a native Android application (Kotlin / Jetpack Compose) backed by a separately hosted Python automation service. The server will own identities, permissions, approval decisions, audit logs, and integration credentials; the phone is a client, not the unattended scheduler. The initial account will be owner-operated, with future support for multiple segregated businesses, staff memberships and roles. `access_policy.py` is the initial **offline authorization policy**, not a login system or a working Android application. Biometric sign-in is a planned client capability subject to secure server-side session management.
 
 ## Safety and approval model
 
@@ -95,10 +95,21 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 
 ---
 
-**Business:** Belenos Creations · Marion, Ohio  
-**Project:** Belenos Marketing Automation  
+**Initial business profile:** Belenos Creations · Marion, Ohio  
+**Platform:** BAM — Belenos Automatic Marketing  
 **Status:** Active development · publishing disabled
 
 ## Phase 3.4 session prototype
 
 `sessions.py` provides an **offline, server-side** session storage prototype with opaque random bearer tokens, SHA-256 hashes at rest, expiry, and revocation. This is not a login system: identity verification, employee enrollment, role freshness, secure HTTPS transport, credential handling, API middleware, CSRF protection (if cookies are used), and mobile biometric unlock still require implementation and security review. Production access must validate current account membership and role on every request; a session's stored role alone is insufficient. No publishing capability has been enabled.
+
+
+## Phase 3.5 — approved product branding (2026-11-10)
+
+The official name is **BAM — Belenos Automatic Marketing**. It is a platform identity, not a limitation on which businesses the software can serve.
+
+![BAM light-background logo](branding/source/logo_light.svg)
+
+The gold, teal, silver, and deep-navy identity now has canonical SVG logos for light/dark interfaces, a simplified square launcher source, a transparent Android adaptive-icon foreground, and a themed monochrome source. Brand palette, Android XML resource templates, a PNG generation script, and four regression tests are tracked in the repository. See [brand guidance](branding/README.md) and [Android integration instructions](android/branding/README.md).
+
+**Current integration boundary:** This is a Python automation prototype, not an Android app. Branding source and launcher templates are committed for a future Kotlin client. No APK was built; no publishing/integration behavior was changed.

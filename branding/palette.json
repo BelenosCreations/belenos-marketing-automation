@@ -1,0 +1,13 @@
+{
+  "brand": "BAM",
+  "official_name": "Belenos Automatic Marketing",
+  "product_scope": "Multi-business marketing automation platform",
+  "colors": {
+    "gold": "#D4AF37",
+    "teal": "#00CFC4",
+    "silver": "#DCE5EB",
+    "navy": "#0B1F28"
+  },
+  "application_name": "BAM",
+  "publishing_enabled": false
+}

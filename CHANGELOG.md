@@ -1,5 +1,25 @@
 # Changelog
 
+## Phase 3.5 — 2026-11-10 (approved BAM brand identity)
+
+### Added
+- Adopted the full name **BAM — Belenos Automatic Marketing**, with a consistent multi-business product identity.
+- Committed flat light/dark SVG wordmarks, simplified app icon source, Android adaptive foreground and monochrome sources, and official brand colors.
+- Added Android resource templates and a deterministic optional PNG/icon generation script.
+- Added 4 offline branding-regression tests and implementation documentation.
+
+### Changed
+- Updated project introduction to describe a multi-business marketing platform rather than a Belenos Creations-only system.
+
+### Test status
+- Four new branding tests and asset generation passed locally; remote CI status pending.
+
+### Known limitations
+- No Android app, manifest, or APK exists yet. Launcher resources are integration-ready source templates, not installed app assets.
+- Rendering requires `cairosvg` and `pillow` when generating raster assets.
+- No external scheduling, publication, or existing safety rules were changed. Publishing remains disabled.
+
+
 ## Phase 3.4 — 2026-11-10 (session prototype)
 
 ### Added
