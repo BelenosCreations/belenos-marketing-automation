@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 8.3 — 2026-11-10 (development branch)
+
+### Added
+- Authorized read-only synchronization health assessment with missing/current/stale/invalid checkpoint states.
+- Configurable freshness threshold and nonexecuting recovery guidance.
+- Eight regression cases for health states, isolation and validation.
+
+### Limitations
+- No real provider authentication, automatic retries, network requests or publishing.
+
+
 ## Phase 8.2 — 2026-11-10 (development branch)
 
 ### Added
