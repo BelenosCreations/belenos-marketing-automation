@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.0. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.1. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -333,3 +333,9 @@ The new `schedule_readiness.py` assesses a proposed post time against the authen
 `analytics_import_boundary.py` provides a server-side import boundary that requires a tenant/platform-specific configured account identifier and an injected import secret before accepting an engagement observation. The caller supplies integer engagement and impression counts; the boundary validates them, computes a bounded engagement/impression ratio, and records the observation through the tenant/platform-isolated store. It rejects unknown accounts, missing/wrong secrets, impossible counts, malformed source post identifiers, and duplicate post IDs. Nine regression tests cover those cases.
 
 **Important distinction:** This authenticates a configured **import caller**, not a social platform. It does not verify that imported metrics genuinely came from Facebook or another provider. The server must obtain account bindings and secrets from trusted configuration/secret management, never from mobile app input or source control. A production connector still needs provider OAuth, account ownership checks, trusted API fetching, consistent metric definitions, error/retry handling and authorization to read analytics. No publishing or scheduling is enabled.
+
+## Phase 8.1 — Transactional analytics synchronization groundwork
+
+`analytics_sync_coordinator.py` adds a bounded offline batch-import coordinator and per-business/platform/account synchronization checkpoints. Each batch requires the configured import credentials, the exact previous cursor, a new cursor and 1–100 observations. A SQLite write transaction protects the observations and checkpoint together: a duplicate source post, malformed observation or stale cursor prevents checkpoint advancement; partially imported batches roll back. The import boundary now exposes a reusable authorization check, and the observation store respects transactions opened by the caller. Seven regression cases cover checkpoint progression, credential isolation, stale cursors, duplicate batches, partial rollback, invalid batches and cross-business access.
+
+This is **not** a connected provider sync service. Cursors are opaque adapter-provided values; no external requests, provider OAuth, retry/backoff scheduler, token storage or webhook verification exist yet. The prototype assumes the coordinator and store share the same SQLite connection and must not be exposed as a public API. Publishing remains disabled.
