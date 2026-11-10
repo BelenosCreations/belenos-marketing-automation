@@ -9,8 +9,9 @@ def rank_candidates(*, tenant_id, candidates, observations, minimum_samples=5):
         raise ValueError('Tenant required')
     if not isinstance(candidates,(list,tuple)) or not 1<=len(candidates)<=20:
         raise ValueError('One to twenty candidates required')
-    if len(set(candidates))!=len(candidates) or any(
-            not isinstance(c,str) or not c for c in candidates):
+    if any(not isinstance(c,str) or not c for c in candidates):
+        raise ValueError('Unique candidate labels required')
+    if len(set(candidates))!=len(candidates):
         raise ValueError('Unique candidate labels required')
     if not isinstance(observations,(list,tuple)) or len(observations)>1000:
         raise ValueError('Bounded observations required')
@@ -23,7 +24,7 @@ def rank_candidates(*, tenant_id, candidates, observations, minimum_samples=5):
         if record.get('tenant_id')!=tenant_id:
             raise PermissionError('Cross-business analytics prohibited')
         candidate=record.get('candidate')
-        if candidate not in buckets:
+        if not isinstance(candidate,str) or candidate not in buckets:
             raise ValueError('Observation does not match a candidate')
         value=record.get('engagement_rate')
         if (type(value) not in (int,float) or not math.isfinite(value)
