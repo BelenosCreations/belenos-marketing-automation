@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.3. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.4. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -301,3 +301,7 @@ The offline `approval_intent_service.py` records owner-authenticated **approval 
 ## Phase 7.3 — Approval-intent lifecycle safety
 
 Inspection of an existing owner approval-intent record now checks both the draft fingerprint **and the current Content Request readiness status**. A postponed, unavailable, or otherwise incomplete request is flagged `content_complete: false` and `requires_new_review: true`, even if its text has not changed. The additional regression case covers a completed draft that is later postponed. The intent ledger remains read-only for downstream automation: neither an active intent nor a complete request authorizes scheduling or publishing. Future work must also bind approval to current verified attachment identities and immutable revision history before any execution gate is enabled.
+
+## Phase 7.4 — Supporting-content change detection
+
+Owner approval-intent records now store a deterministic SHA-256 snapshot of the request channel, required content items, and supplied attachment references at the time intent is recorded. Inspection compares the current snapshot with the recorded one. Replacing a photo or other supporting item flags `content_unchanged: false` and `requires_new_review: true` even when the marketing copy remains identical and all required items remain present. Existing databases migrate by adding the snapshot column; older records without a snapshot fail closed and require a new review. Three regression cases cover replacement, unchanged content and legacy records. This compares metadata references, **not file bytes or permission validity**; a production execution gate must also revalidate verified media, permissions and authoritative review provenance. Publishing remains disabled.
