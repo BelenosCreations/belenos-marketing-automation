@@ -1,5 +1,15 @@
 # Changelog
 
+## Complete held-draft list API — 2026-11-10
+
+### Added
+- Authenticated, tenant-scoped `list_held_drafts` API with optional status filtering and sanitized draft metadata.
+- Regression coverage for postponed draft visibility, cross-business isolation and invalid status rejection.
+
+### Security
+- Raw attachment references and publication permissions remain unavailable in UI list payloads.
+
+
 ## Authenticated dashboard view contract — 2026-11-10
 
 ### Added
