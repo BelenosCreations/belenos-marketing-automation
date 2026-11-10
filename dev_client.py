@@ -51,8 +51,22 @@ def run(port,token):
         businesses=overview['businesses']
         for index,item in enumerate(businesses,1):
             print('%s. %s (%s)' % (index,item['display_name'],item['role']))
-        choice=input('Business number, [r]efresh, or [q]uit: ').strip().lower()
+        choice=input('Business number, [n]ew held draft, [r]efresh, or [q]uit: ').strip().lower()
         if choice=='r':
+            continue
+        if choice=='n':
+            channel=input('Channel (facebook/instagram/etc): ').strip().lower()
+            draft=input('Draft text: ').strip()
+            suggestion=input('What content should be provided? ').strip()
+            items=[item.strip() for item in
+                   input('Required items (comma separated): ').split(',')]
+            try:
+                created=request(port,'POST','/api/content/drafts',token,
+                    {'channel':channel,'draft_text':draft,'suggestion':suggestion,
+                     'required_items':items})
+                print('Draft held for content:',created['request_id'])
+            except (OSError,ValueError,RuntimeError) as exc:
+                print('Could not create draft:',str(exc))
             continue
         if choice=='q':
             try:
