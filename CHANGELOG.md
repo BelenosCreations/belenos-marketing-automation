@@ -1,5 +1,21 @@
 # Changelog
 
+## Local account workflow prototype — 2026-11-10 (development branch)
+
+### Added
+- Loopback-only development HTTP gateway with BAM account overview, business activation, logout, and identity-wide logout routes.
+- Runnable disposable demo server and interactive terminal client for switching between sample businesses.
+- End-to-end HTTP integration tests using real BAM session, membership, connection registry and dashboard services.
+- Authenticated self-service logout everywhere, revoking sessions across businesses without affecting other users.
+- Transport regression cases covering malformed input, cross-origin requests and DNS rebinding attempts.
+
+### Fixed
+- Revoke newly issued session when dashboard activation fails after business switching.
+
+### Limitations
+- Offline local-only development demo, not a production HTTP service or Android UI. Tests committed but passing CI not independently confirmed. No social OAuth or publishing.
+
+
 ## Account read API boundary — 2026-11-10 (development branch)
 
 ### Added
