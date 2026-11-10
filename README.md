@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through the password-and-Google authentication foundation milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline development prototype with password-and-Google authentication foundations, a responsive mobile-first GUI demonstration, and an authenticated dashboard card contract. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Current functional capabilities (offline development build)
 
@@ -18,6 +18,8 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **Held marketing content:** authorized users can create manual drafts, request photos/permissions or other supporting materials, see what is missing, postpone unavailable content, and reopen incomplete drafts. All drafts remain unscheduled.
 - **Content safeguards:** approved-fact evidence, TruthGuard review receipts, attachment verification metadata, owner approval-intent records, and a scheduling readiness gate that explicitly refuses publishing.
 - **Local developer interface:** `dev_server.py` plus `dev_client.py` let developers inspect business accounts and held drafts over a loopback-only HTTP gateway without production credentials.
+- **Interactive graphical preview:** `ui/bam_dashboard_prototype.html` demonstrates large mobile-first cards, drilldown content screens, sample analytics, business switching, and light/dark appearance, using sample data only.
+- **Backend card contract:** `dashboard_cards.py` supplies permission-aware content counts and explicitly unavailable scheduling values for eventual live UI integration.
 
 **Not yet implemented:** production BAM login enrollment and recovery, native Android user interface, hosted API, provider token exchange, actual media uploads, AI draft generation, production scheduler, or automatic social posting. The latest integrated code and tests are committed but a passing current-branch test run has not been independently verified.
 
