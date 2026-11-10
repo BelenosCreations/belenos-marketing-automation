@@ -7,6 +7,7 @@ from optimizer import Candidate
 from recommendation_gate import RecommendationGate
 from editorial_inbox import EditorialInbox
 from editorial_review_service import EditorialReviewService
+from editorial_attestations import EditorialAttestations
 
 class EditorialReviewServiceTests(unittest.TestCase):
     def setUp(self):
@@ -34,10 +35,15 @@ class EditorialReviewServiceTests(unittest.TestCase):
                        platform='youtube',account_id='maker',identity_verified=True,
                        local_competitor_risk='cleared')
         self.inbox.consider(**self.args)
-        self.service=EditorialReviewService(inbox=self.inbox,sessions=self.sessions,directory=self.directory)
+        self.attestations=EditorialAttestations(self.db)
+        self.attestations.record_trusted(tenant_id='belenos',original_url=self.candidate.original_url,
+            platform='youtube',account_id='maker',identity_verified=True,
+            competitor_status='cleared',verified_at=100,expires_at=200)
+        self.service=EditorialReviewService(inbox=self.inbox,sessions=self.sessions,
+                                            directory=self.directory,attestations=self.attestations)
 
     def check(self,name='owner',**kwargs):
-        args=dict(self.args)
+        args=dict(tenant_id='belenos',topic='3d_printing',candidate=self.candidate)
         args.update(kwargs)
         return self.service.recheck(token=self.tokens[name],now=101,**args)
 
@@ -63,7 +69,7 @@ class EditorialReviewServiceTests(unittest.TestCase):
 
     def test_expired_token_denied(self):
         with self.assertRaises(PermissionError):
-            self.service.recheck(token=self.tokens['owner'],now=4000,**self.args)
+            self.service.recheck(token=self.tokens['owner'],now=4000,tenant_id='belenos',topic='3d_printing',candidate=self.candidate)
 
     def test_competitor_revocation_blocks_review(self):
         self.gate.creators.set_status(tenant_id='belenos',platform='youtube',
@@ -71,9 +77,24 @@ class EditorialReviewServiceTests(unittest.TestCase):
         self.assertEqual(self.check()[0],'blocked')
 
     def test_unverified_creator_held(self):
-        self.assertEqual(self.check(identity_verified=False)[0],'approval_required')
+        self.attestations.record_trusted(tenant_id='belenos',original_url=self.candidate.original_url,
+            platform='youtube',account_id='maker',identity_verified=False,
+            competitor_status='cleared',verified_at=100,expires_at=200)
+        self.assertEqual(self.check()[0],'approval_required')
 
     def test_unknown_competitor_status_held(self):
-        self.assertEqual(self.check(local_competitor_risk='unknown')[0],'approval_required')
+        self.attestations.record_trusted(tenant_id='belenos',original_url=self.candidate.original_url,
+            platform='youtube',account_id='maker',identity_verified=True,
+            competitor_status='unknown',verified_at=100,expires_at=200)
+        self.assertEqual(self.check()[0],'approval_required')
+
+    def test_expired_attestation_held(self):
+        self.attestations.record_trusted(tenant_id='belenos',original_url=self.candidate.original_url,
+            platform='youtube',account_id='maker',identity_verified=True,
+            competitor_status='cleared',verified_at=90,expires_at=101)
+        self.assertEqual(self.check()[0],'approval_required')
+
+    def test_mobile_cannot_pass_clearance_flag(self):
+        with self.assertRaises(TypeError):self.check(identity_verified=True)
 
 if __name__=='__main__':unittest.main()
