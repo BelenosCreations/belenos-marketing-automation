@@ -22,6 +22,8 @@ async function main(){
     origin:'https://bam.example',fetchImpl};
   const result=await read(options);
   assert.equal(result.tenantId,'shop');
+  await assert.rejects(()=>read({...options,expectedTenantId:'other'}),TypeError);
+  assert.equal((await read({...options,expectedTenantId:'shop'})).tenantId,'shop');
   assert.equal(calls.length,1);
   assert.equal(calls[0].url,'https://bam.example/api/v1/dashboard');
   assert.equal(calls[0].options.method,'GET');
