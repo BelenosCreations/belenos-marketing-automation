@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 7.2 — 2026-11-10 (development branch)
+
+### Added
+- Owner-authenticated, tenant-scoped approval-intent recording bound to a complete Content Request and exact review receipt.
+- Revocation and read-only current-draft integrity inspection.
+- Five regression tests for authorization, completeness and revocation.
+
+### Limitations
+- Intent is not final approval and cannot schedule or publish content.
+
+
 ## Phase 7.1 — 2026-11-10 (development branch)
 
 ### Added
