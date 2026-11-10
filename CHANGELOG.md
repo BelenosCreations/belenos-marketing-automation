@@ -1,5 +1,19 @@
 # Changelog
 
+## Phase 8.1 — 2026-11-10 (development branch)
+
+### Added
+- Offline tenant/platform/account synchronization checkpoints with exact expected-cursor validation.
+- Bounded atomic batch imports, preserving checkpoint and observation rollback together.
+- Seven regression cases for credentials, stale cursors, duplicate imports and partial rollback.
+
+### Changed
+- Import boundary exposes reusable credential authorization; observation insertion preserves caller-owned transactions.
+
+### Limitations
+- No live provider synchronization, OAuth, background jobs or publishing.
+
+
 ## Phase 8.0 — 2026-11-10 (development branch)
 
 ### Added
