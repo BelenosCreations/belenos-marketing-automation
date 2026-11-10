@@ -60,6 +60,18 @@ class AccountReadAPITests(unittest.TestCase):
         self.assertEqual(switched_cards['connections']['value'],1)
         self.assertEqual(switched_cards['content']['value'],0)
 
+    def test_dashboard_view_is_authenticated_and_does_not_invent_metrics(self):
+        view=self.api.get_dashboard_view(session_token=self.token,server_now=101)
+        self.assertEqual(view['schema_version'],1)
+        self.assertEqual(view['tenant_id'],'a')
+        self.assertEqual(view['drafts'],[])
+        self.assertIsNone(view['analytics']['series'])
+        self.assertIsNone(view['schedule']['posts'])
+        self.assertFalse(view['publishing_enabled'])
+        self.assertNotIn('vault/',str(view))
+        with self.assertRaises(PermissionError):
+            self.api.get_dashboard_view(session_token='wrong',server_now=101)
+
     def test_logout_revokes_token(self):
         self.assertTrue(self.api.logout(session_token=self.token,server_now=101)['signed_out'])
         with self.assertRaises(PermissionError):
