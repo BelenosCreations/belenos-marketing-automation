@@ -1,5 +1,20 @@
 # Changelog
 
+## Phase 3.3 — 2026-11-10 (authorization foundation)
+
+### Added
+- Fail-closed, tenant-scoped role authorization policy for owner and future staff.
+- 12 offline tests for role boundaries, tenant isolation, inactive identities, and privileged actions.
+
+### Test status
+- New tests committed; GitHub Actions result not yet verified.
+
+### Known limitations
+- Policy only: no authentication provider, token verification, user database, Android app, or API middleware yet.
+- Existing prototype approval workflow is not yet wired to this policy.
+- No live publishing or scheduling; publishing remains disabled.
+
+
 ## Phase 3.2 — 2026-11-10 (offline prototype imported to GitHub)
 
 ### Added
