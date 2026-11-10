@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.7. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.8. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -377,3 +377,9 @@ BAM sign-in is independent of Facebook or any other social provider. Businesses 
 `social_connection_directory.py` provides a read-only, tenant-scoped connection listing backed by the existing provider metadata registry. It resolves the BAM session, revalidates current membership and the `READ_ANALYTICS` role permission, and returns platform/account connection status without exposing vault references or provider credentials. Seven regression cases cover multiple platforms for one business, isolation between businesses, session expiry, content-creator denial, viewer analytics permission and non-disclosure of credential references.
 
 This is an offline directory, not a production identity provider, account switching interface, or live OAuth integration. The existing session prototype remains tenant-scoped; a future BAM identity layer must explicitly enumerate the businesses a verified person can access and issue separately authorized business sessions. Connecting Facebook, Instagram or other services does not grant access to BAM itself. No social login, provider token exchange or publishing is implemented.
+
+## Phase 8.8 — Authorized business activation and scoped sessions
+
+The existing `BusinessSwitcher` already listed businesses available to an authenticated BAM user and selected a business role. Phase 8.8 extends it with `activate_business`: after validating the current session, current membership and target membership, BAM issues a **new tenant-scoped session** carrying the target business's actual current role. The source session remains valid, so the app can support switching back without using Facebook or other social sign-in. A removed current-business membership now prevents listing, selecting or activating a different business through that stale session. Three additional regression cases cover target session issuance, unauthorized target denial and revoked source membership.
+
+**Limitations:** BAM user authentication and account recovery are still prototypes, and `activate_business` is an internal server operation, not a finished UI. Production must protect session issuance, consider session revocation on membership changes, bind verified identities across businesses and avoid exposing tokens in logs. This phase does not grant publishing access or create provider connections.
