@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 4.9. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype through Phase 5.0. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -189,3 +189,9 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.9 — review integrity and verification freshness
 
 Editorial inbox entries now persist a SHA-256 digest of the original candidate's source, URL, topic category, summary, claim-verification flags, and content safety flags. Review rechecks fail closed when a candidate has been modified after intake; an existing database row without a digest must be re-enqueued and cannot be silently grandfathered in. This prevents substituting a different summary or source after initial screening. Trusted creator/competitor attestations are capped at **24 hours**, with expiration still enforced at use time. Additional regression tests cover changed summaries, changed source URLs, changed verification flags, and overlong attestation lifetimes. The digest is an integrity comparison, **not** proof that the original claims are true. Test execution and CI status remain unverified; external verification and publishing are not connected.
+
+## Phase 5.0 — Content Requests and held drafts
+
+BAM can now preserve a prepared, business-specific marketing draft while requesting missing user material instead of inventing details or discarding the idea. The offline `content_requests.py` service stores the draft, channel, actionable capture suggestions, required items, content references, priority, and timestamps per tenant. Drafts begin in **needs_content**; supplying some requirements does not unlock them. Only when all required items have nonempty content references does a draft transition to **ready_for_review**—never automatically to scheduled or published. Requests can be postponed or marked unavailable and resumed as appropriate. Other businesses' requests cannot be retrieved or completed through this tenant-scoped storage interface. The implementation has nine committed regression tests, but execution is not yet verified.
+
+**Planned UI:** A Content Requests inbox with cards showing the prepared post, missing photo/video/detail/permission checklist, suggested shots and questions, upload or attach actions, priority, and business filters. Missing-content posts must not block other eligible marketing work. Future integration must validate uploads and permission evidence server-side, enforce authenticated membership on every action, and re-run the publishing policy after completion. The present storage service does not authenticate users, upload media, schedule, or publish posts.
