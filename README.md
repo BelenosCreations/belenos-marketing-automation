@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.4. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.5. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -357,3 +357,9 @@ The fetcher is injected for testing; **no Facebook, Instagram, Metricool or othe
 `provider_connection_registry.py` introduces an offline, tenant/platform/account-scoped registry for **metadata** about analytics connections. It stores a reference intended for a future server-side secret vault (not the OAuth token), declared analytics scope, connection state, expiry and update timestamps. Status reports distinguish not-connected, pending, connected, refresh-required, expired and revoked connections; they omit the vault reference and cannot enable publishing. The prototype rejects scopes containing publishing or write permissions. Nine regression cases cover lifecycle status, isolation, metadata validation and nonpublishing behavior.
 
 **Security boundary:** This registry does not implement OAuth, token encryption, token refresh, a secret vault, provider permission verification or authenticated caller access. `register_trusted` must only be invoked behind a trusted server authorization layer. Its scope validation is a defensive prototype check, not a provider-specific allowlist; production integration must explicitly allowlist the exact read-only scopes for each provider. Never place actual tokens or passwords in the registry or GitHub. No live connections were created.
+
+## Phase 8.5 — Connection-state enforcement for offline analytics
+
+`connection_gated_analytics.py` adds a fail-closed wrapper for the existing offline provider-neutral page adapter. Before previewing or importing any analytics, it authenticates the configured import caller, checks the business/account binding, and requires a registry status of `connected` with an unexpired credential reference. Unconnected, pending, refresh-required, revoked and expired connections are denied before the fetcher is invoked. Eight regression cases cover allowed connected access and denial of inactive, expired, revoked, cross-tenant and unauthorized attempts.
+
+**Deployment boundary:** Callers must use the gated adapter rather than invoking the underlying `AnalyticsPageAdapter` directly. The registry and import boundary remain internal server components and must not be exposed to clients. The check is performed before fetching, not atomically with provider-side revocation; production integrations require provider OAuth validation, credential vault, account ownership verification, concurrent revocation handling and network-level protections. This is still an offline prototype with injected fake fetchers, no live provider connection, no scheduled jobs and no publishing.
