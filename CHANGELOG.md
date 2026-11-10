@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 6.2 — 2026-11-10 (development branch)
+
+### Added
+- TruthGuard approved fact registry with tenant isolation, provenance, expiration and revocation.
+- Exact normalized claim verification against current approved facts and evidence references.
+- Fail-closed full-draft review; twelve regression tests.
+
+### Limitations
+- No authenticated fact administration, independent source verification, complete claim extraction or production publishing gate.
+- Tests committed but not independently executed; publishing remains disabled.
+
+
 ## Verification checkpoint — 2026-11-10
 
 ### Verified
