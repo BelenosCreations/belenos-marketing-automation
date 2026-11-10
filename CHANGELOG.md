@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 5.7 — 2026-11-10 (development branch)
+
+### Added
+- Persistent tenant-scoped Manual/Smart scheduling settings, timezone, weekly times and smart-hour preferences.
+- Fresh business membership checks and revision-based edit conflict protection.
+- Nine regression tests for persistence, permissions and isolation.
+
+### Limitations
+- Internal offline repository only; no HTTP or Android settings screen, no publishing.
+- Tests committed; execution unverified.
+
+
 ## Phase 5.6 — 2026-11-10 (development branch)
 
 ### Added
