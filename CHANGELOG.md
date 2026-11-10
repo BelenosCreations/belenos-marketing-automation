@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 6.6 — 2026-11-10 (development branch)
+
+### Changed
+- TruthGuard review now cross-checks supplied verified claims against exact source-span annotations in the stored draft.
+- Exposes detached claims separately from knowledge-base verification, avoiding false draft-grounding impressions.
+- Three regression tests committed.
+
+### Limitations
+- Does not independently extract every factual claim; all drafts remain held and publishing disabled.
+- Full current-branch test execution still unverified.
+
+
 ## Phase 6.5 — 2026-11-10 (development branch)
 
 ### Added
