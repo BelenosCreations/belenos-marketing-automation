@@ -1,5 +1,18 @@
 # Changelog
 
+## Authenticated dashboard view contract — 2026-11-10
+
+### Added
+- `AccountReadAPI.get_dashboard_view` and `dashboard_view.py` for a safe, read-only tenant-scoped GUI payload.
+- Regression tests for draft isolation, connection visibility, unknown analytics/schedule metrics and invalid sessions.
+
+### Fixed
+- Wired dashboard cards into actual `AccountReadAPI.get_overview` and business-switch responses; previous documentation had described this before the integration existed.
+
+### Limitations
+- No public HTTPS endpoint or frontend data fetching yet. The HTML preview remains sample-only; CI run not yet independently confirmed.
+
+
 ## Settings appearance navigation — 2026-11-10
 
 ### Changed
