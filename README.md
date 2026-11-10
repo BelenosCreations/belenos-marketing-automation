@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.6. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.7. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -369,3 +369,11 @@ The fetcher is injected for testing; **no Facebook, Instagram, Metricool or othe
 `oauth_attempt_ledger.py` implements a backend-only OAuth attempt ledger with cryptographically random one-time state and a PKCE S256 code challenge. Each attempt is scoped to a business, provider and expected account; it expires after a bounded interval (60–900 seconds) and may be consumed only once. Only SHA-256 hashes of state and code verifier are persisted in SQLite. Consumption uses a serialized SQLite write transaction to prevent replay. Ten regression cases cover successful one-time use, tenant/platform/account mismatches, expiry, invalid verifiers, unknown state, PKCE challenge computation and absence of raw secrets in the database.
 
 **Important:** This is an offline prerequisite, not a functioning OAuth flow. A production server must bind the state to an authenticated user session, securely retain the verifier until callback, validate the exact redirect URI and provider response, perform the authorization-code exchange over HTTPS, confirm the returned account identity and read-only permissions, and store access/refresh tokens in an actual secret vault. The returned verifier must never be logged or placed in a public client URL. No live provider connection, scheduled job or publishing is enabled.
+
+## Phase 8.7 — Independent BAM accounts and multi-platform connection directory
+
+BAM sign-in is independent of Facebook or any other social provider. Businesses may link multiple supported social platforms under their BAM membership, and a user may have separate business memberships. Social-provider authorization is an optional integration step, **not** the way users authenticate to BAM.
+
+`social_connection_directory.py` provides a read-only, tenant-scoped connection listing backed by the existing provider metadata registry. It resolves the BAM session, revalidates current membership and the `READ_ANALYTICS` role permission, and returns platform/account connection status without exposing vault references or provider credentials. Seven regression cases cover multiple platforms for one business, isolation between businesses, session expiry, content-creator denial, viewer analytics permission and non-disclosure of credential references.
+
+This is an offline directory, not a production identity provider, account switching interface, or live OAuth integration. The existing session prototype remains tenant-scoped; a future BAM identity layer must explicitly enumerate the businesses a verified person can access and issue separately authorized business sessions. Connecting Facebook, Instagram or other services does not grant access to BAM itself. No social login, provider token exchange or publishing is implemented.
