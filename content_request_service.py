@@ -14,7 +14,7 @@ class ContentRequestService:
         self.attachments=attachments
 
     def _authorize(self, *, token, tenant_id, action, now):
-        session=self.sessions.resolve(token,now=now)
+        session=self.sessions.resolve_current(token,directory=self.directory,now=now)
         if session is None:
             raise PermissionError('Authentication required')
         member=self.directory.resolve(tenant_id,session.principal.subject_id)
