@@ -19,12 +19,20 @@ class TruthGuardContentReview:
         timestamp=self.content_service._now(now)
         span_audit=ClaimSpanAudit.audit(draft_text=request['draft_text'],
             annotations=annotations if annotations is not None else [])
+        # Validate untrusted claims before using their values in a hash lookup.
+        # This avoids type errors from nested/unhashable attacker input.
+        if not isinstance(claims,(list,tuple)) or len(claims)>100:
+            raise ValueError('Claims must be a bounded list')
+        for claim in claims:
+            if (not isinstance(claim,dict) or set(claim)!={'key','text'}
+                    or not isinstance(claim['key'],str) or not claim['key'].strip()
+                    or not isinstance(claim['text'],str) or not claim['text'].strip()):
+                raise ValueError('Claims require nonempty key and text')
         # Caller-provided claims must match exact spans in the stored draft.
         matched={(entry['key'],entry['text']) for entry in span_audit['accepted']}
-        detached=[{'key':claim.get('key'),'text':claim.get('text')}
+        detached=[{'key':claim['key'],'text':claim['text']}
                   for claim in claims
-                  if isinstance(claim,dict) and
-                  (claim.get('key'),claim.get('text')) not in matched]
+                  if (claim['key'],claim['text']) not in matched]
         risk_signals=scan_risk_signals(request['draft_text'])
         result=self.reviewer.review_draft(
             tenant_id=tenant_id,draft_text=request['draft_text'],
