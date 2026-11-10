@@ -57,7 +57,7 @@ class OAuthAttemptLedger:
                 or not state.isascii() or not code_verifier.isascii()):
             raise ValueError('Invalid OAuth callback')
         with self.db:
-            self.db.execute('UPDATE oauth_attempts SET consumed_at=consumed_at WHERE 0')
+            self.db.execute('BEGIN IMMEDIATE')
             row=self.db.execute("""SELECT tenant_id,platform,account_id,
                 verifier_hash,expires_at,consumed_at FROM oauth_attempts
                 WHERE state_hash=?""",(_digest(state),)).fetchone()
