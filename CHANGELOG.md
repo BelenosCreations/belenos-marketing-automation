@@ -1,5 +1,11 @@
 # Changelog
 
+## Authentication integration checklist — 2026-11-10
+
+- Added `AUTH_DEPLOYMENT.md` with Google OAuth, email verification, session security, mobile integration and release requirements.
+- Clarified that current identity services are offline backend foundations, not live public login routes.
+
+
 ## Business invitation foundation — 2026-11-10
 
 ### Added
