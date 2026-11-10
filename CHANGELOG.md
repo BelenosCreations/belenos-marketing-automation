@@ -1,5 +1,22 @@
 # Changelog
 
+## Phase 3.7 — 2026-11-10 (development branch)
+
+### Added
+- Immutable tenant ownership registry for offline posts and discovered events.
+- Fail-closed ownership checks before approval and event confirmation.
+- Four ownership regression tests; prior approval tests updated to register ownership.
+
+### Test status
+- Changes committed; test execution and CI results not yet verified.
+
+### Known limitations
+- Ownership is a transitional side table rather than native tenant columns and tenant-filtered queries.
+- Registration is trusted-server-only and must never accept unverified client ownership claims.
+- Existing workflow functions can bypass the gateway; no production API exposure is safe yet.
+- Publishing remains disabled.
+
+
 ## Phase 3.6 — 2026-11-10 (development branch)
 
 ### Added
