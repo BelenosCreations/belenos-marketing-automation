@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with TruthGuard review receipt support through Phase 7.1. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.2. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -293,3 +293,7 @@ Authenticated TruthGuard content review now correlates heuristic high-risk phras
 ## Phase 7.1 — Draft-bound review receipts
 
 `truthguard_review_receipt.py` creates deterministic SHA-256 review receipts binding a **held** TruthGuard report to its business, Content Request ID, draft fingerprint, and review timestamp. Validation rejects stale draft text, wrong tenant/request, changed report contents, and altered receipt flags. Eight regression tests cover these boundaries. Receipts are **integrity checks, not cryptographic signatures or proof of authentic approval**: a party able to replace both payload and digest can forge them. Production use requires trusted server-side persistence, access control, immutable audit storage and a separate owner-approval workflow. Receipt generation never enables scheduling or publishing.
+
+## Phase 7.2 — Authenticated owner approval intent (nonpublishing)
+
+The offline `approval_intent_service.py` records owner-authenticated **approval intent** only when a Content Request has all required content and a draft-bound, held TruthGuard review receipt validates. It stores tenant/request/draft/receipt identifiers, acting owner and timestamp; the owner can revoke the record. Inspection compares the current draft fingerprint to the recorded one and exposes whether the intent is active and draft unchanged. Cross-tenant sessions and non-owner identities are denied. Five regression tests cover incomplete content, owner recording, cross-tenant denial, stale receipts and revocation. **This is not final marketing approval or a publishing/scheduling permission.** Review completeness, full factual extraction, trusted persistence and publication authorization remain separate future gates. No live publishing is enabled.
