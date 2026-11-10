@@ -1,5 +1,16 @@
 import json
+import sqlite3
 import unittest
+from access_policy import Principal,Role
+from accounts import AccountDirectory
+from sessions import SessionStore
+from business_curation import BusinessCuration
+from business_switcher import BusinessSwitcher
+from provider_connection_registry import ProviderConnectionRegistry
+from social_connection_directory import SocialConnectionDirectory
+from account_dashboard import AccountDashboard
+from account_read_api import AccountReadAPI
+from posting_preferences import PostingPreferences
 from bam_read_wsgi import BAMReadWSGI
 
 class FakeReadAPI:
@@ -90,5 +101,55 @@ class BAMReadWSGITests(unittest.TestCase):
         },lambda status,headers:captured.update(status=status)))
         self.assertEqual(captured['status'],'503 Service Unavailable')
         self.assertNotIn(b'vault',result)
+
+class BAMReadWSGIIntegrationTests(unittest.TestCase):
+    def test_real_authenticated_dashboard_and_business_switch_isolation(self):
+        db=sqlite3.connect(':memory:')
+        try:
+            directory=AccountDirectory(db)
+            directory.bootstrap_owner('shop','owner')
+            directory.bootstrap_owner('other','other_owner')
+            directory.set_member(Principal('other_owner','other',Role.OWNER),
+                                 'owner',Role.VIEWER)
+            sessions=SessionStore(db)
+            token=sessions.issue(Principal('owner','shop',Role.OWNER),now=100)
+            curation=BusinessCuration(db)
+            curation.create_profile('shop','Main Shop','retail',['retail'])
+            curation.create_profile('other','Other Shop','service',['service'])
+            registry=ProviderConnectionRegistry(db)
+            registry.register_trusted(tenant_id='shop',platform='facebook',
+                account_id='shop_page',vault_reference='vault/private',
+                scope='read_insights',state='connected',expires_at=1000,now=100)
+            switcher=BusinessSwitcher(db,sessions,directory)
+            social=SocialConnectionDirectory(registry=registry,
+                directory=directory,sessions=sessions)
+            dashboard=AccountDashboard(sessions=sessions,directory=directory,
+                switcher=switcher,social_connections=social)
+            api=AccountReadAPI(dashboard,posting_preferences=PostingPreferences(
+                db=db,sessions=sessions,directory=directory))
+            app=BAMReadWSGI(api,clock=lambda:101)
+            def get(t):
+                status={}
+                data=b''.join(app({'wsgi.url_scheme':'https',
+                    'REQUEST_METHOD':'GET','PATH_INFO':'/api/v1/dashboard',
+                    'HTTP_AUTHORIZATION':'Bearer '+t},
+                    lambda code,headers:status.update(code=code)))
+                return status['code'],json.loads(data)
+            code,body=get(token)
+            self.assertEqual(code,'200 OK')
+            self.assertEqual(body['tenant_id'],'shop')
+            self.assertEqual(body['cards'][3]['value'],1)
+            self.assertNotIn('vault/',str(body))
+            switched=api.activate_business(session_token=token,
+                target_tenant_id='other',server_now=101)
+            code,other=get(switched['session_token'])
+            self.assertEqual(code,'200 OK')
+            self.assertEqual(other['tenant_id'],'other')
+            self.assertIsNone(other['cards'][3]['value'])
+            self.assertEqual(other['cards'][3]['availability'],'restricted')
+            self.assertNotIn('shop_page',str(other))
+            self.assertFalse(other['publishing_enabled'])
+        finally:
+            db.close()
 
 if __name__=='__main__':unittest.main()
