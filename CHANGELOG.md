@@ -1,5 +1,22 @@
 # Changelog
 
+## Phase 4.4 — 2026-11-10 (development branch)
+
+### Added
+- Tenant-specific editorial inbox for discovered third-party links.
+- Combined recommendation gate applied before queuing; review required even for eligible sources.
+- Duplicate-link handling and blocked-source re-screen removal.
+- Nine new offline tests for review, isolation, duplicate and blocked content.
+
+### Test status
+- Code and tests committed; execution and CI status not verified.
+
+### Known limitations
+- Inbox reads do not automatically re-screen after policy changes; trusted production review must re-evaluate on every approval or scheduling action.
+- Discovery ingestion is offline only; no external source crawler or platform API integration.
+- No Android UI, authenticated production API, or publishing activation.
+
+
 ## Phase 4.3 — 2026-11-10 (development branch)
 
 ### Added
