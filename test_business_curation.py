@@ -51,6 +51,16 @@ class BusinessCurationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.curation.add_source(tenant_id='belenos',source_url='http://example.org',source_name='Bad',topic='3d_printing',approved=True)
 
+    def test_shared_facebook_domain_cannot_be_blocked_globally(self):
+        with self.assertRaises(ValueError):
+            self.curation.block_competitor(tenant_id='belenos',
+                                          source_url='https://facebook.com/competitor')
+
+    def test_shared_youtube_domain_cannot_be_blocked_globally(self):
+        with self.assertRaises(ValueError):
+            self.curation.block_competitor(tenant_id='belenos',
+                                          source_url='https://youtube.com/@competitor')
+
     def test_source_approval_can_be_revoked(self):
         self.curation.add_source(tenant_id='belenos',source_url=self.print_source,source_name='Maker',topic='3d_printing',approved=False)
         self.assertEqual(self.curation.evaluate(tenant_id='belenos',topic='3d_printing',candidate=self.candidate(self.print_source),local_competitor_risk='cleared')[0],'approval_required')
