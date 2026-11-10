@@ -25,7 +25,7 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 4. Implement verified email delivery, password recovery and Google OAuth/ID-token verification with configured audience, issuer, nonce and account linking.
 5. Build secure browser sign-in and logout, with session token lifecycle confined to memory and protected against cross-site requests. Decide on a production session model before exposing authenticated writes.
 6. Connect the read client to the live dashboard renderer and build responsive CSS, keyboard navigation and real-browser accessibility tests.
-7. Connect business switching to the server-issued replacement session and refresh all views atomically. Clear prior business data before displaying the new business.
+7. Connect business switching to the server-issued replacement session and refresh all views atomically. Call `BAMLiveView.clear({container})` **before** requesting or rendering a newly selected business; pass `expectedTenantId` to both `BAMReadClient.read` and `BAMLiveView.render` to reject stale responses. Never retain prior business data on failed switching.
 8. Connect Content Studio read and write operations to authorized backend APIs, preserving held-content and approval safeguards.
 9. Build a trusted media upload, ownership/permission verification and malware-scanning pipeline before allowing users to complete content requests with real files.
 10. Implement real scheduling and platform integration only after explicit publishing approvals, API permissions and separate release security review.
