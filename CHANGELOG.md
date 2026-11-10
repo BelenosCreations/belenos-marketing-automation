@@ -1,5 +1,13 @@
 # Changelog
 
+## Phase 7.0 — 2026-11-10 (development branch)
+
+### Added
+- Correlation of heuristic risk signals with exact stored-draft annotation spans.
+- Read-only `uncovered_risk_signals` and `risk_signals_annotated` review indicators.
+- Two regression cases; annotation never authorizes publication.
+
+
 ## Phase 6.9 — 2026-11-10 (development branch)
 
 ### Security
