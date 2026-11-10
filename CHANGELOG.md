@@ -1,5 +1,14 @@
 # Changelog
 
+## Product naming decision — 2026-11-10
+
+- Adopted **BAM — Belenos Automatic Marketing** as the official product and future Android app name.
+- Clarified that Belenos is the software brand, not an industry or customer limitation.
+- Updated the development README while retaining the existing GitHub repository path and history.
+- Working tagline: *Your marketing. On autopilot.* Trademark and app-store name availability have not been checked.
+- No code, app package identifier, GitHub repository name, or production publishing settings changed.
+
+
 ## Product scope clarification — 2026-11-10
 
 - Clarified that the platform is industry-agnostic and multi-tenant, intended for businesses beyond the initial pilots.
