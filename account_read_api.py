@@ -9,8 +9,9 @@ from dashboard_cards import build_dashboard_cards
 from dashboard_view import build_dashboard_view
 
 class AccountReadAPI:
-    def __init__(self, dashboard: AccountDashboard):
+    def __init__(self, dashboard: AccountDashboard, posting_preferences=None):
         self.dashboard=dashboard
+        self.posting_preferences=posting_preferences
 
     @staticmethod
     def _token(value):
@@ -50,6 +51,32 @@ class AccountReadAPI:
             target_tenant_id=target_tenant_id,now=self._now(server_now))
         result['overview']['dashboard_cards']=build_dashboard_cards(result['overview'])['cards']
         return result
+
+    def get_posting_preferences(self, *, session_token, server_now):
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        if self.posting_preferences is None:
+            raise RuntimeError('Posting preferences not configured')
+        return self.posting_preferences.get(token=token,
+            tenant_id=session.principal.tenant_id,now=now)
+
+    def set_posting_preferences(self, *, session_token, server_now,
+                                mode, timezone, manual_times):
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        if self.posting_preferences is None:
+            raise RuntimeError('Posting preferences not configured')
+        return self.posting_preferences.set(token=token,
+            tenant_id=session.principal.tenant_id,mode=mode,
+            timezone=timezone,manual_times=manual_times,now=now)
 
     def logout(self, *, session_token, server_now):
         token=self._token(session_token)
