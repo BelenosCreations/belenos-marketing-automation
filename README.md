@@ -509,3 +509,7 @@ The standalone HTML GUI continues to use visibly labeled sample data. The new ba
 ## Automated GUI smoke-test gate — 2026-11-10
 
 The offline GitHub Actions workflow now includes Node.js 22 and runs `node ui/dashboard_smoke_test.js` before Python unit-test discovery. This dependency-free smoke test parses the standalone GUI's embedded JavaScript and exercises initial home rendering, demo-business isolation, content and draft drilldowns, analytics/calendar navigation, and light/dark theme switching with a minimal DOM stub. A matching subset was executed successfully in the development V8 environment. **The committed Node script and full GitHub Actions workflow have not yet been independently confirmed as passing.** A real browser accessibility and responsive-layout test remains a separate release gate.
+
+## Settings and appearance UX — 2026-11-10
+
+The approved mobile-first design keeps appearance controls out of the main dashboard. A small **Settings** entry opens **Settings → Appearance**, with explicit **Light**, **Dark**, and **Auto (device)** choices. Auto is the default and follows the device's color preference; when supported, the prototype responds to device theme changes. Settings also reserves space for future account, notification, business and connection preferences. Prototype appearance selection is intentionally in-memory only and resets on reload. The UI JavaScript was smoke-checked for Settings navigation and theme selection. The Node CI smoke test was updated; its workflow outcome is not independently verified.
