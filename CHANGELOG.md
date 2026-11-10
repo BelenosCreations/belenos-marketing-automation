@@ -1,5 +1,18 @@
 # Changelog
 
+## Phase 4.9 — 2026-11-10 (development branch)
+
+### Security and integrity
+- Persisted editorial candidate SHA-256 digests and added migration for existing review queues.
+- Rechecks reject modified source, summary, verification, and safety metadata; legacy undigested rows fail closed until re-intake.
+- Capped server attestations at 24 hours and added expiry-limit test coverage.
+- Corrected an intake test expectation for unverified creators held in review.
+
+### Test status and limits
+- Regression tests committed; execution not independently verified.
+- No external verification worker, Android release, or publishing integration.
+
+
 ## Phase 4.8 — 2026-11-10 (development branch)
 
 ### Added
