@@ -51,6 +51,15 @@ async function main(){
   await assert.rejects(()=>read({...options,kind:'drafts',
     fetchImpl:async()=>({ok:true,json:async()=>({
       ...drafts,drafts:[{...drafts.drafts[0],status:'published'}]})})}),TypeError);
+  const prefs={tenant_id:'shop',mode:'smart',timezone:null,
+    manual_times:[],configured:false,publishing_enabled:false};
+  const prefResult=await read({...options,kind:'preferences',
+    fetchImpl:async()=>({ok:true,json:async()=>prefs})});
+  assert.equal(prefResult.mode,'smart');
+  assert.equal(prefResult.timezone,null);
+  await assert.rejects(()=>read({...options,kind:'preferences',
+    fetchImpl:async()=>({ok:true,json:async()=>({...prefs,
+      timezone:'America/New_York'})})}),TypeError);
   console.log('BAM HTTPS read-only client tests passed');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});
