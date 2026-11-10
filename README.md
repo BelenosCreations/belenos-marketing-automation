@@ -106,3 +106,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 ## Phase 3.5 account directory (development branch)
 
 `accounts.py` introduces an offline tenant-scoped membership directory with owner-managed employee roles and deactivation. Every authorization decision can consult current membership rather than trusting a role embedded in an older session or supplied by a client. The current bootstrap and member management methods are **not HTTP endpoints** and must not be exposed until authenticated server middleware and a secure invitation flow exist. Phase 3.5 is being developed on `development/phase-3-5-account-directory`, separate from `main`. Publishing is still disabled.
+
+## Phase 3.6 approval gateway (development branch)
+
+`approval_gateway.py` combines session validation with current account-directory membership to gate draft approvals and event confirmation. This is an offline integration prototype only. **Security blocker:** the original `posts` and `discovered_events` tables have no tenant ID, so this gateway must not be exposed over HTTP or used in a multi-tenant deployment until resource ownership is enforced in storage and queries. Direct calls to legacy workflow functions also bypass the gateway; production must provide a single enforced authorization boundary. No publishing or scheduling integration is active.
