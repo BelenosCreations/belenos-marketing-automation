@@ -33,6 +33,10 @@ class EditorialInbox:
             identity_verified=identity_verified,
             local_competitor_risk=local_competitor_risk)
         if result=='blocked':
+            # Remove any earlier review entry when subsequent screening blocks it.
+            with self.db:
+                self.db.execute('DELETE FROM editorial_inbox WHERE tenant_id=? AND original_url=?',
+                                (tenant_id,candidate.original_url))
             return 'blocked',reason
         # Even eligible content needs editorial review. Never enqueue as publish-ready.
         if urlparse(candidate.original_url).scheme!='https':
