@@ -1,5 +1,19 @@
 # Changelog
 
+## Phase 5.0 — 2026-11-10 (development branch)
+
+### Added
+- Tenant-isolated Content Requests storage for prepared drafts that need user photos, videos, details or permissions.
+- Per-draft suggestions, required-item checklists, priority, content references and hold states.
+- Transition to ready-for-review only after all requested references are supplied; never auto-publish.
+- Nine regression tests for partial completion, cross-tenant isolation, postponement and validation.
+
+### Test status and limitations
+- Tests committed, execution not independently verified.
+- Content reference presence is not yet proof of actual upload or permission; trusted backend validation remains required.
+- No mobile UI, authenticated API, scheduling or publishing in this phase.
+
+
 ## Phase 4.9 — 2026-11-10 (development branch)
 
 ### Security and integrity
