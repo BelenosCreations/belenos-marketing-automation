@@ -138,3 +138,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.3 combined recommendation gate
 
 `recommendation_gate.py` requires both a verified creator account approved for the selected business and an approved source/topic match. Known competitor blocks override approvals, and uncertain local competition remains review-required. The result `eligible_link_only` means *eligible for editorial consideration*, never permission to publish or reproduce media. Integration into real discovery, verified screening, and authenticated administration remain future work. Publishing remains disabled.
+
+## Phase 4.4 editorial discovery inbox
+
+`editorial_inbox.py` adds a tenant-scoped, deduplicated review inbox for curated third-party links. Combined source and creator screening runs before an item is queued; even eligible links are review-only. When re-screening identifies a blocked creator, the prior queued entry is removed. **Outstanding security work:** existing inbox items are not automatically re-evaluated when policies change, so any future approval/scheduling action must perform fresh server-side checks. No live ingestion, publishing, or Android UI is connected.
