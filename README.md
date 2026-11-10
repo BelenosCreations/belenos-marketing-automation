@@ -1,8 +1,8 @@
 # Belenos Marketing Automation
 
-A custom marketing automation system for **Belenos Creations**, a 3D-printing and personalized-products business in Marion, Ohio. The project is designed to coordinate Facebook marketing, community engagement, relevant third-party 3D-printing content, and performance-informed scheduling while preserving clear human control over promotional claims and publishing.
+A general-purpose, multi-business marketing automation platform, initially developed for **Belenos Creations** and **Busy B Cleaning Service** in Marion, Ohio. The project is designed to coordinate Facebook marketing, community engagement, relevant third-party 3D-printing content, and performance-informed scheduling while preserving clear human control over promotional claims and publishing.
 
-> **Development status:** Offline prototype through Phase 3.2. **Publishing is disabled.** The Phase 3.2 offline prototype source and tests are now imported into this repository. Nothing in this README indicates a deployed or connected publishing service.
+> **Development status:** Offline prototype through Phase 4.6. **Publishing is disabled.** The Phase 3.2 offline prototype source and tests are now imported into this repository. Nothing in this README indicates a deployed or connected publishing service.
 
 ## Project goals
 
@@ -146,3 +146,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.5 fresh editorial screening and general-purpose categories
 
 `EditorialInbox.recheck_for_editorial_review` re-evaluates creator identity, tenant/topic, source approval and local competitor screening before a queued link can proceed to **human editorial review**. Changed identity or topic is rejected; a blocked creator removes the queued item. This is not authorization to schedule or publish. The shared-domain competitor blocker now rejects Facebook, Instagram, YouTube and other major social hosts; competitor profiles must be excluded by verified platform account ID. The offline optimizer also recognizes business-neutral categories such as facility care, community, best practices and case studies so Busy B content is not rejected merely for being unrelated to 3D printing. All tests remain unverified pending actual execution; no live posting or production API is enabled.
+
+## Phase 4.6 authenticated editorial review
+
+`editorial_review_service.py` enforces an active owner or marketing-manager role in the requested business before the review-only `EditorialInbox.recheck_for_editorial_review` operation. It checks current membership rather than trusting stale session roles, and a revoked or expired session cannot review. It does **not** approve, schedule or publish content. A trusted backend must resolve and verify creator identity and competitor status independently of client input before exposing any API. Tests were added but have not been confirmed passing in CI. No live publishing is enabled.
