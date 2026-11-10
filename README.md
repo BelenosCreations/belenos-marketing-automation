@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through the local account workflow prototype milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through the local account and held-draft workflow milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -421,3 +421,11 @@ New tests cover the transport boundary, browser-origin and DNS-rebinding rejecti
 ## Cross-workflow authorization hardening — 2026-11-10
 
 The fresh-session role check introduced for account switching is now also applied to **Content Requests** and **owner approval intent**. A role promotion cannot silently turn an old lower-privilege session into an owner approval credential, and a role change invalidates existing Content Request access until the user obtains a session with their current role. Regression cases explicitly cover stale viewer-to-creator and viewer-to-owner promotion. A preexisting Content Request test fixture was corrected to use a verified attachment ID rather than the removed free-form content-reference argument. These are defensive consistency fixes; they do not activate final approval or publishing.
+
+## Local held-draft workflow integration — 2026-11-10
+
+The account dashboard and terminal demo now surface each business's **held marketing drafts**, the suggested user-supplied materials, and the exact missing content items. Drafts are retrieved through the authenticated `ContentRequestService` and filtered by the currently selected business; switching businesses changes both the visible drafts and the available permissions. Attachment storage references are deliberately omitted from the dashboard response. Drafts remain held for content or review; none are automatically scheduled or published.
+
+The local gateway now accepts `POST /api/content/drafts` to create a new held draft. The server derives the business from the authenticated BAM session, checks the user's current role and creation permission, validates channel, draft text, content suggestion, required items and priority, and refuses unexpected tenant or role claims. The terminal client exposes this as **[n]ew held draft**. This is a manual draft-entry workflow, not an AI text-generation engine or automatic photo upload. Example held drafts are seeded separately for the two demo businesses. Integration tests cover creating a draft through HTTP, seeing it only in the correct business, and denying caller-supplied tenant fields.
+
+**How to exercise:** start `python dev_server.py`, then `python dev_client.py --port <printed-port>` in a second terminal. Paste the disposable token, inspect held drafts, switch businesses, create a new held draft, and exit to revoke demo sessions. The loopback demo is not remotely accessible, is not production-ready, and uses no real social accounts. Full current-branch tests still need an independently verified run.
