@@ -61,6 +61,20 @@ class PostingPreferenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.set(timezone='Not/A_Timezone')
 
+    def test_smart_mode_rejects_hidden_manual_times(self):
+        with self.assertRaises(ValueError):
+            self.set(mode='smart',manual_times=['10:00'])
+        with self.assertRaises(ValueError):
+            self.set(mode=None)
+
+    def test_preferences_survive_service_recreation(self):
+        self.set()
+        recreated=PostingPreferences(db=self.db,sessions=self.sessions,
+            directory=self.directory)
+        result=recreated.get(token=self.owner,tenant_id='shop',now=102)
+        self.assertTrue(result['configured'])
+        self.assertEqual(result['manual_times'],['10:00','18:30'])
+
     def test_revoked_session_denied(self):
         self.sessions.revoke(self.owner,now=101)
         with self.assertRaises(PermissionError):
