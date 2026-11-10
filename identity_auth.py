@@ -81,6 +81,28 @@ class IdentityAuth:
                 (subject,salt,digest,_ITERATIONS))
         return subject
 
+    def register_google_verified(self,*,google_sub,email,email_verified,now=None):
+        """New verified Google identity only; never merges an existing email.
+
+        Trusted server caller must first verify Google ID-token signature,
+        issuer, audience, expiry and nonce. No business membership is granted.
+        """
+        if (not isinstance(google_sub,str) or not google_sub.strip()
+                or len(google_sub)>255 or email_verified is not True):
+            raise PermissionError('Verified Google identity required')
+        email=normalize_email(email)
+        timestamp=int(time.time()) if now is None else now
+        if type(timestamp) is not int or timestamp<0:
+            raise ValueError('Invalid timestamp')
+        subject=uuid.uuid4().hex
+        with self.db:
+            self.db.execute("""INSERT INTO bam_identities
+                (subject_id,email,email_verified,active,created_at)
+                VALUES (?,?,1,1,?)""",(subject,email,timestamp))
+            self.db.execute("""INSERT INTO bam_google_identities
+                (google_sub,subject_id) VALUES (?,?)""",(google_sub,subject))
+        return subject
+
     def set_email_verified_trusted(self,*,subject_id,verified):
         """Only trusted verification callbacks may invoke this method."""
         if type(verified) is not bool:
