@@ -7,10 +7,11 @@ import time
 from access_policy import Action, Principal
 
 class ContentRequestService:
-    def __init__(self, *, requests, sessions, directory):
+    def __init__(self, *, requests, sessions, directory, attachments):
         self.requests=requests
         self.sessions=sessions
         self.directory=directory
+        self.attachments=attachments
 
     def _authorize(self, *, token, tenant_id, action, now):
         session=self.sessions.resolve(token,now=now)
@@ -44,11 +45,15 @@ class ContentRequestService:
         self._authorize(token=token,tenant_id=tenant_id,action=Action.READ_DRAFTS,now=now)
         return self.requests.list_for_business(tenant_id=tenant_id,status=status)
 
-    def provide(self, *, token, tenant_id, request_id, item, content_reference, now=None):
+    def provide(self, *, token, tenant_id, request_id, item, attachment_id, now=None):
         now=self._now(now)
         self._authorize(token=token,tenant_id=tenant_id,action=Action.EDIT_DRAFT,now=now)
+        verified=self.attachments.resolve_verified(tenant_id=tenant_id,
+            request_id=request_id,item=item,attachment_id=attachment_id)
+        if verified is None:
+            raise PermissionError('Verified attachment for this request and item required')
         return self.requests.provide(tenant_id=tenant_id,request_id=request_id,
-            item=item,content_reference=content_reference,now=now)
+            item=item,content_reference='verified-attachment:'+verified,now=now)
 
     def set_hold(self, *, token, tenant_id, request_id, status, now=None):
         now=self._now(now)
