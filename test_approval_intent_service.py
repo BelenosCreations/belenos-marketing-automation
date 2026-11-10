@@ -77,6 +77,36 @@ class ApprovalIntentTests(unittest.TestCase):
         self.assertTrue(result['requires_new_review'])
         self.assertFalse(result['publishing_enabled'])
 
+    def test_replacing_photo_requires_new_review(self):
+        self.complete()
+        record=self.record()
+        self.requests.provide(tenant_id='shop',request_id=self.id,item='photo',
+            content_reference='verified-attachment:replacement',now=103)
+        result=self.ledger.inspect(token=self.owner,tenant_id='shop',
+            intent_id=record['intent_id'],now=104)
+        self.assertTrue(result['draft_unchanged'])
+        self.assertTrue(result['content_complete'])
+        self.assertFalse(result['content_unchanged'])
+        self.assertTrue(result['requires_new_review'])
+
+    def test_unchanged_content_remains_current(self):
+        self.complete()
+        record=self.record()
+        result=self.ledger.inspect(token=self.owner,tenant_id='shop',
+            intent_id=record['intent_id'],now=103)
+        self.assertTrue(result['content_unchanged'])
+        self.assertFalse(result['requires_new_review'])
+
+    def test_legacy_record_without_content_digest_requires_review(self):
+        self.complete()
+        record=self.record()
+        self.db.execute('UPDATE approval_intents SET content_sha256=NULL WHERE intent_id=?',
+                        (record['intent_id'],))
+        self.db.commit()
+        result=self.ledger.inspect(token=self.owner,tenant_id='shop',
+            intent_id=record['intent_id'],now=103)
+        self.assertTrue(result['requires_new_review'])
+
     def test_revocation(self):
         self.complete()
         record=self.record()
