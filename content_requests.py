@@ -5,6 +5,7 @@ media is represented by trusted references; this module does not store files.
 """
 import sqlite3
 import uuid
+import json
 
 STATUSES=('needs_content','ready_for_review','postponed','unavailable')
 
@@ -18,7 +19,7 @@ class ContentRequests:
             draft_text TEXT NOT NULL,
             suggestion TEXT NOT NULL,
             required_items TEXT NOT NULL,
-            provided_items TEXT NOT NULL DEFAULT '',
+            provided_items TEXT NOT NULL DEFAULT '{}',
             status TEXT NOT NULL CHECK(status IN
                 ('needs_content','ready_for_review','postponed','unavailable')),
             priority INTEGER NOT NULL DEFAULT 0,
@@ -48,7 +49,7 @@ class ContentRequests:
                  required_items,provided_items,status,priority,created_at,updated_at)
                  VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                 (request_id,tenant_id,channel,draft_text,suggestion,
-                 '\n'.join(required_items),'','needs_content',priority,now,now))
+                 json.dumps(list(required_items)),'{}','needs_content',priority,now,now))
         return request_id
 
     def get(self, *, tenant_id, request_id):
@@ -60,8 +61,8 @@ class ContentRequests:
         if row is None:
             return None
         return dict(request_id=row[0],channel=row[1],draft_text=row[2],
-                    suggestion=row[3],required_items=row[4].split('\n'),
-                    provided_items=row[5].split('\n') if row[5] else [],
+                    suggestion=row[3],required_items=json.loads(row[4]),
+                    provided_items=json.loads(row[5]),
                     status=row[6],priority=row[7],created_at=row[8],updated_at=row[9])
 
     def list_for_business(self, *, tenant_id, status=None):
@@ -74,8 +75,8 @@ class ContentRequests:
             (tenant_id,status,status)).fetchall()
         return [self.get(tenant_id=tenant_id,request_id=row[0]) for row in rows]
 
-    def provide(self, *, tenant_id, request_id, item, now):
-        self._require(tenant_id,request_id,item)
+    def provide(self, *, tenant_id, request_id, item, content_reference, now):
+        self._require(tenant_id,request_id,item,content_reference)
         if type(now) is not int:
             raise ValueError('Invalid timestamp')
         request=self.get(tenant_id=tenant_id,request_id=request_id)
@@ -85,15 +86,15 @@ class ContentRequests:
             raise ValueError('Reactivate before supplying content')
         if item not in request['required_items']:
             raise ValueError('Item is not required for this draft')
-        provided=set(request['provided_items'])
-        provided.add(item)
-        status=('ready_for_review' if provided==set(request['required_items'])
+        provided=dict(request['provided_items'])
+        provided[item]=content_reference
+        status=('ready_for_review' if set(provided)==set(request['required_items'])
                 else 'needs_content')
         with self.db:
             self.db.execute("""UPDATE content_requests
                 SET provided_items=?,status=?,updated_at=?
                 WHERE tenant_id=? AND request_id=?""",
-                ('\n'.join(x for x in request['required_items'] if x in provided),
+                (json.dumps(provided,sort_keys=True),
                  status,now,tenant_id,request_id))
         return status
 
