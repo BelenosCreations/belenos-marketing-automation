@@ -91,3 +91,24 @@ class AccountReadAPI:
         return {'tenant_id':session.principal.tenant_id,
                 'request_id':request_id,'status':'needs_content',
                 'publishing_enabled':False}
+
+    def update_draft_hold(self, *, session_token, server_now, request_id, status):
+        """Postpone, mark unavailable or reopen an incomplete draft."""
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content Requests not configured')
+        if (not isinstance(request_id,str) or len(request_id)!=32
+                or any(char not in '0123456789abcdef' for char in request_id)):
+            raise ValueError('Invalid request ID')
+        if status not in ('postponed','unavailable','needs_content'):
+            raise ValueError('Invalid hold status')
+        result=service.set_hold(token=token,tenant_id=session.principal.tenant_id,
+                                request_id=request_id,status=status,now=now)
+        return {'tenant_id':session.principal.tenant_id,'request_id':request_id,
+                'status':result,'publishing_enabled':False}
