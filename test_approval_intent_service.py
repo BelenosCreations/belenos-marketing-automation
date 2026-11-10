@@ -20,9 +20,10 @@ class ApprovalIntentTests(unittest.TestCase):
         self.owner=self.sessions.issue(Principal('owner','shop',Role.OWNER),now=100)
         self.other=self.sessions.issue(Principal('otherowner','other',Role.OWNER),now=100)
         self.requests=ContentRequests(self.db)
+        self.attachments=AttachmentRegistry(self.db)
         self.service=ContentRequestService(requests=self.requests,
             sessions=self.sessions,directory=self.directory,
-            attachments=AttachmentRegistry(self.db))
+            attachments=self.attachments)
         self.id=self.requests.create(tenant_id='shop',channel='facebook',
             draft_text='A custom print',suggestion='Photo',required_items=['photo'],now=100)
         self.ledger=ApprovalIntentService(db=self.db,sessions=self.sessions,
@@ -37,9 +38,19 @@ class ApprovalIntentTests(unittest.TestCase):
         return create_review_receipt(tenant_id='shop',request_id=self.id,
             draft_text=draft,review=report,reviewed_at=101)
 
+    def verified_attachment(self,request_id=None,item='photo'):
+        rid=self.id if request_id is None else request_id
+        aid=self.attachments.register_pending(tenant_id='shop',request_id=rid,
+            item=item,media_type='image/png',sha256='a'*64,
+            storage_key='private/'+rid+'/'+item,now=101)
+        self.attachments.validate_trusted(tenant_id='shop',
+            attachment_id=aid,approved=True)
+        return aid
+
     def complete(self):
-        self.requests.provide(tenant_id='shop',request_id=self.id,item='photo',
-            content_reference='verified-attachment:test',now=101)
+        self.service.provide(token=self.owner,tenant_id='shop',
+            request_id=self.id,item='photo',
+            attachment_id=self.verified_attachment(),now=101)
 
     def record(self,**kwargs):
         args=dict(token=self.owner,tenant_id='shop',request_id=self.id,
@@ -80,8 +91,9 @@ class ApprovalIntentTests(unittest.TestCase):
     def test_replacing_photo_requires_new_review(self):
         self.complete()
         record=self.record()
-        self.requests.provide(tenant_id='shop',request_id=self.id,item='photo',
-            content_reference='verified-attachment:replacement',now=103)
+        self.service.provide(token=self.owner,tenant_id='shop',
+            request_id=self.id,item='photo',
+            attachment_id=self.verified_attachment(),now=103)
         result=self.ledger.inspect(token=self.owner,tenant_id='shop',
             intent_id=record['intent_id'],now=104)
         self.assertTrue(result['draft_unchanged'])
@@ -105,6 +117,30 @@ class ApprovalIntentTests(unittest.TestCase):
         self.db.commit()
         result=self.ledger.inspect(token=self.owner,tenant_id='shop',
             intent_id=record['intent_id'],now=103)
+        self.assertTrue(result['requires_new_review'])
+
+    def test_unregistered_reference_denied(self):
+        self.requests.provide(tenant_id='shop',request_id=self.id,item='photo',
+            content_reference='verified-attachment:fake',now=101)
+        with self.assertRaises(ValueError):self.record()
+
+    def test_cross_request_attachment_denied(self):
+        other=self.requests.create(tenant_id='shop',channel='facebook',
+            draft_text='Other',suggestion='Photo',required_items=['photo'],now=101)
+        aid=self.verified_attachment(request_id=other)
+        self.requests.provide(tenant_id='shop',request_id=self.id,item='photo',
+            content_reference='verified-attachment:'+aid,now=101)
+        with self.assertRaises(ValueError):self.record()
+
+    def test_removed_registry_verification_requires_review(self):
+        self.complete()
+        record=self.record()
+        self.db.execute("UPDATE content_attachments SET status='rejected' WHERE request_id=?",
+                        (self.id,))
+        self.db.commit()
+        result=self.ledger.inspect(token=self.owner,tenant_id='shop',
+            intent_id=record['intent_id'],now=103)
+        self.assertFalse(result['attachments_verified'])
         self.assertTrue(result['requires_new_review'])
 
     def test_revocation(self):
