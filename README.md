@@ -565,3 +565,7 @@ The browser read client and DOM renderer now accept an optional `expectedTenantI
 ## Read-only Content Studio browser components — 2026-11-10
 
 The browser now has a strict `ui/content_studio_contract.js` validator and `ui/content_studio_view.js` renderer for all four held draft states: content needed, ready for review, postponed and unavailable. The HTTPS read client validates draft-list responses before returning them. The renderer groups held drafts by state, uses text-only DOM insertion and rejects mismatched business IDs; it deliberately exposes no publish/approve/media-upload actions. Node tests cover state grouping, invalid statuses, unsafe-looking text treated as text, and stale-business rejection; the CI workflow includes them. These components still require secure browser authentication and wiring to the real UI shell.
+
+## Posting preference browser validation — 2026-11-10
+
+`ui/posting_preferences_contract.js` now validates read-only scheduling preference responses. It distinguishes an unconfigured business (no timezone, no times) from configured Smart and Manual modes; rejects invalid, duplicated or fabricated posting times; and rejects any publication-enabled response. The HTTPS read client applies this contract to preference reads. Regression tests are included in the Node CI suite. This does not enable a real scheduler.
