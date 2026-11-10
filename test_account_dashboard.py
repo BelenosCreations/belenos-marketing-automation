@@ -9,6 +9,7 @@ from provider_connection_registry import ProviderConnectionRegistry
 from social_connection_directory import SocialConnectionDirectory
 from account_dashboard import AccountDashboard
 from account_read_api import AccountReadAPI
+from posting_preferences import PostingPreferences
 from content_requests import ContentRequests
 from content_attachments import AttachmentRegistry
 from content_request_service import ContentRequestService
@@ -68,6 +69,25 @@ class AccountDashboardTests(unittest.TestCase):
                           second['overview']['pending_content_requests']],
                          ['Second draft'])
         self.assertFalse(second['publishing_enabled'])
+
+    def test_posting_preferences_api_does_not_cross_businesses(self):
+        prefs=PostingPreferences(db=self.db,sessions=self.sessions,
+            directory=self.directory)
+        api=AccountReadAPI(self.dashboard,posting_preferences=prefs)
+        saved=api.set_posting_preferences(session_token=self.owner,
+            server_now=101,mode='manual',timezone='America/New_York',
+            manual_times=['18:30','10:00'])
+        self.assertEqual(saved['manual_times'],['10:00','18:30'])
+        self.assertFalse(saved['publishing_enabled'])
+        switched=api.activate_business(session_token=self.owner,
+            target_tenant_id='second',server_now=102)
+        other=api.get_posting_preferences(
+            session_token=switched['session_token'],server_now=103)
+        self.assertFalse(other['configured'])
+        with self.assertRaises(PermissionError):
+            api.set_posting_preferences(
+                session_token=switched['session_token'],server_now=103,
+                mode='smart',timezone='America/New_York',manual_times=[])
 
     def test_verified_content_completion_requires_trusted_attachment(self):
         api=AccountReadAPI(self.dashboard)
