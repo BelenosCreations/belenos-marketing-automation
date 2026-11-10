@@ -32,6 +32,24 @@ class ApprovalIntentService:
                               ensure_ascii=False,allow_nan=False)
         return hashlib.sha256(serialized.encode('utf-8')).hexdigest()
 
+    def _attachments_verified(self,tenant_id,request_id,request):
+        """Check every required item against the current trusted registry."""
+        provided=request['provided_items']
+        required=request['required_items']
+        if set(provided)!=set(required):
+            return False
+        registry=self.content_service.attachments
+        for item in required:
+            ref=provided.get(item)
+            if not isinstance(ref,str) or not ref.startswith('verified-attachment:'):
+                return False
+            attachment_id=ref[len('verified-attachment:'):]
+            if not attachment_id or registry.resolve_verified(
+                    tenant_id=tenant_id,request_id=request_id,
+                    item=item,attachment_id=attachment_id)!=attachment_id:
+                return False
+        return True
+
     def _owner(self,token,tenant_id,now):
         session=self.sessions.resolve(token,now=now)
         if session is None or session.principal.tenant_id!=tenant_id:
@@ -50,6 +68,8 @@ class ApprovalIntentService:
             raise KeyError('Content request not found')
         if request['status']!='ready_for_review':
             raise ValueError('Required content not complete')
+        if not self._attachments_verified(tenant_id,request_id,request):
+            raise ValueError('Required attachments must remain verified')
         if not validate_review_receipt(receipt=receipt,tenant_id=tenant_id,
                  request_id=request_id,draft_text=request['draft_text']):
             raise ValueError('Invalid or stale review receipt')
@@ -84,11 +104,14 @@ class ApprovalIntentService:
         current=(request is not None and
                  hashlib.sha256(request['draft_text'].encode('utf-8')).hexdigest()==row[1])
         content_complete=(request is not None and request['status']=='ready_for_review')
+        attachments_verified=(request is not None and
+                              self._attachments_verified(tenant_id,row[0],request))
         content_unchanged=(request is not None and row[3] is not None and
                            self._content_digest(request)==row[3])
         return {'intent_id':intent_id,'request_id':row[0],
                 'active':row[2] is None,'draft_unchanged':current,
                 'content_complete':content_complete,
                 'content_unchanged':content_unchanged,
-                'requires_new_review':not current or not content_complete or not content_unchanged,
+                'attachments_verified':attachments_verified,
+                'requires_new_review':not current or not content_complete or not content_unchanged or not attachments_verified,
                 'publishing_enabled':False}
