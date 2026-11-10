@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through the account dashboard integration milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through the account read API boundary milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -395,3 +395,9 @@ Three additional regression cases cover identity-wide revocation, stale-role and
 `account_dashboard.py` composes existing BAM session, business-switching, and social-connection services into a single read-only dashboard model for a future mobile/web client. Every request rechecks current membership and session role. The active business determines which social connections are visible; content creators and other roles lacking analytics access see a restricted status rather than account metadata. Switching businesses issues a separately scoped session and immediately renders the target business's actual role and permissions. The response cannot enable publishing. Five focused regression tests cover tenant-scoped listings, role-filtered connection visibility, unauthorized switching, revoked sessions and stale roles.
 
 A security review also corrected `BusinessSwitcher.select_business` to require a current-role session rather than merely an unexpired one. This closes a stale-role bypass of the source-business membership check. The dashboard is an **offline service composition**, not a running API, authenticated web UI, or Android app. Before deployment, implement secure transport, CSRF/session protections where applicable, user identity verification, authorization at every endpoint, and integration tests against the real runtime. The test files are committed but have not been independently executed in this session.
+
+## Account read API boundary — 2026-11-10
+
+`account_read_api.py` is a transport-neutral adapter for a future authenticated HTTPS interface. It exposes three deliberately narrow operations: `get_overview` (the active business and authorized social connections), `activate_business` (switch to another authorized business and receive a new scoped session), and `logout` (revoke the current session). The API derives tenant and role from validated server sessions, never client claims, and requires a server-supplied timestamp. Six additional regression tests cover business isolation, role changes on switch, logout, malformed credentials, unauthorized target selection and invalid timestamps.
+
+**Deployment boundary:** This adapter does not start a web server or implement password authentication, HTTPS, request throttling, secure client token storage, OAuth callback handling or publishing. A real server must supply trusted session tokens and timestamps, validate origin and CSRF where appropriate, prevent token logging, and enforce access controls at every API route. The Python test files are committed to GitHub's existing CI workflow, but this milestone has not been independently verified as a passing CI run. BAM remains read-only for account operations and publishing remains disabled.
