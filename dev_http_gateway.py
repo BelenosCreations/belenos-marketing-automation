@@ -80,14 +80,21 @@ def make_handler(api, *, clock=None):
             path=urlsplit(self.path)
             if path.query or path.fragment or path.path not in (
                     '/api/account/activate','/api/account/logout',
-                    '/api/account/logout-everywhere','/api/content/drafts'):
+                    '/api/account/logout-everywhere','/api/content/drafts',
+                    '/api/content/hold'):
                 self._respond(404,{'error':'not_found'})
                 return
             try:
                 self._local_request()
                 token=self._session()
                 body=self._body()
-                if path.path=='/api/content/drafts':
+                if path.path=='/api/content/hold':
+                    if set(body)!={'request_id','status'}:
+                        raise ValueError('Invalid hold fields')
+                    result=api.update_draft_hold(session_token=token,
+                        server_now=clock(),request_id=body['request_id'],
+                        status=body['status'])
+                elif path.path=='/api/content/drafts':
                     required={'channel','draft_text','suggestion','required_items'}
                     if not required.issubset(body) or set(body)-required-{'priority'}:
                         raise ValueError('Invalid draft fields')
