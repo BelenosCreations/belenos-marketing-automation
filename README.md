@@ -38,6 +38,10 @@ Historical drafting schedule used during planning:
 
 These are planning baselines, not promises of active automatic publishing.
 
+## Android application and account architecture
+
+The target experience is a native Android application (Kotlin / Jetpack Compose) backed by a separately hosted Python automation service. The server will own identities, permissions, approval decisions, audit logs, and integration credentials; the phone is a client, not the unattended scheduler. The first account will be the sole Belenos owner, with additional employee roles available later. `access_policy.py` is the initial **offline authorization policy**, not a login system or a working Android application. Biometric sign-in is a planned client capability subject to secure server-side session management.
+
 ## Safety and approval model
 
 The intended workflow is **discover → validate → draft → review when required → schedule → reconcile → audit**.
