@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: '22'
       - name: Run dashboard interaction smoke tests
-        run: node ui/dashboard_smoke_test.js
+        run: |
+          node ui/dashboard_smoke_test.js
+          node ui/dashboard_data_contract_test.js
       - name: Run offline tests
         run: python -m unittest discover -s . -p 'test_*.py' -v
