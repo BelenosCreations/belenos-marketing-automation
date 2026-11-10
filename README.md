@@ -557,3 +557,7 @@ The matching `ui/dashboard_http_client.js` performs read-only HTTPS GETs with a 
 ## Authenticated UI integration checkpoint — 2026-11-10
 
 An end-to-end offline WSGI integration test now exercises the real account/session directory, dashboard view, HTTPS adapter and business switching. It checks that authorized connection counts appear only in the correct business, restricted roles do not see counts, and private vault references are never returned. The detailed [authenticated UI integration runbook](AUTHENTICATED_UI_INTEGRATION.md) records the safe integration sequence, local test commands, production security requirements and remaining blockers. These commits do not establish that GitHub Actions has passed, that an HTTP service is deployed, or that the sample GUI is connected to the backend.
+
+## Business-switch response isolation hardening — 2026-11-10
+
+The browser read client and DOM renderer now accept an optional `expectedTenantId` to reject responses for a different business. The renderer exposes `clear({container})` so a future business-switch flow can immediately remove the previous tenant's information before requesting the next view. The integration runbook now requires this ordering. Tests cover rejecting stale cross-business responses and clearing prior-business content. The authenticated switch orchestration itself is still not connected to the HTML prototype.
