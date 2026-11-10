@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.2. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 8.3. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -345,3 +345,9 @@ This is **not** a connected provider sync service. Cursors are opaque adapter-pr
 `analytics_page_adapter.py` defines an offline integration seam between a future trusted social analytics fetcher and BAM's transactional import coordinator. The adapter authorizes the configured tenant/platform/account **before** invoking the injected fetcher, reads the existing checkpoint, validates a bounded page of post metrics, and normalizes each post's publication timestamp into a business-local weekday/hour bucket using an IANA timezone. It supports preview without writing and an import operation that delegates to the atomic checkpoint coordinator. Seven regression cases cover authorization-before-fetch, tenant separation, local-time bucketing, malformed pages, future timestamps, and checkpoint advancement.
 
 The fetcher is injected for testing; **no Facebook, Instagram, Metricool or other live provider connector exists yet**. A real integration must verify account ownership, fetch metrics using provider-issued read-only credentials, define engagement metrics per platform, handle page exhaustion and retries, validate source authenticity, and protect credentials using server-side secret management. Weekday/hour buckets are a preliminary normalization, not proof of an optimal posting time. This adapter cannot publish posts or create scheduled jobs.
+
+## Phase 8.3 — Synchronization health and recovery visibility
+
+`analytics_sync_health.py` adds an authenticated, read-only assessment of a business/platform/account's last synchronization checkpoint. The assessment distinguishes imports that have not started, current checkpoints, stale checkpoints, and invalid future-dated checkpoints. A configurable age threshold controls freshness; stale records prompt review of the provider connection, rather than silently claiming the data is current. Credential authorization happens before checkpoint lookup. The assessment does not reveal import secrets or raw checkpoint cursor values, trigger retries, contact external providers, schedule posts, or publish. Eight regression cases cover missing/current/stale/invalid states, authorization and input validation.
+
+**Remaining integration prerequisites:** Provider-issued read-only OAuth permissions, secure token lifecycle and rotation, real account ownership verification, API quota handling, backoff/retries, metric provenance and comparability, and operational monitoring. A stale checkpoint may reflect an inactive account or lack of new posts, so it is a prompt for review rather than proof of provider failure.
