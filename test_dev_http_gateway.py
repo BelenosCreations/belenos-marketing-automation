@@ -60,6 +60,26 @@ class GatewayTests(unittest.TestCase):
     def test_reject_public_bind(self):
         with self.assertRaises(ValueError):
             create_loopback_server(FakeAPI(),host='0.0.0.0')
+    def test_browser_origin_denied(self):
+        conn=http.client.HTTPConnection('127.0.0.1',self.server.server_port,timeout=3)
+        conn.request('GET','/api/account/overview',
+                     headers={'Authorization':'Bearer valid',
+                              'Origin':'https://untrusted.example'})
+        response=conn.getresponse()
+        self.assertEqual(response.status,403)
+        response.read()
+        conn.close()
+
+    def test_dns_rebinding_host_denied(self):
+        conn=http.client.HTTPConnection('127.0.0.1',self.server.server_port,timeout=3)
+        conn.request('GET','/api/account/overview',
+                     headers={'Authorization':'Bearer valid',
+                              'Host':'attacker.example'})
+        response=conn.getresponse()
+        self.assertEqual(response.status,403)
+        response.read()
+        conn.close()
+
     def test_content_type_required(self):
         self.assertEqual(self.request('POST','/api/account/logout',
             body={},content_type='text/plain')[0],400)
