@@ -12,7 +12,7 @@ class BusinessSwitcher:
         self.directory=directory
 
     def list_businesses(self, *, token, now=None):
-        session=self.sessions.resolve(token,now=now)
+        session=self.sessions.resolve_current(token,directory=self.directory,now=now)
         if session is None:
             raise PermissionError('Authentication required')
         subject=session.principal.subject_id
