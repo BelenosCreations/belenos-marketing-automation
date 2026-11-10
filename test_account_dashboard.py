@@ -8,6 +8,7 @@ from business_switcher import BusinessSwitcher
 from provider_connection_registry import ProviderConnectionRegistry
 from social_connection_directory import SocialConnectionDirectory
 from account_dashboard import AccountDashboard
+from account_read_api import AccountReadAPI
 from content_requests import ContentRequests
 from content_attachments import AttachmentRegistry
 from content_request_service import ContentRequestService
@@ -65,6 +66,27 @@ class AccountDashboardTests(unittest.TestCase):
         self.assertEqual([x['draft_text'] for x in
                           second['overview']['pending_content_requests']],
                          ['Second draft'])
+        self.assertFalse(second['publishing_enabled'])
+
+    def test_authenticated_ui_payload_is_business_scoped(self):
+        api=AccountReadAPI(self.dashboard)
+        first=api.get_dashboard_view(session_token=self.owner,server_now=101)
+        self.assertEqual(first['tenant_id'],'first')
+        self.assertEqual(len(first['drafts']),1)
+        self.assertEqual(first['drafts'][0]['draft_text'],'First draft')
+        self.assertEqual(first['cards'][2]['value'],1)
+        self.assertEqual(first['cards'][3]['value'],1)
+        self.assertNotIn('vault/',str(first))
+        switched=api.activate_business(session_token=self.owner,
+            target_tenant_id='second',server_now=101)
+        second=api.get_dashboard_view(session_token=switched['session_token'],
+            server_now=101)
+        self.assertEqual(second['tenant_id'],'second')
+        self.assertEqual([x['draft_text'] for x in second['drafts']],
+                         ['Second draft'])
+        self.assertIsNone(second['cards'][3]['value'])
+        self.assertEqual(second['cards'][3]['availability'],'restricted')
+        self.assertNotIn('First draft',str(second))
         self.assertFalse(second['publishing_enabled'])
 
     def test_switch_to_creator_role_hides_connections(self):
