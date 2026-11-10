@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 5.8 — 2026-11-10 (development branch)
+
+### Added
+- Session-authenticated Manual/Smart scheduling settings service.
+- Fresh tenant membership validation and revision-aware edits.
+- Seven security and persistence regression tests.
+
+### Limitations
+- No network endpoint, Android screen, scheduler or publishing.
+- Test execution unverified.
+
+
 ## Phase 5.7 — 2026-11-10 (development branch)
 
 ### Added
