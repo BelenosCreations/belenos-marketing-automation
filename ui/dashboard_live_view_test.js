@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {render}=require('./dashboard_live_view.js');
+const {render,clear}=require('./dashboard_live_view.js');
 function node(tag){
   return {tag,children:[],textContent:'',className:'',
     append(...children){this.children.push(...children)},
@@ -41,4 +41,7 @@ assert.throws(()=>render({document,container,
   payload:{...payload,publishing_enabled:true}}),TypeError);
 assert.equal(container.children[0],oldRoot,
   'Bad payload must not partially replace the dashboard');
+assert.throws(()=>render({document,container,payload,expectedTenantId:'other'}),TypeError);
+clear({container});
+assert.equal(container.children.length,0,'Business switch clears prior tenant data');
 console.log('BAM authenticated dashboard DOM rendering tests passed');
