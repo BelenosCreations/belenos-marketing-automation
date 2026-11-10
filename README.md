@@ -142,3 +142,7 @@ The platform targets independent businesses and multiple businesses under one ow
 ## Phase 4.4 editorial discovery inbox
 
 `editorial_inbox.py` adds a tenant-scoped, deduplicated review inbox for curated third-party links. Combined source and creator screening runs before an item is queued; even eligible links are review-only. When re-screening identifies a blocked creator, the prior queued entry is removed. **Outstanding security work:** existing inbox items are not automatically re-evaluated when policies change, so any future approval/scheduling action must perform fresh server-side checks. No live ingestion, publishing, or Android UI is connected.
+
+## Phase 4.5 fresh editorial screening and general-purpose categories
+
+`EditorialInbox.recheck_for_editorial_review` re-evaluates creator identity, tenant/topic, source approval and local competitor screening before a queued link can proceed to **human editorial review**. Changed identity or topic is rejected; a blocked creator removes the queued item. This is not authorization to schedule or publish. The shared-domain competitor blocker now rejects Facebook, Instagram, YouTube and other major social hosts; competitor profiles must be excluded by verified platform account ID. The offline optimizer also recognizes business-neutral categories such as facility care, community, best practices and case studies so Busy B content is not rejected merely for being unrelated to 3D printing. All tests remain unverified pending actual execution; no live posting or production API is enabled.
