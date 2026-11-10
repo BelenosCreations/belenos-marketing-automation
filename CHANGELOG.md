@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 6.7 — 2026-11-10 (development branch)
+
+### Added
+- Heuristic source-span signals for pricing/discounts, guarantees, urgency/availability, business hours and testimonials.
+- Risk signals integrated into authenticated, read-only TruthGuard Content Request review.
+- Ten regression tests committed.
+
+### Limitations
+- Pattern matching is incomplete and cannot establish factual correctness or publication eligibility.
+- Current-branch tests have not yet been independently executed; publishing disabled.
+
+
 ## Phase 6.6 — 2026-11-10 (development branch)
 
 ### Changed
