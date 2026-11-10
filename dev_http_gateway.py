@@ -36,7 +36,9 @@ def make_handler(api, *, clock=None):
 
         def _local_request(self):
             # Reject browser-origin cross-site requests and DNS-rebinding hosts.
-            host=self.headers.get('Host','').split(':',1)[0].lower()
+            raw_host=self.headers.get('Host','').lower()
+            host=(raw_host.split(']',1)[0]+']' if raw_host.startswith('[')
+                  and ']' in raw_host else raw_host.split(':',1)[0])
             if host not in ('127.0.0.1','localhost','[::1]'):
                 raise PermissionError('Local host required')
             if self.headers.get('Origin') is not None:
