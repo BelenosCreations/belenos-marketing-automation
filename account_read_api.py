@@ -70,6 +70,38 @@ class AccountReadAPI:
         return {'signed_out':True,'sessions_revoked':count,
                 'publishing_enabled':False}
 
+    def list_held_drafts(self, *, session_token, server_now, status=None):
+        """List authorized tenant drafts, including postponed/unavailable.
+
+        Never expose attachment storage references or vault credentials.
+        """
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        if status is not None and status not in (
+                'needs_content','ready_for_review','postponed','unavailable'):
+            raise ValueError('Invalid draft status')
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content Requests not configured')
+        requests=service.list_for_business(token=token,
+            tenant_id=session.principal.tenant_id,status=status,now=now)
+        return {'tenant_id':session.principal.tenant_id,
+            'drafts':[{
+                'request_id':request['request_id'],
+                'channel':request['channel'],
+                'draft_text':request['draft_text'],
+                'suggestion':request['suggestion'],
+                'status':request['status'],
+                'missing_items':[item for item in request['required_items']
+                                 if item not in request['provided_items']],
+                'priority':request['priority']
+            } for request in requests],
+            'publishing_enabled':False}
+
     def create_held_draft(self, *, session_token, server_now,
                           channel, draft_text, suggestion, required_items,
                           priority=0):
