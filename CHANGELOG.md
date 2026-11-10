@@ -1,5 +1,15 @@
 # Changelog
 
+## Account read API boundary — 2026-11-10 (development branch)
+
+### Added
+- Transport-neutral read-only BAM account adapter for overview, authorized business activation and current-session logout.
+- Six additional regression cases for tenant isolation, role-scoped switching, logout and invalid requests.
+
+### Limitations
+- No HTTP server, deployed authentication, live OAuth or publishing. CI results not independently verified in this session.
+
+
 ## Account dashboard integration — 2026-11-10 (development branch)
 
 ### Added
