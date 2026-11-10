@@ -5,6 +5,7 @@ caller, provide a bearer session token and perform rate limiting/CSRF controls.
 The adapter never accepts tenant IDs or roles from client body claims.
 """
 from account_dashboard import AccountDashboard
+from dashboard_cards import build_dashboard_cards
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard):
