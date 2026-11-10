@@ -1,5 +1,17 @@
 # Changelog
 
+## Account enrollment and recovery primitives — 2026-11-10
+
+### Added
+- One-time hashed email verification and password-reset tokens with 15-minute expiry and trusted out-of-band delivery callback.
+- Password reset that revokes existing BAM sessions, with non-enumerating request responses.
+- Google-only signup from verified nonce-bound Google ID tokens, creating an identity without implicit business membership.
+- Regression tests for token expiry/replay, session revocation and refusal to auto-merge existing email identities.
+
+### Limitations
+- No real email sender, public account signup, user invitations, production rate limiting or mobile login interface; current tests not independently verified.
+
+
 ## Authentication foundation — 2026-11-10 (development branch)
 
 ### Added
