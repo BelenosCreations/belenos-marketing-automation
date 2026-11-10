@@ -105,6 +105,25 @@ class TruthGuardContentReviewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.inspect(claims=self.claims*101)
 
+    def test_high_risk_statement_without_annotation_is_uncovered(self):
+        request_id=self.review.content_service.create(token=self.owner,
+            tenant_id='shop',channel='facebook',draft_text='Today only $18',
+            suggestion='Provide photo',required_items=['photo'],now=102)
+        report=self.inspect(request_id=request_id)
+        self.assertFalse(report['risk_signals_annotated'])
+        self.assertTrue(report['uncovered_risk_signals'])
+
+    def test_high_risk_statement_annotated_still_held(self):
+        text='Today only $18'
+        request_id=self.review.content_service.create(token=self.owner,
+            tenant_id='shop',channel='facebook',draft_text=text,
+            suggestion='Provide photo',required_items=['photo'],now=102)
+        report=self.inspect(request_id=request_id,claims=[],
+            annotations=[{'start':0,'end':len(text),'key':'offer','text':text}])
+        self.assertTrue(report['risk_signals_annotated'])
+        self.assertEqual(report['uncovered_risk_signals'],[])
+        self.assertFalse(report['publishing_enabled'])
+
     def test_unknown_request_denied(self):
         with self.assertRaises(KeyError):
             self.inspect(request_id='missing')
