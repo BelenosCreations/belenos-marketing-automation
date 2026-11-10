@@ -135,6 +135,37 @@ class AccountReadAPI:
                 'request_id':request_id,'status':'needs_content',
                 'publishing_enabled':False}
 
+    def supply_verified_content(self, *, session_token, server_now,
+                                request_id, item, attachment_id):
+        """Attach already-scanned and permission-verified content.
+
+        This API does not upload or validate files. The attachment registry's
+        trusted validation worker must approve an item before it can be used.
+        """
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        if (not isinstance(request_id,str) or len(request_id)!=32
+                or any(c not in '0123456789abcdef' for c in request_id)):
+            raise ValueError('Invalid request ID')
+        if not isinstance(item,str) or not item.strip() or len(item)>80:
+            raise ValueError('Invalid required item')
+        if (not isinstance(attachment_id,str) or len(attachment_id)!=32
+                or any(c not in '0123456789abcdef' for c in attachment_id)):
+            raise ValueError('Invalid verified attachment ID')
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content Requests not configured')
+        status=service.provide(token=token,
+            tenant_id=session.principal.tenant_id,request_id=request_id,
+            item=item,attachment_id=attachment_id,now=now)
+        return {'tenant_id':session.principal.tenant_id,
+                'request_id':request_id,'status':status,
+                'publishing_enabled':False}
+
     def update_draft_hold(self, *, session_token, server_now, request_id, status):
         """Postpone, mark unavailable or reopen an incomplete draft."""
         token=self._token(session_token)
