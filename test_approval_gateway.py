@@ -23,6 +23,8 @@ class ApprovalGatewayTests(unittest.TestCase):
         self.manager_token=self.sessions.issue(Principal('manager','belenos',Role.MARKETING_MANAGER),now=int(self.at.timestamp()))
         self.promo=stage(self.db,slot='A',content='New product',category='promotion',now=self.at)[0]
         self.community=stage(self.db,slot='B',content='Favorite print?',category='community',now=self.at)[0]
+        self.gateway.ownership.register(kind='post',resource_id=self.promo,tenant_id='belenos')
+        self.gateway.ownership.register(kind='post',resource_id=self.community,tenant_id='belenos')
 
     def test_owner_approves_promotion(self):
         self.gateway.decide_post(token=self.owner_token,tenant_id='belenos',post_id=self.promo,decision='approved',at=self.at)
@@ -65,6 +67,7 @@ class ApprovalGatewayTests(unittest.TestCase):
 
     def test_event_confirmation_owner_only(self):
         e=upsert_discovery(self.db,title='Fair',event_start=self.at,source_url='https://example.com/fair',participation='unknown',at=self.at)
+        self.gateway.ownership.register(kind='event',resource_id=e,tenant_id='belenos')
         with self.assertRaises(PermissionError):
             self.gateway.decide_event(token=self.manager_token,tenant_id='belenos',event_id=e,confirmed=True,at=self.at)
         self.gateway.decide_event(token=self.owner_token,tenant_id='belenos',event_id=e,confirmed=True,at=self.at)
@@ -72,11 +75,32 @@ class ApprovalGatewayTests(unittest.TestCase):
 
     def test_blocked_post_cannot_be_approved(self):
         blocked=stage(self.db,slot='C',content='50% off',category='invented_offer',now=self.at)[0]
+        self.gateway.ownership.register(kind='post',resource_id=blocked,tenant_id='belenos')
         with self.assertRaises(ValueError):
             self.gateway.decide_post(token=self.owner_token,tenant_id='belenos',post_id=blocked,decision='approved',at=self.at)
 
     def test_invalid_token_denied(self):
         with self.assertRaises(PermissionError):
             self.gateway.decide_post(token='fake',tenant_id='belenos',post_id=self.promo,decision='approved',at=self.at)
+
+    def test_unowned_post_denied(self):
+        post=stage(self.db,slot='D',content='New item',category='promotion',now=self.at)[0]
+        with self.assertRaises(PermissionError):
+            self.gateway.decide_post(token=self.owner_token,tenant_id='belenos',post_id=post,decision='approved',at=self.at)
+
+    def test_foreign_owned_post_denied(self):
+        post=stage(self.db,slot='E',content='Another item',category='promotion',now=self.at)[0]
+        self.gateway.ownership.register(kind='post',resource_id=post,tenant_id='other')
+        with self.assertRaises(PermissionError):
+            self.gateway.decide_post(token=self.owner_token,tenant_id='belenos',post_id=post,decision='approved',at=self.at)
+
+    def test_ownership_cannot_be_reassigned(self):
+        with self.assertRaises(PermissionError):
+            self.gateway.ownership.register(kind='post',resource_id=self.promo,tenant_id='other')
+
+    def test_unowned_event_denied(self):
+        e=upsert_discovery(self.db,title='Expo',event_start=self.at,source_url='https://example.com/expo',participation='unknown',at=self.at)
+        with self.assertRaises(PermissionError):
+            self.gateway.decide_event(token=self.owner_token,tenant_id='belenos',event_id=e,confirmed=True,at=self.at)
 
 if __name__=='__main__': unittest.main()
