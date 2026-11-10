@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 5.5. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype through Phase 5.6. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -219,3 +219,9 @@ The offline `content_request_service.py` now wraps Content Requests creation, re
 `content_byte_inspector.py` adds an offline byte-inspection layer for future trusted private-storage workers. It checks a file's actual SHA-256 against the expected digest, rejects empty/oversized files, checks simple PNG/JPEG/WebP/PDF/MP4 signatures, and requires UTF-8 for text. Inspection of pending attachment records is tenant-scoped and **does not approve the attachment**. Ten additional tests cover successful hash checks, mismatches, invalid signatures, wrong-tenant access and nonapproval after inspection.
 
 **Important limits:** File signatures and hashes do not prove a file is safe, accurately labeled, fully parseable, or authorized for publication. Real uploads, robust media decoding, malware scanning, permission/consent verification, storage isolation and a trusted verifier workflow are still required. The existing internal `validate_trusted` method must never be exposed directly to clients. Tests are committed but have not been independently executed; publishing remains disabled.
+
+## Phase 5.6 — Manual or Smart posting-time selection
+
+Each business will be able to choose **Manual** (explicit weekday/time slots in its own timezone) or **Smart** (explainable suggestions using post subject, intended audience, preferred hours and any supplied engagement-by-hour observations). `posting_schedule_policy.py` introduces the offline planning engine, including exact-minute manual slots, local timezone handling, daylight-saving gap rejection, and an explicit per-post time override that takes precedence over either mode. Manual times are not moved by engagement heuristics. Smart results are suggestions, not claims of measured best posting times; there is no platform analytics connector yet. The planner **holds incomplete or unapproved posts regardless of mode**, and only returns a proposed time; it never publishes or queues a job. Twelve regression tests were added. This policy is not yet persisted in account settings or exposed through Android screens. Tests are committed but not independently executed.
+
+**Future UI:** Settings → Scheduling → Manual / Smart for each business; weekly time editor for Manual; audience, subject and platform-aware recommendations for Smart; per-post override; transparent explanation for suggested times. A business may use Smart as its default while pinning time-sensitive announcements to exact manual times.
