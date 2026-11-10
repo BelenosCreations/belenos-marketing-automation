@@ -8,6 +8,9 @@ from business_switcher import BusinessSwitcher
 from provider_connection_registry import ProviderConnectionRegistry
 from social_connection_directory import SocialConnectionDirectory
 from account_dashboard import AccountDashboard
+from content_requests import ContentRequests
+from content_attachments import AttachmentRegistry
+from content_request_service import ContentRequestService
 
 class AccountDashboardTests(unittest.TestCase):
     def setUp(self):
@@ -29,11 +32,21 @@ class AccountDashboardTests(unittest.TestCase):
         self.registry.register_trusted(tenant_id='second',platform='instagram',
             account_id='ig',vault_reference='vault/second/ig',
             scope='read_insights',state='connected',expires_at=1000,now=100)
+        requests=ContentRequests(self.db)
+        self.first_request=requests.create(tenant_id='first',channel='facebook',
+            draft_text='First draft',suggestion='Photograph product',
+            required_items=['photo'],now=100)
+        requests.create(tenant_id='second',channel='instagram',
+            draft_text='Second draft',suggestion='Photograph cleaning team',
+            required_items=['team_photo'],now=100)
+        content=ContentRequestService(requests=requests,sessions=self.sessions,
+            directory=self.directory,attachments=AttachmentRegistry(self.db))
         switcher=BusinessSwitcher(self.db,self.sessions,self.directory)
         social=SocialConnectionDirectory(registry=self.registry,
             directory=self.directory,sessions=self.sessions)
         self.dashboard=AccountDashboard(sessions=self.sessions,
-            directory=self.directory,switcher=switcher,social_connections=social)
+            directory=self.directory,switcher=switcher,social_connections=social,
+            content_service=content)
 
     def test_owner_sees_only_current_business_connections(self):
         result=self.dashboard.overview(token=self.owner,now=101)
@@ -41,6 +54,18 @@ class AccountDashboardTests(unittest.TestCase):
         self.assertEqual([x['platform'] for x in result['social_connections']],['facebook'])
         self.assertNotIn('vault/first/page',str(result))
         self.assertFalse(result['publishing_enabled'])
+
+    def test_held_drafts_are_tenant_scoped(self):
+        first=self.dashboard.overview(token=self.owner,now=101)
+        self.assertEqual([x['draft_text'] for x in first['pending_content_requests']],
+                         ['First draft'])
+        self.assertEqual(first['pending_content_requests'][0]['missing_items'],['photo'])
+        second=self.dashboard.switch_and_overview(
+            token=self.owner,target_tenant_id='second',now=101)
+        self.assertEqual([x['draft_text'] for x in
+                          second['overview']['pending_content_requests']],
+                         ['Second draft'])
+        self.assertFalse(second['publishing_enabled'])
 
     def test_switch_to_creator_role_hides_connections(self):
         result=self.dashboard.switch_and_overview(
