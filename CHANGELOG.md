@@ -1,5 +1,22 @@
 # Changelog
 
+## Phase 3.6 — 2026-11-10 (development branch)
+
+### Added
+- Offline approval gateway combining session validity and current membership authorization.
+- Owner-only promotional/event approvals and revocations; manager routine approvals.
+- 12 security-focused unit tests committed.
+
+### Test status
+- New tests committed; full suite execution and GitHub Actions status not yet verified.
+
+### Known limitations
+- Legacy posts and events are not tenant-scoped in the database: **do not expose gateway through an API** until tenant isolation is added to these records and queries.
+- Session issuance still depends on an external authenticated identity provider that is not implemented.
+- Legacy workflow functions remain callable internally without the gateway; production must restrict access through trusted services.
+- Publishing remains disabled.
+
+
 ## Phase 3.5 — 2026-11-10 (development branch)
 
 ### Added
