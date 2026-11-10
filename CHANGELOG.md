@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 5.5 — 2026-11-10 (development branch)
+
+### Added
+- Offline SHA-256 byte comparison, size enforcement and basic file signature checks for attachments.
+- Tenant-scoped pending-record inspection that never grants verification or publishing permission.
+- Ten regression tests for byte validation, signatures, hash mismatch and access boundaries.
+
+### Limitations
+- No storage integration, malware scanner, full media decoding or consent validation.
+- Tests committed but execution remains unverified; publishing disabled.
+
+
 ## Phase 5.4 — 2026-11-10 (development branch)
 
 ### Added
