@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 8.8 — 2026-11-10 (development branch)
+
+### Added
+- Target-business session issuance in existing business selector, using current tenant membership and role.
+- Revalidation of source-business membership before business listing and switching.
+- Three additional regression cases for activation, unauthorized targets and revoked source access.
+
+### Limitations
+- Production identity verification, mobile account switch UI and provider integrations remain outstanding. Publishing disabled.
+
+
 ## Phase 8.7 — 2026-11-10 (development branch)
 
 ### Added
