@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 4.7 — 2026-11-10 (development branch)
+
+### Added
+- Expiring, business-scoped server attestation registry for creator identity and competitor screening.
+- Editorial review facade now rejects client-supplied identity/competitor clearance and reads fresh server attestations.
+- Eight new attestation tests and two new review-facade regression tests.
+
+### Test status
+- Test definitions committed; execution remains unverified.
+
+### Known limitations
+- Attestation creation is a trusted internal operation; external verification worker and authorization-gated API are not yet implemented.
+- Recheck grants human-review eligibility only, never scheduling or publishing.
+- No Android application or live publishing integration.
+
+
 ## Phase 4.6 — 2026-11-10 (development branch)
 
 ### Added
