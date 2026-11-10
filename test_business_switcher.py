@@ -42,6 +42,13 @@ class SwitcherTests(unittest.TestCase):
             self.switcher.activate_business(token=self.token,
                 tenant_id='busy_b',now=101)
 
+    def test_stale_source_role_cannot_switch(self):
+        self.db.execute("UPDATE members SET role=? WHERE tenant_id=? AND subject_id=?",
+                        (Role.VIEWER.value,'belenos','owner'))
+        self.db.commit()
+        with self.assertRaises(PermissionError):
+            self.switcher.activate_business(token=self.token,tenant_id='busy_b',now=101)
+
     def test_one_login_lists_both_businesses(self):
         names=[x['display_name'] for x in self.switcher.list_businesses(token=self.token,now=101)]
         self.assertEqual(names,['Belenos Creations','Busy B Cleaning'])
