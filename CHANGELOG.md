@@ -1,5 +1,13 @@
 # Changelog
 
+## Product scope clarification — 2026-11-10
+
+- Clarified that the platform is industry-agnostic and multi-tenant, intended for businesses beyond the initial pilots.
+- Identified Belenos Creations and Busy B Cleaning Service as examples, not hard-coded tenants or target-market limits.
+- Updated README product goals to use business-neutral language.
+- Documentation-only change; publishing remains disabled.
+
+
 ## Phase 4.7 — 2026-11-10 (development branch)
 
 ### Added
