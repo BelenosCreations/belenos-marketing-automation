@@ -1,5 +1,16 @@
 # Changelog
 
+## Verification checkpoint — 2026-11-10
+
+### Verified
+- Executed the archived Phase 3.2 offline Python unit tests: 26 passed, 0 failed, 0 errors.
+- Recorded test command, verification scope and release gates in VERIFICATION.md.
+
+### Still unverified
+- Newer GitHub development modules through Phase 6.1; no passing current-branch CI run confirmed.
+- Live integration, Android UI and publishing remain disabled/not implemented.
+
+
 ## Phase 6.1 — 2026-11-10 (development branch)
 
 ### Added
