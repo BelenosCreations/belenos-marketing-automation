@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 6.5 — 2026-11-10 (development branch)
+
+### Added
+- Exact source-span audit for TruthGuard claim annotations, with overlap/mismatch detection, unannotated-text visibility and draft fingerprint.
+- Audit included in authenticated read-only Content Request review results.
+- Ten audit tests and two integration tests committed.
+
+### Limitations
+- Source-span integrity does not prove factual completeness or truth. No publish eligibility is granted.
+- Current-branch test execution not yet confirmed; publishing disabled.
+
+
 ## Phase 6.4 — 2026-11-10 (development branch)
 
 ### Added
