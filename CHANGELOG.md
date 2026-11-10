@@ -1,5 +1,13 @@
 # Changelog
 
+## Business-switch UI isolation hardening — 2026-11-10
+
+### Changed
+- HTTPS read client and DOM renderer can reject responses with an unexpected tenant ID.
+- Renderer exposes explicit clear operation to remove prior-business content before switching.
+- Updated integration runbook and regression tests for stale-response protection.
+
+
 ## Authenticated UI integration checkpoint — 2026-11-10
 
 ### Added
