@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 7.5 — 2026-11-10 (development branch)
+
+### Security
+- Validate all required supporting attachments against the tenant/request/item-scoped verified registry before recording intent.
+- Revalidate attachments when inspecting previously recorded intent; expose `attachments_verified`.
+- Replace fake attachment fixtures with registered verified attachments; add three negative regression cases.
+
+### Limitations
+- The offline attachment registry does not inspect file bytes or grant publishing permissions.
+
+
 ## Phase 7.4 — 2026-11-10 (development branch)
 
 ### Added
