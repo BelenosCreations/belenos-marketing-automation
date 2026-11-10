@@ -1,5 +1,16 @@
 # Changelog
 
+## Persistent posting preferences — 2026-11-10
+
+### Added
+- Tenant-scoped offline Smart/Manual posting preference persistence with validated IANA timezone and sorted unique manual times.
+- Authenticated read and owner-only update methods in `AccountReadAPI`.
+- Unit and API tests for authorization, tenant isolation, malformed times, timezone and disabled publishing.
+
+### Limitations
+- Standalone GUI preferences remain local-only. No live scheduling, daylight-saving-time execution or publishing.
+
+
 ## Smart/manual calendar controls — 2026-11-10
 
 ### Added
