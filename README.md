@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through the account read API boundary milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through the local account workflow prototype milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -401,3 +401,19 @@ A security review also corrected `BusinessSwitcher.select_business` to require a
 `account_read_api.py` is a transport-neutral adapter for a future authenticated HTTPS interface. It exposes three deliberately narrow operations: `get_overview` (the active business and authorized social connections), `activate_business` (switch to another authorized business and receive a new scoped session), and `logout` (revoke the current session). The API derives tenant and role from validated server sessions, never client claims, and requires a server-supplied timestamp. Six additional regression tests cover business isolation, role changes on switch, logout, malformed credentials, unauthorized target selection and invalid timestamps.
 
 **Deployment boundary:** This adapter does not start a web server or implement password authentication, HTTPS, request throttling, secure client token storage, OAuth callback handling or publishing. A real server must supply trusted session tokens and timestamps, validate origin and CSRF where appropriate, prevent token logging, and enforce access controls at every API route. The Python test files are committed to GitHub's existing CI workflow, but this milestone has not been independently verified as a passing CI run. BAM remains read-only for account operations and publishing remains disabled.
+
+## Local account workflow prototype — 2026-11-10
+
+BAM now includes a **runnable, isolated loopback-only account workflow**, beyond individual backend service calls. `dev_server.py` creates disposable example business memberships, starts a local-only HTTP service, and prints a short-lived **demo** bearer token. `dev_client.py` is an interactive terminal interface that accepts that token without echoing it, shows the current business and permitted social connection metadata, and switches between authorized businesses. Exiting the client invokes authenticated logout across all sessions for that demo identity. This proves the intended separation between a BAM user account and future social platform connections without implementing actual provider sign-in.
+
+To try the local demo in two terminals with Python 3.12 and the repository checkout:
+
+```sh
+python dev_server.py
+# In another terminal, substitute the port printed by dev_server.py:
+python dev_client.py --port 12345
+```
+
+The gateway provides `GET /api/account/overview`, `POST /api/account/activate`, `POST /api/account/logout`, and `POST /api/account/logout-everywhere`. POST endpoints accept JSON objects; all operations require a bearer session header. The demo server accepts **only loopback bindings**, rejects cross-origin browser requests and unexpected hostnames, limits request sizes, omits request logging, and returns `Cache-Control: no-store`. It has no public deployment mode, account enrollment, password login, social OAuth, scheduler, or publishing. It is **not suitable for public or LAN deployment**. Disposable credentials printed for the demo must never be reused for real accounts.
+
+New tests cover the transport boundary, browser-origin and DNS-rebinding rejection, self-service global logout, and full HTTP account switching against actual BAM services. A failed account switch dashboard rendering now revokes its newly issued token to avoid leaving an orphaned session. The committed tests still require a verified passing run before considering this workflow validated. A production app will need a proper HTTPS service, persistent database with concurrency controls, verified user login, secure Android token storage, authorization at all routes, and real social integrations.
