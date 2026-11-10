@@ -31,6 +31,11 @@ class FakeAPI:
         return {'request_id':'draft1','status':'needs_content',
                 'publishing_enabled':False}
 
+    def update_draft_hold(self,*,session_token,server_now,request_id,status):
+        if session_token!='valid':
+            raise PermissionError('denied')
+        return {'request_id':request_id,'status':status,'publishing_enabled':False}
+
 class GatewayTests(unittest.TestCase):
     def setUp(self):
         self.server=create_loopback_server(FakeAPI(),clock=lambda:101)
@@ -75,6 +80,14 @@ class GatewayTests(unittest.TestCase):
         self.assertEqual(response['status'],'needs_content')
         body['tenant_id']='other'
         self.assertEqual(self.request('POST','/api/content/drafts',body=body)[0],400)
+
+    def test_hold_route_rejects_extra_fields(self):
+        body={'request_id':'a'*32,'status':'postponed'}
+        status,_,response=self.request('POST','/api/content/hold',body=body)
+        self.assertEqual(status,200)
+        self.assertEqual(response['status'],'postponed')
+        body['tenant_id']='another'
+        self.assertEqual(self.request('POST','/api/content/hold',body=body)[0],400)
 
     def test_bad_token_denied(self):
         self.assertEqual(self.request('GET','/api/account/overview',token='bad')[0],403)
