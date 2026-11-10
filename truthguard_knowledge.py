@@ -38,8 +38,8 @@ class TruthGuardKnowledge:
                  'approved_at':row[3],'expires_at':row[4]}
                 for row in self.db.execute("""SELECT fact_id,value,source,approved_at,expires_at
                 FROM truthguard_facts WHERE tenant_id=? AND claim_key=?
-                AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?)
-                ORDER BY approved_at DESC,fact_id DESC""",(tenant_id,claim_key,now))]
+                AND revoked_at IS NULL AND approved_at<=? AND (expires_at IS NULL OR expires_at>?)
+                ORDER BY approved_at DESC,fact_id DESC""",(tenant_id,claim_key,now,now))]
 
     def revoke(self,*,tenant_id,fact_id,now):
         cursor=self.db.execute("""UPDATE truthguard_facts SET revoked_at=?
