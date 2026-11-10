@@ -1,5 +1,17 @@
 # Changelog
 
+## Settings appearance navigation — 2026-11-10
+
+### Changed
+- Removed the prominent theme-toggle button from the dashboard.
+- Added Settings → Appearance with explicit Light, Dark and Auto (device) selections; Auto is the prototype default.
+- Added reserved Settings section for account, notification, business and connection preferences.
+- Updated UI smoke tests to verify settings navigation and appearance selections.
+
+### Verification
+- JavaScript Settings and theme-selection smoke checks passed in V8. GitHub Actions run remains unverified.
+
+
 ## Automated GUI smoke-test gate — 2026-11-10
 
 ### Added
