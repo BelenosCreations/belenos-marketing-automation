@@ -12,9 +12,7 @@ class AnalyticsImportBoundary:
         self.account_bindings=dict(account_bindings)
         self.import_secrets=dict(import_secrets)
 
-    def import_observation(self, *, tenant_id, platform, account_id,
-                           import_secret, source_post_id, candidate,
-                           engagement_count, impression_count, measured_at):
+    def authorize(self, *, tenant_id, platform, account_id, import_secret):
         key=(tenant_id,platform)
         expected_account=self.account_bindings.get(key)
         expected_secret=self.import_secrets.get(key)
@@ -24,6 +22,12 @@ class AnalyticsImportBoundary:
                 or not hmac.compare_digest(expected_account,account_id)
                 or not hmac.compare_digest(expected_secret,import_secret)):
             raise PermissionError('Authorized analytics import required')
+
+    def import_observation(self, *, tenant_id, platform, account_id,
+                           import_secret, source_post_id, candidate,
+                           engagement_count, impression_count, measured_at):
+        self.authorize(tenant_id=tenant_id,platform=platform,
+                       account_id=account_id,import_secret=import_secret)
         if (type(engagement_count) is not int or type(impression_count) is not int
                 or engagement_count<0 or impression_count<=0
                 or engagement_count>impression_count):
