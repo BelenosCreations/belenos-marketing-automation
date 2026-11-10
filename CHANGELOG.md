@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 5.9 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated business-specific saved scheduling settings wired to the posting-time proposal engine.
+- Explicit not-configured response, revision metadata and nonpublishing result flags.
+- Seven integration regression tests.
+
+### Limitations
+- No actual scheduling jobs, publishing or Android UI.
+- Test execution unverified.
+
+
 ## Phase 5.8 — 2026-11-10 (development branch)
 
 ### Added
