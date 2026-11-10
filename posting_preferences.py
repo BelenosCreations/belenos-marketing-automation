@@ -4,6 +4,7 @@ Owner-only mutation. Smart mode does not invent optimal times; a separate
 verified analytics-based optimizer will be required for recommendations.
 """
 import json
+import re
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from access_policy import Role
 
@@ -52,9 +53,7 @@ class PostingPreferences:
             raise ValueError('Unknown IANA timezone') from exc
         if (not isinstance(manual_times,list) or len(manual_times)>24
                 or any(not isinstance(value,str) or len(value)!=5
-                       or value[2]!=':' or not value[:2].isdigit()
-                       or not value[3:].isdigit()
-                       or int(value[:2])>23 or int(value[3:])>59
+                       or re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]',value) is None
                        for value in manual_times)
                 or len(set(manual_times))!=len(manual_times)):
             raise ValueError('Invalid or duplicate manual times')
