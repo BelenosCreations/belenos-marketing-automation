@@ -1,5 +1,18 @@
 # Changelog
 
+## Phase 5.3 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated, read-only Content Requests dashboard projection with business-specific counts and cards.
+- Per-draft missing/supplied content checklist, prepared text, capture suggestions and priority.
+- Explicit non-publishable and non-schedulable flags.
+- Five tests covering partial completion, tenant isolation, revoked sessions and hold states.
+
+### Test status and limitations
+- Tests committed; not independently executed.
+- No rendered Android screen, live upload, trusted scanner or publishing integration.
+
+
 ## Phase 5.2 — 2026-11-10 (development branch)
 
 ### Added
