@@ -76,6 +76,12 @@ class ContentRequestServiceTests(unittest.TestCase):
                                   'creator',Role.CONTENT_CREATOR,active=False)
         with self.assertRaises(PermissionError):self.create('creator')
 
+    def test_role_upgrade_requires_new_session(self):
+        self.directory.set_member(Principal('owner','shop',Role.OWNER),
+                                  'viewer',Role.CONTENT_CREATOR)
+        with self.assertRaises(PermissionError):
+            self.create('viewer')
+
     def test_role_downgrade_enforced(self):
         self.directory.set_member(Principal('owner','shop',Role.OWNER),
                                   'manager',Role.VIEWER)
@@ -96,7 +102,7 @@ class ContentRequestServiceTests(unittest.TestCase):
         rid=self.create()
         self.assertEqual(self.service.provide(token=self.tokens['owner'],
             tenant_id='shop',request_id=rid,item='photo',
-            content_reference='asset:1',now=102),'needs_content')
+            attachment_id=self.verified(rid,'photo'),now=102),'needs_content')
         self.assertEqual(self.service.provide(token=self.tokens['owner'],
             tenant_id='shop',request_id=rid,item='permission',
             attachment_id=self.verified(rid,'permission'),now=103),'ready_for_review')
