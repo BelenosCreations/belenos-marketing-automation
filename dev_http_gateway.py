@@ -80,14 +80,23 @@ def make_handler(api, *, clock=None):
             path=urlsplit(self.path)
             if path.query or path.fragment or path.path not in (
                     '/api/account/activate','/api/account/logout',
-                    '/api/account/logout-everywhere'):
+                    '/api/account/logout-everywhere','/api/content/drafts'):
                 self._respond(404,{'error':'not_found'})
                 return
             try:
                 self._local_request()
                 token=self._session()
                 body=self._body()
-                if path.path=='/api/account/activate':
+                if path.path=='/api/content/drafts':
+                    required={'channel','draft_text','suggestion','required_items'}
+                    if not required.issubset(body) or set(body)-required-{'priority'}:
+                        raise ValueError('Invalid draft fields')
+                    result=api.create_held_draft(session_token=token,
+                        server_now=clock(),channel=body['channel'],
+                        draft_text=body['draft_text'],suggestion=body['suggestion'],
+                        required_items=body['required_items'],
+                        priority=body.get('priority',0))
+                elif path.path=='/api/account/activate':
                     if set(body)!={'target_tenant_id'}:
                         raise ValueError('Unexpected fields')
                     result=api.activate_business(session_token=token,
@@ -105,6 +114,8 @@ def make_handler(api, *, clock=None):
                 self._respond(403,{'error':'access_denied'})
             except (ValueError,TypeError,json.JSONDecodeError):
                 self._respond(400,{'error':'invalid_request'})
+            except RuntimeError:
+                self._respond(503,{'error':'service_unavailable'})
 
     return Handler
 
