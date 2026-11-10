@@ -45,3 +45,16 @@ class AccountReadAPI:
         self._now(server_now)
         self.dashboard.sessions.revoke(token,now=server_now)
         return {'signed_out':True,'publishing_enabled':False}
+
+    def logout_everywhere(self, *, session_token, server_now):
+        """Revoke only the authenticated identity's sessions across businesses."""
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        count=self.dashboard.sessions.revoke_identity(
+            session.principal.subject_id,now=now)
+        return {'signed_out':True,'sessions_revoked':count,
+                'publishing_enabled':False}
