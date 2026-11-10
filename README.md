@@ -233,3 +233,7 @@ Each business will be able to choose **Manual** (explicit weekday/time slots in 
 ## Phase 5.8 — authenticated scheduling settings boundary
 
 `scheduling_settings_service.py` wraps saved scheduling preferences in session-token verification and fresh business membership resolution. Expired or revoked tokens, cross-business requests, removed members and viewer write attempts are denied. Owners and other authorized draft editors can update settings; viewers may read them. Optimistic revision checks continue to protect concurrent edits. Seven regression tests cover these scenarios. The service is offline application logic, not an HTTP endpoint or mobile screen. No job scheduling or publishing has been enabled; tests committed but not independently executed.
+
+## Phase 5.9 — saved scheduling preferences integrated into planning
+
+`business_scheduling_planner.py` now connects the authenticated business scheduling settings service to the offline posting-time planner. It retrieves the correct tenant's saved Manual/Smart mode, exact weekly times, timezone and preferred hours, then produces a proposal with mode, settings revision, reason and explicit `publishing_enabled=False`. Businesses without configured settings receive a `not_configured` result; missing-content and unapproved posts remain held. Cross-business and expired-session requests are denied by the settings service. Seven regression tests cover these paths. No job queue, platform integration, network API, or Android UI exists in this milestone. Tests committed; execution remains unverified.
