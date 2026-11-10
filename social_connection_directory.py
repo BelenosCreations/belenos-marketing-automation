@@ -3,7 +3,7 @@
 No social login, provider API calls, or automatic publishing. Connection
 metadata comes from a trusted server-side registry, not client credentials.
 """
-from provider_connection_registry import ProviderConnectionRegistry
+from access_policy import Action, Resource, require_permission
 
 class SocialConnectionDirectory:
     def __init__(self, *, registry, directory, sessions):
@@ -16,8 +16,7 @@ class SocialConnectionDirectory:
         if session is None or session.principal.tenant_id!=tenant_id:
             raise PermissionError('Authenticated business membership required')
         member=self.directory.resolve(tenant_id,session.principal.subject_id)
-        if member is None or not member.active:
-            raise PermissionError('Active business membership required')
+        require_permission(member,Action.READ_ANALYTICS,Resource(tenant_id))
         return member
 
     def list_connections(self, *, token, tenant_id, now):
