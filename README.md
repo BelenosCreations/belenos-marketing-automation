@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.4. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.5. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -305,3 +305,7 @@ Inspection of an existing owner approval-intent record now checks both the draft
 ## Phase 7.4 — Supporting-content change detection
 
 Owner approval-intent records now store a deterministic SHA-256 snapshot of the request channel, required content items, and supplied attachment references at the time intent is recorded. Inspection compares the current snapshot with the recorded one. Replacing a photo or other supporting item flags `content_unchanged: false` and `requires_new_review: true` even when the marketing copy remains identical and all required items remain present. Existing databases migrate by adding the snapshot column; older records without a snapshot fail closed and require a new review. Three regression cases cover replacement, unchanged content and legacy records. This compares metadata references, **not file bytes or permission validity**; a production execution gate must also revalidate verified media, permissions and authoritative review provenance. Publishing remains disabled.
+
+## Phase 7.5 — Registry-backed attachment verification
+
+The owner approval-intent boundary now verifies every required content reference against the trusted attachment registry for the **same business, request and required item**, rather than accepting a string that merely looks like a verified attachment. Intent recording rejects missing, unregistered, cross-request or no-longer-verified references. Later inspection rechecks registry status and reports `attachments_verified`; failed verification forces `requires_new_review` even if draft and reference strings are unchanged. Existing approval-intent tests now use actual registered and verified attachments, and three new regression cases cover fake references, cross-request references and withdrawn verification. The offline registry remains metadata-only: actual file integrity, content permissions and scanner authentication must be implemented before production publishing. No scheduling or publishing rights are granted.
