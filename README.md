@@ -561,3 +561,7 @@ An end-to-end offline WSGI integration test now exercises the real account/sessi
 ## Business-switch response isolation hardening — 2026-11-10
 
 The browser read client and DOM renderer now accept an optional `expectedTenantId` to reject responses for a different business. The renderer exposes `clear({container})` so a future business-switch flow can immediately remove the previous tenant's information before requesting the next view. The integration runbook now requires this ordering. Tests cover rejecting stale cross-business responses and clearing prior-business content. The authenticated switch orchestration itself is still not connected to the HTML prototype.
+
+## Read-only Content Studio browser components — 2026-11-10
+
+The browser now has a strict `ui/content_studio_contract.js` validator and `ui/content_studio_view.js` renderer for all four held draft states: content needed, ready for review, postponed and unavailable. The HTTPS read client validates draft-list responses before returning them. The renderer groups held drafts by state, uses text-only DOM insertion and rejects mismatched business IDs; it deliberately exposes no publish/approve/media-upload actions. Node tests cover state grouping, invalid statuses, unsafe-looking text treated as text, and stale-business rejection; the CI workflow includes them. These components still require secure browser authentication and wiring to the real UI shell.
