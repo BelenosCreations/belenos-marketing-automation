@@ -40,6 +40,14 @@ def run(port,token):
         else:
             for item in connections:
                 print('Connection:',item['platform'],item['account_id'],item['status'])
+        pending=overview.get('pending_content_requests',[])
+        if pending:
+            print('Held drafts awaiting content or review:')
+            for item in pending:
+                print('  [%s] %s' % (item['status'],item['draft_text']))
+                print('  Suggested content:',item['suggestion'])
+                if item['missing_items']:
+                    print('  Missing:',', '.join(item['missing_items']))
         businesses=overview['businesses']
         for index,item in enumerate(businesses,1):
             print('%s. %s (%s)' % (index,item['display_name'],item['role']))
