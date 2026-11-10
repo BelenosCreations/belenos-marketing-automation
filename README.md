@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.7. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.8. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -317,3 +317,7 @@ The new `schedule_readiness.py` assesses a proposed post time against the authen
 ## Phase 7.7 — Manual and smart scheduling preview
 
 `schedule_preview.py` provides a nonexecuting scheduling preview for either an owner-supplied manual local time or a bounded set of candidate times from a future smart-scheduling engine. All inputs are interpreted in an explicitly selected IANA timezone. The preview rejects nonexistent daylight-saving transition times and ambiguous repeated local times, as well as duplicate candidates and mixed manual/smart input. Smart preview currently selects the **earliest supplied candidate** for deterministic demonstration, **not an optimized engagement window**. The selected UTC timestamp is assessed by the fail-closed scheduling readiness layer; no scheduled job, publication authorization, or social platform request is created. Eight regression tests cover both modes, daylight-saving boundaries, tenant isolation and invalid inputs. Real audience-aware ranking and owner publishing permissions remain future work.
+
+## Phase 7.8 — Observed-audience scheduling prototype
+
+`audience_schedule_ranker.py` provides a bounded, offline ranking of up to 20 candidate posting windows using only explicitly supplied engagement-rate observations for the requested tenant. It rejects cross-tenant observations, invalid rates and unmatched candidates. With at least five observations **for every candidate**, it selects the highest observed mean (lexical tie-break); otherwise it reports insufficient data without inventing performance estimates. The smart preview optionally uses this ranking, falling back to the earliest candidate only as a clearly labeled preview when evidence is insufficient. Manual times never use analytics. This is a simple empirical ranking, not a predictive model: observations must eventually come from authorized, comparable, platform-specific metrics with validated provenance and a well-defined measurement window. The result always remains held and cannot schedule or publish. Seven regression tests cover ranking, insufficient data, tenant isolation, invalid metrics and preview boundaries.
