@@ -1,5 +1,19 @@
 # Changelog
 
+## Smart/manual calendar controls — 2026-11-10
+
+### Added
+- Per-business Smart versus Manual posting-time selector in the Calendar prototype.
+- Explicit 24-hour manual time entry, removal and sorting in the offline UI.
+- UI regression coverage for mode selection, manual times and business isolation.
+
+### Fixed
+- Corrected escaped regular expression preventing valid manual times from being accepted.
+
+### Limitations
+- Preferences are temporary preview state; no actual scheduling, smart-time recommendations or publishing.
+
+
 ## Verified content and frontend contract — 2026-11-10
 
 ### Added
