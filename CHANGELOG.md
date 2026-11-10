@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 6.3 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated owner-only TruthGuard fact approval, lookup and revocation service.
+- Fresh membership, tenant and session checks; eight regression tests.
+
+### Limitations
+- Owner confirmation is not independent external verification; no production API, Android UI or publish gate.
+- Tests committed but execution unverified.
+
+
 ## Phase 6.2 — 2026-11-10 (development branch)
 
 ### Added
