@@ -8,6 +8,19 @@ The platform is being designed to support independent organizations, multiple bu
 
 > **Development status:** Offline prototype with owner approval-intent recording through the local account and held-draft workflow milestone. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
+## Current functional capabilities (offline development build)
+
+BAM now has a runnable **local account and content-workflow demonstration**, built from the same multi-business authorization services intended for later mobile and hosted interfaces. The current capabilities are:
+
+- **Independent BAM identity sessions:** short-lived, hashed-token sessions, role freshness checks, business-scoped switching, per-session logout, and identity-wide logout.
+- **Multiple businesses under one identity:** isolated business profiles, current roles, social connection metadata, and content request queues.
+- **Social platform preparation:** account connection metadata, offline OAuth-state/PKCE scaffolding, read-only analytics import boundaries, scheduling previews, and audience-window ranking. **No live social account is connected by the demo.**
+- **Held marketing content:** authorized users can create manual drafts, request photos/permissions or other supporting materials, see what is missing, postpone unavailable content, and reopen incomplete drafts. All drafts remain unscheduled.
+- **Content safeguards:** approved-fact evidence, TruthGuard review receipts, attachment verification metadata, owner approval-intent records, and a scheduling readiness gate that explicitly refuses publishing.
+- **Local developer interface:** `dev_server.py` plus `dev_client.py` let developers inspect business accounts and held drafts over a loopback-only HTTP gateway without production credentials.
+
+**Not yet implemented:** a real BAM login and recovery system, native Android user interface, hosted API, provider token exchange, actual media uploads, AI draft generation, production scheduler, or automatic social posting. The latest integrated code and tests are committed but a passing current-branch test run has not been independently verified.
+
 ## Product identity
 
 - **Official product name:** BAM
