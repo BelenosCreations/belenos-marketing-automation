@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 6.4 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated read-only TruthGuard review for stored business content requests.
+- Claim evidence and content-completeness reporting without approval or publishing side effects.
+- Seven regression tests.
+
+### Limitations
+- Claim lists are supplied by the caller and are not guaranteed complete; all drafts remain held.
+- Tests committed but not independently executed.
+
+
 ## Phase 6.3 — 2026-11-10 (development branch)
 
 ### Added
