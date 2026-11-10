@@ -65,6 +65,9 @@ secret should be committed to GitHub or included in README examples.
 - [ ] Add trusted new-business enrollment and invitation acceptance UX
 - [ ] Implement mandatory concurrency-safe throttling and audit logging
 - [ ] Implement secure Android login UI and encrypted credential storage
+- [ ] Connect the dashboard frontend to authenticated business-scoped HTTPS APIs
+- [ ] Implement media upload, trusted verification worker and held-draft approval UX
+- [ ] Confirm IANA timezone, DST handling, smart-time evidence and manual-time precedence before scheduling
 - [ ] Execute full current-branch tests with confirmed CI results
 - [ ] Security-test replay, CSRF, nonce, expiry, account linking, role changes,
       tenant isolation, and recovery
