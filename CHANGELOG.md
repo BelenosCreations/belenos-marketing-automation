@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 7.3 — 2026-11-10 (development branch)
+
+### Changed
+- Approval-intent inspection now rechecks current Content Request readiness, not just draft text.
+- Adds `content_complete` and `requires_new_review` status indicators.
+- Regression case for a previously completed request later placed on hold.
+
+### Safety
+- Approval intent remains nonpublishing and does not grant scheduling access.
+
+
 ## Phase 7.2 — 2026-11-10 (development branch)
 
 ### Added
