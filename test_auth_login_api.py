@@ -6,6 +6,7 @@ from identity_auth import IdentityAuth
 from google_token_verifier import GoogleTokenVerifier
 from google_login_challenges import GoogleLoginChallenges
 from auth_login_api import AuthLoginAPI
+from login_throttle import LoginThrottle
 
 class AuthLoginAPITests(unittest.TestCase):
     def setUp(self):
@@ -36,6 +37,22 @@ class AuthLoginAPITests(unittest.TestCase):
         return self.api.password_login(email='owner@example.com',
             password='correct horse battery staple',tenant_id='shop',
             server_now=102)['session_token']
+
+    def test_password_login_throttles_failures(self):
+        self.api.throttle=LoginThrottle(self.db,max_failures=2,window_seconds=60)
+        for _ in range(2):
+            with self.assertRaises(PermissionError):
+                self.api.password_login(email='owner@example.com',
+                    password='incorrect passphrase here',tenant_id='shop',
+                    server_now=102)
+        with self.assertRaises(PermissionError):
+            self.api.password_login(email='owner@example.com',
+                password='correct horse battery staple',tenant_id='shop',
+                server_now=103)
+        result=self.api.password_login(email='owner@example.com',
+            password='correct horse battery staple',tenant_id='shop',
+            server_now=163)
+        self.assertIn('session_token',result)
 
     def test_password_login(self):
         self.assertIsNotNone(self.sessions.resolve(self.password(),now=103))
