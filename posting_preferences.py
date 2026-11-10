@@ -43,7 +43,7 @@ class PostingPreferences:
 
     def set(self,*,token,tenant_id,mode,timezone,manual_times,now):
         session=self._session(token=token,tenant_id=tenant_id,now=now,owner_only=True)
-        if mode not in ('smart','manual'):
+        if not isinstance(mode,str) or mode not in ('smart','manual'):
             raise ValueError('Invalid scheduling preference')
         if not isinstance(timezone,str) or not timezone.strip() or len(timezone)>80:
             raise ValueError('IANA timezone required')
@@ -51,7 +51,7 @@ class PostingPreferences:
             ZoneInfo(timezone)
         except (ZoneInfoNotFoundError,ValueError,KeyError) as exc:
             raise ValueError('Unknown IANA timezone') from exc
-        if (not isinstance(manual_times,list) or len(manual_times)>24
+        if (type(manual_times) is not list or len(manual_times)>24
                 or any(not isinstance(value,str) or len(value)!=5
                        or re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]',value) is None
                        for value in manual_times)
@@ -59,6 +59,8 @@ class PostingPreferences:
             raise ValueError('Invalid or duplicate manual times')
         if mode=='manual' and not manual_times:
             raise ValueError('Manual mode requires at least one time')
+        if mode=='smart' and manual_times:
+            raise ValueError('Smart mode cannot include manual times')
         times=sorted(manual_times)
         with self.db:
             self.db.execute("""INSERT INTO bam_posting_preferences
