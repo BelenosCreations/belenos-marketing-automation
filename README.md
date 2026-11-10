@@ -122,3 +122,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 ## Phase 3.9 employee invitations (draft PR #1)
 
 `invitations.py` provides an offline, owner-authorized invitation lifecycle: single-use bearer token, expiry, revocation, and role-limited enrollment. Invitation tokens are hashed in storage. Redemption is **not** a signup/login system: it must be invoked only after an independent server-side identity verifier has authenticated the intended employee. No invitation email is sent and no employee account has been created outside test fixtures. Draft [pull request #1](https://github.com/BelenosCreations/belenos-marketing-automation/pull/1) is open for review and CI; it is not merged. Production remains disabled.
+
+## Phase 4.0 general-purpose business curation
+
+The platform targets independent businesses and multiple businesses under one owner account. `business_curation.py` stores separate industry/topic/source allowlists for each business; approving a 3D-printing creator for Belenos does not approve that creator for Busy B Cleaning Service. Known competitor source domains can be blocked per business, and unknown or possibly competing local sources require review. This is offline policy scaffolding, not a verified competitor-discovery service. Trusted administration, platform profile identity matching and authenticated APIs remain future work. No automatic content sharing or publishing is enabled.
