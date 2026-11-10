@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.2. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.3. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -297,3 +297,7 @@ Authenticated TruthGuard content review now correlates heuristic high-risk phras
 ## Phase 7.2 — Authenticated owner approval intent (nonpublishing)
 
 The offline `approval_intent_service.py` records owner-authenticated **approval intent** only when a Content Request has all required content and a draft-bound, held TruthGuard review receipt validates. It stores tenant/request/draft/receipt identifiers, acting owner and timestamp; the owner can revoke the record. Inspection compares the current draft fingerprint to the recorded one and exposes whether the intent is active and draft unchanged. Cross-tenant sessions and non-owner identities are denied. Five regression tests cover incomplete content, owner recording, cross-tenant denial, stale receipts and revocation. **This is not final marketing approval or a publishing/scheduling permission.** Review completeness, full factual extraction, trusted persistence and publication authorization remain separate future gates. No live publishing is enabled.
+
+## Phase 7.3 — Approval-intent lifecycle safety
+
+Inspection of an existing owner approval-intent record now checks both the draft fingerprint **and the current Content Request readiness status**. A postponed, unavailable, or otherwise incomplete request is flagged `content_complete: false` and `requires_new_review: true`, even if its text has not changed. The additional regression case covers a completed draft that is later postponed. The intent ledger remains read-only for downstream automation: neither an active intent nor a complete request authorizes scheduling or publishing. Future work must also bind approval to current verified attachment identities and immutable revision history before any execution gate is enabled.
