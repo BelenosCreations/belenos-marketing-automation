@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.5. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with owner approval-intent recording through Phase 7.6. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -309,3 +309,7 @@ Owner approval-intent records now store a deterministic SHA-256 snapshot of the 
 ## Phase 7.5 — Registry-backed attachment verification
 
 The owner approval-intent boundary now verifies every required content reference against the trusted attachment registry for the **same business, request and required item**, rather than accepting a string that merely looks like a verified attachment. Intent recording rejects missing, unregistered, cross-request or no-longer-verified references. Later inspection rechecks registry status and reports `attachments_verified`; failed verification forces `requires_new_review` even if draft and reference strings are unchanged. Existing approval-intent tests now use actual registered and verified attachments, and three new regression cases cover fake references, cross-request references and withdrawn verification. The offline registry remains metadata-only: actual file integrity, content permissions and scanner authentication must be implemented before production publishing. No scheduling or publishing rights are granted.
+
+## Phase 7.6 — Read-only scheduling readiness
+
+The new `schedule_readiness.py` assesses a proposed post time against the authenticated, tenant-scoped approval-intent ledger. It reports explicit blockers for revoked intent, changed draft, incomplete or changed supporting content, unverified attachments and nonfuture timestamps. Even with no such blockers, it **always holds** the request because final approval, complete TruthGuard publication gating and live integration are not implemented. It neither creates a scheduled job nor invokes social platforms. Seven regression tests cover held status, blocker reporting, access isolation and invalid time input. A green-looking review or recorded intent is never treated as publishing authorization.
