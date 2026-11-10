@@ -121,6 +121,8 @@ def make_handler(api, *, clock=None):
                 self._respond(403,{'error':'access_denied'})
             except (ValueError,TypeError,json.JSONDecodeError):
                 self._respond(400,{'error':'invalid_request'})
+            except KeyError:
+                self._respond(404,{'error':'not_found'})
             except RuntimeError:
                 self._respond(503,{'error':'service_unavailable'})
 
