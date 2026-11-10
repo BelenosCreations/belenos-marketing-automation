@@ -77,6 +77,26 @@ class TruthGuardContentReviewTests(unittest.TestCase):
         self.assertFalse(report['span_audit']['fact_extraction_complete'])
         self.assertEqual(report['status'],'held')
 
+    def test_verified_but_detached_claim_is_not_grounded(self):
+        report=self.inspect()
+        self.assertEqual(report['truthguard']['claims'][0]['status'],'verified')
+        self.assertFalse(report['claims_grounded_in_draft'])
+        self.assertEqual(len(report['detached_claims']),1)
+
+    def test_verified_claim_with_exact_span_is_grounded_but_held(self):
+        text='Custom resin-printed artwork'
+        report=self.inspect(annotations=[{'start':0,'end':len(text),
+            'key':'product','text':text}])
+        self.assertTrue(report['claims_grounded_in_draft'])
+        self.assertEqual(report['detached_claims'],[])
+        self.assertFalse(report['publishing_enabled'])
+
+    def test_mismatched_claim_span_rejected(self):
+        report=self.inspect(annotations=[{'start':0,'end':6,
+            'key':'product','text':'Custom'}])
+        self.assertFalse(report['claims_grounded_in_draft'])
+        self.assertEqual(len(report['detached_claims']),1)
+
     def test_unknown_request_denied(self):
         with self.assertRaises(KeyError):
             self.inspect(request_id='missing')
