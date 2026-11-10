@@ -1,5 +1,13 @@
 # Changelog
 
+## Phase 6.9 — 2026-11-10 (development branch)
+
+### Security
+- Reject facts whose approval timestamp is later than the requested review time.
+- Add five regression cases for temporal and tenant boundaries.
+- Preserve held review status and disabled publishing.
+
+
 ## Phase 6.8 — 2026-11-10 (development branch)
 
 ### Security hardening
