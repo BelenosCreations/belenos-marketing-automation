@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 8.2 — 2026-11-10 (development branch)
+
+### Added
+- Provider-neutral, offline analytics page adapter with pre-fetch account authorization and checkpoint-aware import.
+- Business-local weekday/hour bucketing of historical publication times.
+- Seven regression cases for authorization, validation, preview and import.
+
+### Limitations
+- The injected fetcher is not a live provider connector; no OAuth, live data access, scheduling or publishing.
+
+
 ## Phase 8.1 — 2026-11-10 (development branch)
 
 ### Added
