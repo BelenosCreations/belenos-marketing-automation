@@ -40,6 +40,8 @@ node ui/dashboard_smoke_test.js
 node ui/dashboard_data_contract_test.js
 node ui/dashboard_live_view_test.js
 node ui/dashboard_http_client_test.js
+node ui/content_studio_contract_test.js
+node ui/content_studio_view_test.js
 ```
 
 Do not expose `bam_read_wsgi.py` directly to the public internet without a trusted HTTPS proxy, authentication and rate limits. Do not treat the demo's sample metrics as production data. Do not store BAM or social provider credentials in GitHub, client source, screenshots or logs.
