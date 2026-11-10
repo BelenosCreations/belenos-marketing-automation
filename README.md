@@ -513,3 +513,9 @@ The offline GitHub Actions workflow now includes Node.js 22 and runs `node ui/da
 ## Settings and appearance UX — 2026-11-10
 
 The approved mobile-first design keeps appearance controls out of the main dashboard. A small **Settings** entry opens **Settings → Appearance**, with explicit **Light**, **Dark**, and **Auto (device)** choices. Auto is the default and follows the device's color preference; when supported, the prototype responds to device theme changes. Settings also reserves space for future account, notification, business and connection preferences. Prototype appearance selection is intentionally in-memory only and resets on reload. The UI JavaScript was smoke-checked for Settings navigation and theme selection. The Node CI smoke test was updated; its workflow outcome is not independently verified.
+
+## Authenticated dashboard view contract — 2026-11-10
+
+The authenticated `AccountReadAPI` now **actually populates** the dashboard-card list in both `get_overview` and business activation responses. The new `get_dashboard_view` service returns a minimal read-only payload (`schema_version: 1`) containing the authorized business list, active tenant, user role, safe card summaries, pending content requests and explicit `not_connected` markers for analytics and scheduling. It does **not** return credentials, provider vault references, live publication permission or a session token. Tests cover business-scoped draft visibility, role-restricted connection counts, missing analytics/scheduling, and invalid sessions. This resolves a discrepancy where earlier documentation described a card integration that had not yet been wired into `AccountReadAPI`.
+
+The static HTML prototype remains a **separate demonstration** with sample data. Connecting it to a hosted HTTPS endpoint requires an authenticated transport, secure session handling and production API implementation. A read-only data contract does not authorize posting or scheduling.
