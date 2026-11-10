@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 5.6. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype with TruthGuard hardening through Phase 6.9. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -281,3 +281,7 @@ TruthGuard now distinguishes **a fact that exists in the approved knowledge base
 ## Phase 6.8 — TruthGuard untrusted-input hardening
 
 The authenticated Content Request review now validates the full caller-supplied claim collection before draft-span comparison: at most 100 entries, exact `key` and `text` fields, and nonempty string values. This prevents malformed nested or unhashable values from triggering unexpected errors and keeps the review boundary fail-closed. Two regression cases cover malformed and oversized claim inputs. The existing review remains nonpublishing and tenant-scoped. The GitHub connector can commit source and tests but does not expose a workflow-dispatch operation; no production release is implied.
+
+## Phase 6.9 — Temporal validity of approved facts
+
+TruthGuard knowledge lookup now requires `approved_at <= review_time` in addition to non-revocation and unexpired validity. This prevents a fact with a future approval timestamp from being treated as already authorized evidence. Five regression cases cover future approvals, boundary-time activation, expiration, tenant separation and revocation. Review reports remain nonpublishing; no live publishing integration is enabled.
