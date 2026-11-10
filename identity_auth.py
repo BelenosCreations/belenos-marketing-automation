@@ -154,6 +154,36 @@ class IdentityAuth:
             raise PermissionError('Google identity not linked or inactive')
         return self._issue_for_member(row[0],tenant_id,timestamp)
 
+    def change_password(self,*,session_token,current_password,new_password,now=None):
+        """Authenticated password change; revokes all existing BAM sessions."""
+        timestamp=int(time.time()) if now is None else now
+        session=self.sessions.resolve_current(session_token,
+            directory=self.directory,now=timestamp)
+        if session is None:
+            raise PermissionError('Active BAM session required')
+        subject=session.principal.subject_id
+        row=self.db.execute("""SELECT i.email,p.salt,p.digest,p.iterations
+            FROM bam_identities i JOIN bam_password_credentials p
+            ON i.subject_id=p.subject_id
+            WHERE i.subject_id=? AND i.active=1 AND i.email_verified=1""",
+            (subject,)).fetchone()
+        if row is None or row[3]!=_ITERATIONS:
+            raise PermissionError('Verified password account required')
+        current=_password_bytes(current_password)
+        if not hmac.compare_digest(_hash_password(current,row[1]),row[2]):
+            raise PermissionError('Current password invalid')
+        updated=_password_bytes(new_password)
+        if hmac.compare_digest(current,updated):
+            raise ValueError('New password must be different')
+        salt=secrets.token_bytes(32)
+        digest=_hash_password(updated,salt)
+        with self.db:
+            self.db.execute("""UPDATE bam_password_credentials
+                SET salt=?,digest=?,iterations=? WHERE subject_id=?""",
+                (salt,digest,_ITERATIONS,subject))
+        self.sessions.revoke_identity(subject,now=timestamp)
+        return {'password_changed':True,'sessions_revoked':True}
+
     def disable_identity_trusted(self,*,subject_id,now=None):
         """Administrative action, not exposed to untrusted clients."""
         timestamp=int(time.time()) if now is None else now
