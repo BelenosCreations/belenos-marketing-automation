@@ -2,10 +2,11 @@
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from schedule_readiness import assess_schedule_readiness
+from audience_schedule_ranker import rank_candidates
 
 def preview_schedule(*, ledger, token, tenant_id, intent_id, mode,
                      timezone_name, manual_local=None, smart_candidates=None,
-                     now=None):
+                     now=None, observations=None):
     if mode not in ('manual','smart'):
         raise ValueError('Unknown scheduling mode')
     try:
@@ -41,12 +42,26 @@ def preview_schedule(*, ledger, token, tenant_id, intent_id, mode,
         instants.append(possible[0])
     if len(set(instants))!=len(instants):
         raise ValueError('Duplicate scheduling candidates')
-    selected=min(instants)
+    selection_policy='manual_selection' if mode=='manual' else 'earliest_candidate_only'
+    ranking=None
+    if mode=='manual' and observations is not None:
+        raise ValueError('Manual mode cannot use smart observations')
+    if mode=='smart' and observations is not None:
+        ranking=rank_candidates(tenant_id=tenant_id,candidates=candidates,
+                                observations=observations)
+        if ranking['selection'] is None:
+            selected=min(instants)
+            selection_policy='insufficient_data_earliest_preview'
+        else:
+            selected=instants[candidates.index(ranking['selection'])]
+            selection_policy=ranking['selection_policy']
+    else:
+        selected=instants[0] if mode=='manual' else min(instants)
     assessment=assess_schedule_readiness(
         ledger=ledger,token=token,tenant_id=tenant_id,
         intent_id=intent_id,proposed_at=selected,now=now)
     return {'mode':mode,'timezone':timezone_name,
             'candidate_count':len(instants),'selected_at':selected,
-            'selection_policy':'earliest_candidate_only',
+            'selection_policy':selection_policy,'ranking':ranking,
             'readiness':assessment,'status':'held',
             'scheduled_job_created':False,'publishing_enabled':False}
