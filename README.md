@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline prototype through Phase 5.1. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline prototype through Phase 5.2. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Product identity
 
@@ -199,3 +199,9 @@ BAM can now preserve a prepared, business-specific marketing draft while request
 ## Phase 5.1 — authenticated Content Requests boundary
 
 The offline `content_request_service.py` now wraps Content Requests creation, retrieval, listing, supplying materials and hold-state updates with session validation and **fresh business membership checks on every operation**. Owners, marketing managers and content creators may prepare and update drafts according to the existing role policy; viewers can read but cannot modify them. Expired or revoked sessions, deactivated staff, role downgrades and cross-business requests are denied. Fourteen regression tests cover these behaviors and confirm that providing all required content results only in `ready_for_review`, not publication. Tests are committed but not yet independently verified. The storage class remains an internal trusted component; no public API, actual media-upload verification or publishing permission is provided.
+
+## Phase 5.2 — Content Requests attachment validation boundary
+
+`content_attachments.py` introduces tenant- and request-scoped attachment metadata with pending, verified, and rejected states. The authenticated Content Request service now requires a **verified attachment ID matching the exact business, request and checklist item** before marking a requirement supplied. Pending, rejected, cross-tenant, cross-request and wrong-item references cannot satisfy a requirement. A SHA-256 format check and supported media-type allowlist are included; finalized attachment decisions cannot be silently reversed. Ten new attachment tests and two service tests cover these controls.
+
+**Security and product limitations:** This is a database-backed *validation boundary*, not an implemented uploader or real scanner. The `validate_trusted` method is an internal privileged operation and must not be exposed to mobile clients. A production worker must actually inspect bytes, verify hashes, scan media, validate permissions/consent and protect private storage before it can mark an attachment verified. The lower-level `ContentRequests.provide` method is also internal-only; external callers must use the authenticated service. No posts can be scheduled or published from this feature. Tests are committed but have not yet been independently executed.
