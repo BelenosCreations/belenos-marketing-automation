@@ -43,4 +43,12 @@ class AttestationTests(unittest.TestCase):
         self.store.record_trusted(**dict(self.args,identity_verified=False,competitor_status='possible'))
         self.assertFalse(self.store.resolve(tenant_id='belenos',original_url=self.args['original_url'],now=101)['identity_verified'])
 
+    def test_overlong_attestation_rejected(self):
+        with self.assertRaises(ValueError):
+            self.store.record_trusted(
+                tenant_id='shop',original_url='https://example.org/post',
+                platform='youtube',account_id='maker',
+                identity_verified=True,competitor_status='cleared',
+                verified_at=100,expires_at=100+86401)
+
 if __name__=='__main__':unittest.main()
