@@ -30,6 +30,12 @@ class BusinessCuration:
             PRIMARY KEY (tenant_id,source_url),
             FOREIGN KEY (tenant_id,topic) REFERENCES business_topics(tenant_id,topic)
         )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS business_competitors (
+            tenant_id TEXT NOT NULL,
+            source_host TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            PRIMARY KEY(tenant_id,source_host)
+        )""")
         db.commit()
 
     @staticmethod
@@ -63,10 +69,40 @@ class BusinessCuration:
                 source_name=excluded.source_name,topic=excluded.topic,approved=excluded.approved""",
                 (tenant_id,source_url,source_name,topic,int(bool(approved))))
 
-    def evaluate(self, *, tenant_id, topic, candidate: Candidate):
+    @staticmethod
+    def _host(url):
+        parsed=urlparse(url)
+        return (parsed.hostname or '').lower().removeprefix('www.') if parsed.scheme=='https' else ''
+
+    def block_competitor(self, *, tenant_id, source_url, reason='local_competitor'):
+        """Trusted owner configuration; block source host and its subdomains."""
+        self._valid(tenant_id,source_url,reason)
+        host=self._host(source_url)
+        if not host or '.' not in host:
+            raise ValueError('Valid HTTPS competitor URL required')
+        if not self.db.execute('SELECT 1 FROM business_profiles WHERE tenant_id=?',(tenant_id,)).fetchone():
+            raise PermissionError('Unknown business')
+        with self.db:
+            self.db.execute("""INSERT INTO business_competitors VALUES (?,?,?)
+                ON CONFLICT(tenant_id,source_host) DO UPDATE SET reason=excluded.reason""",
+                (tenant_id,host,reason))
+
+    def evaluate(self, *, tenant_id, topic, candidate: Candidate, local_competitor_risk='unknown'):
         """Fail closed on missing business, topic or matching approved source."""
         if not isinstance(tenant_id,str) or not isinstance(topic,str):
             return 'blocked','missing_business_or_topic'
+        host=self._host(candidate.source_url)
+        if not host:
+            return 'blocked','invalid_source_url'
+        blocked=self.db.execute('SELECT source_host FROM business_competitors WHERE tenant_id=?',(tenant_id,)).fetchall()
+        if any(host==entry[0] or host.endswith('.'+entry[0]) for entry in blocked):
+            return 'blocked','known_competitor'
+        if local_competitor_risk == 'possible':
+            return 'approval_required','possible_local_competitor'
+        if local_competitor_risk not in ('cleared','unknown','possible'):
+            return 'blocked','invalid_competitor_screening'
+        if local_competitor_risk == 'unknown':
+            return 'approval_required','local_competitor_screening_required'
         source=self.db.execute("""SELECT approved FROM business_sources
             WHERE tenant_id=? AND source_url=? AND topic=?""",
             (tenant_id,candidate.source_url,topic)).fetchone()
