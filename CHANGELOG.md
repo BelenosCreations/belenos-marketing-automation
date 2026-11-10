@@ -1,5 +1,19 @@
 # Changelog
 
+## Phase 5.6 — 2026-11-10 (development branch)
+
+### Added
+- Manual weekly posting times per business timezone, preserving exact user-selected minutes.
+- Smart posting-time suggestions based on post subject, audience, preferred hours and supplied engagement observations.
+- Explicit per-post time overrides in either mode.
+- Mandatory hold for missing content or approval; suggestions never auto-publish.
+- Twelve scheduling-policy regression tests.
+
+### Limitations
+- Offline policy engine only; no saved user settings, platform analytics, Android scheduling UI or publishing integration.
+- Tests committed, execution unverified.
+
+
 ## Phase 5.5 — 2026-11-10 (development branch)
 
 ### Added
