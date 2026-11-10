@@ -1,5 +1,16 @@
 # Changelog
 
+## Cross-workflow authorization hardening — 2026-11-10 (development branch)
+
+### Fixed
+- Require current session role in Content Request and owner approval-intent operations.
+- Reject stale sessions following role upgrades, not only downgrades.
+- Update Content Request test fixture to use verified attachment IDs instead of unsupported content references.
+
+### Added
+- Regression tests for stale role promotion into content creation and owner approval.
+
+
 ## Local account workflow prototype — 2026-11-10 (development branch)
 
 ### Added
