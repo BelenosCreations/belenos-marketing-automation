@@ -19,6 +19,11 @@ class FakeAPI:
             raise PermissionError('denied')
         return {'signed_out':True,'publishing_enabled':False}
 
+    def logout_everywhere(self,*,session_token,server_now):
+        if session_token!='valid':
+            raise PermissionError('denied')
+        return {'signed_out':True,'sessions_revoked':2,'publishing_enabled':False}
+
 class GatewayTests(unittest.TestCase):
     def setUp(self):
         self.server=create_loopback_server(FakeAPI(),clock=lambda:101)
@@ -50,6 +55,11 @@ class GatewayTests(unittest.TestCase):
         status,_,body=self.request('POST','/api/account/logout',body={})
         self.assertEqual(status,200)
         self.assertTrue(body['signed_out'])
+    def test_logout_everywhere(self):
+        status,_,body=self.request('POST','/api/account/logout-everywhere',body={})
+        self.assertEqual(status,200)
+        self.assertEqual(body['sessions_revoked'],2)
+
     def test_bad_token_denied(self):
         self.assertEqual(self.request('GET','/api/account/overview',token='bad')[0],403)
     def test_extra_fields_denied(self):
