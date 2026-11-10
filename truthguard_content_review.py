@@ -34,6 +34,12 @@ class TruthGuardContentReview:
                   for claim in claims
                   if (claim['key'],claim['text']) not in matched]
         risk_signals=scan_risk_signals(request['draft_text'])
+        # Signal coverage is an editorial indicator only. A spanning annotation
+        # does not establish that its contents are true.
+        uncovered_signals=[signal for signal in risk_signals['signals']
+            if not any(span['start']<=signal['start']
+                       and span['end']>=signal['end']
+                       for span in span_audit['accepted'])]
         result=self.reviewer.review_draft(
             tenant_id=tenant_id,draft_text=request['draft_text'],
             claims=claims,now=timestamp)
@@ -42,6 +48,8 @@ class TruthGuardContentReview:
                 'content_complete':request['status']=='ready_for_review',
                 'truthguard':result,'span_audit':span_audit,
                 'risk_signals':risk_signals,
+                'uncovered_risk_signals':uncovered_signals,
+                'risk_signals_annotated':not uncovered_signals and span_audit['annotation_integrity'],
                 'detached_claims':detached,
                 'claims_grounded_in_draft':not detached and bool(claims)
                     and span_audit['annotation_integrity'],
