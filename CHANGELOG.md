@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 8.6 — 2026-11-10 (development branch)
+
+### Added
+- Backend-only OAuth attempt state ledger with PKCE S256 challenge and bounded expiry.
+- Single-use, tenant/provider/account-bound callback state validation with transactional replay prevention.
+- Ten regression cases for replay, scope, expiry, verifier and stored-hash behavior.
+
+### Limitations
+- No OAuth redirect handling, token exchange, vault, session binding, live provider connection or publishing.
+
+
 ## Phase 8.5 — 2026-11-10 (development branch)
 
 ### Added
