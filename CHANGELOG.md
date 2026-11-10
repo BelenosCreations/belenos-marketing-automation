@@ -1,5 +1,13 @@
 # Changelog
 
+## Phase 6.8 — 2026-11-10 (development branch)
+
+### Security hardening
+- Validate bounded, correctly typed TruthGuard claim lists before hash-based draft span matching.
+- Add malformed and oversized claim regression coverage.
+- Retain fail-closed held status and disabled publishing.
+
+
 ## Phase 6.7 — 2026-11-10 (development branch)
 
 ### Added
