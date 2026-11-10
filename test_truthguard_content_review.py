@@ -97,6 +97,14 @@ class TruthGuardContentReviewTests(unittest.TestCase):
         self.assertFalse(report['claims_grounded_in_draft'])
         self.assertEqual(len(report['detached_claims']),1)
 
+    def test_unhashable_claim_rejected_cleanly(self):
+        with self.assertRaises(ValueError):
+            self.inspect(claims=[{'key':['invalid'],'text':'hello'}])
+
+    def test_too_many_claims_rejected(self):
+        with self.assertRaises(ValueError):
+            self.inspect(claims=self.claims*101)
+
     def test_unknown_request_denied(self):
         with self.assertRaises(KeyError):
             self.inspect(request_id='missing')
