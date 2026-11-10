@@ -1,5 +1,16 @@
 # Changelog
 
+## Phase 7.7 — 2026-11-10 (development branch)
+
+### Added
+- Timezone-aware, read-only manual/smart scheduling preview tied to the held readiness assessment.
+- Validation of daylight-saving gaps/overlaps, duplicate candidates, mode mismatch and tenant isolation.
+- Eight regression cases for preview boundaries.
+
+### Limitations
+- Smart mode uses earliest-candidate demonstration only; no engagement optimization, job creation or publishing.
+
+
 ## Phase 7.6 — 2026-11-10 (development branch)
 
 ### Added
