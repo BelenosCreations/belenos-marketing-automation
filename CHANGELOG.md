@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 4.1 — 2026-11-10 (development branch)
+
+### Added
+- Authenticated, read-only business switcher with per-business role resolution.
+- Eight account-switching tests covering separate business access and deactivation.
+
+### Test status
+- Test definitions committed; GitHub workflow run not returned for latest commit, so execution remains unverified.
+
+### Known limitations
+- Login identity verification and Android business-switching UI are not implemented.
+- Trusted server must derive creator screening outcomes; callers must not be allowed to mark competitors cleared.
+- Competitor host blocklist is conservative and needs profile-level social account identifiers to avoid broad shared-domain blocks.
+- Publishing disabled.
+
+
 ## Phase 4.0 — 2026-11-10 (development branch)
 
 ### Added
