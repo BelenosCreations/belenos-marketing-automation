@@ -48,7 +48,8 @@ function renderAnalytics(root){const section=panel('Performance overview');secti
 function renderConnections(root){root.append(button('← Dashboard',()=>navigate('home'),'btn back'));const section=panel('Social connections');section.append(el('p','','Connection counts shown on the dashboard are illustrative. Real provider authorization and sync are not enabled.'));section.append(el('div','empty','No live social accounts connected in this prototype.'));root.append(section)}
 function render(){document.documentElement.dataset.theme=state.theme;$('themeToggle').textContent=state.theme==='dark'?'Switch to light mode':'Switch to dark mode';drawNav();$('heading').textContent=({home:'Dashboard',content:'Content Studio',new:'Create Draft',calendar:'Calendar',analytics:'Analytics',connections:'Connections'})[state.page]||'Dashboard';$('subtitle').textContent=state.detail?'Review content and required materials.':'Simple overview, detailed controls when you need them.';const root=$('view');root.replaceChildren();if(state.page==='home')renderHome(root);else if(state.page==='content')renderContent(root);else if(state.page==='new')renderNew(root);else if(state.page==='calendar')renderCalendar(root);else if(state.page==='analytics')renderAnalytics(root);else renderConnections(root)}
 for(const [id,business] of Object.entries(SAMPLE)){const opt=el('option','',business.name);opt.value=id;$('business').append(opt)}
-$('themeToggle').addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';render()});\n$('business').addEventListener('change',event=>{state.business=event.target.value;state.filter='all';navigate('home')});render();
+$('themeToggle').addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';render()});
+$('business').addEventListener('change',event=>{state.business=event.target.value;state.filter='all';navigate('home')});render();
 </script>
 </body>
 </html>
