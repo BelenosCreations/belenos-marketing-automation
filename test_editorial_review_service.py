@@ -1,4 +1,5 @@
 import sqlite3
+from dataclasses import replace
 import unittest
 from access_policy import Principal,Role
 from accounts import AccountDirectory
@@ -93,6 +94,19 @@ class EditorialReviewServiceTests(unittest.TestCase):
             platform='youtube',account_id='maker',identity_verified=True,
             competitor_status='cleared',verified_at=90,expires_at=101)
         self.assertEqual(self.check()[0],'approval_required')
+
+    def test_modified_summary_cannot_replace_queued_content(self):
+        modified=replace(self.candidate,summary='Different claims')
+        self.assertEqual(self.check(candidate=modified),
+                         ('blocked','queued_identity_or_topic_mismatch'))
+
+    def test_modified_source_cannot_replace_queued_content(self):
+        modified=replace(self.candidate,source_url='https://elsewhere.example/post')
+        self.assertEqual(self.check(candidate=modified)[0],'blocked')
+
+    def test_modified_verification_flags_cannot_replace_queued_content(self):
+        modified=replace(self.candidate,verified_facts=False)
+        self.assertEqual(self.check(candidate=modified)[0],'blocked')
 
     def test_mobile_cannot_pass_clearance_flag(self):
         with self.assertRaises(TypeError):self.check(identity_verified=True)
