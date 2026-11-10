@@ -471,3 +471,9 @@ BAM now includes additional offline account lifecycle services. `email_credentia
 Google-only signup is also supported at the service layer: a server-verified Google ID token with a one-use nonce may create a new BAM identity **without a password**. The new identity receives **no business membership or usable business session** until a separate trusted enrollment or invitation flow grants access. Existing BAM identities are never silently merged with Google identities based on matching email; an existing password account must explicitly link Google using fresh password reauthentication. This supports both Google-first and email-first users while retaining strict business separation.
 
 Security regression tests cover verification and reset token replay/expiry, password reset session revocation, Google-only signup without business access, and rejection of email-only identity merging. These modules are not yet wired to public HTTP routes, Android UI, or real delivery providers; current-branch tests still need a confirmed run.
+
+## Password login throttling — 2026-11-10
+
+`login_throttle.py` adds a persistent per-identity failed-login counter with a bounded lockout window. Identifiers are SHA-256 hashed rather than storing raw email addresses in the throttle ledger. `AuthLoginAPI` can enforce the throttle before password verification, count failed credential attempts, and clear failures after successful login. Regression tests cover lockout, expiry, account isolation, hashed identifiers, and API-level behavior.
+
+**Production security note:** the throttle is an injectable service dependency, not an Internet-grade abuse-prevention system. The production backend must make throttling mandatory and add per-IP/device and global request limits, database-safe concurrency, monitoring, HTTPS, abuse-resistant email delivery and secure Google OAuth setup before exposing authentication endpoints. No public authentication route has been enabled.
