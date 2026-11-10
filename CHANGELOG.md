@@ -1,5 +1,17 @@
 # Changelog
 
+## Mobile-first GUI prototype — 2026-11-10
+
+### Added
+- Standalone responsive BAM dashboard prototype with large home cards and drilldown pages for content, individual drafts, calendar, analytics and social connections.
+- Business switcher with isolated Belenos Creations and Busy B Cleaning Service sample data, sample engagement chart, held-draft creation and local hold-state controls.
+- Desktop sidebar and mobile bottom navigation, semantic landmarks, keyboard focus and reduced-motion support.
+- Static structural and offline-safety regression checks for the HTML prototype.
+
+### Limitations
+- Browser-local demonstration only. No live backend, production authentication, real analytics, media upload, scheduling or publishing; browser end-to-end tests and current CI status remain unverified.
+
+
 ## Authentication integration checklist — 2026-11-10
 
 - Added `AUTH_DEPLOYMENT.md` with Google OAuth, email verification, session security, mobile integration and release requirements.
