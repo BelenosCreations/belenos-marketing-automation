@@ -1,5 +1,22 @@
 # Changelog
 
+## Phase 4.3 — 2026-11-10 (development branch)
+
+### Added
+- Combined recommendation gate requiring both approved business-specific source and verified creator identity.
+- Unknown/possible local competitors remain held, known competitors blocked.
+- Ten integration tests for topic, tenant, source, creator and competitor controls.
+
+### Test status
+- New test definitions committed; execution not yet independently verified.
+
+### Known limitations
+- Trusted identity verification and competitor clearance are not implemented.
+- The recommendation gate is not connected to ingestion, scheduled jobs, or publishing.
+- No Android APK, authenticated public API, or live posting.
+- Publishing remains disabled.
+
+
 ## Phase 4.2 — 2026-11-10 (development branch)
 
 ### Added
