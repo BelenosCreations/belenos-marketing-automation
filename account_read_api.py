@@ -6,6 +6,7 @@ The adapter never accepts tenant IDs or roles from client body claims.
 """
 from account_dashboard import AccountDashboard
 from dashboard_cards import build_dashboard_cards
+from dashboard_view import build_dashboard_view
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard):
@@ -29,6 +30,11 @@ class AccountReadAPI:
             token=self._token(session_token),now=self._now(server_now))
         overview['dashboard_cards']=build_dashboard_cards(overview)['cards']
         return overview
+
+    def get_dashboard_view(self, *, session_token, server_now):
+        """Minimal presentation payload from authenticated tenant data."""
+        overview=self.get_overview(session_token=session_token,server_now=server_now)
+        return build_dashboard_view(overview)
 
     def activate_business(self, *, session_token, target_tenant_id, server_now):
         """Change business only after verifying target membership.
