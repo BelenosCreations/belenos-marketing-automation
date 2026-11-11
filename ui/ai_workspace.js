@@ -95,6 +95,7 @@ function(client,draftView,settingsView,factsView,costView){
         draftsContainer.replaceChildren();
         settingsContainer.replaceChildren();
         if(factsContainer)factsContainer.replaceChildren();
+        if(costContainer)costContainer.replaceChildren();
         // Do not expose private server error details to the user.
         if(onError)onError('Unable to load AI workspace');
         return {stale:false,error:true};
