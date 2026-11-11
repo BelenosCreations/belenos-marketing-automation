@@ -645,3 +645,7 @@ Revising only the post copy now preserves a verified image association, while re
 ## Generation-time fact revision guard — 2026-11-10
 
 The offline generation workflow now checks the business's fact revision again after the trusted executor returns. If the owner updated the fact snapshot while generation was in progress, BAM rejects the obsolete result instead of staging potentially outdated claims. The sponsored request remains consumed because execution was attempted. Regression coverage was added.
+
+## OpenAI Responses adapter boundary — 2026-11-10
+
+`openai_responses_executor.py` adds a strictly bounded, keyless adapter for OpenAI's structured Responses payload format. It isolates untrusted business input in a user message, requests a strict `post_text` + optional `image_prompt` JSON schema, disables server-side response storage and tool calls, caps output tokens, and rejects incomplete, unexpected, or publishing-related provider output. A **trusted HTTPS transport must still be supplied** by production infrastructure; this module does not access the network, load keys, incur charges, or publish. `test_openai_responses_executor.py` checks the request envelope, model allowlist, secret avoidance and fail-closed parsing. The model allowlist is a provisional engineering configuration, not a deployment pricing decision.
