@@ -53,6 +53,8 @@ from bam_calendar_proposals_wsgi import BAMCalendarProposalsWSGI
 from provider_connection_registry import ProviderConnectionRegistry
 from sessions import SessionStore
 from social_connection_directory import SocialConnectionDirectory
+from team_membership_admin import TeamMembershipAdmin
+from bam_team_membership_wsgi import BAMTeamMembershipWSGI
 
 _AUTH_PATHS = frozenset((
     '/api/v1/auth/password', '/api/v1/auth/google-challenge',
@@ -94,6 +96,10 @@ class BAMOfflineGateway:
             raise ValueError('Trusted server clock required')
         self.directory = AccountDirectory(db)
         self.sessions = SessionStore(db)
+        self.team_admin=TeamMembershipAdmin(
+            db=db,sessions=self.sessions,directory=self.directory)
+        self.team_wsgi=BAMTeamMembershipWSGI(
+            self.team_admin,enabled=enabled,clock=self.clock)
         self.identities = IdentityAuth(db, self.sessions, self.directory)
         self.curation = BusinessCuration(db)
         self.connections = ProviderConnectionRegistry(db)
@@ -215,6 +221,8 @@ class BAMOfflineGateway:
             return self.assets_wsgi(environ, start_response)
         if path in _AUTH_PATHS:
             return self.auth_wsgi(environ, start_response)
+        if path in ('/api/v1/team/members','/api/v1/team/membership'):
+            return self.team_wsgi(environ,start_response)
         if path == '/api/v1/posting-preferences' and environ.get('REQUEST_METHOD') == 'PUT':
             return self.preference_write_wsgi(environ, start_response)
         if path == '/api/v1/ai-business-facts' and environ.get('REQUEST_METHOD') == 'PUT':
