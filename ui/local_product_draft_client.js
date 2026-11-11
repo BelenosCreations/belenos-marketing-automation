@@ -11,15 +11,16 @@
   const draftId=/^[a-f0-9]{32}$/;
   const platforms=new Set(['facebook','instagram','linkedin','pinterest','tiktok','youtube']);
   async function create({origin,fetchImpl,sessionToken,expectedTenantId,
-                         platform,includeImagePrompt}){
+                         platform,includeImagePrompt,template='product'}){
     if(typeof origin!=='string'||
        !/^https:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?$/.test(origin)||
        typeof fetchImpl!=='function'||!token.test(sessionToken)||
        typeof expectedTenantId!=='string'||!expectedTenantId.trim()||
        expectedTenantId.length>128||
-       !platforms.has(platform)||typeof includeImagePrompt!=='boolean')
+       !platforms.has(platform)||typeof includeImagePrompt!=='boolean'||
+       !['product','service'].includes(template))
       throw new TypeError('Trusted local draft creation required');
-    const response=await fetchImpl(origin+'/api/v1/ai/local-product-draft',{
+    const response=await fetchImpl(origin+'/api/v1/ai/local-'+template+'-draft',{
       method:'POST',mode:'same-origin',credentials:'omit',
       cache:'no-store',redirect:'error',
       headers:{'Content-Type':'application/json',Accept:'application/json',

@@ -119,18 +119,33 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
           const action=document.createElement('section');
           action.className='panel stack';
           const heading=document.createElement('h3');
-          heading.textContent='No-API-cost product draft';
+          heading.textContent='No-API-cost business draft';
           action.append(heading);
+          const subjectTypes=[];
+          if(facts&&facts.provenance==='owner_confirmed'){
+            for(const key of ['product','service']){
+              if(typeof facts.facts[key]==='string'&&facts.facts[key].trim())
+                subjectTypes.push(key);
+            }
+          }
           const ready=facts&&facts.provenance==='owner_confirmed'&&
             typeof facts.facts.business_name==='string'&&
-            facts.facts.business_name.trim()&&
-            typeof facts.facts.product==='string'&&facts.facts.product.trim();
+            facts.facts.business_name.trim()&&subjectTypes.length>0;
           const detail=document.createElement('p');
           detail.textContent=ready
-            ?'Build a simple factual draft from your owner-confirmed business name and product. Zero OpenAI requests; you must review it before use.'
-            :'First confirm business_name and product in the business facts editor under Settings.';
+            ?'Create a simple factual product or service spotlight from owner-confirmed facts. Zero OpenAI requests; you must review it before use.'
+            :'First confirm business_name and either product or service under Settings.';
           action.append(detail);
           if(ready){
+            const templateChoice=document.createElement('select');
+            for(const key of subjectTypes){
+              const option=document.createElement('option');
+              option.value=key;
+              option.textContent=key==='product'?'Product spotlight':'Service spotlight';
+              templateChoice.append(option);
+            }
+            templateChoice.value=subjectTypes[0];
+            action.append(templateChoice);
             const channel=document.createElement('select');
             for(const platform of ['facebook','instagram','linkedin',
                                    'pinterest','tiktok','youtube']){
@@ -147,7 +162,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
             caption.append(imageChoice);action.append(caption);
             const button=document.createElement('button');
             button.type='button';button.className='secondary';
-            button.textContent='Create cost-free product draft';
+            button.textContent='Create cost-free marketing draft';
             button.disabled=localPending;
             button.addEventListener('click',async()=>{
               if(localPending||active!==mine)return;
@@ -155,7 +170,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
               try{
                 await localClient.create({origin,fetchImpl,
                   sessionToken:mine.token,expectedTenantId:mine.tenantId,
-                  platform:channel.value,
+                  platform:channel.value,template:templateChoice.value,
                   includeImagePrompt:imageChoice.checked});
                 if(version===epoch&&active===mine)await refresh();
               }catch(error){

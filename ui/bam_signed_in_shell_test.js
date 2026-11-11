@@ -130,7 +130,8 @@ async function main(){
       }
       return {ok:true,json:async()=>({...existing})};
     }
-    if(kind==='local-product-draft'&&opts.method==='POST'){
+    if((kind==='local-product-draft'||kind==='local-service-draft')&&
+       opts.method==='POST'){
       const payload=JSON.parse(opts.body);
       const newDraft={tenant_id:currentTenant,draft_id:'c'.repeat(32),
         platform:payload.platform,
@@ -213,7 +214,7 @@ async function main(){
   assert.equal(data['ai-business-facts'].revision,2);
   assert.equal(data['ai-business-facts'].facts.product,'Custom tumblers');
   const localAction=e['bam-ai-drafts'].children[1];
-  const localButton=localAction.children.find(x=>x.textContent==='Create cost-free product draft');
+  const localButton=localAction.children.find(x=>x.textContent==='Create cost-free marketing draft');
   assert.ok(localButton);
   await localButton.listeners.click();
   assert.equal(aiByTenant.shop.length,1);

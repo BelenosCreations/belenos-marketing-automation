@@ -29,11 +29,13 @@ async function main(){
     platform:'facebook',include_image_prompt:true});
   assert.equal(calls[0].opts.headers.Authorization,'Bearer '+'a'.repeat(43));
   await create({...base,fetchImpl,includeImagePrompt:false});
-  assert.equal(calls.length,2);
+  await create({...base,fetchImpl,template:'service'});
+  assert.equal(calls[2].url,'https://bam.example/api/v1/ai/local-service-draft');
+  assert.equal(calls.length,3);
   for(const patch of [
     {origin:'http://bam.example'},{sessionToken:'bad'},
     {expectedTenantId:''},{platform:'unknown'},
-    {includeImagePrompt:'yes'}]){
+    {includeImagePrompt:'yes'},{template:'unsupported'}]){
     await assert.rejects(()=>create({...base,fetchImpl,...patch}),TypeError);
   }
   await assert.rejects(()=>create({...base,
@@ -50,7 +52,7 @@ async function main(){
       media_attached:false,status:'needs_media',revision:1,
       publishing_enabled:false,generation_method:'local_template',
       openai_requests:1})})}),TypeError);
-  assert.equal(calls.length,2);
+  assert.equal(calls.length,3);
   console.log('BAM zero-cost local product draft browser tests passed');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
