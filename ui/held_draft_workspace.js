@@ -45,6 +45,9 @@
     let mediaStatuses=new Map(),riskReports=new Map(),riskPending=new Set();
     let plannedImport=null,calendarData=null,calendarSlots=null;
     let calendarError=false;
+    // Filter state is purely local to the active business and never changes
+    // held content, approval, analytics, or backend query permissions.
+    let filterChannel='all',filterStatus='all',filterQuery='';
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
       mediaEnabled=allowed&&canEdit;
@@ -64,6 +67,7 @@
       mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
       riskReports=new Map();riskPending=new Set();plannedImport=null;
       calendarData=null;calendarSlots=null;calendarError=false;
+      filterChannel='all';filterStatus='all';filterQuery='';
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -78,8 +82,71 @@
       const wrap=make(document,'section','');
       wrap.className='bam-held-draft-workspace';
       wrap.append(make(document,'h2','Content Studio'));
-      wrap.append(make(document,'p',
+      const details=make(document,'section','');
+      details.className='bam-content-studio-filters';
+      details.append(make(document,'p',
         'Create and organize unpublished content requests and optional draft calendar proposals. Approval, scheduling and publishing remain unavailable.'));
+      const filters=make(document,'div','');
+      filters.className='toolbar';
+      const statusSelect=make(document,'select','');
+      for(const status of ['all',...holdNames]){
+        const option=make(document,'option',
+          status==='all'?'Every draft status':status.replaceAll('_',' '));
+        option.value=status;statusSelect.append(option);
+      }
+      statusSelect.value=filterStatus;
+      statusSelect.setAttribute&&statusSelect.setAttribute(
+        'aria-label','Filter drafts by status');
+      filters.append(statusSelect);
+      const channelSelect=make(document,'select','');
+      for(const channel of ['all',...channelNames]){
+        const option=make(document,'option',
+          channel==='all'?'Every social channel':channel);
+        option.value=channel;channelSelect.append(option);
+      }
+      channelSelect.value=filterChannel;
+      channelSelect.setAttribute&&channelSelect.setAttribute(
+        'aria-label','Filter drafts by channel');
+      filters.append(channelSelect);
+      const textSearch=make(document,'input','');
+      textSearch.type='search';textSearch.maxLength=120;
+      textSearch.value=filterQuery;
+      textSearch.placeholder='Find text in your held drafts';
+      textSearch.setAttribute&&textSearch.setAttribute(
+        'aria-label','Search held draft text and guidance');
+      filters.append(textSearch);
+      const apply=make(document,'button','Apply draft filters');
+      apply.type='button';apply.className='secondary';
+      apply.addEventListener('click',()=>{
+        if(active!==viewingSession||epoch!==viewingEpoch)return;
+        if(!['all',...holdNames].includes(statusSelect.value)||
+           !['all',...channelNames].includes(channelSelect.value)||
+           typeof textSearch.value!=='string'||textSearch.value.length>120)
+          throw new TypeError('Invalid held draft filter');
+        filterStatus=statusSelect.value;filterChannel=channelSelect.value;
+        filterQuery=textSearch.value.trim().toLowerCase();
+        render();
+      });
+      filters.append(apply);
+      const clearFilters=make(document,'button','Clear draft filters');
+      clearFilters.type='button';clearFilters.className='secondary';
+      clearFilters.addEventListener('click',()=>{
+        if(active===viewingSession&&epoch===viewingEpoch){
+          filterStatus='all';filterChannel='all';filterQuery='';render();
+        }
+      });
+      filters.append(clearFilters);
+      details.append(filters);
+      const total=model.drafts.length;
+      const visible=model.drafts.filter(draft=>
+        (filterStatus==='all'||draft.status===filterStatus)&&
+        (filterChannel==='all'||draft.channel===filterChannel)&&
+        (!filterQuery||(draft.text+' '+draft.suggestion)
+          .toLowerCase().includes(filterQuery)));
+      details.append(make(document,'p',
+        'Showing '+visible.length+' of '+total+
+        ' private held drafts. Filters only change this view.'));
+      wrap.append(details);
       if(!canEdit){
         wrap.append(make(document,'p','You can view held content but cannot create or edit it.'));
       }
@@ -115,7 +182,7 @@
       wrap.append(form);
       }
       for(const status of holdNames){
-        const list=model.drafts.filter(x=>x.status===status);
+        const list=visible.filter(x=>x.status===status);
         const section=make(document,'section','');
         section.append(make(document,'h3',
           status.replaceAll('_',' ')+' ('+list.length+')'));
