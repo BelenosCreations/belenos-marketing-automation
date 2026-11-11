@@ -48,6 +48,7 @@
     let postingPreview=null,previewPending=false,previewError=false;
     let previewRequest=0,calendarData=null,calendarError=false;
     let suggestionsData=null,suggestionsError=false;
+    let quickProposalPending=false;
     let reviewData=null,reviewPending=false,reviewError=false,reviewRequest=0;
     let feedbackData=null,feedbackPending=false,feedbackError=false;
     let feedbackRequest=0,feedbackWriting=false;
@@ -58,6 +59,7 @@
       postingPreview=null;previewPending=false;previewError=false;
       calendarData=null;calendarError=false;
       suggestionsData=null;suggestionsError=false;
+      quickProposalPending=false;
       reviewData=null;reviewPending=false;reviewError=false;
       feedbackData=null;feedbackPending=false;feedbackError=false;
       feedbackWriting=false;
@@ -150,6 +152,47 @@
       }finally{
         if(epoch===version&&active===mine&&request===previewRequest){
           previewPending=false;
+          if(view==='scheduled')show('scheduled');
+        }
+      }
+    }
+    async function saveSuggestedDate(suggestion,snapshot){
+      if(!enableCalendarProposals||!enableCalendarSuggestions||
+         !active||!current||!calendarData||!suggestionsData||
+         suggestionsData!==snapshot||!snapshot.items.includes(suggestion)||
+         !['owner','marketing_manager','content_creator']
+            .includes(current.role)||
+         quickProposalPending||previewPending||
+         calendarData.items.some(row=>row.requestId===suggestion.requestId))
+        return {restricted:true};
+      const mine=active,version=epoch;
+      quickProposalPending=true;
+      if(view==='scheduled')show('scheduled');
+      try{
+        const result=await calendarClient.propose({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,
+          requestId:suggestion.requestId,
+          expectedRevision:suggestion.draftRevision,
+          utcAt:suggestion.utcAt,expectedProposalToken:null
+        });
+        if(version!==epoch||active!==mine)return {stale:true};
+        const latest=await refreshPostingPreview();
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(latest.error||latest.stale||latest.pending)
+          return {error:true};
+        if(onNotice)onNotice(
+          'Draft-only date proposal saved. No post was scheduled or approved.');
+        return result;
+      }catch(error){
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(onError)onError(
+          'Draft date was not saved; another editor may have used this slot. Refresh and choose again.');
+        void refreshPostingPreview();
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine){
+          quickProposalPending=false;
           if(view==='scheduled')show('scheduled');
         }
       }
@@ -433,6 +476,35 @@
                 item.append(element(document,'p',
                   draft?'Held draft: '+draft.text:
                   'Held draft reference: '+suggestion.requestId.slice(0,8)));
+                if(enableCalendarProposals&&calendarData&&!calendarError&&
+                   ['owner','marketing_manager','content_creator']
+                       .includes(current.role)&&!quickProposalPending){
+                  const snapshot=suggestionsData;
+                  const choose=element(document,'button',
+                    'Choose draft-only date (not schedule)');
+                  choose.type='button';choose.className='secondary';
+                  choose.addEventListener('click',()=>{
+                    if(active!==scope||epoch!==scopeEpoch||
+                       suggestionsData!==snapshot||previewPending)return;
+                    choose.disabled=true;
+                    const confirm=element(document,'button',
+                      'Confirm this proposed draft date');
+                    confirm.type='button';confirm.className='secondary';
+                    confirm.addEventListener('click',async()=>{
+                      if(active!==scope||epoch!==scopeEpoch||
+                         suggestionsData!==snapshot)return;
+                      await saveSuggestedDate(suggestion,snapshot);
+                    });
+                    const cancel=element(document,'button','Cancel date proposal');
+                    cancel.type='button';cancel.className='secondary';
+                    cancel.addEventListener('click',()=>{
+                      if(active===scope&&epoch===scopeEpoch)
+                        show('scheduled');
+                    });
+                    item.append(confirm,cancel);
+                  });
+                  item.append(choose);
+                }
                 planner.append(item);
               }
               if(suggestionsData.unassignedHeldCount>suggestionsData.items.length)
@@ -652,6 +724,7 @@
         postingPreview=null;previewPending=false;previewError=false;
         calendarData=null;calendarError=false;
         suggestionsData=null;suggestionsError=false;
+        quickProposalPending=false;
         reviewData=null;reviewPending=false;reviewError=false;
         feedbackData=null;feedbackPending=false;feedbackError=false;
         feedbackWriting=false;
