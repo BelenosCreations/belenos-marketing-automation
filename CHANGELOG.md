@@ -1,5 +1,16 @@
 # Changelog
 
+## AI token usage and estimated-cost accounting — 2026-11-10
+
+### Added
+- Operator-priced, tenant-scoped token and estimated-cost ledger without invented default rates.
+- Optional required provider-usage observer in the OpenAI Responses adapter.
+- Offline integration test recording usage and estimated cost before staging a held draft.
+
+### Limitations
+- Estimated costs are not invoices, real billing reconciliation or a live pricing feed.
+
+
 ## Disabled-by-default HTTPS transport and offline AI integration — 2026-11-10
 
 ### Added
