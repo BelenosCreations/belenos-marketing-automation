@@ -70,6 +70,7 @@ class AIHTTPIntegrationTests(unittest.TestCase):
         self.assertEqual(first['status'],'needs_media')
         self.assertEqual(second_status,'200 OK')
         self.assertEqual(second['reason'],'already_completed')
+        self.assertEqual(second['tenant_id'],'shop')
         self.assertEqual(len(requests),1)
         self.assertEqual(len(drafts.list_mine(
             token=token,now=now)['drafts']),1)
