@@ -44,6 +44,13 @@ class AIDraftGenerationWorkflow:
         # only the server-owned OpenAI key; it must never accept a client key.
         raw=self.executor(request=request,
             max_output_tokens=reservation['max_output_tokens'])
+        # If facts were edited during execution, the output was grounded in
+        # an obsolete snapshot. Hold it out of the draft queue.
+        latest=self.facts.snapshot(token=token,now=now)
+        if (latest['tenant_id']!=request['tenant_id'] or
+                latest['revision']!=request['fact_revision'] or
+                latest['provenance']!='owner_confirmed'):
+            raise ValueError('Business facts changed during generation')
         parsed=self.plan.parse_response(raw,
             include_image_prompt=include_image_prompt)
         if needs_media and parsed['image_prompt'] is None:
