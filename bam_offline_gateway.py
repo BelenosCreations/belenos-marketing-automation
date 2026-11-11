@@ -55,6 +55,8 @@ from sessions import SessionStore
 from social_connection_directory import SocialConnectionDirectory
 from team_membership_admin import TeamMembershipAdmin
 from bam_team_membership_wsgi import BAMTeamMembershipWSGI
+from business_invitations import BusinessInvitations
+from bam_team_invitations_wsgi import BAMTeamInvitationsWSGI
 
 _AUTH_PATHS = frozenset((
     '/api/v1/auth/password', '/api/v1/auth/google-challenge',
@@ -81,7 +83,8 @@ class BAMOfflineGateway:
     """
 
     def __init__(self, db, *, enabled=False, clock=None, google_verifier=None,
-                 serve_browser_assets=False,pending_media_dir=None):
+                 serve_browser_assets=False,pending_media_dir=None,
+                 trusted_invitation_delivery=None):
         if type(enabled) is not bool:
             raise ValueError('Boolean integration switch required')
         if type(serve_browser_assets) is not bool:
@@ -101,6 +104,17 @@ class BAMOfflineGateway:
         self.team_wsgi=BAMTeamMembershipWSGI(
             self.team_admin,enabled=enabled,clock=self.clock)
         self.identities = IdentityAuth(db, self.sessions, self.directory)
+        if (trusted_invitation_delivery is not None and
+                not callable(trusted_invitation_delivery)):
+            raise ValueError('Trusted invitation callback must be callable')
+        self.business_invitations=(BusinessInvitations(
+            db=db,sessions=self.sessions,directory=self.directory,
+            auth=self.identities,deliver=trusted_invitation_delivery)
+            if trusted_invitation_delivery is not None else None)
+        self.invitation_wsgi=BAMTeamInvitationsWSGI(
+            self.business_invitations,
+            enabled=enabled and trusted_invitation_delivery is not None,
+            clock=self.clock)
         self.curation = BusinessCuration(db)
         self.connections = ProviderConnectionRegistry(db)
         self.requests = ContentRequests(db)
@@ -221,6 +235,9 @@ class BAMOfflineGateway:
             return self.assets_wsgi(environ, start_response)
         if path in _AUTH_PATHS:
             return self.auth_wsgi(environ, start_response)
+        if path in ('/api/v1/team/invitations',
+                    '/api/v1/team/invitations/cancel'):
+            return self.invitation_wsgi(environ,start_response)
         if path in ('/api/v1/team/members','/api/v1/team/membership',
                     '/api/v1/team/activity'):
             return self.team_wsgi(environ,start_response)
