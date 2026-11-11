@@ -30,11 +30,13 @@
    let memberData=null,memberError=false,memberPending=false,confirming=null;
    let auditData=null,auditError=false;
    let inviteData=null,inviteError=false,invitePending=false,confirmingInvite=null;
+   let inviteHistory=null,inviteHistoryError=false;
    function clear(){
      epoch++;requestVersion++;active=null;owner=false;summary=null;failed=false;
      memberData=null;memberError=false;memberPending=false;confirming=null;
      auditData=null;auditError=false;
      inviteData=null;inviteError=false;invitePending=false;confirmingInvite=null;
+     inviteHistory=null;inviteHistoryError=false;
      container.replaceChildren();
    }
    function activate({token,tenantId}){
@@ -51,6 +53,7 @@
        memberData=null;memberError=false;memberPending=false;confirming=null;
        auditData=null;auditError=false;
        inviteData=null;inviteError=false;invitePending=false;confirmingInvite=null;
+     inviteHistory=null;inviteHistoryError=false;
      }
      render();
    }
@@ -164,6 +167,34 @@
                }
              }
            }
+           if(enableInvitationPreview){
+             section.append(element(document,'h3','Recent invitation activity'));
+             if(inviteHistoryError){
+               section.append(element(document,'p',
+                 'Private invitation history unavailable. Refresh to try again.'));
+             }else if(!inviteHistory){
+               section.append(element(document,'p',
+                 'Invitation history has not yet loaded.'));
+             }else if(!inviteHistory.events.length){
+               section.append(element(document,'p',
+                 'No invitation activity has been recorded.'));
+             }else{
+               const names={
+                 delivered:'Invitation handed to trusted delivery',
+                 delivery_failed:'Trusted invitation delivery failed',
+                 cancelled:'Invitation cancelled',
+                 accepted:'Invitation accepted'
+               };
+               for(const event of inviteHistory.events){
+                 const at=new Date(event.occurredAt*1000);
+                 const when=Number.isNaN(at.getTime())
+                   ?'Time unavailable':at.toLocaleString();
+                 section.append(element(document,'p',
+                   names[event.action]+' · Invitation '+
+                   event.invitationId.slice(0,8)+' · '+when));
+               }
+             }
+           }
            for(const record of roster.members){
              const article=element(document,'article','');
              article.className='content-stack';
@@ -270,10 +301,26 @@
                if(epoch!==version||active!==mine||request!==requestVersion||!owner)
                  return {stale:true};
                inviteData=pending;inviteError=false;
+               try{
+                 const audit=await invitesClient.history({
+                   token:mine.token,origin,fetchImpl,
+                   expectedTenantId:mine.tenantId});
+                 if(epoch!==version||active!==mine||
+                    request!==requestVersion||!owner)
+                   return {stale:true};
+                 inviteHistory=audit;inviteHistoryError=false;
+               }catch(error){
+                 if(epoch!==version||active!==mine||
+                    request!==requestVersion||!owner)
+                   return {stale:true};
+                 inviteHistory=null;inviteHistoryError=true;
+                 if(onError)onError('Private invitation activity unavailable');
+               }
              }catch(error){
                if(epoch!==version||active!==mine||request!==requestVersion||!owner)
                  return {stale:true};
                inviteData=null;inviteError=true;confirmingInvite=null;
+               inviteHistory=null;inviteHistoryError=true;
                if(onError)onError('Private invitation preview unavailable');
              }
            }
@@ -296,6 +343,7 @@
            memberData=null;memberError=true;confirming=null;
            auditData=null;auditError=false;
            inviteData=null;inviteError=false;confirmingInvite=null;
+           inviteHistory=null;inviteHistoryError=false;
            if(onError)onError('Private team member details unavailable');
          }
        }
@@ -307,7 +355,8 @@
          return {stale:true};
        summary=null;failed=true;memberData=null;memberError=false;
        confirming=null;auditData=null;auditError=false;
-       inviteData=null;inviteError=false;confirmingInvite=null;render();
+       inviteData=null;inviteError=false;confirmingInvite=null;
+       inviteHistory=null;inviteHistoryError=false;render();
        if(onError)onError('Private team access counts unavailable');
        return {error:true};
      }
