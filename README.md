@@ -6,7 +6,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Development status:** Offline development prototype with password-and-Google authentication foundations, a responsive mobile-first GUI demonstration, and an authenticated dashboard card contract. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Approved AI direction:** Three usage scenarios (owner-only two posts/day, 5–10 invited users, and potential paid public Google Play release), OpenAI-only generation, default BAM-sponsored AI with optional personal OpenAI API key, and independent per-user AI memories. See [AI architecture and approved requirements](AI_ARCHITECTURE.md). Exact public pricing and quotas are not finalized.\n\n> **Development status:** Offline development prototype with password-and-Google authentication foundations, a responsive mobile-first GUI demonstration, and an authenticated dashboard card contract. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Current functional capabilities (offline development build)
 
@@ -569,3 +569,9 @@ The browser now has a strict `ui/content_studio_contract.js` validator and `ui/c
 ## Posting preference browser validation — 2026-11-10
 
 `ui/posting_preferences_contract.js` now validates read-only scheduling preference responses. It distinguishes an unconfigured business (no timezone, no times) from configured Smart and Manual modes; rejects invalid, duplicated or fabricated posting times; and rejects any publication-enabled response. The HTTPS read client applies this contract to preference reads. Regression tests are included in the Node CI suite. This does not enable a real scheduler.
+
+## AI architecture integration milestone — 2026-11-10
+
+The approved OpenAI-only model is represented in new offline foundations: `ai_account_policy.py` (BAM-sponsored or own OpenAI key mode, reversible switching, user/business-isolated AI memory), `ai_sponsorship.py` (server-defined owner/invited/public allowance descriptors and atomic SQLite quota reservation), and `ai_draft_request.py` (verified-facts-only draft request assembly using the current user's memory). The matching `test_ai_*.py` modules cover tenant/user isolation, rejection of raw keys, request quotas, and unverified facts. Existing login, business isolation, Content Studio, GUI, scheduling and disabled-publishing work are preserved.
+
+**Important:** No OpenAI requests are made by these offline components; there is no deployed encrypted secret vault, live generation, Google Play billing, direct Facebook Page authorization or automatic publication. The sponsored experience is free to the end user but still incurs OpenAI API costs for BAM's operator. Exact sponsorship allowances and public prices are intentionally not hardcoded. See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for approved scenarios, implementation gates and outstanding commercial decisions.
