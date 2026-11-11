@@ -7,10 +7,12 @@
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./dashboard_http_client.js'),
       require('./calendar_proposals_client.js'),
-       require('./review_readiness_client.js'));
+       require('./review_readiness_client.js'),
+       require('./review_feedback_client.js'));
   else root.BAMLiveDashboard=factory(root.BAMReadClient,
-    root.BAMCalendarProposalsClient,root.BAMReviewReadinessClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(client,calendarClient,reviewClient){
+    root.BAMCalendarProposalsClient,root.BAMReviewReadinessClient,
+     root.BAMReviewFeedbackClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(client,calendarClient,reviewClient,feedbackClient){
   'use strict';
   const order=['scheduled','approvals','content','connections'];
   function element(doc,tag,text){
@@ -18,14 +20,17 @@
     item.textContent=text;
     return item;
   }
-  function create({document,container,fetchImpl,origin,onError,
+  function create({document,container,fetchImpl,origin,onError,onNotice,
                    onOpenContentStudio,onOpenPostingSettings,
                    enableCalendarProposals=false,
                    enableCalendarSuggestions=false,
-                   enableReviewReadiness=false}){
+                   enableReviewReadiness=false,
+                   enableReviewFeedback=false}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Dashboard dependencies required');
+    if(onNotice!==undefined&&typeof onNotice!=='function')
+      throw new TypeError('Notice callback required');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Error callback required');
     if(onOpenContentStudio!==undefined&&typeof onOpenContentStudio!=='function')
@@ -34,7 +39,8 @@
       throw new TypeError('Posting settings navigation callback required');
     if(typeof enableCalendarProposals!=='boolean'||
        typeof enableCalendarSuggestions!=='boolean'||
-       typeof enableReviewReadiness!=='boolean')
+       typeof enableReviewReadiness!=='boolean'||
+       typeof enableReviewFeedback!=='boolean')
       throw new TypeError('Explicit calendar preview feature switch required');
     let active=null,epoch=0,requestVersion=0,current=null,view='home';
     let connectionData=null,connectionPending=false,connectionError=false;
@@ -43,14 +49,18 @@
     let previewRequest=0,calendarData=null,calendarError=false;
     let suggestionsData=null,suggestionsError=false;
     let reviewData=null,reviewPending=false,reviewError=false,reviewRequest=0;
+    let feedbackData=null,feedbackPending=false,feedbackError=false;
+    let feedbackRequest=0,feedbackWriting=false;
     function clear(){
-      epoch++;requestVersion++;connectionRequest++;previewRequest++;reviewRequest++;
+      epoch++;requestVersion++;connectionRequest++;previewRequest++;reviewRequest++;feedbackRequest++;
       active=null;current=null;view='home';
       connectionData=null;connectionPending=false;connectionError=false;
       postingPreview=null;previewPending=false;previewError=false;
       calendarData=null;calendarError=false;
       suggestionsData=null;suggestionsError=false;
       reviewData=null;reviewPending=false;reviewError=false;
+      feedbackData=null;feedbackPending=false;feedbackError=false;
+      feedbackWriting=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -157,6 +167,7 @@
         if(epoch!==version||active!==mine||request!==reviewRequest)
           return {stale:true};
         reviewData=data;
+        if(enableReviewFeedback)void refreshReviewFeedback();
         return {stale:false,heldCount:data.heldCount};
       }catch(error){
         if(epoch!==version||active!==mine||request!==reviewRequest)
@@ -167,6 +178,77 @@
       }finally{
         if(epoch===version&&active===mine&&request===reviewRequest){
           reviewPending=false;
+          if(view==='approvals')show('approvals');
+        }
+      }
+    }
+
+    async function refreshReviewFeedback(){
+      if(!enableReviewFeedback||!active||!current||!reviewData)
+        return {restricted:true};
+      if(feedbackPending)return {pending:true};
+      const mine=active,version=epoch,request=++feedbackRequest;
+      feedbackPending=true;feedbackError=false;
+      if(view==='approvals')show('approvals');
+      try{
+        const data=await feedbackClient.list({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId});
+        if(epoch!==version||active!==mine||request!==feedbackRequest)
+          return {stale:true};
+        feedbackData=data;
+        return {stale:false,count:data.items.length};
+      }catch(error){
+        if(epoch!==version||active!==mine||request!==feedbackRequest)
+          return {stale:true};
+        feedbackData=null;feedbackError=true;
+        if(onError)onError('Private editorial feedback is unavailable');
+        return {error:true};
+      }finally{
+        if(epoch===version&&active===mine&&request===feedbackRequest){
+          feedbackPending=false;
+          if(view==='approvals')show('approvals');
+        }
+      }
+    }
+    async function changeReviewFeedback(method,parameters){
+      if(!enableReviewFeedback||!active||!current||!reviewData||
+         !feedbackData||feedbackPending||feedbackError||feedbackWriting||
+         !['owner','marketing_manager'].includes(current.role))
+        return {restricted:true};
+      const check=reviewData.items.find(row=>
+        row.requestId===parameters.requestId);
+      const old=feedbackData.items.find(row=>
+        row.requestId===parameters.requestId);
+      if(!check||((old&&old.feedbackToken)||null)!==
+          parameters.expectedFeedbackToken||
+         (method==='save'&&check.revision!==parameters.expectedRevision))
+        return {stale:true};
+      const mine=active,version=epoch;
+      feedbackWriting=true;
+      if(view==='approvals')show('approvals');
+      try{
+        const options={origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,...parameters};
+        const saved=method==='save'
+          ?await feedbackClient.save(options)
+          :await feedbackClient.discard(options);
+        if(epoch!==version||active!==mine)return {stale:true};
+        const updated=await refreshReviewFeedback();
+        if(epoch!==version||active!==mine)return {stale:true};
+        if(updated.error||updated.stale)return updated;
+        if(onNotice)onNotice(method==='save'
+          ?'Private editorial note saved; nothing was approved or scheduled.'
+          :'Editorial note removed; draft remains unpublished.');
+        return saved;
+      }catch(error){
+        if(epoch!==version||active!==mine)return {stale:true};
+        if(onError)onError('Review feedback was not changed. Refresh to resolve a stale note or draft.');
+        void refreshReviewFeedback();
+        return {error:true};
+      }finally{
+        if(epoch===version&&active===mine){
+          feedbackWriting=false;
           if(view==='approvals')show('approvals');
         }
       }
@@ -423,6 +505,76 @@
                     'Not independently verified: '+check.unverifiedItems.join(', ')));
                 item.append(element(document,'p',
                   'Still blocked: '+check.blockers.join(', ').replaceAll('_',' ')));
+                if(enableReviewFeedback){
+                  if(feedbackPending){
+                    item.append(element(document,'p','Loading private review notes...'));
+                  }else if(feedbackError||!feedbackData){
+                    item.append(element(document,'p',
+                      'Feedback unavailable. Refresh before editing notes.'));
+                  }else{
+                    const stored=feedbackData.items.find(entry=>
+                      entry.requestId===check.requestId);
+                    if(stored){
+                      item.append(element(document,'p',
+                        'Editorial feedback: '+stored.note));
+                      if(stored.stale||stored.draftRevision!==check.revision)
+                        item.append(element(document,'p',
+                          'This note refers to older draft copy and must be reconsidered.'));
+                    }else{
+                      item.append(element(document,'p',
+                        'No editorial feedback recorded for this draft.'));
+                    }
+                    if(['owner','marketing_manager'].includes(current.role)){
+                      const input=element(document,'textarea','');
+                      input.value=stored?stored.note:'';
+                      input.maxLength=1000;input.rows=3;
+                      input.disabled=feedbackWriting;
+                      input.setAttribute&&input.setAttribute(
+                        'aria-label','Private editorial note');
+                      item.append(input);
+                      const save=element(document,'button',
+                        stored?'Update private review note':'Add private review note');
+                      save.type='button';save.className='secondary';
+                      save.disabled=feedbackWriting;
+                      save.addEventListener('click',async()=>{
+                        if(active!==scope||epoch!==scopeEpoch)return;
+                        await changeReviewFeedback('save',{
+                          requestId:check.requestId,
+                          expectedRevision:check.revision,
+                          expectedFeedbackToken:stored?stored.feedbackToken:null,
+                          note:input.value});
+                      });
+                      item.append(save);
+                      if(stored){
+                        const remove=element(document,'button',
+                          'Remove private review note');
+                        remove.type='button';remove.className='secondary';
+                        remove.disabled=feedbackWriting;
+                        remove.addEventListener('click',()=>{
+                          if(active!==scope||epoch!==scopeEpoch)return;
+                          remove.disabled=true;
+                          const confirm=element(document,'button',
+                            'Confirm removal of private note');
+                          confirm.type='button';confirm.className='secondary';
+                          confirm.addEventListener('click',async()=>{
+                            if(active!==scope||epoch!==scopeEpoch)return;
+                            await changeReviewFeedback('discard',{
+                              requestId:check.requestId,
+                              expectedFeedbackToken:stored.feedbackToken});
+                          });
+                          const cancel=element(document,'button',
+                            'Cancel removal');
+                          cancel.type='button';cancel.className='secondary';
+                          cancel.addEventListener('click',()=>{
+                            if(active===scope&&epoch===scopeEpoch)show('approvals');
+                          });
+                          item.append(confirm,cancel);
+                        });
+                        item.append(remove);
+                      }
+                    }
+                  }
+                }
                 reviewSection.append(item);
               }
             }
@@ -495,12 +647,14 @@
           fetchImpl,origin,expectedTenantId:mine.tenantId});
         if(version!==epoch||request!==requestVersion||mine!==active)
           return {stale:true};
-        connectionRequest++;previewRequest++;reviewRequest++;
+        connectionRequest++;previewRequest++;reviewRequest++;feedbackRequest++;
         connectionData=null;connectionPending=false;connectionError=false;
         postingPreview=null;previewPending=false;previewError=false;
         calendarData=null;calendarError=false;
         suggestionsData=null;suggestionsError=false;
         reviewData=null;reviewPending=false;reviewError=false;
+        feedbackData=null;feedbackPending=false;feedbackError=false;
+        feedbackWriting=false;
         current=data;show(view);
         if(view==='connections'&&
            data.cards.connections.availability==='available')
@@ -520,7 +674,8 @@
       }
     }
     return Object.freeze({activate,refresh,clear,show,refreshConnections,
-      refreshPostingPreview,refreshReviewReadiness});
+      refreshPostingPreview,refreshReviewReadiness,
+       refreshReviewFeedback});
   }
   return Object.freeze({create});
 });

@@ -115,6 +115,7 @@
       enableCalendarProposals:true,
       enableCalendarSuggestions:true,
       enableReviewReadiness:true,
+      enableReviewFeedback:true,
       aiCostContainer:byId('bam-ai-cost'),
       contentStudioContainer:byId('bam-content-studio'),
       postingPreferencesContainer:byId('bam-posting-preferences'),
