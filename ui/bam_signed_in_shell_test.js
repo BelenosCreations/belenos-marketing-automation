@@ -17,6 +17,7 @@ function node(tag='div'){
 function fixture(){
   const ids=['sign-in-view','workspace-view','notice','login-form',
     'sign-in-button','logout','refresh','active-business',
+    'business-switch','business-switch-label',
     'overview-panel','drafts-panel','settings-panel',
     'email','password','business','appearance',
     'bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
@@ -33,7 +34,8 @@ function fixture(){
 }
 const data={
   dashboard:{schema_version:1,tenant_id:'shop',
-    businesses:[{tenant_id:'shop',display_name:'Example Shop'}],
+    businesses:[{tenant_id:'shop',display_name:'Example Shop'},
+      {tenant_id:'other',display_name:'Second Service'}],
     cards:[
       {id:'scheduled',label:'Scheduled',value:null,availability:'not_connected'},
       {id:'approvals',label:'Approvals',value:0,availability:'available'},
@@ -58,16 +60,19 @@ async function main(){
   const html=fs.readFileSync(path.join(__dirname,'bam_signed_in_shell.html'),'utf8');
   assert.match(html,/id="login-form"/);
   assert.match(html,/id="bam-dashboard"/);
+  assert.match(html,/id="business-switch"/);
   assert.match(html,/data-bam-panel="settings"/);
   assert.match(html,/src="\.\.\/branding\/source\/app_icon\.svg"/);
   assert.doesNotMatch(html,/class="mark"[^>]*>B<\/span>/);
   for(const script of ['dashboard_http_client.js',
       'authenticated_workspace_controller.js','authenticated_session_controller.js',
+      'business_switch_client.js',
       'bam_signed_in_shell.js'])
     assert.ok(html.includes('src="'+script+'"'),script);
   assert.ok(!html.includes('localStorage'));
   const f=fixture(),e=f.elements;
   const opened=[],clipboard=[],requests=[];
+  let currentTenant='shop';
   const window={navigator:{clipboard:{
     writeText:async text=>clipboard.push(text)}},
     open:(...args)=>opened.push(args)};
@@ -76,10 +81,16 @@ async function main(){
     const kind=url.split('/').pop();
     if(kind==='password')return {ok:true,json:async()=>({
       session_token:'a'.repeat(43),publishing_enabled:false})};
+    if(kind==='activate'){
+      currentTenant=JSON.parse(opts.body).target_tenant_id;
+      return {ok:true,json:async()=>({tenant_id:currentTenant,
+        session_token:'s'.repeat(43),publishing_enabled:false})};
+    }
     if(kind==='logout')return {ok:true,json:async()=>({
       signed_out:true,publishing_enabled:false})};
     if(Object.prototype.hasOwnProperty.call(data,kind))
-      return {ok:true,json:async()=>data[kind]};
+      return {ok:true,json:async()=>({
+        ...data[kind],tenant_id:currentTenant})};
     throw new Error('Unexpected request '+url);
   };
   const shell=mount({document:f.document,window,
@@ -96,6 +107,8 @@ async function main(){
   assert.equal(e['bam-dashboard'].children.length,1);
   assert.equal(e['bam-dashboard'].children[0].children[1].children.length,4);
   assert.equal(e['active-business'].textContent,'Business: shop');
+  assert.equal(e['business-switch'].children.length,2);
+  assert.equal(e['business-switch'].hidden,false);
   assert.equal(requests[0].opts.credentials,'omit');
   f.nav[2].listeners.click();
   assert.equal(e['settings-panel'].hidden,false);
@@ -104,13 +117,21 @@ async function main(){
   assert.equal(f.document.documentElement.dataset.theme,'light');
   await e.refresh.listeners.click();
   assert.match(e.notice.textContent,/refreshed/);
+  e['business-switch'].value='other';
+  await e['business-switch'].listeners.change();
+  assert.equal(e['active-business'].textContent,'Business: other');
+  assert.equal(e['bam-dashboard'].children.length,1);
+  const switching=requests.find(r=>r.url.endsWith('/businesses/activate'));
+  assert.ok(switching);
+  assert.equal(switching.opts.headers.Authorization,'Bearer '+'a'.repeat(43));
+  assert.deepEqual(JSON.parse(switching.opts.body),{target_tenant_id:'other'});
   await e.logout.listeners.click();
   assert.equal(e['workspace-view'].hidden,true);
   assert.equal(e['sign-in-view'].hidden,false);
   assert.equal(e['bam-dashboard'].children.length,0);
   assert.equal(e['bam-ai-facts'].children.length,0);
   assert.equal(requests.at(-1).opts.headers.Authorization,
-    'Bearer '+'a'.repeat(43));
+    'Bearer '+'s'.repeat(43));
   const insecure=fixture();
   const result=mount({document:insecure.document,window,
     origin:'file:///',fetchImpl});
