@@ -613,3 +613,7 @@ The existing account API integration tests now exercise real AI policy memory, p
 ## Verified image attachment to AI draft milestone — 2026-11-10
 
 AI drafts that require an image can now be associated with a previously registered, **trusted-scanner-verified** image through `AIContentDraftStore.attach_verified_media`. The attachment must match the current business, draft ID and `image` item; pending, unrelated or cross-business attachments are rejected. Verified media changes the held draft to `draft_pending_verification`, **not** approved or published. Neither private storage keys nor attachment IDs are returned in the draft list. The AI draft browser contract, view and workspace now distinguish missing media from verified attached media. Python and Node regression coverage was extended. **This does not implement actual file upload, scanning, image generation or publishing**; the existing attachment registry requires a separate trusted worker to mark a file verified.
+
+## AI permission and structured-output hardening — 2026-11-10
+
+AI preference writes (mode switching, saved-memory edits and key-reference removal) now require an active business role authorized to create drafts; read-only Viewer access cannot mutate those settings. `AIContentPlan.parse_revision_response` rejects malformed or extra-field AI revision responses, including attempted approval/publishing claims. Regression tests cover viewer denial and strict one-component revision output. No new live AI or publishing capability was enabled.
