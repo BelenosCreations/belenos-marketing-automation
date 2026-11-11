@@ -14,13 +14,15 @@ function(dashboardModule,aiModule){
   'use strict';
   function create({document,dashboardContainer,aiDraftsContainer,
                    aiSettingsContainer,aiFactsContainer,aiCostContainer,
-                   fetchImpl,origin,onError,copyText,openUrl}){
+                   fetchImpl,origin,onError,copyText,openUrl,
+                   aiFactsEditorContainer,canManageFacts=false,onSaveFacts}){
     const dashboard=dashboardModule.create({
       document,container:dashboardContainer,fetchImpl,origin,onError});
     const ai=aiModule.create({document,draftsContainer:aiDraftsContainer,
       settingsContainer:aiSettingsContainer,factsContainer:aiFactsContainer,
       costContainer:aiCostContainer,fetchImpl,origin,onError,
-      copyText,openUrl});
+      copyText,openUrl,factsEditorContainer:aiFactsEditorContainer,
+      canManageFacts,onSaveFacts});
     let active=false,epoch=0;
     function clear(){
       epoch++;active=false;dashboard.clear();ai.clear();
