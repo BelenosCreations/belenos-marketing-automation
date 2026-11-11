@@ -12,6 +12,10 @@ const result=normalize(good);
 assert.equal(result.tenantId,'shop');
 assert.equal(result.drafts[0].status,'postponed');
 assert.equal(result.drafts[0].revision,2);
+assert.equal(result.drafts[0].priorityToken,null);
+const withVersion=clone();
+withVersion.drafts[0].priority_token='a'.repeat(32);
+assert.equal(normalize(withVersion).drafts[0].priorityToken,'a'.repeat(32));
 assert.equal(result.drafts[0].missing[0],'photo');
 assert.equal(result.publishingEnabled,false);
 for(const mutate of [
@@ -19,6 +23,8 @@ for(const mutate of [
   p=>{p.publishing_enabled=true},
   p=>{p.drafts[0].status='published'},
   p=>{p.drafts[0].priority=100},
+  p=>{p.drafts[0].priority_token='invalid'},
+  p=>{p.drafts[0].priority_token=null},
   p=>{p.drafts[0].revision=0},
   p=>{p.drafts[0].revision=true},
   p=>{p.drafts[0].request_id='bad'},

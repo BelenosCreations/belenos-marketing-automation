@@ -22,6 +22,9 @@
          !channels.has(d.channel)||!statuses.has(d.status)||
          !text(d.draft_text,2000)||!text(d.suggestion,2000)||
          !Number.isSafeInteger(d.priority)||d.priority<-10||d.priority>10||
+         (d.priority_token!==undefined&&
+          (typeof d.priority_token!=='string'||
+           !/^[a-f0-9]{32}$/.test(d.priority_token)))||
          (d.revision!==undefined&&
           (!Number.isSafeInteger(d.revision)||d.revision<1))||
          !Array.isArray(d.missing_items)||
@@ -31,7 +34,9 @@
       seen.add(d.request_id);
       return {id:d.request_id,channel:d.channel,status:d.status,
         text:d.draft_text,suggestion:d.suggestion,
-        priority:d.priority,revision:d.revision===undefined?null:d.revision,
+        priority:d.priority,priorityToken:d.priority_token===undefined
+          ?null:d.priority_token,
+        revision:d.revision===undefined?null:d.revision,
         missing:[...d.missing_items]};
     });
     return {tenantId:body.tenant_id,drafts,publishingEnabled:false};
