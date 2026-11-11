@@ -1,5 +1,15 @@
 # Changelog
 
+## AI fact provenance workspace integration — 2026-11-10
+
+### Added
+- Read-only business-fact provenance panel with safe text rendering and unconfigured-fact warnings.
+- Optional AI workspace integration for authenticated fact snapshots, plus Node CI tests.
+
+### Fixed
+- Stale refresh errors cannot clear newer same-session data; active-session errors clear the fact panel as well.
+
+
 ## Authenticated AI fact provenance read — 2026-11-10
 
 ### Added
