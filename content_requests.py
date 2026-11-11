@@ -23,7 +23,7 @@ class ContentRequests:
             status TEXT NOT NULL CHECK(status IN
                 ('needs_content','ready_for_review','postponed','unavailable')),
             priority INTEGER NOT NULL DEFAULT 0,
-            priority_token TEXT NOT NULL,
+            priority_token TEXT NOT NULL DEFAULT '',
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL
         )""")
