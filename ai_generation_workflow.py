@@ -58,6 +58,7 @@ class AIDraftGenerationWorkflow:
                 request_key=request_key,fingerprint=fingerprint)
             if not claim['claimed']:
                 return {'created':False,
+                    'tenant_id':request['tenant_id'],
                     'reason':'already_'+claim['status'],
                     'publishing_enabled':False}
         try:
@@ -76,6 +77,8 @@ class AIDraftGenerationWorkflow:
                 request_key=request_key,
                 status='completed' if result['created'] else 'failed',
                 draft_id=result['draft']['draft_id'] if result['created'] else None)
+        if not result['created']:
+            return {**result,'tenant_id':request['tenant_id']}
         return result
 
     def _execute_sponsored(self, *, token,now,request,platform,month,
