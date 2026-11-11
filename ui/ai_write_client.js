@@ -9,7 +9,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   function validate({origin,token,fetchImpl}){
-    if(typeof origin!=='string'||!/^https:\/\/[^/?#]+$/.test(origin)||
+    if(typeof origin!=='string'||!/^https:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?$/.test(origin)||
        typeof token!=='string'||!/^[A-Za-z0-9_-]+$/.test(token)||token.length>2048||
        typeof fetchImpl!=='function')
       throw new TypeError('Secure authenticated AI client required');
