@@ -35,7 +35,8 @@ class BAMReadWSGI:
                 {'error':'Read-only API'})
         path=environ.get('PATH_INFO')
         if path not in ('/api/v1/dashboard','/api/v1/drafts',
-                        '/api/v1/posting-preferences','/api/v1/ai-drafts'):
+                        '/api/v1/posting-preferences','/api/v1/ai-drafts',
+                        '/api/v1/ai-settings'):
             return self._response(start_response,'404 Not Found',
                 {'error':'Not found'})
         auth=environ.get('HTTP_AUTHORIZATION','')
@@ -54,6 +55,9 @@ class BAMReadWSGI:
                     session_token=token,server_now=now)
             elif path=='/api/v1/drafts':
                 body=self.api.list_held_drafts(
+                    session_token=token,server_now=now)
+            elif path=='/api/v1/ai-settings':
+                body=self.api.get_ai_settings(
                     session_token=token,server_now=now)
             elif path=='/api/v1/ai-drafts':
                 body=self.api.list_ai_content_drafts(
