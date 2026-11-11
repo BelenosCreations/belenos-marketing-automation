@@ -50,3 +50,7 @@ node ui/ai_settings_view_test.js
 ```
 
 Do not expose `bam_read_wsgi.py` directly to the public internet without a trusted HTTPS proxy, authentication and rate limits. Do not treat the demo's sample metrics as production data. Do not store BAM or social provider credentials in GitHub, client source, screenshots or logs.
+
+### Authenticated AI workspace coordinator
+
+`ui/ai_workspace.js` accepts an authenticated in-memory token and active tenant from the future sign-in/business-switch shell, then fetches AI drafts and AI settings via HTTPS. It discards late results after a tenant switch or sign-out, and clears private views on current-session errors. Do not wire it to sample/demo credentials or browser storage. The corresponding `ui/ai_workspace_test.js` runs in Node CI. This is not a complete deployed authentication or AI generation workflow.
