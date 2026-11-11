@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Loopback-only HTTPS preview runner and local test-owner bootstrap (2026-11-11)
+
+`bam_local_preview.py` now provides an explicitly opted-in, local-only WSGI TLS server for the authenticated BAM shell and gateway. It binds only `127.0.0.1`, requires an external TLS certificate/private key and a local-only acknowledgement, restricts browser Host values to exact localhost/loopback hosts with a matching port, and ignores externally supplied forwarded-protocol claims. No public route can create, verify or assign BAM identities. The separate `bootstrap` command prompts locally for a password, creates a private `0600` SQLite file outside the source repository, and establishes exactly one **test** owner. Marking email verified is a deliberate local demonstration shortcut, not a production verification implementation.
+
+This is a material step toward running the real authenticated dashboard in a local browser rather than viewing raw HTML files. It remains outside production operations: no Internet listener, mobile APK, real Google sign-in, production account recovery, media upload, OpenAI charges or social publishing.
+
+**Verified [GitHub Actions run 43014114797](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43014114797): 768 Python tests and 35 JavaScript scripts, plus compilation.** See [Local HTTPS preview guide](LOCAL_PREVIEW.md).
+
 ## Restricted same-origin browser asset delivery (2026-11-11)
 
 The authenticated large-card HTML shell is now served by a separate `bam_signed_in_assets_wsgi.py` adapter under the offline gateway's independent, default-off `serve_browser_assets` option. The adapter derives its allowlist from the shell's own referenced JavaScript, CSS and branded icon and returns only these assets over a trusted WSGI HTTPS scheme. A strict Content Security Policy limits scripts, connections, frames and styles; the single inline stylesheet is cryptographically hashed rather than globally allowing inline code. No sample prototype, README, environment or backend source file is served.

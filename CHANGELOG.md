@@ -1,3 +1,19 @@
+## Explicit loopback HTTPS preview and private local test-owner setup — 2026-11-11
+
+### Added
+- Implemented `bam_local_preview.py` for optional manual local testing of the signed-in BAM shell and authenticated WSGI gateway over HTTPS. The server binds **only** `127.0.0.1`, rejects nonlocal request origins and DNS-rebinding Host headers, and derives HTTPS status solely from its local TLS termination, never from a forwarded request header.
+- Requires an explicit `--i-understand-local-only` acknowledgement, an externally supplied local TLS certificate/private key and a populated preview SQLite file outside the source repository. A private-key permission check is enforced on POSIX systems.
+- Added `bootstrap` for one local test owner, using an interactively entered password that is never passed on a shell command line. A fresh outside-repository database is created with mode 0600 before credentials are written. The bootstrap's email verification shortcut is **strictly local/test only** and is never attached to an HTTP route.
+- Added a [Local HTTPS preview runbook](LOCAL_PREVIEW.md) with nonproduction warnings and self-signed local certificate examples.
+- Added tests for host/loopback guarding, missing consent, insecure port validation, local test-owner authentication, private database permissions and refusal to overwrite an existing owner.
+
+### Verification
+- **Passed:** [GitHub Actions run 43014114797](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43014114797), commit `e74448c4`: Python compilation, **768 Python tests and 35 JavaScript scripts**.
+
+### Known limitations
+- The local preview must not be exposed through port forwarding, a tunnel, public network, reverse proxy or production deployment. It uses a development-only bootstrap, single-process WSGI server and local SQLite; enterprise/production session security, Google authentication and live account verification are not implemented.
+- The runner has not yet been validated by a real browser against a TLS socket; the milestone tests exercise its trusted composition and guard functions. No live social publishing, media transfer or paid AI calls are enabled.
+
 ## Opt-in same-origin browser delivery for the authenticated BAM shell — 2026-11-11
 
 ### Added

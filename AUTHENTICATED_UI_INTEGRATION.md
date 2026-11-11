@@ -4,6 +4,12 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Local-only test runner for authenticated shell
+
+`python bam_local_preview.py bootstrap` provisions one local test owner in an external/private SQLite file using an interactive password prompt. This trusted local CLI explicitly marks the test email as verified **without real email proof** and must never be reused as a remote signup API or production account enrollment. `python bam_local_preview.py serve ... --i-understand-local-only` additionally requires external TLS cert/key paths and serves the opted-in gateway and browser assets on 127.0.0.1 only. Exact localhost Host and remote-address checks prevent DNS-rebinding or accidental exposure. All forwarded protocol headers are ignored, and the TLS socket is the sole HTTPS trust boundary. There is no public interface, forwarding or tunneling support.
+
+See [Local HTTPS preview guide](LOCAL_PREVIEW.md) for usage and separate security limits. [Run 43014114797](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43014114797) verified 768 Python tests and 35 JavaScript scripts. This is not production hosting.
+
 ## Restricted browser delivery composition (no hosted server)
 
 `BAMOfflineGateway(db, enabled=True, serve_browser_assets=True)` explicitly opts the **local WSGI direct-call integration fixture** into delivering `GET /ui/bam_signed_in_shell.html`, its referenced browser scripts and styles, and the canonical `/branding/source/app_icon.svg`. Neither switch has an internet-facing listener, TLS management, or production authentication enrollment. The asset adapter rejects all other resources, demo HTML, files and insecure WSGI schemes. A trusted reverse proxy must set `wsgi.url_scheme` independently of user-controlled `X-Forwarded-Proto`.
