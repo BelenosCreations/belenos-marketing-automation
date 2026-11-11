@@ -62,3 +62,7 @@ Do not expose `bam_read_wsgi.py` directly to the public internet without a trust
 ### AI fact provenance panel
 
 The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_facts_view.js` from the authenticated `/api/v1/ai-business-facts` route. It is read-only and rejects stale business responses. If fact confirmation is absent, it shows a hold warning rather than treating AI generation as factually ready. Do not present owner confirmation as independent verification.
+
+### AI cost summary
+
+`GET /api/v1/ai-cost-summary` returns the current authenticated user's operator-priced token/cost estimates for the active business. `ui/ai_cost_contract.js` validates the response; `ui/ai_cost_view.js` is an optional read-only Settings panel. The panel must never imply that estimates are real invoices or verified charges.
