@@ -7,7 +7,7 @@ are not invoices, real OpenAI bills or proof of payment.
 import sqlite3
 import uuid
 from dataclasses import dataclass
-from decimal import Decimal,InvalidOperation,ROUND_HALF_UP
+from decimal import Decimal,ROUND_HALF_UP
 
 @dataclass(frozen=True)
 class AITokenPricing:
