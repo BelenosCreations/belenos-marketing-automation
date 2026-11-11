@@ -22,6 +22,16 @@ const initial=[
 let roster=structuredClone(initial),writes=[],readWait=null,release=null;
 const fetchImpl=async(url,opts)=>{
   if(url.endsWith('/team-overview'))return {ok:true,json:async()=>summary};
+  if(url.endsWith('/team/activity')){
+    return {ok:true,json:async()=>({tenant_id:'shop',
+      status:'private_team_activity',events:writes.map((item,i)=>({
+        event_id:i+1,member_id:item.body.member_id,
+        actor_id:'o'.repeat(32),previous_role:'content_creator',
+        resulting_role:item.body.action==='deactivate'?'content_creator':
+          item.body.role,action:item.body.action,changed_at:101+i,
+        revision_after:item.body.expected_revision+1})).reverse(),
+      publishing_enabled:false})};
+  }
   if(url.endsWith('/team/members')){
     if(readWait)await readWait;
     return {ok:true,json:async()=>({tenant_id:'shop',
@@ -76,6 +86,7 @@ async function main(){
   assert.equal(roster[1].active,false);
   assert.equal(summary.inactive_members,1);
   assert.ok(notices.some(x=>/removed/.test(x)));
+  assert.ok(flatten(container).some(x=>/Access removed/.test(x.textContent)));
   assert.equal(byText(container,'Remove access'),undefined);
   assert.equal(errors.length,0);
   // Replacing the business erases member emails and suppresses in-flight data.

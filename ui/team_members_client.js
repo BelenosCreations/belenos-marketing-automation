@@ -61,6 +61,50 @@
     if(!response||!response.ok)throw new Error('Private team roster unavailable');
     return validateRoster(await response.json(),options.expectedTenantId);
   }
+  function validateActivity(body,expectedTenantId){
+    if(!exact(body,['tenant_id','status','events','publishing_enabled'])||
+       body.tenant_id!==expectedTenantId||
+       body.status!=='private_team_activity'||body.publishing_enabled!==false||
+       !Array.isArray(body.events)||body.events.length>30)
+      throw new TypeError('Untrusted private team activity');
+    let previous=null;
+    const events=body.events.map(item=>{
+      if(!exact(item,['event_id','member_id','actor_id','previous_role',
+                      'resulting_role','action','changed_at','revision_after'])||
+         !Number.isSafeInteger(item.event_id)||item.event_id<1||
+         (previous!==null&&item.event_id>=previous)||
+         !member.test(item.member_id)||!member.test(item.actor_id)||
+         !roles.has(item.previous_role)||!roles.has(item.resulting_role)||
+         !['change_role','deactivate'].includes(item.action)||
+         (item.action==='deactivate'&&
+          item.previous_role!==item.resulting_role)||
+         (item.action==='change_role'&&
+          item.previous_role===item.resulting_role)||
+         !Number.isSafeInteger(item.changed_at)||item.changed_at<0||
+         !Number.isSafeInteger(item.revision_after)||item.revision_after<2)
+        throw new TypeError('Untrusted team change event');
+      previous=item.event_id;
+      return Object.freeze({id:item.event_id,memberId:item.member_id,
+        actorId:item.actor_id,fromRole:item.previous_role,
+        toRole:item.resulting_role,action:item.action,
+        changedAt:item.changed_at,revision:item.revision_after});
+    });
+    return Object.freeze({tenantId:body.tenant_id,
+      events:Object.freeze(events),publishingEnabled:false});
+  }
+  async function activity(options){
+    context(options);
+    const response=await options.fetchImpl(
+      options.origin+'/api/v1/team/activity',{
+      method:'GET',mode:'same-origin',credentials:'omit',
+      cache:'no-store',redirect:'error',
+      headers:{Authorization:'Bearer '+options.token,
+        Accept:'application/json'}
+    });
+    if(!response||!response.ok)
+      throw new Error('Private team history unavailable');
+    return validateActivity(await response.json(),options.expectedTenantId);
+  }
   async function change(options){
     context(options);
     const {memberId,action,role,expectedRevision}=options;
@@ -96,5 +140,5 @@
       revision:result.revision,sessionsRevoked:result.sessions_revoked,
       publishingEnabled:false});
   }
-  return Object.freeze({list,change});
+  return Object.freeze({list,activity,change});
 });
