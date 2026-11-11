@@ -209,49 +209,52 @@ class BusinessInvitations:
                 'invitation_id':invitation_id,'publishing_enabled':False}
 
     def accept_trusted(self,*,verified_subject_id,token,now=None):
-        """Caller MUST authenticate verified_subject_id independently."""
+        """One-use redemption after caller-proven identity; never a web route.
+
+        Claim the token first to obtain SQLite's write lock, then check the
+        identity, current inviting owner and membership under that lock.
+        On any failure, the transaction rolls back the claim. This prevents
+        an owner revocation or a second redemption from winning between the
+        authorization check and membership creation.
+        """
         timestamp=int(time.time()) if now is None else now
-        if not isinstance(token,str) or not 20<=len(token)<=256:
+        if type(timestamp) is not int or timestamp<0:
+            raise ValueError('Trusted timestamp required')
+        if (type(verified_subject_id) is not str
+                or not verified_subject_id or len(verified_subject_id)>128
+                or type(token) is not str or not 20<=len(token)<=256):
             raise PermissionError('Invalid invitation')
-        row=self.db.execute("""SELECT tenant_id,email,role FROM bam_business_invitations
-            WHERE token_hash=? AND consumed_at IS NULL AND expires_at>?
-            AND revoked_at IS NULL AND delivery_state='delivered'""",
-            (self._digest(token),timestamp)).fetchone()
-        if row is None:
-            raise PermissionError('Invitation expired or used')
-        identity=self.db.execute("""SELECT email,active,email_verified
-            FROM bam_identities WHERE subject_id=?""",
-            (verified_subject_id,)).fetchone()
-        if identity is None or identity!=(row[1],1,1):
-            raise PermissionError('Invitation does not match verified BAM identity')
-        # Owner membership must still exist and be active at acceptance time.
-        creator=self.db.execute("""SELECT created_by FROM bam_business_invitations
-            WHERE token_hash=?""",(self._digest(token),)).fetchone()
-        if creator is None or self.directory.resolve(row[0],creator[0]) is None:
-            raise PermissionError('Inviting owner no longer active')
-        owner=self.directory.resolve(row[0],creator[0])
-        if owner.role!=Role.OWNER:
-            raise PermissionError('Inviting owner no longer authorized')
-        if self.directory.resolve(row[0],verified_subject_id) is not None:
-            raise PermissionError('Already a business member')
+        digest=self._digest(token)
         with self.db:
-            updated=self.db.execute("""UPDATE bam_business_invitations
+            claimed=self.db.execute("""UPDATE bam_business_invitations
                 SET consumed_at=? WHERE token_hash=? AND consumed_at IS NULL
                 AND expires_at>? AND revoked_at IS NULL
                 AND delivery_state='delivered'""",
-                (timestamp,self._digest(token),timestamp))
-            if updated.rowcount!=1:
-                raise PermissionError('Invitation already used')
+                (timestamp,digest,timestamp))
+            if claimed.rowcount!=1:
+                raise PermissionError('Invitation expired, revoked or used')
+            row=self.db.execute("""SELECT tenant_id,email,role,created_by,
+                    invitation_id FROM bam_business_invitations
+                    WHERE token_hash=?""",(digest,)).fetchone()
+            if row is None or row[4] is None:
+                raise PermissionError('Invitation metadata unavailable')
+            identity=self.db.execute("""SELECT email,active,email_verified
+                FROM bam_identities WHERE subject_id=?""",
+                (verified_subject_id,)).fetchone()
+            if identity is None or identity!=(row[1],1,1):
+                raise PermissionError('Invitation does not match verified BAM identity')
+            inviter=self.directory.resolve(row[0],row[3])
+            if inviter is None or inviter.role!=Role.OWNER:
+                raise PermissionError('Inviting owner no longer authorized')
+            if self.db.execute("""SELECT 1 FROM members
+                WHERE tenant_id=? AND subject_id=?""",
+                (row[0],verified_subject_id)).fetchone() is not None:
+                raise PermissionError('Already a business member')
             self.db.execute("""INSERT INTO members(tenant_id,subject_id,role,active)
                 VALUES (?,?,?,1)""",(row[0],verified_subject_id,row[2]))
-            identifier=self.db.execute("""SELECT invitation_id
-                FROM bam_business_invitations WHERE token_hash=?""",
-                (self._digest(token),)).fetchone()
-            if identifier is None or identifier[0] is None:
-                raise RuntimeError('Invitation identifier missing')
             self.db.execute("""INSERT INTO bam_business_invitation_events
                 (tenant_id,invitation_id,action,actor_id,occurred_at)
                 VALUES (?,?,'accepted',?,?)""",
-                (row[0],identifier[0],verified_subject_id,timestamp))
+                (row[0],row[4],verified_subject_id,timestamp))
         return {'tenant_id':row[0],'role':row[2],
                 'membership_created':True,'publishing_enabled':False}

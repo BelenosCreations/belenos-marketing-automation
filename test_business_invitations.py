@@ -97,6 +97,66 @@ class InvitationTests(unittest.TestCase):
             owner_session=self.owner_token,now=103,limit=1)
         self.assertEqual(len(owner['events']),1)
 
+    def test_invalid_acceptance_does_not_consume_token_or_create_event(self):
+        made=self.invite()
+        link=self.outbox[-1][2]
+        before=self.invites.history_current(
+            owner_session=self.owner_token,now=103)
+        with self.assertRaises(PermissionError):
+            self.invites.accept_trusted(verified_subject_id=self.owner,
+                token=link,now=103)
+        for bad_time in (-1,True,'103'):
+            with self.assertRaises(ValueError):
+                self.invites.accept_trusted(verified_subject_id=self.guest,
+                    token=link,now=bad_time)
+        with self.assertRaises(PermissionError):
+            self.invites.accept_trusted(verified_subject_id=True,
+                token=link,now=103)
+        self.assertEqual(self.invites.history_current(
+            owner_session=self.owner_token,now=103),before)
+        self.assertIsNone(self.db.execute("""SELECT consumed_at FROM
+            bam_business_invitations WHERE invitation_id=?""",
+            (made['invitation_id'],)).fetchone()[0])
+        accepted=self.invites.accept_trusted(
+            verified_subject_id=self.guest,token=link,now=104)
+        self.assertTrue(accepted['membership_created'])
+
+    def test_owner_demotion_blocks_redemption_without_spending_token(self):
+        self.invite()
+        link=self.outbox[-1][2]
+        self.db.execute("""UPDATE members SET role='viewer' WHERE
+            tenant_id='shop' AND subject_id=?""",(self.owner,))
+        self.db.commit()
+        with self.assertRaises(PermissionError):
+            self.invites.accept_trusted(verified_subject_id=self.guest,
+                token=link,now=103)
+        self.assertIsNone(self.directory.resolve('shop',self.guest))
+        self.assertIsNone(self.db.execute("""SELECT consumed_at FROM
+            bam_business_invitations WHERE token_hash=?""",
+            (self.invites._digest(link),)).fetchone()[0])
+        self.db.execute("""UPDATE members SET role='owner' WHERE
+            tenant_id='shop' AND subject_id=?""",(self.owner,))
+        self.db.commit()
+        self.assertTrue(self.invites.accept_trusted(
+            verified_subject_id=self.guest,token=link,now=104)
+            ['membership_created'])
+
+    def test_inactive_identity_cannot_consume_invitation(self):
+        self.invite()
+        link=self.outbox[-1][2]
+        self.db.execute("""UPDATE bam_identities SET active=0
+            WHERE subject_id=?""",(self.guest,))
+        self.db.commit()
+        with self.assertRaises(PermissionError):
+            self.invites.accept_trusted(verified_subject_id=self.guest,
+                token=link,now=103)
+        self.db.execute("""UPDATE bam_identities SET active=1
+            WHERE subject_id=?""",(self.guest,))
+        self.db.commit()
+        self.assertTrue(self.invites.accept_trusted(
+            verified_subject_id=self.guest,token=link,now=104)
+            ['membership_created'])
+
     def test_invite_and_accept(self):
         self.invite()
         token=self.outbox[-1][2]
