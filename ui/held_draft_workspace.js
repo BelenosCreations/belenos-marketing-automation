@@ -264,7 +264,9 @@
         const latest=await refresh();
         if(latest.error||latest.stale)return latest;
         return {stale:false,tenantId:result.tenantId,id:result.id,
-          status:result.status,publishingEnabled:false};
+          status:result.status,
+          ...(result.revision===undefined?{}:{revision:result.revision}),
+          publishingEnabled:false};
       }catch(error){
         if(version!==epoch||active!==mine)return {stale:true};
         // Retain authenticated read-only data but report failed mutation.
