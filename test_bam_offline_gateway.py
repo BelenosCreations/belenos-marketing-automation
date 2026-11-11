@@ -233,6 +233,56 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(meta['status'],'401 Unauthorized')
         self.assertNotIn('session_token',body)
 
+    def test_authenticated_held_draft_create_and_hold(self):
+        shop=self.login('shop')
+        meta,created=self.call('/api/v1/content/drafts',
+            method='POST',token=shop,body={
+                'channel':'instagram',
+                'draft_text':'Original product introduction',
+                'suggestion':'Owner must review image and factual claims',
+                'required_items':['image']})
+        self.assertEqual(meta['status'],'201 Created')
+        self.assertEqual(created['tenant_id'],'shop')
+        self.assertEqual(created['status'],'needs_content')
+        self.assertFalse(created['publishing_enabled'])
+        _,all_drafts=self.call('/api/v1/drafts',token=shop)
+        self.assertEqual(len(all_drafts['drafts']),2)
+        draft_id=created['request_id']
+        meta,held=self.call('/api/v1/content/hold',
+            method='POST',token=shop,
+            body={'request_id':draft_id,'status':'postponed'})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(held['status'],'postponed')
+        _,remaining=self.call('/api/v1/dashboard',token=shop)
+        self.assertEqual(len(remaining['drafts']),1)
+        other=self.login('other')
+        meta,_=self.call('/api/v1/content/hold',
+            method='POST',token=other,
+            body={'request_id':draft_id,'status':'needs_content'})
+        self.assertIn(meta['status'],('401 Unauthorized','404 Not Found'))
+        _,other_data=self.call('/api/v1/drafts',token=other)
+        self.assertNotIn('Original product introduction',str(other_data))
+        meta,reopened=self.call('/api/v1/content/hold',
+            method='POST',token=shop,
+            body={'request_id':draft_id,'status':'needs_content'})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(reopened['status'],'needs_content')
+
+    def test_held_draft_api_refuses_publish_fields(self):
+        token=self.login('shop')
+        meta,result=self.call('/api/v1/content/drafts',
+            method='POST',token=token,body={
+                'channel':'facebook','draft_text':'Sample text',
+                'suggestion':'Review manually',
+                'required_items':['owner_review'],
+                'publish_now':True})
+        self.assertEqual(meta['status'],'400 Bad Request')
+        self.assertNotIn('request_id',result)
+        meta,result=self.call('/api/v1/content/hold',
+            method='POST',token=token,
+            body={'request_id':'a'*32,'status':'published'})
+        self.assertEqual(meta['status'],'400 Bad Request')
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')

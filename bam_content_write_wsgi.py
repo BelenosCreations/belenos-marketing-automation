@@ -76,8 +76,7 @@ class BAMContentWriteWSGI:
                 or type(result.get('request_id')) is not str
                 or _ID.fullmatch(result['request_id']) is None
                 or result.get('publishing_enabled') is not False
-                or result.get('status') not in (
-                    'needs_content','postponed','unavailable')):
+                or result.get('status')!=status):
             raise RuntimeError('Invalid trusted content result')
         return {'tenant_id':result['tenant_id'],
                 'request_id':result['request_id'],

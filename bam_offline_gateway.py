@@ -18,6 +18,7 @@ from ai_cost_ledger import AICostLedger
 from auth_login_api import AuthLoginAPI
 from bam_auth_wsgi import BAMAuthWSGI
 from bam_business_switch_wsgi import BAMBusinessSwitchWSGI
+from bam_content_write_wsgi import BAMContentWriteWSGI
 from bam_read_wsgi import BAMReadWSGI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
@@ -104,6 +105,8 @@ class BAMOfflineGateway:
         self.read_wsgi = BAMReadWSGI(self.read_api, clock=self.clock)
         self.switch_wsgi = BAMBusinessSwitchWSGI(
             self.read_api, enabled=enabled, clock=self.clock)
+        self.content_write_wsgi = BAMContentWriteWSGI(
+            self.read_api, enabled=enabled, clock=self.clock)
 
     @staticmethod
     def _unavailable(start_response, status, message):
@@ -127,5 +130,7 @@ class BAMOfflineGateway:
             return self.read_wsgi(environ, start_response)
         if path == '/api/v1/businesses/activate':
             return self.switch_wsgi(environ, start_response)
+        if path in ('/api/v1/content/drafts','/api/v1/content/hold'):
+            return self.content_write_wsgi(environ, start_response)
         return self._unavailable(
             start_response,'404 Not Found','Unknown BAM API route')
