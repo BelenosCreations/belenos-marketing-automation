@@ -10,11 +10,13 @@ from dashboard_view import build_dashboard_view
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
-                 ai_content_drafts=None,ai_policy=None):
+                 ai_content_drafts=None,ai_policy=None,
+                 ai_business_facts=None):
         self.dashboard=dashboard
         self.posting_preferences=posting_preferences
         self.ai_content_drafts=ai_content_drafts
         self.ai_policy=ai_policy
+        self.ai_business_facts=ai_business_facts
 
     @staticmethod
     def _token(value):
@@ -54,6 +56,13 @@ class AccountReadAPI:
             target_tenant_id=target_tenant_id,now=self._now(server_now))
         result['overview']['dashboard_cards']=build_dashboard_cards(result['overview'])['cards']
         return result
+
+    def get_ai_business_facts(self, *, session_token, server_now):
+        """Return only owner-confirmed facts for the active business."""
+        if self.ai_business_facts is None:
+            raise RuntimeError('AI business facts not configured')
+        return self.ai_business_facts.snapshot(
+            token=self._token(session_token),now=self._now(server_now))
 
     def get_ai_settings(self, *, session_token, server_now):
         """Read only the caller's OpenAI mode and safe memory preferences."""
