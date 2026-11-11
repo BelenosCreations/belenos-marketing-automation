@@ -97,6 +97,28 @@ class AIContentPlan:
         return base
 
     @staticmethod
+    def parse_revision_response(raw, *, target):
+        """Reject model claims about approval, publishing or other components."""
+        if target not in ('post_text','image_prompt'):
+            raise ValueError('Unknown revision target')
+        if type(raw) is str:
+            if len(raw)>5000:
+                raise ValueError('Revision response too large')
+            try:
+                value=json.loads(raw)
+            except json.JSONDecodeError as exc:
+                raise ValueError('Invalid revision response') from exc
+        else:
+            value=raw
+        if type(value) is not dict or set(value)!={'revised_text'}:
+            raise ValueError('Unexpected revision fields')
+        text=value['revised_text']
+        if type(text) is not str or not text.strip() or (
+            len(text)>(4000 if target=='post_text' else 2000)):
+            raise ValueError('Invalid revised text')
+        return text
+
+    @staticmethod
     def apply_revision(current, *, target, revised_text):
         if target not in ('post_text','image_prompt'):
             raise ValueError('Unknown revision target')
