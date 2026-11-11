@@ -68,3 +68,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 ### Structured Responses executor boundary
 
 `openai_responses_executor.py` constructs a strict OpenAI Responses API envelope and parses only completed assistant text output. It requires a trusted injected transport and does not resolve keys or perform networking. Configure the production transport with OpenAI credentials stored server-side, TLS verification, timeouts, explicit retries, safe request IDs and actual usage/cost accounting before enabling it. The adapter is not a general-purpose agent and cannot invoke tools or publish.
+
+### Disabled-by-default OpenAI transport
+
+`openai_https_transport.py` accepts only a server-side credential resolver and trusted HTTPS opener. It is disabled by default, uses a fixed OpenAI Responses endpoint and rejects unsupported models, token caps, tools, storage and malformed responses. It must not be enabled until secret storage, rate/cost accounting, TLS verification and production tests are approved. `test_ai_generation_e2e.py` uses a fake provider response; it is not a live integration test.
