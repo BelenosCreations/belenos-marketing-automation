@@ -9,18 +9,20 @@
       require('./ai_draft_view.js'),require('./ai_settings_view.js'),
       require('./ai_facts_view.js'),require('./ai_cost_view.js'),
       require('./ai_facts_editor.js'),require('./local_product_draft_client.js'),
-      require('./ai_draft_edit_client.js'));
+      require('./ai_draft_edit_client.js'),
+      require('./ai_targeted_revision_client.js'));
   else root.BAMAIWorkspace=factory(root.BAMReadClient,
     root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView,
     root.BAMAICostView,root.BAMAIFactsEditor,root.BAMLocalProductDraftClient,
-    root.BAMAIDraftEditClient);
+    root.BAMAIDraftEditClient,root.BAMAITargetedRevisionClient);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(client,draftView,settingsView,factsView,costView,factsEditor,localClient,editClient){
+function(client,draftView,settingsView,factsView,costView,factsEditor,localClient,editClient,targetedClient){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
                    factsContainer,costContainer,fetchImpl,origin,onError,
                    copyText,openUrl,factsEditorContainer,
-                   canManageFacts=false,onSaveFacts,enableLocalTemplates=false}){
+                   canManageFacts=false,onSaveFacts,enableLocalTemplates=false,
+                   enableTargetedRevisions=false,secureRandom}){
     if(!document||!draftsContainer||!settingsContainer||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Workspace dependencies required');
@@ -43,7 +45,12 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
     if(typeof enableLocalTemplates!=='boolean'||
        (enableLocalTemplates&&!factsContainer))
       throw new TypeError('Local templates require fact evidence');
+    if(typeof enableTargetedRevisions!=='boolean'||
+      (enableTargetedRevisions&&
+        (!secureRandom||typeof secureRandom.getRandomValues!=='function')))
+      throw new TypeError('AI revision feature needs an explicit secure opt-in');
     let active=null,epoch=0,requestVersion=0,localPending=false,editPending=false;
+    let regeneratePending=false;
     let mayManageFacts=canManageFacts,mayCreateDrafts=true;
     function setCapabilities({manageFacts,createDrafts}){
       if(typeof manageFacts!=='boolean'||typeof createDrafts!=='boolean')
@@ -54,6 +61,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
       epoch+=1;
       requestVersion+=1;
       active=null;localPending=false;editPending=false;
+      regeneratePending=false;
       mayManageFacts=false;mayCreateDrafts=false;
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
@@ -89,6 +97,33 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
         if(version===epoch&&mine===active)editPending=false;
       }
     }
+    async function regenerate({draftId,target,instruction,topic,expectedRevision}){
+      if(!enableTargetedRevisions||!active||!mayCreateDrafts||regeneratePending)
+        return {error:true};
+      const mine=active,version=epoch;
+      regeneratePending=true;
+      try{
+        const requestKey=targetedClient.newRequestKey(secureRandom);
+        const result=await targetedClient.revise({
+          origin,fetchImpl,token:mine.token,expectedTenantId:mine.tenantId,
+          draftId,target,instruction,topic,expectedRevision,requestKey});
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(!result.revised){
+          if(onError)onError(
+            'AI request held: '+result.reason+'. Check the draft and quota before requesting another revision.');
+          return {held:true,reason:result.reason};
+        }
+        const updated=await refresh();
+        if(updated.stale||updated.error)return updated;
+        return {stale:false,revision:result.revision};
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('AI revision was not confirmed. Refresh the draft and check request status before trying again.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine)regeneratePending=false;
+      }
+    }
     async function refresh(){
       if(!active)throw new TypeError('Sign-in required');
       const mine=active,version=epoch,request=++requestVersion;
@@ -114,7 +149,12 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
               needs_media:d.needsMedia,media_attached:d.mediaAttached,
               status:d.status,revision:d.revision,publishing_enabled:false
             }))},expectedTenantId:mine.tenantId,copyText,openUrl,
-          canEdit:mayCreateDrafts,onRevise:manualRevise});
+          canEdit:mayCreateDrafts,onRevise:manualRevise,
+          canRegenerate:enableTargetedRevisions&&mayCreateDrafts,
+          onRegenerate:payload=>{
+            if(version!==epoch||active!==mine)return {stale:true};
+            return regenerate(payload);
+          }});
         if(enableLocalTemplates&&mayCreateDrafts){
           const action=document.createElement('section');
           action.className='panel stack';

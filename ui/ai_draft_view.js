@@ -16,7 +16,8 @@
     return node;
   }
   function render({document,container,payload,expectedTenantId,
-                   copyText,openUrl,canEdit=false,onRevise}){
+                   copyText,openUrl,canEdit=false,onRevise,
+                   canRegenerate=false,onRegenerate}){
     if(!document||!container||typeof container.replaceChildren!=='function')
       throw new TypeError('Valid AI draft mount required');
     if((copyText!==undefined||openUrl!==undefined)&&
@@ -25,6 +26,9 @@
     if(typeof canEdit!=='boolean'||
        (canEdit&&typeof onRevise!=='function'))
       throw new TypeError('Editing requires an explicit trusted callback');
+    if(typeof canRegenerate!=='boolean'||
+       (canRegenerate&&(!canEdit||typeof onRegenerate!=='function')))
+      throw new TypeError('AI regeneration requires explicit enabled callback');
     const model=contract.normalize(payload);
     if(expectedTenantId!==undefined&&model.tenantId!==expectedTenantId)
       throw new TypeError('Unexpected business response');
@@ -82,6 +86,50 @@
         }
         item.append(el(document,'p',
           'Each change affects only the selected component. Changing the image prompt requires new media verification. All drafts remain unpublished.'));
+        if(canRegenerate){
+          for(const [target,title] of [
+            ['post_text','post copy'],
+            ...(draft.imagePrompt===null?[]:[['image_prompt','image prompt']])
+          ]){
+            const panel=el(document,'section','');
+            panel.className='bam-ai-regeneration';
+            panel.append(el(document,'h4','Regenerate '+title+' with AI'));
+            const topic=el(document,'input','');
+            topic.type='text';topic.maxLength=300;
+            topic.value='Revise existing '+draft.platform+' draft';
+            const change=el(document,'textarea','');
+            change.maxLength=500;change.rows=2;change.value='';
+            panel.append(el(document,'p','Topic for AI context'));
+            panel.append(topic);
+            panel.append(el(document,'p','Describe the change to this component'));
+            panel.append(change);
+            const prepare=el(document,'button','Review AI regeneration request');
+            prepare.type='button';
+            prepare.addEventListener('click',()=>{
+              if(!change.value.trim()||!topic.value.trim())return;
+              if(panel.children.some(x=>
+                  x.textContent==='Confirm AI revision of '+title))return;
+              panel.append(el(document,'p',
+                'This may consume sponsored OpenAI quota or incur usage charges on a personal API key. Only this component will be regenerated. No image or post will be approved, scheduled, or published.'));
+              const confirm=el(document,'button','Confirm AI revision of '+title);
+              confirm.type='button';
+              confirm.addEventListener('click',async()=>{
+                if(confirm.disabled)return;
+                confirm.disabled=true;
+                try{
+                  await onRegenerate({draftId:draft.id,target,
+                    instruction:change.value.trim(),topic:topic.value.trim(),
+                    expectedRevision:draft.revision});
+                }finally{
+                  confirm.disabled=false;
+                }
+              });
+              panel.append(confirm);
+            });
+            panel.append(prepare);
+            item.append(panel);
+          }
+        }
       }
       wrapper.append(item);
     }
