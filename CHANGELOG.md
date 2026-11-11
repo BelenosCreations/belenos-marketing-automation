@@ -1,5 +1,21 @@
 # Changelog
 
+## Approved OpenAI-only AI architecture — 2026-11-10
+
+### Added
+- `AI_ARCHITECTURE.md` documents three supported scenarios: owner-only two posts/day with BAM-sponsored AI, 5–10 invited users with sponsored AI preferred, and a future monetized Google Play release.
+- `ai_account_policy.py`: per-user and per-business OpenAI mode, reversible BAM-sponsored/personal-key settings using trusted vault references, and independent AI memories.
+- `ai_sponsorship.py`: server-configured scenario plans, bounded output tokens and atomic SQLite monthly quota reservations.
+- `ai_draft_request.py`: safe OpenAI-only prompt request builder requiring verified business facts, user-specific memory and unpublished draft output.
+- `test_ai_account_policy.py`, `test_ai_sponsorship.py`, and `test_ai_draft_request.py`: offline regression coverage for isolation, credential-reference validation, quota exhaustion and content constraints.
+
+### Preserved
+- Existing authentication, tenant boundaries, GUI, manual/smart scheduling, Content Studio, and disabled social publishing.
+
+### Not yet implemented
+- Real OpenAI generation, encrypted API-key vault, billing, direct Facebook Page connection, live deployment and end-to-end UI integration. Public prices and exact allowances remain undecided.
+
+
 ## Posting preference browser validation — 2026-11-10
 
 ### Added
