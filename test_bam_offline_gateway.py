@@ -179,6 +179,49 @@ class BAMOfflineGatewayTests(unittest.TestCase):
                   'tenant_id':'shop','role':'owner'})
         self.assertEqual(meta['status'],'400 Bad Request')
 
+    def test_business_switch_issues_replacement_and_revokes_old_token(self):
+        original=self.login('shop')
+        meta,activated=self.call('/api/v1/businesses/activate',
+            method='POST',token=original,body={
+                'target_tenant_id':'other'})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(activated['tenant_id'],'other')
+        self.assertFalse(activated['publishing_enabled'])
+        self.assertNotEqual(activated['session_token'],original)
+        self.assertNotIn('overview',activated)
+        self.assertEqual(self.call('/api/v1/dashboard',token=original)[0]
+                         ['status'],'401 Unauthorized')
+        _,view=self.call('/api/v1/dashboard',
+            token=activated['session_token'])
+        self.assertEqual(view['tenant_id'],'other')
+        self.assertNotIn('sample product',str(view))
+
+    def test_business_switch_refuses_nonmember_and_role_claims(self):
+        token=self.login('shop')
+        meta,_=self.call('/api/v1/businesses/activate',
+            method='POST',token=token,body={
+                'target_tenant_id':'unknown'})
+        self.assertEqual(meta['status'],'401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/dashboard',
+            token=token)[0]['status'],'200 OK')
+        meta,_=self.call('/api/v1/businesses/activate',
+            method='POST',token=token,body={
+                'target_tenant_id':'other','role':'owner'})
+        self.assertEqual(meta['status'],'400 Bad Request')
+        meta,_=self.call('/api/v1/businesses/activate',
+            method='POST',body={'target_tenant_id':'other'})
+        self.assertEqual(meta['status'],'401 Unauthorized')
+
+    def test_business_switch_requires_https(self):
+        token=self.login('shop')
+        meta,_=self.call('/api/v1/businesses/activate',
+            method='POST',token=token,body={
+                'target_tenant_id':'other'},scheme='http',
+            extra={'HTTP_X_FORWARDED_PROTO':'https'})
+        self.assertEqual(meta['status'],'403 Forbidden')
+        self.assertEqual(self.call('/api/v1/dashboard',
+            token=token)[0]['status'],'200 OK')
+
     def test_google_without_verified_provider_unavailable(self):
         meta,challenge=self.call(
             '/api/v1/auth/google-challenge',method='POST',body={})
