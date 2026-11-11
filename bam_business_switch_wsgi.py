@@ -83,6 +83,8 @@ class BAMBusinessSwitchWSGI:
             return send('503 Service Unavailable',
                         {'error': 'Business switching is disabled'})
         new_token = None
+        now = None
+        successful = False
         try:
             auth = environ.get('HTTP_AUTHORIZATION')
             if (type(auth) is not str or not auth.startswith('Bearer ')
@@ -96,6 +98,10 @@ class BAMBusinessSwitchWSGI:
             activated = self.api.activate_business(
                 session_token=old_token, target_tenant_id=target,
                 server_now=now)
+            if type(activated) is dict:
+                candidate = activated.get('session_token')
+                if type(candidate) is str and _TOKEN.fullmatch(candidate):
+                    new_token = candidate
             if (type(activated) is not dict
                     or activated.get('publishing_enabled') is not False
                     or type(activated.get('session_token')) is not str
@@ -110,6 +116,7 @@ class BAMBusinessSwitchWSGI:
             if (type(signed_out) is not dict or
                     signed_out.get('signed_out') is not True):
                 raise RuntimeError('Source session was not revoked')
+            successful = True
             return send('200 OK',{
                 'tenant_id':target,
                 'session_token':new_token,
@@ -122,7 +129,12 @@ class BAMBusinessSwitchWSGI:
         except Exception:
             return send('503 Service Unavailable',{'error':'Switch unavailable'})
         finally:
-            # Abandoned replacement tokens must not remain active.
-            # The successful response returns earlier; this guard is only
-            # for failures. The flag is reset by successful completion.
-            pass
+            # A failed source-session revocation or invalid result must not
+            # strand a newly issued replacement token at the server.
+            if not successful and new_token is not None and now is not None:
+                try:
+                    self.api.logout(session_token=new_token,server_now=now)
+                except Exception:
+                    # Keep generic public errors; production service should
+                    # report this internally without secrets.
+                    pass
