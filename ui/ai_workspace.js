@@ -32,7 +32,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor){
        (typeof copyText!=='function'||typeof openUrl!=='function'))
       throw new TypeError('Manual image handoff requires both callbacks');
     if(factsEditorContainer!==undefined&&
-       (!factsEditorContainer||typeof factsEditorContainer.replaceChildren!=='function'||
+       (!factsContainer||!factsEditorContainer||typeof factsEditorContainer.replaceChildren!=='function'||
         typeof canManageFacts!=='boolean'||
         (canManageFacts&&typeof onSaveFacts!=='function')))
       throw new TypeError('Invalid fact editor dependencies');
