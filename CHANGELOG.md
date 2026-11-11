@@ -1,3 +1,21 @@
+## Authenticated Content Studio and secure held-draft editing — 2026-11-10
+
+### Added
+- Connected a separate Content Studio tab to the signed-in BAM large-card interface. Members can explicitly create unpublished content requests, mark them postponed/unavailable and reopen incomplete drafts.
+- Added `ui/held_draft_write_client.js` and `ui/held_draft_workspace.js`, strict business-scoped browser POST calls and tenant-verified refresh after content writes. In-flight UI results are discarded on sign-out or business switch.
+- Added direct navigation from the Content overview card into the detailed Content Studio panel.
+- Extended browser integration and lifecycle regression coverage, including real form submission and tenant-scoped held states.
+- The already-present `bam_content_write_wsgi.py` is a disabled-by-default offline WSGI HTTP boundary for creating and holding drafts. No approval, media upload or publication route was added.
+
+### Verification
+- **Passed milestone:** [GitHub Actions run 42959259493](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959259493), commit `374dc694`: Python compilation, **727 Python tests and 28 JavaScript UI test scripts**.
+- Final direct-card navigation and end-to-end form smoke test updates remain subject to the next CI run.
+
+### Known limitations
+- Content Studio writes are only usable with a separately configured and enabled trusted HTTPS service; the HTML file itself is not a deployed service.
+- Uploading and scanning photos, Google browser authentication, live social connections, AI execution, approval/publishing and Android packaging remain unimplemented or inactive.
+- Browser tokens stay in memory; real production session and infrastructure security review is still required.
+
 # Changelog
 
 ## Multi-business session rotation, offline WSGI integration and branded shell — 2026-11-10

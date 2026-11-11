@@ -15,12 +15,15 @@
     item.textContent=text;
     return item;
   }
-  function create({document,container,fetchImpl,origin,onError}){
+  function create({document,container,fetchImpl,origin,onError,
+                   onOpenContentStudio}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Dashboard dependencies required');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Error callback required');
+    if(onOpenContentStudio!==undefined&&typeof onOpenContentStudio!=='function')
+      throw new TypeError('Content Studio navigation callback required');
     let active=null,epoch=0,requestVersion=0,current=null,view='home';
     function clear(){
       epoch++;requestVersion++;active=null;current=null;view='home';
@@ -74,6 +77,12 @@
               article.append(element(document,'p',
                 'Still needed: '+draft.missing.join(', ')));
             wrap.append(article);
+          }
+          if(onOpenContentStudio){
+            const open=element(document,'button','Open Content Studio');
+            open.type='button';open.className='secondary';
+            open.addEventListener('click',()=>onOpenContentStudio());
+            wrap.append(open);
           }
         }else if(section==='scheduled'){
           wrap.append(element(document,'p',

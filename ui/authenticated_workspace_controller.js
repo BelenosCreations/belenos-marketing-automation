@@ -16,9 +16,10 @@ function(dashboardModule,aiModule,heldModule){
                    aiSettingsContainer,aiFactsContainer,aiCostContainer,
                    fetchImpl,origin,onError,copyText,openUrl,
                    aiFactsEditorContainer,canManageFacts=false,onSaveFacts,
-                   contentStudioContainer}){
+                   contentStudioContainer,onOpenContentStudio}){
     const dashboard=dashboardModule.create({
-      document,container:dashboardContainer,fetchImpl,origin,onError});
+      document,container:dashboardContainer,fetchImpl,origin,onError,
+      onOpenContentStudio});
     const ai=aiModule.create({document,draftsContainer:aiDraftsContainer,
       settingsContainer:aiSettingsContainer,factsContainer:aiFactsContainer,
       costContainer:aiCostContainer,fetchImpl,origin,onError,

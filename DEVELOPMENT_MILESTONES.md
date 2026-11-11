@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Authenticated held-draft Content Studio (2026-11-10)
+
+The signed-in workspace now mounts `ui/held_draft_workspace.js` in a dedicated Content Studio tab beside the approved overview-first large-card navigation. Its strict `ui/held_draft_write_client.js` sends only permitted fields to the existing unpublished-content WSGI API and rejects tenant mismatches, forged publishing states, extra response fields and dangerous operations. A successful mutation reloads server-authorized tenant content; a failed or stale response never displays an optimistic success. Logout and business changes immediately clear the Content Studio along with the other private panels.
+
+Direct navigation from the dashboard Content card and a browser-level held-draft form/hold-state smoke test were also added. No verified media upload, review approval, scheduled publishing or AI calls were activated.
+
+**Verified core integration in [GitHub Actions run 42959259493](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959259493): 727 Python tests and 28 JavaScript UI test scripts, plus Python compilation.** The subsequent navigation/form end-to-end additions will be verified independently in CI.
+
 ## Tenant-switching security and approved branding (2026-11-10)
 
 Added a strict, disabled-by-default `bam_business_switch_wsgi.py` that uses the trusted account-directory membership checks to issue a replacement session scoped to the chosen business. It revokes the old session before returning the new token and attempts to revoke any orphaned replacement after failures. The browser's `ui/business_switch_client.js` and `ui/authenticated_session_controller.js` enforce in-memory token rotation, private workspace clearing, stale result protection and sign-out during in-flight switching. A business selector appears in the signed-in header only when the trusted dashboard returns multiple permitted businesses.

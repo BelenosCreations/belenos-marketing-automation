@@ -19,6 +19,12 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Signed-in Content Studio (held drafts only)
+
+The signed-in HTML shell includes a separate `Content Studio` tab, wired by `ui/held_draft_workspace.js` to the existing read-only `GET /api/v1/drafts` and held-only WSGI write routes `POST /api/v1/content/drafts` and `POST /api/v1/content/hold`. No browser field can claim a tenant, user role, schedule or publish permission. Every write response must match the expected signed-in tenant and `publishing_enabled:false`; every successful write is followed by an authenticated list refresh. Server-side authorization checks the current session and role.
+
+The Content overview card can open this panel directly. A session switch invalidates pending UI updates and destroys the old tenant's private Content Studio DOM. This only operates where the trusted disabled-by-default offline API fixture is deliberately enabled for direct-call tests; it is not a hosted interface, production enrollment flow, media upload or publishing integration.
+
 ## Disabled-by-default sign-in boundary
 
 `bam_auth_wsgi.py` now has five strict HTTPS-only POST routes: `/api/v1/auth/password`, `/api/v1/auth/google-challenge`, `/api/v1/auth/google`, `/api/v1/auth/logout`, and `/api/v1/auth/logout-everywhere`. Authentication requires `enabled=True` plus a trusted `AuthLoginAPI` with a throttle, a real server-side Google signature/issuer/audience/nonce verifier, and business membership checks. The existing localhost HTTP developer server does not mount these routes. `ui/auth_login_client.js` uses same-origin JSON POST, no cookies or retries, and gives the eventual authenticated shell a validated token and tenant context held in memory. Explicit logout calls are implemented via an injected trusted read/logout service, with the authenticated client clearing its private DOM before network completion. It does not implement Google OAuth browser redirects or production enrollment. A complete authentication service must still provide TLS, rate limits by IP, monitoring, account recovery, secure session revocation, and real-browser testing.

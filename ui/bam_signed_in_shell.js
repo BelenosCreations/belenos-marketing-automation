@@ -98,6 +98,7 @@
       aiFactsContainer:byId('bam-ai-facts'),
       aiCostContainer:byId('bam-ai-cost'),
       contentStudioContainer:byId('bam-content-studio'),
+      onOpenContentStudio:()=>showPanel('content'),
       fetchImpl,origin,onError:message,
       copyText:text=>{
         if(!window.navigator||!window.navigator.clipboard)

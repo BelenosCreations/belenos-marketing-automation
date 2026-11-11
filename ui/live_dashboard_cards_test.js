@@ -28,8 +28,10 @@ function payload(tenant='shop'){
 async function main(){
   let responder=()=>payload(),pending=null,errors=[];
   const fetchImpl=async()=>({ok:true,json:async()=>responder()});
+  let opened=0;
   const app=create({document,container,fetchImpl,
-    origin:'https://bam.example',onError:e=>errors.push(e)});
+    origin:'https://bam.example',onError:e=>errors.push(e),
+    onOpenContentStudio:()=>opened++});
   app.activate({token:'valid',tenantId:'shop'});
   assert.equal((await app.refresh()).stale,false);
   const cards=container.children[0].children[1].children;
@@ -38,6 +40,10 @@ async function main(){
   cards[2].listeners.click();
   assert.equal(container.children[0].children[2].children[1].textContent,
     '<script>not HTML</script>');
+  const open=container.children[0].children.find(x=>x.textContent==='Open Content Studio');
+  assert.ok(open);
+  open.listeners.click();
+  assert.equal(opened,1);
   app.show('scheduled');
   assert.match(container.children[0].children[2].textContent,
     /Scheduling is not connected/);
