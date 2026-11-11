@@ -1,3 +1,20 @@
+## Independent manual AI draft component editing — 2026-11-10
+
+### Added
+- Introduced a disabled-by-default, HTTPS-only `PUT /api/v1/ai-drafts` endpoint for an authenticated creator to manually revise **exactly one** component of their own unpublished AI draft: either `post_text` or an existing `image_prompt`.
+- Integrated post copy and image prompt editors in the signed-in AI Drafts view. Each Save uses an expected revision to prevent stale overwrites and then reloads the server-verified draft. No OpenAI call is made.
+- The server derives both business and subject from the current session; clients cannot claim a tenant, role, approval, billing mode or publication state. Revisions are owner/creator-scoped and reject different-user drafts.
+- Changing an image prompt invalidates its old verified-media association and reestablishes the media-needed hold. Editing post copy retains an existing valid media association but still requires content review.
+- Added strict request/response contract, browser, revision-conflict, cross-tenant, no-API-cost and end-to-end UI regression tests.
+
+### Verified tests
+- **Passed:** [GitHub Actions run 42961746379](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42961746379), commit `c96d5611`: Python compilation, **757 Python tests and 34 JavaScript UI test scripts**.
+
+### Known limitations
+- Edits are manual text changes, not targeted paid AI regeneration. The latter remains in the approved roadmap and requires quota and provider readiness.
+- New image prompts cannot be added to drafts that did not have one; a separate confirmed-fact draft workflow can create them. No image file transfer, review approval, scheduling or publishing is enabled.
+- Offline integration only: no production OAuth, hosted service, Google browser flow or Android installable artifact.
+
 ## Role-aware authenticated business controls — 2026-11-10
 
 ### Added

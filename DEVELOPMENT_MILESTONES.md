@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Independent manual AI draft component revisions (2026-11-10)
+
+The disabled-by-default `bam_ai_draft_edit_wsgi.py` adds a strict `PUT /api/v1/ai-drafts` route to edit one existing user/business-scoped AI draft component. It requires the authenticated session, a draft ID, target (`post_text` or existing `image_prompt`), revised text and matching revision. The `AIContentDraftStore` stores the updated component only, increments the revision and returns an unpublished draft status; a changed image prompt deletes its old verified image match. The signed-in AI Drafts UI has explicit separate Save controls and reloads the trusted draft after each edit.
+
+The route never invokes OpenAI, changes the other component, approves, schedules, publishes or grants media permission. Stale revisions and cross-business/user edits fail closed, and the creator role is checked on the backend regardless of UI controls. **Verified [GitHub Actions run 42961746379](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42961746379): 757 Python tests and 34 JS scripts, plus compilation.**
+
 ## Role-aware editing controls in each business (2026-11-10)
 
 The signed-in dashboard now accepts the authorized active-business role from the server. `ui/dashboard_data_contract.js` permits only known membership roles and defaults a missing role to read-only, rather than granting edit access. The authenticated workspace derives presentation capabilities only from this trusted response, resetting them on activation, logout and business switching. Owners see AI fact confirmation and Smart/Manual posting preference editors; owners, marketing managers and content creators can create/edit held content requests and create zero-API-cost drafts. Employees/viewers see only read-only information. Backend role and tenant checks remain authoritative and are not bypassed by browser flags.

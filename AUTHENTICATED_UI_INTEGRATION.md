@@ -19,6 +19,14 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Manual single-component AI draft edits
+
+The signed-in AI Drafts panel offers separate explicit Save controls for the post copy and existing image-generation prompt. `ui/ai_draft_edit_client.js` sends only the draft ID, selected component, revised text and expected revision to the disabled-by-default `PUT /api/v1/ai-drafts` backend. `AccountReadAPI.edit_ai_draft_component` checks the authenticated current user/business and `AIContentDraftStore.revise` enforces edit permission and an optimistic revision guard. A changed image prompt invalidates a prior verified-media match; it cannot imply that fresh media was uploaded.
+
+No AI request, owner fact change, automatic approval or social publishing occurs. The browser discards any late response after business rotation/logout and performs a fresh authenticated read before showing revised content.
+
+**Verified [GitHub Actions run 42961746379](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42961746379): 757 Python tests and 34 UI test scripts, plus compilation.**
+
 ## Business-role-driven editing affordances
 
 `GET /api/v1/dashboard` already returns the active business's current membership role, determined by `AccountDashboard.overview` after live membership/session validation. The normalized browser role is restricted to `owner`, `marketing_manager`, `content_creator`, `employee` or `viewer`; missing role defaults to read-only. `ui/authenticated_workspace_controller.js` uses the current dashboard response to set UI-only permissions before refreshing dependent panels. Owner-only fact confirmations and posting time save controls are hidden from nonowners; employees and viewers cannot see held-content or local-template create/edit actions. All flags are discarded on business switch and logout.
