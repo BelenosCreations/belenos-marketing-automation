@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Current-user, current-business AI writing preference editing (2026-11-11)
+
+BAM Settings now lets an authorized creator edit their own AI writing preferences, such as tone, target audience and desired length, without modifying another user's preferences even within the same business. `AIPolicyStore.replace_memory_checked` enforces the prior-state optimistic check under the server-resolved subject/business scope; stale writes fail with a conflict instead of overwriting another device's updates. `bam_ai_memory_wsgi.py` provides a strict HTTPS PUT adapter with bounded text and no client-selected tenant or publication fields. `ui/ai_memory_client.js` and the Settings editor validate and persist only these preferences, with role-aware controls, stale-response handling and no model API calls. This remains separate from owner-confirmed business facts and is unsuitable for passwords or credentials.
+
+**Verified:** [GitHub Actions run 43056197885](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43056197885), commit `c1f31d52`: 836 Python tests and 53 JavaScript UI test scripts, plus compilation.
+
 ## Explicit, opt-in targeted AI revision interface (2026-11-11)
 
 The AI Content Drafts panel now has optional separate controls to prepare and confirm an AI copy revision or existing image-prompt revision. A usage warning explains that the request may consume sponsored quota or charge the key owner; there is no implicit AI request. `ui/ai_targeted_revision_client.js` requires cryptographic idempotency keys, verifies the current business and expected draft revision and rejects provider/publishing/approval claims. The workspace sends only one request per confirmed action, refreshes trusted draft data on success and discards stale session results. The normal signed-in app does **not** enable the opt-in flag, and the offline gateway has no active paid provider route.

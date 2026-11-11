@@ -24,6 +24,12 @@ The signed-in shell exposes the existing `POST /api/v1/auth/logout-everywhere` s
 
 The Team Access panel reads `GET /api/v1/team-overview` only for a trusted active-business owner. The server checks `MANAGE_TEAM`, returns strictly aggregate active role counts and inactive membership count and never exposes member IDs, email addresses, invitations or permission-changing actions. The browser validates all totals and discards stale data on business/session change. An optional failed count read does not require sign-out. **Verified:** [run 43035508617](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43035508617) (809 Python, 44 JavaScript).
 
+## Private AI writing preferences in Settings
+
+Authorized users can edit their own per-business AI writing guidance through separate label/value rows. The browser sends exactly `memory` and `expected_memory` to `PUT /api/v1/ai-memory`. The server resolves current session identity/business, authorizes draft creation, validates bounded nonsecret values, and compares the prior state before saving. A conflict requires the user to refresh; it does not silently overwrite another browser's preferences. Viewers do not see the editor; changing business or signing out invalidates late UI actions. This is not an owner fact-verification screen, provider key store, automatic AI generation or publishing control.
+
+**Verified:** [run 43056197885](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43056197885) — 836 Python tests and 53 JavaScript UI test scripts.
+
 ## Opt-in targeted AI regeneration UI (disabled in ordinary preview)
 
 `ui/ai_draft_view.js` can optionally render two-step **Prepare / Confirm** controls to regenerate exactly one AI draft component, post text or an existing image prompt. The user supplies a topic/instruction and reviews an explicit notice about potential sponsored or personal-key API usage before confirmation. The private `ui/ai_targeted_revision_client.js` sends only the current draft/revision/component and an opaque cryptographically generated idempotency key. `ui/ai_workspace.js` discards stale business responses and refreshes the draft after confirmed success; held/failed responses cannot masquerade as successful revisions. This feature is **off by default** and is not enabled in the normal offline shell. It does not approve media or publish.

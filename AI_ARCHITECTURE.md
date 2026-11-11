@@ -92,3 +92,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 ### Optional targeted revision controls (still disabled)
 
 The AI Drafts browser component can display a separate, two-step, cost-aware confirmation for regenerating only post text or only an existing image prompt. The browser uses a cryptographically generated idempotency key, checks draft revisions and never accepts returned publication claims. Operator configuration must explicitly enable the feature; the normal offline signed-in shell leaves it disabled. The backend still needs the production security and paid-usage gates before real OpenAI traffic.
+
+### Editable, isolated AI writing preferences
+
+Per-user/per-business writing guidance can be changed by an authenticated creator in BAM Settings. The text is restricted by length and secret-like-name checks, atomically compares with previously read preferences, and is never treated as independently verified business truth. The editor calls no OpenAI API and cannot select a billing plan or grant social publishing permissions. The offline gateway exposes only authenticated preference updates; no public hosting or provider key storage is activated.

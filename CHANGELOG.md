@@ -1,3 +1,17 @@
+## Isolated per-user AI writing preference editor — 2026-11-11
+
+### Added
+- `AIPolicyStore.replace_memory_checked` allows a creator to update their own business-scoped AI writing guidance with an optimistic compare-and-update. Changes on another device cannot be silently overwritten. The values are bounded and key/value validation rejects likely credentials.
+- A strict, authenticated `PUT /api/v1/ai-memory` route edits only memory associated with the current BAM identity and business. Client-supplied tenant, role, API key, publication, billing or entitlement claims fail closed. Conflict returns 409 and requires a fresh read.
+- AI Settings now offers an editor for individually labeled preferences (tone, audience, style, post length) with add, edit and remove-by-empty-row controls. The editor saves explicitly, refreshes the trusted account state and disappears for viewers or after business switching/logout.
+- Browser and Python tests cover privacy, current-user isolation, conflicts, secret-like fields, forged scope, unauthorized roles, stale controls, strict responses, and zero automatic AI requests.
+
+### Verified
+- [GitHub Actions run 43056197885](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43056197885), commit `c1f31d52`: **836 Python tests, 53 JavaScript UI test scripts**, and compilation passed.
+
+### Known limitations
+- Writing preferences are editable in the local preview, not independently verified marketing facts. They cannot override owner-confirmed business facts or approval controls. This is not credential vaulting, production user-profile hosting, paid AI generation, or publication.
+
 ## Opt-in, confirmation-gated targeted AI regeneration controls — 2026-11-11
 
 ### Added
