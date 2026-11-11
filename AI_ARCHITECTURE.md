@@ -72,3 +72,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 ### Disabled-by-default OpenAI transport
 
 `openai_https_transport.py` accepts only a server-side credential resolver and trusted HTTPS opener. It is disabled by default, uses a fixed OpenAI Responses endpoint and rejects unsupported models, token caps, tools, storage and malformed responses. It must not be enabled until secret storage, rate/cost accounting, TLS verification and production tests are approved. `test_ai_generation_e2e.py` uses a fake provider response; it is not a live integration test.
+
+### Usage and cost estimates
+
+`ai_cost_ledger.py` records trusted provider token counts by business/user and estimates micro-USD costs from explicit operator-configured Decimal rates. Configure the Responses executor's `usage_observer` to call this ledger; when enabled, missing or malformed usage fails closed. These estimates must not be presented as actual charges. Production requires reconciliation of failed attempts, provider billing, and per-model prices before enabling paid generation.
