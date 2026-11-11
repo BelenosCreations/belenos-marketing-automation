@@ -1,5 +1,16 @@
 # Changelog
 
+## AI Content Studio read-only integration — 2026-11-10
+
+### Added
+- Authenticated read-only `/api/v1/ai-drafts` endpoint for current-user, current-business AI drafts.
+- Strict AI draft browser contract, HTTPS client integration and safe draft/image-prompt DOM renderer.
+- Python WSGI route tests and Node contract/view tests in CI.
+
+### Safeguards
+- Missing media remains on hold; no publishing, approval, file upload or actual AI call is enabled.
+
+
 ## Persistent AI draft staging — 2026-11-10
 
 ### Added
