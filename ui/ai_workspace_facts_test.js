@@ -36,7 +36,7 @@ async function main(){
                'product: Custom tumblers');
   assert.match(costs.children[0].children[4].textContent,/\\$0.0018/);
   const broken=create({document,draftsContainer:drafts,
-    settingsContainer:settings,factsContainer:facts,
+    settingsContainer:settings,factsContainer:facts,costContainer:costs,
     fetchImpl:async()=>({ok:false}),origin:'https://bam.example'});
   broken.activate({token:'valid',tenantId:'shop'});
   assert.equal((await broken.refresh()).error,true);
