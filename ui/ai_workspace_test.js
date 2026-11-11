@@ -45,6 +45,17 @@ async function main(){
   assert.equal(drafts.children[0].children[2].children[1].textContent,
                'Private b');
   assert.equal(settings.children[0].children[5].textContent,'tone: b');
+  const slow=workspace.refresh();
+  const slowRequests=pending.splice(0);
+  const fast=workspace.refresh();
+  flush('b');
+  assert.equal((await fast).tenantId,'b');
+  for(const item of slowRequests)
+    item.resolve({ok:true,json:async()=>item.url.endsWith('/ai-drafts')
+      ?draft('a'):prefs('a')});
+  assert.equal((await slow).stale,true);
+  assert.equal(drafts.children[0].children[2].children[1].textContent,
+               'Private b');
   const failing=workspace.refresh();
   const failedRequests=pending.splice(0);
   for(const item of failedRequests)item.resolve({ok:false});
