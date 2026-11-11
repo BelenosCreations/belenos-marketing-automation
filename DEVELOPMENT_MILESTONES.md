@@ -11,6 +11,15 @@ A dedicated `CalendarProposals` table stores at most one current proposed date p
 
 
 
+
+## Private team review notes, versioned edits and held-draft filters (2026-11-11)
+
+The `ReviewFeedback` SQLite service records one current private feedback note per business/draft. A current user may read only their business notes, while new feedback requires server-confirmed owner/marketing-manager status and a current draft revision. A 32-character random version token rotates on every write and is required for update or removal. Stale concurrent writes, old revision edits, unauthorized roles, and delete/recreate ABA conflicts fail closed. Existing content requests, media states and the approval ledger remain untouched; a changed draft revision marks the existing note stale rather than laundering it into a new approval.
+
+`BAMReviewFeedbackWSGI` is HTTPS-only and accepts strict allowlisted GET/PUT/DELETE without a client-supplied tenant, approval or scheduling action. The browser client rejects forged approval or publish flags, mismatched tenants, malformed notes and stale versions. The **Approvals** dashboard contains manager/owner note controls with explicit deletion confirmation; the **Content Studio** queue now shows received reviewer notes read-only to creators, marks older notes and supports local-only status, channel and text filtering. Browser session invalidation prevents notes from appearing after switching a business.
+
+**Verified:** [GitHub Actions run 43088917850](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43088917850), commit `b52643de`: **877 Python tests / 65 JavaScript scripts**, plus compilation, including gateway integration and session lifecycle tests. No paid service or publishing action occurred.
+
 ## Private editorial readiness checklist and Approvals drilldown (2026-11-11)
 
 The read-only `ReviewReadiness` service derives the active business and READ_DRAFTS permission from the current session, inspects at most 200 held drafts in deterministic priority order, and checks each required content item against the trusted, tenant/request/item-scoped attachment registry. It returns counts and non-sensitive blockers only. Missing or unverified material prevents editorial-material-complete status; even a complete item always remains unapproved and carries explicit `truthguard_review_required`, `owner_approval_not_implemented` and `social_publishing_disabled` blockers. The `BAMReviewReadinessWSGI` adapter is HTTPS-only, GET-only and rejects client-chosen tenants, forbidden methods, forged approval flags and ambiguous server responses. The strict, no-credentials browser client renders the checklist under the Approvals card, with session-epoch checks discarding obsolete results during business switches. The dashboard never treats 'material complete' as an approval or scheduled post.

@@ -444,6 +444,27 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (private editorial feedback and held-draft filters)
+
+### Added
+- Business-private editorial comments bound to the current held draft revision, visible to draft readers and writable only by currently authorized owners and marketing managers.
+- Compare-and-set feedback tokens with conflict rejection, delete/recreate protection and stale-draft warnings, without altering draft contents or review/publication status.
+- Strict HTTPS `GET/PUT/DELETE /api/v1/review-feedback` with explicit nonapproval flags; no social/AI provider call, automatic action, or tenant selected by the browser.
+- Approvals drilldown feedback editor with explicit save, double-confirmed removal and stale-session protection; read-only linked feedback beside drafts in Content Studio.
+- Content Studio in-browser channel/status/text filters, with no server-side search or mutation and automatic state clearing on account switches.
+
+### Safeguards and fixes
+- Creators/viewers/other tenants cannot write feedback. Missing or stale drafts and stale note versions require refresh before changing anything.
+- Review notes are comments, **not** TruthGuard approval, final owner authorization, scheduled posts or an editable publishing flag.
+
+### Verification
+- **Passed:** [GitHub Actions run 43088917850](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43088917850) on commit `b52643de`: 877 Python tests, 65 JavaScript UI scripts, Python compilation.
+
+### Known limitations
+- This offline local development environment does not provide production audit retention, team notifications, real identity enrollment, media scanning, external social scheduling or automatic publishing.
+- Notes are private business data; do not enter passwords, API keys or confidential customer material.
+
+
 ## Phase 3.5 — 2026-11-11 (private editorial preparation workflow)
 
 ### Added

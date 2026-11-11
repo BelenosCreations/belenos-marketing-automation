@@ -94,3 +94,7 @@ on the `serve` command. The directory must be outside Git and private to your us
 ## Review preparation on the local signed-in interface
 
 Open the **Approvals** card to view a read-only editorial readiness checklist from `GET /api/v1/review-readiness` within the local opt-in HTTPS test environment. It distinguishes missing required media, media not yet trusted/verified, postponed content, and content with all materials complete. All items still require TruthGuard and owner review; neither the checklist nor a saved calendar date approves, schedules, or publishes content. This route is authenticated by the server's active business session and rejects POST and client-supplied tenant IDs. Do not expose this offline gateway to the public Internet.
+
+## Private editorial feedback (local HTTPS preview)
+
+In the **Approvals** card, an owner or marketing manager may add or revise a business-private feedback note for a held draft. This calls the strict versioned `/api/v1/review-feedback` route and does **not** approve the draft. Content creators may read the same note in Content Studio, then revise their draft copy; any old note is marked stale. Content Studio status/channel/search filters affect only the current screen, without transmitting a search query or changing the database. All work remains unavailable in the public Internet because the local offline adapter is not a production server. Do not paste secrets or sensitive customer details into feedback.
