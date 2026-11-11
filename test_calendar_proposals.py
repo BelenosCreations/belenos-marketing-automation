@@ -1,0 +1,160 @@
+"""Calendar proposals never become executable scheduled posts."""
+import sqlite3
+import unittest
+from datetime import datetime
+from access_policy import Principal,Role
+from accounts import AccountDirectory
+from sessions import SessionStore
+from content_requests import ContentRequests
+from content_request_service import ContentRequestService
+from content_attachments import AttachmentRegistry
+from posting_preferences import PostingPreferences
+from calendar_proposals import CalendarProposals
+
+def epoch(value):
+    return int(datetime.fromisoformat(value).timestamp())
+
+NOW=epoch('2026-11-11T12:00:00+00:00')
+FIRST='2026-11-11T15:00:00+00:00'
+SECOND='2026-11-11T23:30:00+00:00'
+
+class CalendarProposalTests(unittest.TestCase):
+    def setUp(self):
+        self.db=sqlite3.connect(':memory:')
+        self.directory=AccountDirectory(self.db)
+        self.directory.bootstrap_owner('shop','owner')
+        self.directory.bootstrap_owner('other','another')
+        self.directory.set_member(Principal('owner','shop',Role.OWNER),
+                                  'creator',Role.CONTENT_CREATOR)
+        self.directory.set_member(Principal('owner','shop',Role.OWNER),
+                                  'viewer',Role.VIEWER)
+        self.sessions=SessionStore(self.db)
+        self.owner=self.sessions.issue(Principal('owner','shop',Role.OWNER),
+                                       now=NOW-10)
+        self.creator=self.sessions.issue(
+            Principal('creator','shop',Role.CONTENT_CREATOR),now=NOW-10)
+        self.viewer=self.sessions.issue(
+            Principal('viewer','shop',Role.VIEWER),now=NOW-10)
+        self.other=self.sessions.issue(
+            Principal('another','other',Role.OWNER),now=NOW-10)
+        self.requests=ContentRequests(self.db)
+        self.service=ContentRequestService(
+            requests=self.requests,sessions=self.sessions,
+            directory=self.directory,
+            attachments=AttachmentRegistry(self.db))
+        self.prefs=PostingPreferences(
+            db=self.db,sessions=self.sessions,directory=self.directory)
+        self.prefs.set(token=self.owner,tenant_id='shop',
+            mode='manual',timezone='America/New_York',
+            manual_times=['10:00','18:30'],now=NOW-5)
+        self.calendar=CalendarProposals(
+            db=self.db,sessions=self.sessions,directory=self.directory,
+            content_service=self.service,preferences=self.prefs)
+        self.draft=self.service.create(
+            token=self.owner,tenant_id='shop',channel='facebook',
+            draft_text='New example product',suggestion='Need image',
+            required_items=['image'],now=NOW-4)
+    def propose(self,**changes):
+        args={'token':self.owner,'now':NOW,
+              'request_id':self.draft['request_id'],
+              'expected_revision':1,'utc_at':FIRST}
+        args.update(changes)
+        return self.calendar.propose(**args)
+
+    def test_propose_is_durable_and_never_schedules(self):
+        result=self.propose()
+        self.assertEqual(result['status'],'proposal_only')
+        self.assertEqual(result['posts_scheduled'],0)
+        self.assertFalse(result['publishing_enabled'])
+        entries=self.calendar.list_mine_business(token=self.owner,now=NOW)
+        self.assertEqual(entries['tenant_id'],'shop')
+        self.assertEqual(len(entries['items']),1)
+        self.assertEqual(entries['items'][0]['request_id'],
+                         self.draft['request_id'])
+        self.assertEqual(entries['items'][0]['utc_at'],FIRST)
+        self.assertEqual(entries['items'][0]['local_time'],'10:00')
+        self.assertTrue(entries['items'][0]['slot_current'])
+        self.assertFalse(entries['items'][0]['content_changed'])
+        self.assertEqual(entries['posts_scheduled'],0)
+        reopened=CalendarProposals(
+            db=self.db,sessions=self.sessions,directory=self.directory,
+            content_service=self.service,preferences=self.prefs)
+        self.assertEqual(len(reopened.list_mine_business(
+            token=self.owner,now=NOW)['items']),1)
+        self.assertEqual(len(reopened.list_mine_business(
+            token=self.viewer,now=NOW)['items']),1)
+        self.assertEqual(self.calendar.list_mine_business(
+            token=self.other,now=NOW)['items'],[])
+
+    def test_collision_and_draft_revision_safeguards(self):
+        self.propose()
+        another=self.service.create(
+            token=self.owner,tenant_id='shop',channel='instagram',
+            draft_text='Another product',suggestion='Need photo',
+            required_items=['image'],now=NOW)
+        with self.assertRaises(ValueError):
+            self.propose(request_id=another['request_id'])
+        self.assertEqual(self.propose(utc_at=SECOND)['status'],
+                         'proposal_only')
+        self.assertEqual(len(self.calendar.list_mine_business(
+            token=self.owner,now=NOW)['items']),1)
+        changed=self.service.revise(
+            token=self.creator,tenant_id='shop',
+            request_id=self.draft['request_id'],target='draft_text',
+            revised_text='Updated product copy',expected_revision=1,now=NOW+1)
+        self.assertEqual(changed['revision'],2)
+        item=self.calendar.list_mine_business(
+            token=self.owner,now=NOW+1)['items'][0]
+        self.assertTrue(item['content_changed'])
+        with self.assertRaises(ValueError):
+            self.propose(utc_at=FIRST,now=NOW+1)
+        restored=self.propose(utc_at=FIRST,now=NOW+1,
+                              expected_revision=2)
+        self.assertEqual(restored['posts_scheduled'],0)
+        current=self.calendar.list_mine_business(
+            token=self.owner,now=NOW+1)['items'][0]
+        self.assertFalse(current['content_changed'])
+
+    def test_configured_time_changes_invalidate_old_proposal(self):
+        self.propose()
+        self.prefs.set(token=self.owner,tenant_id='shop',
+            mode='manual',timezone='America/New_York',
+            manual_times=['18:30'],now=NOW+1)
+        entry=self.calendar.list_mine_business(
+            token=self.owner,now=NOW+2)['items'][0]
+        self.assertFalse(entry['slot_current'])
+        self.assertTrue(entry['publishing_enabled'] is False)
+
+    def test_role_tenant_dst_and_no_arbitrary_clock(self):
+        for token in (self.viewer,self.other,'no-session'):
+            with self.assertRaises(PermissionError):
+                self.propose(token=token)
+        for clock in ('2026-11-11T12:00:00+00:00','bad',
+                      '2026-11-11T15:00:00Z',
+                      '2026-11-02T15:00:00+00:00'):
+            with self.assertRaises(ValueError):
+                self.propose(utc_at=clock)
+        with self.assertRaises(ValueError):
+            self.propose(expected_revision=True)
+        self.prefs.set(token=self.owner,tenant_id='shop',
+            mode='smart',timezone='America/New_York',
+            manual_times=[],now=NOW+1)
+        with self.assertRaises(ValueError):
+            self.propose(now=NOW+2)
+
+    def test_discard_is_private_idempotent_and_not_delete_content(self):
+        self.propose()
+        with self.assertRaises(PermissionError):
+            self.calendar.discard(token=self.viewer,now=NOW,
+                                  request_id=self.draft['request_id'])
+        removed=self.calendar.discard(token=self.creator,now=NOW,
+                                      request_id=self.draft['request_id'])
+        self.assertEqual(removed['removed'],1)
+        self.assertEqual(removed['posts_scheduled'],0)
+        self.assertEqual(self.calendar.discard(token=self.owner,now=NOW,
+            request_id=self.draft['request_id'])['removed'],0)
+        self.assertIsNotNone(self.requests.get(
+            tenant_id='shop',request_id=self.draft['request_id']))
+
+if __name__=='__main__':
+    unittest.main()
