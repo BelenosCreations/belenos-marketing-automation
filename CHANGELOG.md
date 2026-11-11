@@ -1,5 +1,26 @@
 # Changelog
 
+## CI recovery, scheduling reliability and private UI cleanup — 2026-11-10
+
+### Fixed
+- Repaired a Python syntax error in the disabled-by-default AI draft endpoint that prevented all development-branch checks from executing.
+- Recognized the plural audience term "families" in smart posting-time suggestions; preview results remain proposals, not scheduled jobs.
+- Cleared the privileged owner-confirmed business facts editor after failed workspace refreshes, preventing stale private form data.
+- Corrected regression assertions to match explicit viewer analytics permission, known-competitor subdomain blocking, and invitation expiry at the exact TTL boundary; added the one-second-before-expiration test.
+
+### Changed
+- CI now automatically discovers and runs every `ui/*_test.js` JavaScript regression script and cancels superseded runs on the same branch.
+
+### Test status
+- **Verified passed:** [GitHub Actions run 42951059295](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42951059295) at commit `fa3647b5eb9d6688e23e448845814fc329a2728e`.
+- Python compilation passed; **676 Python tests passed**; **22 JavaScript regression scripts passed**.
+- The original isolated Phase 3.2 ZIP baseline also passed 26/26 locally during recovery.
+
+### Known limitations
+- CI is offline regression coverage, not real-browser, security-penetration, OAuth, provider or production-deployment verification.
+- The current mobile-first HTML sample is not an installed Android app. Social publishing and live AI/network integrations remain disabled.
+
+
 ## Explicit owner-confirmed business facts editor — 2026-11-10
 
 ### Added
