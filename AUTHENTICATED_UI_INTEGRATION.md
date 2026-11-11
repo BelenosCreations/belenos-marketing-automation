@@ -19,6 +19,12 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Business-role-driven editing affordances
+
+`GET /api/v1/dashboard` already returns the active business's current membership role, determined by `AccountDashboard.overview` after live membership/session validation. The normalized browser role is restricted to `owner`, `marketing_manager`, `content_creator`, `employee` or `viewer`; missing role defaults to read-only. `ui/authenticated_workspace_controller.js` uses the current dashboard response to set UI-only permissions before refreshing dependent panels. Owner-only fact confirmations and posting time save controls are hidden from nonowners; employees and viewers cannot see held-content or local-template create/edit actions. All flags are discarded on business switch and logout.
+
+Client permission flags are not authorization tokens: all corresponding HTTPS write endpoints enforce current server-side tenant membership and role. **Verified in [run 42961295058](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42961295058): 750 Python tests and 32 UI tests.**
+
 ## Explicit no-API-request product draft
 
 The authenticated AI Drafts panel offers a **manual** zero-API-cost product spotlight creation action only when the active business has owner-confirmed `business_name` and `product` facts. `ui/local_product_draft_client.js` sends just the social platform and optional image prompt choice to `POST /api/v1/ai/local-product-draft`. The backend resolves current business and facts, uses a zero-API-request local template, then stages an unpublished user/business-isolated AI draft. The user can use the optional image prompt separately in their own ChatGPT account; BAM does not generate, upload, inspect or approve that image.

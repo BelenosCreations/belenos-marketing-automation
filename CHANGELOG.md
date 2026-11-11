@@ -1,3 +1,18 @@
+## Role-aware authenticated business controls — 2026-11-10
+
+### Added
+- The signed-in dashboard now normalizes an active-business role supplied by the authenticated backend, rejects unrecognized role values, and fails closed to read-only presentation when a legacy response omits the role.
+- Owner-only fact confirmation and Smart/Manual posting preference editors are visible only for authenticated business owners. Content Studio write controls and local no-API-cost draft creation are shown only to owners, marketing managers and content creators; employees and viewers retain read-only access.
+- Business switching and logout clear capability flags and private panels. Every server-side create/edit operation independently checks the session's current business membership and role; browser UI capability flags are **not** security authorization.
+- Extended business-switch smoke tests and capability validation tests to verify that a user moving from owner to viewer permissions loses business-editing controls immediately.
+
+### Verified tests
+- **Passed:** [GitHub Actions run 42961295058](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42961295058), commit `69836808`: Python compilation, **750 Python tests and 32 JavaScript UI test scripts**.
+
+### Known limitations
+- Frontend role affordances are convenience only; production access control always depends on the server. There is no role-administration UI or production Google sign-in yet.
+- No social publishing, live scheduling, trusted media upload, public hosting or native Android binary is enabled.
+
 ## Zero-OpenAI-request local product drafts — 2026-11-10
 
 ### Added

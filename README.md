@@ -14,6 +14,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 BAM now has a runnable **local account and content-workflow demonstration**, built from the same multi-business authorization services intended for later mobile and hosted interfaces. The current capabilities are:
 
+- **Role-aware account interface:** the signed-in dashboard passes its server-authorized, active-business role to the AI facts, Content Studio and posting-time panels. Only owners see fact-confirmation and posting-time save controls; owners, managers and content creators can edit held content or create local AI drafts; viewers and regular employees receive read-only panels. All write APIs still independently recheck permissions.
 - **Independent BAM identity sessions:** short-lived, hashed-token sessions, role freshness checks, business-scoped switching, per-session logout, and identity-wide logout. A disabled-by-default HTTPS-only sign-in adapter and in-memory browser login client now cover password and verified-Google pathways, without enabling production enrollment.
 - **Multiple businesses under one identity:** isolated business profiles, current roles, social connection metadata, and content request queues. The authenticated shell lists only accessible businesses and changes business by issuing a replacement server-validated session, revoking the old one and clearing the previous business's private UI.
 - **Social platform preparation:** account connection metadata, offline OAuth-state/PKCE scaffolding, read-only analytics import boundaries, scheduling previews, and audience-window ranking. **No live social account is connected by the demo.**
@@ -30,7 +31,7 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **AI provider boundary:** disabled-by-default OpenAI HTTPS transport and a strict structured Responses adapter, with operator-configured token cost estimates. No real provider connection or billing is enabled.
 - **Authenticated large-card interface:** `ui/bam_signed_in_shell.html` and its browser controller compose password sign-in, verified-session dashboard reads, a permission-aware business switcher, AI drafts, deeper Settings, light/dark preferences and sign-out. The UI uses the approved BAM app-icon SVG and bundled branding sources. Its pages use server-validated data, not fabricated analytics; Google sign-in awaits a configured provider flow. The interface is not deployed.
 
-**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **750 passing Python tests and 31 passing JavaScript UI regression scripts** at commit `7aa04a03` on 2026-11-10 (Eastern). This is offline regression verification, not production approval.
+**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **750 passing Python tests and 32 passing JavaScript UI regression scripts** at commit `69836808` on 2026-11-10 (Eastern). This is offline regression verification, not production approval.
 
 ## Product identity
 
@@ -162,7 +163,7 @@ The repository contains a growing set of offline Python modules, strict authenti
 - [Changelog](CHANGELOG.md) records additions, fixes and known limitations.
 - [Authenticated UI integration](AUTHENTICATED_UI_INTEGRATION.md) documents session lifecycle and browser contracts.
 - [AI architecture](AI_ARCHITECTURE.md) records approved generation design and safety requirements.
-- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete **750-test Python suite** and **31 JavaScript UI regression scripts** passed together in [GitHub Actions run 42960676199](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42960676199) on commit `7aa04a03`. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
+- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete **750-test Python suite** and **32 JavaScript UI regression scripts** passed together in [GitHub Actions run 42961295058](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42961295058) on commit `69836808`. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
 
 ## Operational boundaries
 

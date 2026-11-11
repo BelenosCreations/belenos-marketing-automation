@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Role-aware editing controls in each business (2026-11-10)
+
+The signed-in dashboard now accepts the authorized active-business role from the server. `ui/dashboard_data_contract.js` permits only known membership roles and defaults a missing role to read-only, rather than granting edit access. The authenticated workspace derives presentation capabilities only from this trusted response, resetting them on activation, logout and business switching. Owners see AI fact confirmation and Smart/Manual posting preference editors; owners, marketing managers and content creators can create/edit held content requests and create zero-API-cost drafts. Employees/viewers see only read-only information. Backend role and tenant checks remain authoritative and are not bypassed by browser flags.
+
+**Verified [GitHub Actions run 42961295058](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42961295058): 750 Python tests and 32 JavaScript UI scripts, plus compilation.**
+
 ## Zero-OpenAI-call owner-confirmed product drafts (2026-11-10)
 
 BAM now stages a product spotlight draft from only the current tenant's owner-confirmed `business_name` and `product`. The disabled-by-default `bam_local_draft_wsgi.py` route checks the active BAM session, rejects client-supplied facts/tenant/model/publish claims, and delegates literal assembly to `LocalDraftTemplates`. The result is staged in the user's private AI draft component store as `draft_pending_verification` or `needs_media`; it is never published. The optional local conceptual image prompt is clearly distinguished from an actual product photograph, carries no invented details, and is intended for user-operated ChatGPT creation and review.
