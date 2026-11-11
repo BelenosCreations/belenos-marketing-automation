@@ -1,5 +1,12 @@
 # Changelog
 
+## Reversible personal OpenAI key mode — 2026-11-10
+
+### Fixed
+- Switching back to BAM-sponsored AI retains a trusted personal-key vault reference for convenient future switching.
+- Added explicit key-reference removal operation and tests; secret deletion from a future encrypted vault remains separate.
+
+
 ## Approved structured AI content plan — 2026-11-10
 
 ### Added
