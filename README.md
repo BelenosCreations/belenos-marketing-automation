@@ -585,3 +585,7 @@ The approved content workflow is now represented in offline `ai_content_plan.py`
 ## Reversible AI key-mode safeguard — 2026-11-10
 
 Switching from a personal OpenAI key to BAM-sponsored mode now retains only the trusted encrypted-vault **reference**, allowing the user to switch back without reentering the key. An explicit `forget_personal_key_reference` action clears the reference and returns to sponsored mode; a future vault service must separately delete/revoke the underlying secret. No raw key is returned or logged. Offline regression tests cover reversible switching and explicit reference removal. Production encrypted vault integration remains pending.
+
+## Persistent AI draft staging milestone — 2026-11-10
+
+`ai_content_drafts.py` now stores independently editable post text and optional image prompts in a tenant- and user-scoped SQLite draft table. Each draft has a revision counter and rejects stale concurrent edits. A media-required draft is explicitly held as `needs_media`, with `media_attached: false`, until a future trusted media-upload/verification flow exists. Drafts can be read only by their creator within the active business; no draft staging or revision path schedules or publishes. The `test_ai_content_drafts.py` regression suite covers isolation, media holds, persistence and targeted revisions. This remains offline development infrastructure, not live AI generation or a completed Content Studio integration.
