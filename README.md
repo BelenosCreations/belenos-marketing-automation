@@ -637,3 +637,7 @@ The AI workspace controller can now optionally fetch and render the business's o
 ## AI image revision/media hold safeguard — 2026-11-10
 
 Revising only the post copy now preserves a verified image association, while revising the image prompt invalidates the previous association and returns a media-required draft to `needs_media`. This prevents BAM from silently treating an older image as satisfying a newly revised image brief. The behavior is covered by Python regression tests. A production trusted-media worker must still confirm that a newly supplied image is appropriate for the revised draft.
+
+## Quota-gated AI draft generation orchestration milestone — 2026-11-10
+
+`ai_generation_workflow.py` now coordinates owner-confirmed business facts, structured OpenAI-only draft planning, sponsored quota reservation, a **trusted server-side executor interface**, strict structured-response validation, and staging of unpublished drafts. It rejects unconfigured facts, personal-key mode without its future encrypted-vault executor, exhausted sponsorship, and malformed provider output. Quota is reserved before execution and is not silently refunded on failures. `test_ai_generation_workflow.py` covers successful held drafts, missing facts, allowance exhaustion, personal-key isolation and invalid output. **The executor remains a dependency to be implemented**: this milestone does not make real OpenAI requests, incur charges, generate images or publish posts.
