@@ -64,6 +64,15 @@ class ContentRequestService:
             target=target,revised_text=revised_text,
             expected_revision=expected_revision,now=now)
 
+    def set_priority(self, *, token, tenant_id, request_id, priority,
+                     expected_priority_token, now=None):
+        now=self._now(now)
+        self._authorize(token=token,tenant_id=tenant_id,
+                        action=Action.EDIT_DRAFT,now=now)
+        return self.requests.set_priority(
+            tenant_id=tenant_id,request_id=request_id,priority=priority,
+            expected_priority_token=expected_priority_token,now=now)
+
     def set_hold(self, *, token, tenant_id, request_id, status, now=None):
         now=self._now(now)
         self._authorize(token=token,tenant_id=tenant_id,action=Action.EDIT_DRAFT,now=now)

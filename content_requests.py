@@ -23,6 +23,7 @@ class ContentRequests:
             status TEXT NOT NULL CHECK(status IN
                 ('needs_content','ready_for_review','postponed','unavailable')),
             priority INTEGER NOT NULL DEFAULT 0,
+            priority_token TEXT NOT NULL,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL
         )""")
@@ -31,6 +32,17 @@ class ContentRequests:
                               db.execute('PRAGMA table_info(content_requests)')}:
             db.execute("""ALTER TABLE content_requests
                 ADD COLUMN revision INTEGER NOT NULL DEFAULT 1""")
+        if 'priority_token' not in {row[1] for row in
+                                  db.execute('PRAGMA table_info(content_requests)')}:
+            db.execute("""ALTER TABLE content_requests
+                ADD COLUMN priority_token TEXT NOT NULL DEFAULT ''""")
+        # Backfill existing private held-draft metadata in place. This token
+        # is a conflict version, not a credential or approval capability.
+        for (rid,) in db.execute("""SELECT request_id FROM content_requests
+                                   WHERE priority_token=''""").fetchall():
+            db.execute("""UPDATE content_requests SET priority_token=?
+                         WHERE request_id=? AND priority_token=''""",
+                       (uuid.uuid4().hex,rid))
         db.commit()
 
     @staticmethod
@@ -45,23 +57,25 @@ class ContentRequests:
                 or any(not isinstance(x,str) or not x.strip() for x in required_items)
                 or len(set(required_items))!=len(required_items)):
             raise ValueError('Unique required content items must be provided')
-        if type(now) is not int or type(priority) is not int:
+        if (type(now) is not int or now<0 or type(priority) is not int
+                or not -10<=priority<=10):
             raise ValueError('Invalid timestamp or priority')
         request_id=uuid.uuid4().hex
         with self.db:
             self.db.execute("""INSERT INTO content_requests
                 (request_id,tenant_id,channel,draft_text,suggestion,
-                 required_items,provided_items,status,priority,created_at,updated_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                 required_items,provided_items,status,priority,priority_token,
+                 created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (request_id,tenant_id,channel,draft_text,suggestion,
-                 json.dumps(list(required_items)),'{}','needs_content',priority,now,now))
+                 json.dumps(list(required_items)),'{}','needs_content',
+                 priority,uuid.uuid4().hex,now,now))
         return request_id
 
     def get(self, *, tenant_id, request_id):
         self._require(tenant_id,request_id)
         row=self.db.execute("""SELECT request_id,channel,draft_text,suggestion,
-                required_items,provided_items,status,priority,created_at,updated_at,revision
-                FROM content_requests WHERE tenant_id=? AND request_id=?""",
+                required_items,provided_items,status,priority,created_at,updated_at,
+                revision,priority_token FROM content_requests WHERE tenant_id=? AND request_id=?""",
                 (tenant_id,request_id)).fetchone()
         if row is None:
             return None
@@ -69,7 +83,8 @@ class ContentRequests:
                     suggestion=row[3],required_items=json.loads(row[4]),
                     provided_items=json.loads(row[5]),
                     status=row[6],priority=row[7],created_at=row[8],
-                    updated_at=row[9],revision=row[10])
+                    updated_at=row[9],revision=row[10],
+                    priority_token=row[11])
 
     def list_for_business(self, *, tenant_id, status=None):
         self._require(tenant_id)
@@ -80,6 +95,35 @@ class ContentRequests:
             ORDER BY priority DESC,created_at,request_id""",
             (tenant_id,status,status)).fetchall()
         return [self.get(tenant_id=tenant_id,request_id=row[0]) for row in rows]
+
+    def set_priority(self, *, tenant_id, request_id, priority,
+                     expected_priority_token, now):
+        """Version only priority metadata; never change reviewed draft copy.
+
+        Content revision remains unchanged, keeping content-specific notes
+        and manual calendar proposals tied to their true text/media revision.
+        """
+        self._require(tenant_id,request_id)
+        if (type(priority) is not int or not -10<=priority<=10 or
+                type(now) is not int or now<0 or
+                type(expected_priority_token) is not str or
+                len(expected_priority_token)!=32 or
+                any(c not in '0123456789abcdef'
+                    for c in expected_priority_token)):
+            raise ValueError('Current queue priority version required')
+        new_version=uuid.uuid4().hex
+        with self.db:
+            changed=self.db.execute("""UPDATE content_requests
+                SET priority=?,priority_token=?,updated_at=?
+                WHERE tenant_id=? AND request_id=?
+                AND priority_token=?""",
+                (priority,new_version,now,tenant_id,request_id,
+                 expected_priority_token))
+        if changed.rowcount!=1:
+            if self.get(tenant_id=tenant_id,request_id=request_id) is None:
+                raise KeyError('Draft not found in business')
+            raise ValueError('Queue priority changed; refresh required')
+        return self.get(tenant_id=tenant_id,request_id=request_id)
 
     def provide(self, *, tenant_id, request_id, item, content_reference, now):
         self._require(tenant_id,request_id,item,content_reference)

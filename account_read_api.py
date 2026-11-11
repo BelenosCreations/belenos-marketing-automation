@@ -352,6 +352,7 @@ class AccountReadAPI:
                 'missing_items':[item for item in request['required_items']
                                  if item not in request['provided_items']],
                 'priority':request['priority'],
+                'priority_token':request['priority_token'],
                 'revision':request['revision']
             } for request in requests],
             'publishing_enabled':False}
@@ -425,6 +426,37 @@ class AccountReadAPI:
         return {'tenant_id':session.principal.tenant_id,
                 'request_id':request_id,'status':updated['status'],
                 'revision':updated['revision'],
+                'publishing_enabled':False}
+
+    def update_held_priority(self, *, session_token, server_now,
+                             request_id, priority, expected_priority_token):
+        """Change only review queue ordering, never copy or publish permission."""
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content Requests not configured')
+        previous=service.get(token=token,
+            tenant_id=session.principal.tenant_id,
+            request_id=request_id,now=now)
+        if previous is None:
+            raise KeyError('Business draft not found')
+        updated=service.set_priority(
+            token=token,tenant_id=session.principal.tenant_id,
+            request_id=request_id,priority=priority,
+            expected_priority_token=expected_priority_token,now=now)
+        if updated['revision']!=previous['revision']:
+            raise RuntimeError('Priority update changed draft content revision')
+        return {'tenant_id':session.principal.tenant_id,
+                'request_id':request_id,
+                'priority':updated['priority'],
+                'priority_token':updated['priority_token'],
+                'revision':updated['revision'],
+                'status':'held_priority_only',
                 'publishing_enabled':False}
 
     def create_held_draft(self, *, session_token, server_now,
