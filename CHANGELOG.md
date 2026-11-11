@@ -1,5 +1,16 @@
 # Changelog
 
+## Private AI usage summary and Settings panel — 2026-11-10
+
+### Added
+- Authenticated read-only `/api/v1/ai-cost-summary` scoped to the current user and business.
+- Strict browser contract and optional AI Settings usage panel distinguishing estimated costs from actual charges.
+- API, WSGI and UI tests for tenant isolation, safe estimates and failed-load cleanup.
+
+### Verification
+- Selected Node UI tests passed in an isolated harness; complete CI/Python run not yet verified.
+
+
 ## AI generation idempotency and duplicate protection — 2026-11-10
 
 ### Added
