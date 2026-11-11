@@ -55,12 +55,13 @@ async function main(){
   assert.equal(costs.children.length,0);
   failAI=false;
   app.activate({token:'valid',tenantId:'shop'});
-  blocked=new Promise(resolve=>{blocked.resolve=resolve});
+  let release;
+  blocked=new Promise(resolve=>{release=resolve});
   // A pending server read must never resurrect a logged-out session.
   const pending=app.refresh();
   await Promise.resolve();
   app.clear();
-  blocked.resolve(data.dashboard);
+  release(data.dashboard);
   assert.equal((await pending).stale,true);
   assert.equal(dashboard.children.length,0);
   console.log('BAM authenticated workspace lifecycle tests passed');
