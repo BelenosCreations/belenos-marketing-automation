@@ -18,13 +18,18 @@
       throw new TypeError('Invalid BAM origin');
     return url.origin;
   }
-  async function request({origin,fetchImpl,path,body}){
+  async function request({origin,fetchImpl,path,body,sessionToken}){
     const url=originOf(origin);
     if(typeof fetchImpl!=='function')throw new TypeError('Fetch required');
+    const headers={'Content-Type':'application/json','Accept':'application/json'};
+    if(sessionToken!==undefined){
+      if(typeof sessionToken!=='string'||!tokenPattern.test(sessionToken))
+        throw new TypeError('Verified BAM session required');
+      headers.Authorization='Bearer '+sessionToken;
+    }
     const response=await fetchImpl(url+path,{
       method:'POST',mode:'same-origin',credentials:'omit',redirect:'error',
-      cache:'no-store',headers:{'Content-Type':'application/json',
-        'Accept':'application/json'},body:JSON.stringify(body)
+      cache:'no-store',headers,body:JSON.stringify(body)
     });
     if(!response||!response.ok)
       throw new Error('BAM sign-in unavailable');
@@ -73,5 +78,19 @@
       body:{challenge_id:challengeId,id_token:idToken,
         tenant_id:tenantId}}),tenantId);
   }
-  return Object.freeze({passwordLogin,beginGoogle,googleLogin});
+  async function logout({origin,fetchImpl,sessionToken,everywhere=false}){
+    if(typeof everywhere!=='boolean')throw new TypeError('Explicit sign-out scope required');
+    const result=await request({origin,fetchImpl,sessionToken,
+      path:everywhere?'/api/v1/auth/logout-everywhere':'/api/v1/auth/logout',
+      body:{}});
+    const allowed=everywhere?['signed_out','sessions_revoked','publishing_enabled']:
+      ['signed_out','publishing_enabled'];
+    if(result.signed_out!==true||Object.keys(result).some(k=>!allowed.includes(k))||
+       (everywhere&&(!Number.isSafeInteger(result.sessions_revoked)||
+         result.sessions_revoked<0)))
+      throw new TypeError('Invalid BAM sign-out response');
+    return Object.freeze({signedOut:true,
+      ...(everywhere?{sessionsRevoked:result.sessions_revoked}:{})});
+  }
+  return Object.freeze({passwordLogin,beginGoogle,googleLogin,logout});
 });
