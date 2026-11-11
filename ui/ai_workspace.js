@@ -63,6 +63,9 @@ function(client,draftView,settingsView){
                 draftCount:drafts.drafts.length};
       }catch(error){
         if(version!==epoch||active!==mine)return {stale:true};
+        // Fail closed: never leave stale private content visible on errors.
+        draftsContainer.replaceChildren();
+        settingsContainer.replaceChildren();
         // Do not expose private server error details to the user.
         if(onError)onError('Unable to load AI workspace');
         return {stale:false,error:true};
