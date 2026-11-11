@@ -96,6 +96,20 @@ class AccountReadAPI:
                 'memory':memory['memory'],
                 'key_exposed':False,'publishing_enabled':False}
 
+    def edit_ai_draft_component(self, *, session_token, server_now,
+                                draft_id, target, revised_text,
+                                expected_revision):
+        """Manually edit exactly one private, unpublished AI draft component.
+
+        No model call, tenant selection, media upload or publish authorization.
+        """
+        if self.ai_content_drafts is None:
+            raise RuntimeError('AI draft store not configured')
+        return self.ai_content_drafts.revise(
+            token=self._token(session_token),now=self._now(server_now),
+            draft_id=draft_id,target=target,revised_text=revised_text,
+            expected_revision=expected_revision)
+
     def list_ai_content_drafts(self, *, session_token, server_now):
         """Read only the authenticated user's drafts in the active business."""
         if self.ai_content_drafts is None:

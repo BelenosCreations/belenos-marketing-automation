@@ -423,6 +423,36 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(costs['events'],0)
         self.assertEqual(costs['estimated_micro_usd'],0)
 
+    def test_manual_ai_component_edits_are_private_revision_guarded(self):
+        owner=self.login('shop')
+        first=self.app.ai_drafts.stage(token=owner,now=101,platform='facebook',
+            response={'post_text':'Original copy',
+                      'image_prompt':'Original image prompt'},
+            include_image_prompt=True,needs_media=True)
+        draft_id=first['draft_id']
+        meta,edited=self.call('/api/v1/ai-drafts',method='PUT',token=owner,
+            body={'draft_id':draft_id,'target':'post_text',
+                  'revised_text':'Corrected copy','expected_revision':1})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(edited['revision'],2)
+        self.assertEqual(edited['post_text'],'Corrected copy')
+        self.assertEqual(edited['image_prompt'],'Original image prompt')
+        self.assertFalse(edited['publishing_enabled'])
+        meta,stale=self.call('/api/v1/ai-drafts',method='PUT',token=owner,
+            body={'draft_id':draft_id,'target':'post_text',
+                  'revised_text':'Older copy','expected_revision':1})
+        self.assertEqual(meta['status'],'400 Bad Request')
+        other=self.login('other')
+        meta,_=self.call('/api/v1/ai-drafts',method='PUT',token=other,
+            body={'draft_id':draft_id,'target':'post_text',
+                  'revised_text':'Other business','expected_revision':2})
+        self.assertEqual(meta['status'],'404 Not Found')
+        _,latest=self.call('/api/v1/ai-drafts',token=owner)
+        self.assertEqual(latest['drafts'][0]['post_text'],'Corrected copy')
+        self.assertEqual(len(latest['drafts']),1)
+        self.assertEqual(self.app.ai_costs.summary_trusted(
+            tenant_id='shop',subject_id=self.subject)['events'],0)
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')

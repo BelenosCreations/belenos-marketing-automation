@@ -68,6 +68,17 @@ class AIContentDraftStoreTests(unittest.TestCase):
                     draft_id=draft['draft_id'],target='post_text',
                     revised_text='Not allowed',expected_revision=1)
 
+    def test_cannot_edit_nonexistent_image_prompt(self):
+        plain=self.stage(response={'post_text':'Plain copy','image_prompt':None},
+                         include_image_prompt=False,needs_media=False)
+        with self.assertRaises(ValueError):
+            self.store.revise(token=self.owner,now=102,
+                draft_id=plain['draft_id'],target='image_prompt',
+                revised_text='Invent a picture',expected_revision=1)
+        unchanged=self.store.get(token=self.owner,now=103,draft_id=plain['draft_id'])
+        self.assertEqual(unchanged['revision'],1)
+        self.assertIsNone(unchanged['image_prompt'])
+
     def test_missing_media_prompt_is_rejected(self):
         with self.assertRaises(ValueError):
             self.stage(response={'post_text':'Text','image_prompt':None})

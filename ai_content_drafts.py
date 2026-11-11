@@ -95,6 +95,8 @@ class AIContentDraftStore:
         if type(expected_revision) is not int or expected_revision<1:
             raise ValueError('Valid revision required')
         old=self.get(token=token,now=now,draft_id=draft_id)
+        if target=='image_prompt' and old['image_prompt'] is None:
+            raise ValueError('No image prompt exists to edit')
         updated=AIContentPlan.apply_revision(old,target=target,
                                              revised_text=revised_text)
         with self.db:

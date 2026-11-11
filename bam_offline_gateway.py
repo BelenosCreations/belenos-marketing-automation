@@ -23,6 +23,7 @@ from bam_posting_preferences_wsgi import BAMPostingPreferencesWSGI
 from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
 from bam_ai_facts_write_wsgi import BAMAIFactsWriteWSGI
 from bam_local_draft_wsgi import BAMLocalProductDraftWSGI
+from bam_ai_draft_edit_wsgi import BAMAIDraftEditWSGI
 from bam_read_wsgi import BAMReadWSGI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
@@ -119,6 +120,8 @@ class BAMOfflineGateway:
             registry=self.ai_business_facts,enabled=enabled,clock=self.clock)
         self.local_draft_wsgi = BAMLocalProductDraftWSGI(
             self.read_api,enabled=enabled,clock=self.clock)
+        self.ai_draft_edit_wsgi = BAMAIDraftEditWSGI(
+            self.read_api,enabled=enabled,clock=self.clock)
 
     @staticmethod
     def _unavailable(start_response, status, message):
@@ -142,6 +145,8 @@ class BAMOfflineGateway:
             return self.preference_write_wsgi(environ, start_response)
         if path == '/api/v1/ai-business-facts' and environ.get('REQUEST_METHOD') == 'PUT':
             return self.facts_write_wsgi(environ, start_response)
+        if path == '/api/v1/ai-drafts' and environ.get('REQUEST_METHOD') == 'PUT':
+            return self.ai_draft_edit_wsgi(environ, start_response)
         if path in _READ_PATHS:
             return self.read_wsgi(environ, start_response)
         if path == '/api/v1/businesses/activate':
