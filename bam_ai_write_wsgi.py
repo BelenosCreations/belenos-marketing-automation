@@ -110,4 +110,5 @@ class BAMAIWriteWSGI:
                 'draft_id':draft['draft_id'],'status':draft['status'],
                 'publishing_enabled':False})
         return reply('200 OK',{'created':False,
+            'tenant_id':result['tenant_id'],
             'reason':result['reason'],'publishing_enabled':False})
