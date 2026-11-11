@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Private pending-only image-byte receipt (2026-11-11)
+
+The approved ChatGPT user-generated image return path now has a default-off **local-only** byte receipt service, `BAMPendingMediaStore`, behind the authenticated `BAMPendingMediaWSGI` endpoint. An allowed editor must already have a server-created pending attachment ID for an active request and a checklist image item. The actual file must be PNG/JPEG/WebP, fit a capped size, match the declared SHA-256 and file signature, and be stored in an explicitly configured private directory outside the source tree. Storage filenames derive only from server-generated attachment IDs and are not exposed to browsers. The registry remains pending and the request still needs content; there is no file download, gallery, malware inspection, content approval or publishing.
+
+The local TLS preview can opt into pending storage only with `--pending-media-dir`; it remains completely disabled by default. A browser file picker and pending-status display are outstanding integration steps. No file is externally served, no verified permission is asserted and no live social posting is possible.
+
+**Verified [GitHub Actions run 43016103634](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43016103634): 779 Python tests, 35 JS test scripts, plus compilation.**
+
 ## Verified two-business local account journey over TLS (2026-11-11)
 
 The preview CLI now includes `add-business` for an existing password-verified **owner** identity to create another business in its own trusted local SQLite database, without opening any user or business enrollment HTTP route. A second-business setup requires a valid current owner login and rejects duplicate tenants, unsafe file access and arbitrary role grants.

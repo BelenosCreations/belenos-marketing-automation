@@ -78,3 +78,15 @@ Stop the preview in its terminal when finished. Do not open firewall rules or ex
 The preview uses a single-process WSGI server and local SQLite with a trusted, self-supplied TLS certificate. The full loopback TLS network flow (page, assets, password login, dashboard, held draft and logout) has passed a separate Python-client smoke test in CI, along with unit and WSGI gateway tests. This does not replace real-browser/Android testing or constitute a production security assessment. Provider OAuth, real Google/email setup, password recovery, audited security events, public hosting, concurrent data migrations, trusted media storage/scanning and final publication permissions are outstanding.
 
 If you need a preview from a different device or a publicly accessible test website, design and review an independently secured staging deployment instead of weakening the loopback guard.
+
+## Optional private image receipt (advanced local testing)
+
+Image-byte transfer is **disabled by default**. For an explicitly local pending-only test, include:
+
+```sh
+--pending-media-dir "$HOME/.bam-preview/pending-images"
+```
+
+on the `serve` command. The directory must be outside Git and private to your user. The backend accepts an image only after it has a valid business-scoped attachment preflight; the allowed formats are PNG, JPEG and WebP. File bytes are stored under opaque server IDs with private permissions.
+
+**An image receipt is NOT a verified attachment, approved content item, or permission to publish.** The file remains quarantined and unavailable to social posting until a separate trusted malware/consent/media-validation and owner review pipeline exists. At this milestone, this path is validated through service and WSGI tests; no browser upload control has been connected.

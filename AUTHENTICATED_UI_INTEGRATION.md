@@ -4,6 +4,14 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Local-only image receipt — pending and quarantined, not verified
+
+An opt-in `pending_media_dir` on `BAMOfflineGateway`, or `--pending-media-dir` on the loopback TLS runner, permits a separately guarded `PUT /api/v1/content/media-bytes` route after the existing authenticated metadata preflight. The request must carry a valid server-issued pending attachment ID and raw image bytes of the matching PNG/JPEG/WebP type and SHA-256 digest. A fresh session/membership check is enforced before reading and again before storing bytes. The local store is outside the source repository with private permissions and no download route.
+
+The response is explicitly `pending_scan`, `media_verified:false`, `publishing_enabled:false`; neither the attachment registry nor the content request changes to approved/ready. This protects against users assuming that uploading an image grants rights, passes malware checks or authorizes a marketing post. A separate trusted scanner, decoded-media processor, rights confirmation and a later owner-reviewed workflow remain mandatory.
+
+**Verified [run 43016103634](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43016103634): 779 Python tests and 35 JS scripts.**
+
 ## Multi-business journey over actual loopback HTTPS
 
 `bam_local_preview.py add-business` requires an existing local owner's password and membership before enrolling another local-only test tenant under the **same BAM identity**. The local CLI cannot be invoked through an HTTP endpoint, cannot bypass public email verification or claim a different user role, and refuses duplicate businesses.

@@ -1,3 +1,19 @@
+## Private, pending-only local image receipt (without verification) — 2026-11-11
+
+### Added
+- Implemented `BAMPendingMediaStore`, a local opt-in private receiving area for PNG/JPEG/WebP image bytes matching an existing tenant-scoped, server-registered pending content attachment. Files are held under server-generated IDs with private permissions outside the Git checkout, per-image limits and a bounded global pending quota.
+- Added a separate, disabled-by-default `PUT /api/v1/content/media-bytes` route with HTTPS bearer authentication, strict attachment-ID/type/size validation, server-side tenant membership/edit checks, SHA-256 digest matching, signature inspection and duplicate-upload refusal.
+- Content media remains in registry status `pending`, and the service responds only with `pending_scan`, `media_verified:false` and `publishing_enabled:false`. It cannot mark required content supplied, bypass ownership/consent inspection, schedule or publish.
+- The local HTTPS preview now accepts an optional explicit `--pending-media-dir` directory path to enable this **local-only** receipt. With no directory, byte transfer remains unavailable. Added multi-tenant isolation, private-file, malformed-byte, failed digest, duplicate, absent config and response-forgery tests.
+
+### Verification
+- **Passed:** [GitHub Actions run 43016103634](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43016103634), commit `9ff5d4d6`: Python compilation, **779 Python tests and 35 JavaScript tests**.
+
+### Known limitations
+- This is **quarantined pending media only**: no malware scan, decoded-image safety validation, copyright/owner consent proof, attached media gallery, platform permissions, production object storage/encryption or live post approval. Files are never served publicly.
+- A browser file-picker workflow is not wired yet; image byte transfer is currently exercised through WSGI tests and optional local-only API composition.
+- The default preview remains without media-byte transfer unless a separate private directory is configured. No public deployment is authorized.
+
 ## Two independently isolated businesses in one local BAM account — 2026-11-11
 
 ### Added
