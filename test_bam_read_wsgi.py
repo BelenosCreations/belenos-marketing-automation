@@ -27,6 +27,15 @@ class FakeReadAPI:
         if session_token!='valid':
             raise PermissionError('denied')
         return {'tenant_id':'shop','drafts':[],'publishing_enabled':False}
+    def get_ai_cost_summary(self,*,session_token,server_now):
+        self.calls.append(('ai_cost',session_token,server_now))
+        if session_token!='valid':
+            raise PermissionError('denied')
+        return {'tenant_id':'shop','events':0,'input_tokens':0,
+                'output_tokens':0,'estimated_micro_usd':0,
+                'pricing_basis':'operator_configured',
+                'actual_billing_verified':False,
+                'publishing_enabled':False}
     def get_ai_business_facts(self,*,session_token,server_now):
         self.calls.append(('ai_facts',session_token,server_now))
         if session_token!='valid':
@@ -87,7 +96,8 @@ class BAMReadWSGITests(unittest.TestCase):
                          ('/api/v1/posting-preferences','mode'),
                          ('/api/v1/ai-drafts','drafts'),
                          ('/api/v1/ai-settings','mode'),
-                         ('/api/v1/ai-business-facts','facts')]:
+                         ('/api/v1/ai-business-facts','facts'),
+                         ('/api/v1/ai-cost-summary','events')]:
             _,body=self.request(path)
             self.assertIn(key,body)
 
