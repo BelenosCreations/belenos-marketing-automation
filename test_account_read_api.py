@@ -1,5 +1,7 @@
 import sqlite3
 import unittest
+from decimal import Decimal
+from ai_cost_ledger import AICostLedger,AITokenPricing
 from access_policy import Principal,Role
 from accounts import AccountDirectory
 from sessions import SessionStore
@@ -39,11 +41,13 @@ class AccountReadAPITests(unittest.TestCase):
             social_connections=SocialConnectionDirectory(
                 registry=registry,directory=directory,sessions=self.sessions))
         ai_policy=AIPolicyStore(db=self.db,sessions=self.sessions,directory=directory)
+        self.costs=AICostLedger(self.db)
         self.api=AccountReadAPI(dashboard,posting_preferences=PostingPreferences(
             db=self.db,sessions=self.sessions,directory=directory),
             ai_policy=ai_policy,ai_content_drafts=AIContentDraftStore(
                 db=self.db,policy_store=ai_policy),
-            ai_business_facts=AIBusinessFacts(db=self.db,policy_store=ai_policy))
+            ai_business_facts=AIBusinessFacts(db=self.db,policy_store=ai_policy),
+            ai_cost_ledger=self.costs)
 
     def tearDown(self):
         self.db.close()
@@ -109,6 +113,25 @@ class AccountReadAPITests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.api.get_posting_preferences(
                 session_token='bad',server_now=101)
+
+    def test_ai_cost_summary_is_private_and_estimated(self):
+        self.costs.record_trusted(tenant_id='a',subject_id='owner',
+            model='gpt-4.1-mini',input_tokens=1000,output_tokens=200,
+            pricing=AITokenPricing(Decimal('1'),Decimal('4')),now=101)
+        summary=self.api.get_ai_cost_summary(
+            session_token=self.token,server_now=102)
+        self.assertEqual(summary['estimated_micro_usd'],1800)
+        self.assertFalse(summary['actual_billing_verified'])
+        self.assertFalse(summary['publishing_enabled'])
+        switched=self.api.activate_business(session_token=self.token,
+            target_tenant_id='b',server_now=103)
+        other=self.api.get_ai_cost_summary(
+            session_token=switched['session_token'],server_now=104)
+        self.assertEqual(other['events'],0)
+        self.assertEqual(other['estimated_micro_usd'],0)
+        with self.assertRaises(PermissionError):
+            self.api.get_ai_cost_summary(
+                session_token='bad',server_now=105)
 
     def test_ai_business_facts_read_only_and_business_scoped(self):
         self.api.ai_business_facts.confirm(token=self.token,now=101,
