@@ -1,5 +1,21 @@
 # Changelog
 
+## Authenticated large-card HTML shell and session lifecycle — 2026-11-10
+
+### Added
+- Responsive signed-in HTML shell with BAM branding, email/password form, four large read-only dashboard cards and drilldowns, AI draft section and nested AI Settings with Light/Dark/Auto.
+- Frontend coordinator joining authenticated password/Google session logic to the dashboard and AI data adapters. Explicit sign-out and sign-out-everywhere clear private views and revoke trusted server sessions.
+- Backend authenticated logout/logout-everywhere WSGI routes; pending login responses are discarded and revoked if sign-out wins.
+- HTML DOM smoke tests for sign-in, dashboard rendering, tab navigation, appearance change, refresh, sign-out and secure-transport refusal.
+
+### Test status
+- **Passed:** [GitHub Actions run 42952514922](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42952514922), commit `569a9473818bf8bb5579410290938b315b331926`: Python compilation, **693 Python tests and 25 JavaScript test scripts**.
+
+### Known limitations
+- The HTML shell requires a separately deployed trusted HTTPS API. It is an integration-stage UI, not a working public service or Android APK.
+- Google browser sign-in still needs configured provider credentials, verified OAuth/ID-token handling, enrollment and production session security.
+- Posting, payment, live OpenAI calls, social account connections and actual scheduling remain disabled.
+
 ## Disabled-by-default HTTPS sign-in transport — 2026-11-10
 
 ### Added
