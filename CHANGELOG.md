@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-11 — Alpha code synchronized into main (verified)
+
+- Reconciled the former 993-commit development lead and three independent `main` branding commits through [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) and merge commit `f774564d7348e47f34ae0ee9da6279cf14a93677`. Maintained full source history; no force push, reset, or deletion of development work.
+- Kept original BAM branding source, Android resource templates, regression tests, and the updated product-accurate README.
+- Created three independent GitHub checkpoint branches at previously known good code and frozen development snapshots.
+- Exact integration candidate `748c3a1a`: GitHub Actions [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217) **passed**. Final merged `main` commit: [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) **passed**.
+- Fast-forwarded the active development branch to the merged `main` commit after verifying its head was unchanged.
+- Added a routine milestone PR / maximum-divergence checkpoint discipline. This is **source-control stabilization, not a deployed beta, a publishing launch or paid-service activation**.
+
 ## Main-branch reconciliation candidate — 2026-11-11
 
 The protected-by-convention development snapshot `f66522a40e2696ca49adb183435d218bf3353beb` is the source for this integration candidate. The `main` baseline `fcb28f7a3f8be8d2edf70bd3dfcabbee90e36214` has three separate historical branding commits. Every introduced branding/Android template/test/tool blob is **byte-for-byte identical** in the development snapshot; the only content differences are the historical `README.md` and `CHANGELOG.md`. This merge candidate retains the latest product-accurate README, preserves the distinct `main` history via a two-parent merge commit, and explicitly records the original branding milestone below.

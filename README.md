@@ -110,6 +110,10 @@ The [current product and implementation plan](PRODUCT_PLAN.md) records direct so
 
 Development and documentation updates do not activate a paid API, launch a hosted service, connect Facebook, schedule a post or grant publication permission. **Publishing remains off until separately authorized, implemented and verified.**
 
-## GitHub branch and recoverability
+## GitHub branches, recovery and release discipline
 
-BAM's active Alpha code is committed to GitHub on a development branch. On November 11, 2026, independent recovery refs were created at `checkpoint/alpha-last-green-2026-11-11` (`74e55d53`) and `checkpoint/alpha-pre-merge-2026-11-11` (`f66522a4`). A dedicated integration branch reconciles the existing `main` branding history without rewriting or deleting development commits. Merge approvals depend on passing the exact merge-candidate tests, not on an earlier unrelated green run. These checkpoints are independent Git references, **not** enforced branch protection or an off-GitHub backup.
+On **November 11, 2026**, the backlog of Alpha development was reconciled into `main` through [pull request #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2), merge commit `f774564d7348e47f34ae0ee9da6279cf14a93677`. The merge preserves both the advanced development history and the independent branding commits originally on `main`. The exact integration SHA `748c3a1a` passed push and PR CI, and [GitHub Actions run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) **passed on the merged `main` commit**. The active development branch was then fast-forwarded to the same verified commit, without force-pushing.
+
+Independent recovery branches were saved at `checkpoint/alpha-last-green-2026-11-11` (`74e55d53`), `checkpoint/alpha-ci-green-2026-11-11` (`cff912f9`) and `checkpoint/alpha-pre-merge-2026-11-11` (`f66522a4`). These are Git references, not enforced branch protection or off-site backups.
+
+**Ongoing policy:** New features stay on the development branch; after a meaningful tested milestone (or before divergence exceeds roughly 50 commits), use a reviewed pull request to merge into `main`, then fast-forward development to the resulting verified merge. Never rewrite history or delete checkpoints as part of routine synchronization. Verify the exact merge candidate with full offline CI, and verify `main` again after merging. A green test run is not approval to deploy, connect paid APIs, or publish posts.
