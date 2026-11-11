@@ -40,7 +40,8 @@
     return result;
   }
   function session(result,tenantId){
-    if(!tokenPattern.test(result.session_token||'')||
+    if(typeof result.session_token!=='string'||
+       !tokenPattern.test(result.session_token)||
        Object.keys(result).some(key=>
          !['session_token','publishing_enabled'].includes(key)))
       throw new TypeError('Invalid BAM session response');
