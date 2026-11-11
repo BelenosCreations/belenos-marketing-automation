@@ -732,15 +732,19 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         result,report=self.call('/api/v1/review-readiness',token=owner)
         self.assertEqual(result['status'],'200 OK')
         self.assertEqual(report['tenant_id'],'shop')
-        self.assertEqual(report['held_count'],1)
+        self.assertEqual(report['held_count'],2)
         self.assertEqual(report['editorial_material_complete_count'],0)
         self.assertEqual(report['approved_count'],0)
-        self.assertEqual(report['items'][0]['request_id'],rid)
-        self.assertEqual(report['items'][0]['missing_items'],['image'])
+        self.assertEqual(len([item for item in report['items']
+            if item['request_id']==rid]),1)
+        self.assertEqual(next(item['missing_items'] for item in report['items']
+            if item['request_id']==rid),['image'])
         self.assertFalse(report['publishing_enabled'])
         other=self.login('other')
         _,private=self.call('/api/v1/review-readiness',token=other)
-        self.assertEqual(private['held_count'],0)
+        self.assertEqual(private['held_count'],1)
+        self.assertFalse(any(item['request_id']==rid
+            for item in private['items']))
         self.assertEqual(self.call('/api/v1/review-readiness',
             method='POST',token=owner,body={'approved':True})[0]['status'],
             '405 Method Not Allowed')
