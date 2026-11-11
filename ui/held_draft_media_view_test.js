@@ -51,7 +51,8 @@ async function main(){
   await upload.listeners.click();
   assert.equal(calls.filter(x=>x.opts.method==='POST').length,1);
   assert.equal(calls.filter(x=>x.opts.method==='PUT').length,1);
-  assert.equal(calls.filter(x=>x.url.endsWith('/media-status')).length,2);
+  assert.equal(calls.filter(x=>x.url.endsWith('/media-status')).length,2,
+    JSON.stringify({errors,notices,paths:calls.map(x=>x.url)}));
   const after=container.children[0].children[3].children[1];
   assert.ok(after.children.some(x=>/Awaiting review/.test(x.textContent)));
   assert.equal(after.children.some(x=>x.textContent==='Send image for private review'),false);
