@@ -35,6 +35,22 @@ class AIContentPlan:
             'image_prompt':'string|null'}
         return base
 
+    def create_from_confirmed_facts(self, *, token, now, registry,
+                                    topic, platform,
+                                    include_image_prompt=True):
+        """Prefer the trusted owner-confirmed registry over client-supplied facts."""
+        snapshot=registry.snapshot(token=token,now=now)
+        if snapshot['provenance']!='owner_confirmed' or not snapshot['facts']:
+            raise ValueError('Owner-confirmed business facts required')
+        base=self.create_request(token=token,now=now,
+            verified_facts=snapshot['facts'],topic=topic,platform=platform,
+            include_image_prompt=include_image_prompt)
+        if base['tenant_id']!=snapshot['tenant_id']:
+            raise PermissionError('Fact snapshot business mismatch')
+        base['fact_revision']=snapshot['revision']
+        base['fact_provenance']='owner_confirmed'
+        return base
+
     @staticmethod
     def parse_response(raw, *, include_image_prompt):
         if type(raw) is str:
