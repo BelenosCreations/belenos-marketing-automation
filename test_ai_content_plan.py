@@ -83,6 +83,8 @@ class AIContentPlanTests(unittest.TestCase):
             self.plan.batch_requests(topics=['Same','Same'],**args)
         with self.assertRaises(ValueError):
             self.plan.batch_requests(topics=['Topic']*15,**args)
+        with self.assertRaises(ValueError):
+            self.plan.batch_requests(topics=[{'bad':'topic'}],**args)
 
     def test_malformed_generation_is_not_approved(self):
         with self.assertRaises(ValueError):
