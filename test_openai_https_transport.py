@@ -55,9 +55,8 @@ class OpenAITransportTests(unittest.TestCase):
             key_resolver=lambda:calls.append('key'),
             opener=lambda *a,**kw:None,enabled=True)
         for change in ({'store':True},{'tools':[{'type':'web_search'}]},
-                       {'text':{}},{'max_output_tokens':'bad'}):
-            if 'max_output_tokens' in change:
-                continue  # Envelope cap is enforced by the executor.
+                       {'text':{}},{'max_output_tokens':'bad'},
+                       {'model':'unapproved'}):
             with self.assertRaises(ValueError):
                 transport({**payload(),**change})
         self.assertEqual(calls,[])
