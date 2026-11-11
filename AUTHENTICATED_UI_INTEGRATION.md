@@ -4,6 +4,12 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Multi-business journey over actual loopback HTTPS
+
+`bam_local_preview.py add-business` requires an existing local owner's password and membership before enrolling another local-only test tenant under the **same BAM identity**. The local CLI cannot be invoked through an HTTP endpoint, cannot bypass public email verification or claim a different user role, and refuses duplicate businesses.
+
+The ephemeral real-TLS smoke test covers password login, first-business held draft creation, switching to another owned business over `POST /api/v1/businesses/activate`, source session revocation, second-business data isolation and final sign-out. The test does not reach any external provider or API. **Verified [run 43015125493](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43015125493): 770 Python and 35 UI tests.**
+
 ## Local-only test runner for authenticated shell
 
 `python bam_local_preview.py bootstrap` provisions one local test owner in an external/private SQLite file using an interactive password prompt. This trusted local CLI explicitly marks the test email as verified **without real email proof** and must never be reused as a remote signup API or production account enrollment. `python bam_local_preview.py serve ... --i-understand-local-only` additionally requires external TLS cert/key paths and serves the opted-in gateway and browser assets on 127.0.0.1 only. Exact localhost Host and remote-address checks prevent DNS-rebinding or accidental exposure. All forwarded protocol headers are ignored, and the TLS socket is the sole HTTPS trust boundary. There is no public interface, forwarding or tunneling support.

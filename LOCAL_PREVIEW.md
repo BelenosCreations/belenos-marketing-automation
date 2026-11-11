@@ -26,6 +26,22 @@ The command prompts for the local test email, password and confirmation. The pas
 
 **Important:** For the offline preview only, the CLI treats the test email as verified without sending an email. This is not a real customer registration flow and must never be enabled for public visitors. The bootstrap refuses to replace an existing database.
 
+## Optional: Add a second business under the same login
+
+If you want to test BAM's multi-business switching, run the following on the **same local preview database** after the first owner is configured:
+
+```sh
+python bam_local_preview.py add-business \
+  --db "$HOME/.bam-preview/bam.sqlite3" \
+  --existing-business-id example-shop \
+  --new-business-id example-service \
+  --display-name "Example Service" \
+  --industry services \
+  --topic "facility care"
+```
+
+Enter the existing owner's test email and password when prompted. This does not create another BAM identity or change another user's membership. It requires an active owner role in the first preview business and refuses duplicate IDs. Once the HTTPS preview is running, choose between the two businesses in the signed-in header to test scoped data and token rotation.
+
 ## 2. Create a local-only TLS certificate
 
 For a machine with OpenSSL installed:

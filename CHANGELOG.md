@@ -1,3 +1,17 @@
+## Two independently isolated businesses in one local BAM account — 2026-11-11
+
+### Added
+- Extended the nonpublic `bam_local_preview.py` CLI with an explicit `add-business` operation. It requires the existing preview owner's verified password and active **owner** membership before creating an additional test tenant under that same identity. The password is prompted locally, never passed in a URL, browser form or command-line argument.
+- The trusted setup refuses duplicate businesses and nonprivate SQLite files. It cannot create/verify new users, bypass existing membership, or be called from the public HTTP surface.
+- Extended the actual localhost TLS test to provision two business tenants, sign in once, create content in the first business, rotate the session into the second business through the real WSGI switch endpoint, verify revocation of the original token, reject cross-business draft visibility, and sign out of the replacement session.
+- Updated [Local HTTPS preview guide](LOCAL_PREVIEW.md) with a second-business command and clear local-only limitations.
+
+### Verification
+- **Passed:** [GitHub Actions run 43015125493](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43015125493), commit `9fff773a`: Python compilation, **770 Python tests and 35 JavaScript tests**.
+
+### Known limitations
+- Only the local test-owner CLI is supported; there is no public/invited-user signup or independent verified email provider flow. Real production multi-business authorization still requires a secure database, migrations, audit controls and hosted OAuth.
+
 ## Verified end-to-end local HTTPS browser-shell/API socket flow — 2026-11-11
 
 ### Added

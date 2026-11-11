@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Verified two-business local account journey over TLS (2026-11-11)
+
+The preview CLI now includes `add-business` for an existing password-verified **owner** identity to create another business in its own trusted local SQLite database, without opening any user or business enrollment HTTP route. A second-business setup requires a valid current owner login and rejects duplicate tenants, unsafe file access and arbitrary role grants.
+
+The real HTTPS socket smoke test was expanded: a signed-in local owner creates a held content request in one business, rotates the session to another business, verifies that the prior token is revoked, sees only the second business's own data and finally signs out of the replacement session. The CLI and gateway keep the same BAM identity across two tenant workspaces without sharing draft data or authorization.
+
+**Verified [GitHub Actions run 43015125493](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43015125493): 770 Python tests and 35 JS scripts, plus compilation.**
+
 ## Actual HTTPS socket end-to-end integration (2026-11-11)
 
 A new `test_bam_local_tls_smoke.py` starts the development gateway behind an ephemeral localhost-only TLS socket with a short-lived self-signed test certificate, not an external HTTP service. It retrieves the signed-in HTML, actual browser JS and branded icon, signs in through the real WSGI password endpoint, reads the authenticated dashboard, saves and retrieves a held unpublished content request, verifies inaccessible project-source and non-existent publication routes, and confirms logout immediately invalidates the token. No actual external network or paid AI is used.
