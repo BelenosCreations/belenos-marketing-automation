@@ -34,7 +34,7 @@ async function main(){
   assert.match(facts.children[0].children[1].textContent,/Owner-confirmed/);
   assert.equal(facts.children[0].children[2].textContent,
                'product: Custom tumblers');
-  assert.match(costs.children[0].children[4].textContent,/\\$0.0018/);
+  assert.match(costs.children[0].children[4].textContent,/\$0\.0018/);
   const broken=create({document,draftsContainer:drafts,
     settingsContainer:settings,factsContainer:facts,costContainer:costs,
     fetchImpl:async()=>({ok:false}),origin:'https://bam.example'});
