@@ -444,6 +444,23 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (auditable reviewer note changes)
+
+### Added
+- Transactional immutable metadata events for review-note creation, edits and explicit removal, preserving event records when a note is removed.
+- Feedback write rollback when its corresponding event cannot be saved; no historical note-text duplication in the audit table.
+- Strict, business-scoped, owner/marketing-manager-only `GET /api/v1/review-feedback-history` (50-event cap; no query-supplied tenant) and an Approvals detail panel displaying the latest 10 redacted events.
+- Event type, unique ID, timestamp, draft revision and nonapproval validation at both HTTPS transport and browser client boundaries.
+
+### Safeguards and limitations
+- Event records do not grant TruthGuard approval, final owner authorization, social scheduling or publishing. Actors are tracked internally but are not displayed in the current history API.
+- Audit coverage begins when this change is installed; earlier note revisions cannot be reconstructed retrospectively.
+- No production database, legal retention policy or anti-tamper external storage is configured; this is an offline SQLite audit foundation, not a tamper-proof distributed system.
+
+### Verification
+- **Passed:** [GitHub Actions run 43090679750](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43090679750), `f553f4b0`: 882 Python tests, 70 JavaScript UI scripts and Python compilation.
+
+
 ## Phase 3.5 — 2026-11-11 (confirmed unpublished calendar suggestions)
 
 ### Added

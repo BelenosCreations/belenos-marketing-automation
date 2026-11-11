@@ -4,10 +4,10 @@
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`  
 **Branch:** `development/phase-3-5-account-directory`  
-**Verified commit:** `88a9cca1f00f30ac9c38e745befa386f471f20da`  
+**Verified commit:** `f553f4b08ddc59e17031c2191a15dcb4a81d7e23`  
 **CI:** ${link}
 
-**Result:** 877 Python tests, 68 JavaScript test scripts in `ui/*_test.js`, and Python compilation passed. The suite now covers explicit two-step, non-executable draft-calendar suggestion saving with confirmation, current-draft/slot conflict checks, role and session safety, private editorial note collaboration, business-local Content Studio filtering, and prior tenant-isolated workflows. Offline verification is not permission to deploy, schedule or publish.
+**Result:** 882 Python tests, 70 JavaScript UI scripts, and Python compilation passed. New tests cover transactional reviewer-note history, rollback if audit insert fails, persistence after note deletion, 50-event output bounds, role and business isolation, GET-only strict response contracts and the redacted Approvals activity panel. Earlier private feedback, local filtering, non-executable calendar selection, and authentication tests remain green. Production approval and publication have not been authorized.
 
 ## Archived original Phase 3.2 package
 

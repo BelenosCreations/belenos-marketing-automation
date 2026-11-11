@@ -13,6 +13,13 @@ A dedicated `CalendarProposals` table stores at most one current proposed date p
 
 
 
+
+## Transactional reviewer-note change history (2026-11-11)
+
+`ReviewFeedback` now persists an append-only metadata event in `bam_review_feedback_events` for each successful create/update/delete. Notes and corresponding events commit or roll back together; the event never contains full note text. The actor ID is private database metadata, while the `GET /api/v1/review-feedback-history` response exposes only safe event ID, business-scoped draft ID, action, draft revision and timestamp. Access requires a current business owner or marketing-manager session; no browser-chosen tenant ID, sensitive note content, private media reference or approval flag is accepted. History is capped at 50 entries and marks truncation; the Approvals card shows the latest 10 with clear nonapproval wording. Tests exercise atomic write rollback through a simulated database trigger failure, event retention after removal, role and tenant separation, stale-session revocation, strict network response validation, and dashboard clearing on business switch.
+
+**Verified:** [GitHub Actions run 43090679750](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43090679750), commit `f553f4b0`: 882 Python tests, 70 JavaScript scripts, compilation passed. This protects local workflow integrity but is not production audit retention or tamper-proof external logging.
+
 ## Dashboard two-step date selection (2026-11-11)
 
 A verified business editor may explicitly choose a proposed upcoming Manual-mode time from the Scheduled dashboard's read-only suggested-date list. A second confirmation prevents the preview from creating records unintentionally. The browser submits the existing `CalendarProposals.propose` contract with `expected_proposal_token: null` and a server-provided draft revision; the backend enforces actual membership, draft currency, uniqueness, time validity and lack of an existing saved proposal. A committed choice appears only in the separately labeled **proposed** calendar and never becomes an executable scheduled job. Tests cover role boundaries, no request before second confirmation, absence of publishing requests, and cleared state after sign-out.

@@ -98,3 +98,7 @@ Open the **Approvals** card to view a read-only editorial readiness checklist fr
 ## Private editorial feedback (local HTTPS preview)
 
 In the **Approvals** card, an owner or marketing manager may add or revise a business-private feedback note for a held draft. This calls the strict versioned `/api/v1/review-feedback` route and does **not** approve the draft. Content creators may read the same note in Content Studio, then revise their draft copy; any old note is marked stale. Content Studio status/channel/search filters affect only the current screen, without transmitting a search query or changing the database. All work remains unavailable in the public Internet because the local offline adapter is not a production server. Do not paste secrets or sensitive customer details into feedback.
+
+## Local reviewer audit metadata
+
+Reviewer note create, edit and removal actions now leave private metadata-only activity events. The Approvals screen can display the recent events for active owners/managers after authentication, without revealing note text or actor IDs; `GET /api/v1/review-feedback-history` rejects write methods, forbidden tenants and untrusted results. Local SQLite event history is not equivalent to immutable external compliance logging and does not cover operations performed before the audit ledger existed. **No production hosting or live posting is enabled.**
