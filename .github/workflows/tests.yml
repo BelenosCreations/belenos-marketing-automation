@@ -26,5 +26,6 @@ jobs:
           node ui/content_studio_contract_test.js
           node ui/content_studio_view_test.js
           node ui/posting_preferences_contract_test.js
+          node ui/ai_draft_contract_test.js
       - name: Run offline tests
         run: python -m unittest discover -s . -p 'test_*.py' -v
