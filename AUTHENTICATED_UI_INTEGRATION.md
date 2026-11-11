@@ -4,6 +4,14 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Restricted browser delivery composition (no hosted server)
+
+`BAMOfflineGateway(db, enabled=True, serve_browser_assets=True)` explicitly opts the **local WSGI direct-call integration fixture** into delivering `GET /ui/bam_signed_in_shell.html`, its referenced browser scripts and styles, and the canonical `/branding/source/app_icon.svg`. Neither switch has an internet-facing listener, TLS management, or production authentication enrollment. The asset adapter rejects all other resources, demo HTML, files and insecure WSGI schemes. A trusted reverse proxy must set `wsgi.url_scheme` independently of user-controlled `X-Forwarded-Proto`.
+
+The supplied Content Security Policy permits scripts and API connections only from the same origin, disallows unsafe eval, frames, plugins and external connections, and hashes the single inline stylesheet. A regression executes the browser scripts in HTML order in a JS VM to detect browser/global dependency problems not caught by Node module imports. This is a structural readiness milestone, **not deployment approval or actual browser e2e verification**.
+
+See [GitHub Actions run 43013333985](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43013333985) for **764 Python and 35 JS test scripts** plus compilation.
+
 ## Current verified design boundaries
 
 - BAM is a multi-business application, not limited to Belenos Creations or Busy B Cleaning.

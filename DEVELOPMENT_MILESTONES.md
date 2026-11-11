@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Restricted same-origin browser asset delivery (2026-11-11)
+
+The authenticated large-card HTML shell is now served by a separate `bam_signed_in_assets_wsgi.py` adapter under the offline gateway's independent, default-off `serve_browser_assets` option. The adapter derives its allowlist from the shell's own referenced JavaScript, CSS and branded icon and returns only these assets over a trusted WSGI HTTPS scheme. A strict Content Security Policy limits scripts, connections, frames and styles; the single inline stylesheet is cryptographically hashed rather than globally allowing inline code. No sample prototype, README, environment or backend source file is served.
+
+This creates an end-to-end *resource-delivery* composition that can later be mounted behind a properly engineered trusted HTTPS staging server without altering the current UI. It does not start a listener, provide production TLS/account enrollment, enable paid OpenAI calls, upload media or publish. A new browser-global Node regression loads all page scripts in the actual HTML order, rather than relying only on CommonJS tests.
+
+**Verified [GitHub Actions run 43013333985](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43013333985): 764 Python tests and 35 JavaScript tests, plus compilation.**
+
 ## Zero-OpenAI-cost templates for product and service businesses (2026-11-10)
 
 The confirmed-fact local draft workflow now supports both product and service spotlights. `LocalDraftTemplates.service_spotlight` assembles short literal service copy and an optional clearly conceptual, non-photographic image prompt from only owner-confirmed `business_name` and `service` facts. `POST /api/v1/ai/local-service-draft` is separately disabled by default, scoped to the active user's business and edit role, and saves only a review-pending AI draft. The signed-in AI workspace shows only the applicable template types for that business, with manual ChatGPT image handoff remaining optional. No platform-neutral factual claims, staff identity, equipment details, customer guarantees, prices or hours are invented.

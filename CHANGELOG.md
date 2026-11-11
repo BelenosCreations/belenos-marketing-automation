@@ -1,3 +1,18 @@
+## Opt-in same-origin browser delivery for the authenticated BAM shell — 2026-11-11
+
+### Added
+- Built `bam_signed_in_assets_wsgi.py` to serve exactly the existing signed-in HTML, referenced browser JS/CSS and canonical BAM icon via a trusted HTTPS WSGI composition. Routes reject arbitrary file names, traversal paths, demo-only pages, request query parameters, non-GET/HEAD methods and insecure scheme claims.
+- Browser asset delivery has an **independent default-off** `serve_browser_assets` switch on the existing default-off offline gateway; neither flag starts a public HTTP/HTTPS listener.
+- The page receives same-origin-only connections, a restrictive script/content security policy, and a SHA-256-restricted inline stylesheet. Removed an inline style attribute that would otherwise require unsafe-inline styling permissions.
+- Added a Node regression that loads the page's actual script sequence in browser-global mode without CommonJS, alongside Python tests of asset allowlisting, canonical branding paths, HTTP security headers, and the offline gateway opt-in.
+
+### Verification
+- **Passed:** [GitHub Actions run 43013333985](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43013333985), commit `5ac2bd1e`: Python compilation, **764 Python tests and 35 JavaScript UI tests**.
+
+### Known limitations
+- The WSGI module has **no listener**, TLS certificate management, external account registration, hosting or deployment authorization. It must not be mounted on a publicly exposed service until production security, session transport, abuse protection, recovery and privacy review are complete.
+- Test-only HTTPS WSGI environment flags are supplied by a trusted wrapper; no external proxy-supplied protocol headers are trusted. Social publishing and paid AI calls remain disabled.
+
 ## Zero-OpenAI-request service-business spotlight support — 2026-11-10
 
 ### Added
