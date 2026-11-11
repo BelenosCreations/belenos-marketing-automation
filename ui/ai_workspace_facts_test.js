@@ -28,6 +28,12 @@ async function main(){
   assert.match(facts.children[0].children[1].textContent,/Owner-confirmed/);
   assert.equal(facts.children[0].children[2].textContent,
                'product: Custom tumblers');
+  const broken=create({document,draftsContainer:drafts,
+    settingsContainer:settings,factsContainer:facts,
+    fetchImpl:async()=>({ok:false}),origin:'https://bam.example'});
+  broken.activate({token:'valid',tenantId:'shop'});
+  assert.equal((await broken.refresh()).error,true);
+  assert.equal(facts.children.length,0);
   workspace.clear();
   assert.equal(facts.children.length,0);
   console.log('BAM AI workspace fact provenance tests passed');
