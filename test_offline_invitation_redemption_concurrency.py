@@ -129,5 +129,35 @@ class TwoConnectionInvitationRaceTests(unittest.TestCase):
             AND action='accepted'""").fetchone()[0],1)
 
 
+    def test_cancel_and_redeem_are_mutually_exclusive(self):
+        created=self.first.invite(owner_session=self.owner_token,
+            tenant_id='shop',email='guest@example.com',
+            role=Role.VIEWER,now=103)
+        link=self.delivered[0][2]
+        results=self.run_race([
+            lambda:self.first.cancel_current(owner_session=self.owner_token,
+                invitation_id=created['invitation_id'],now=104),
+            lambda:self.second.accept_trusted(verified_subject_id=self.guest,
+                token=link,now=104)
+        ])
+        self.assertEqual(sum(status=='ok' for status,_ in results),1,results)
+        self.assertEqual(sum(status=='error' and
+                             isinstance(value,(PermissionError,KeyError))
+                             for status,value in results),1,results)
+        history=self.first.history_current(
+            owner_session=self.owner_token,now=105)['events']
+        self.assertEqual(len(history),2)
+        self.assertEqual(history[-1]['action'],'delivered')
+        self.assertIn(history[0]['action'],('cancelled','accepted'))
+        self.assertEqual(self.db1.execute("""SELECT count(*) FROM
+            bam_business_invitation_events WHERE tenant_id='shop'
+            AND action IN ('cancelled','accepted')""").fetchone()[0],1)
+        member=self.db1.execute("""SELECT role FROM members
+            WHERE tenant_id='shop' AND subject_id=?""",
+            (self.guest,)).fetchone()
+        self.assertEqual(member is not None,
+                         history[0]['action']=='accepted')
+
+
 if __name__=='__main__':
     unittest.main()
