@@ -37,6 +37,17 @@ class AIPolicyTests(unittest.TestCase):
         self.assertTrue(again['own_key_configured'])
         self.assertNotIn('vault:',str(again))
 
+    def test_explicit_key_reference_removal(self):
+        self.store.set_mode(token=self.owner,now=101,
+            mode='own_openai_key',credential_ref='vault:abcdefghijklmnop')
+        result=self.store.forget_personal_key_reference(
+            token=self.owner,now=102)
+        self.assertEqual(result['mode'],'bam_sponsored')
+        self.assertFalse(result['own_key_configured'])
+        with self.assertRaises(ValueError):
+            self.store.set_mode(token=self.owner,now=103,
+                                mode='own_openai_key')
+
     def test_raw_key_rejected(self):
         with self.assertRaises(ValueError):
             self.store.set_mode(token=self.owner,now=101,
