@@ -66,3 +66,7 @@ The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_fa
 ### AI cost summary
 
 `GET /api/v1/ai-cost-summary` returns the current authenticated user's operator-priced token/cost estimates for the active business. `ui/ai_cost_contract.js` validates the response; `ui/ai_cost_view.js` is an optional read-only Settings panel. The panel must never imply that estimates are real invoices or verified charges.
+
+### AI draft generation write endpoint
+
+`bam_ai_write_wsgi.py` exposes a separate disabled-by-default `POST /api/v1/ai-generate` adapter. It accepts only `topic`, `platform`, `needs_media`, and `include_image_prompt` in JSON, plus an idempotency header and bearer session over HTTPS. Business identity, UTC billing month, sponsorship plan, model, API credentials and publish permissions remain server-owned. This adapter is not mounted or enabled in the development server.
