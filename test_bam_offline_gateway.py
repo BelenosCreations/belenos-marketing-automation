@@ -453,6 +453,28 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(self.app.ai_costs.summary_trusted(
             tenant_id='shop',subject_id=self.subject)['events'],0)
 
+    def test_local_service_draft_works_for_service_business(self):
+        owner=self.app.sessions.issue(
+            Principal('other-owner','other',Role.OWNER),now=100)
+        self.app.ai_business_facts.confirm(token=owner,now=101,
+            facts={'business_name':'Example Services',
+                   'service':'Commercial facility cleaning'})
+        creator=self.login('other')
+        meta,created=self.call('/api/v1/ai/local-service-draft',
+            method='POST',token=creator,
+            body={'platform':'facebook','include_image_prompt':True})
+        self.assertEqual(meta['status'],'201 Created')
+        self.assertEqual(created['status'],'needs_media')
+        self.assertEqual(created['generation_method'],'local_template')
+        self.assertEqual(created['openai_requests'],0)
+        self.assertIn('Commercial facility cleaning',created['post_text'])
+        self.assertIn('not a photograph of real workers',created['image_prompt'])
+        _,mine=self.call('/api/v1/ai-drafts',token=creator)
+        self.assertEqual(len(mine['drafts']),1)
+        other=self.login('shop')
+        _,separate=self.call('/api/v1/ai-drafts',token=other)
+        self.assertEqual(separate['drafts'],[])
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')

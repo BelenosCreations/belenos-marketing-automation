@@ -106,6 +106,25 @@ class LocalDraftWSGITests(unittest.TestCase):
         app=BAMLocalProductDraftWSGI(Unsafe(),enabled=True,clock=lambda:101)
         self.assertEqual(self.call(app=app)[0]['status'],
                          '503 Service Unavailable')
+    def test_service_route_is_separate_and_pending_only(self):
+        class Service(FakeDrafts):
+            def create_local_service_draft(self,**kwargs):
+                result=self.create_local_product_draft(**kwargs)
+                result['post_text']='Example Services: Facility cleaning. Contact us for details.'
+                return result
+        service=Service()
+        app=BAMLocalProductDraftWSGI(
+            service,enabled=True,clock=lambda:101,template='service')
+        meta,data=self.call(app=app,
+            PATH_INFO='/api/v1/ai/local-service-draft')
+        self.assertEqual(meta['status'],'201 Created')
+        self.assertIn('Facility cleaning',data['post_text'])
+        self.assertEqual(data['openai_requests'],0)
+        self.assertFalse(data['publishing_enabled'])
+        self.assertEqual(self.call(app=app)[0]['status'],'404 Not Found')
+        with self.assertRaises(ValueError):
+            BAMLocalProductDraftWSGI(service,template='publish')
+
     def test_boolean_enable_required(self):
         with self.assertRaises(ValueError):
             BAMLocalProductDraftWSGI(self.api,enabled=1)

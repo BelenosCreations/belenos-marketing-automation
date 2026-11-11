@@ -120,6 +120,8 @@ class BAMOfflineGateway:
             registry=self.ai_business_facts,enabled=enabled,clock=self.clock)
         self.local_draft_wsgi = BAMLocalProductDraftWSGI(
             self.read_api,enabled=enabled,clock=self.clock)
+        self.local_service_wsgi = BAMLocalProductDraftWSGI(
+            self.read_api,enabled=enabled,clock=self.clock,template='service')
         self.ai_draft_edit_wsgi = BAMAIDraftEditWSGI(
             self.read_api,enabled=enabled,clock=self.clock)
 
@@ -155,6 +157,8 @@ class BAMOfflineGateway:
             return self.content_write_wsgi(environ, start_response)
         if path == '/api/v1/ai/local-product-draft':
             return self.local_draft_wsgi(environ, start_response)
+        if path == '/api/v1/ai/local-service-draft':
+            return self.local_service_wsgi(environ, start_response)
         if path == '/api/v1/content/upload-preflight':
             return self.upload_preflight_wsgi(environ, start_response)
         return self._unavailable(

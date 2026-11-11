@@ -42,6 +42,23 @@ class LocalTemplateTests(unittest.TestCase):
         self.assertNotIn('20 oz',draft['image_prompt'])
         self.assertFalse(draft['publishing_enabled'])
 
+    def test_service_template_uses_only_confirmed_literal_facts(self):
+        draft=self.templates.service_spotlight(
+            token=self.token,now=101,platform='facebook',
+            verified_facts={'business_name':'Example Services',
+                            'service':'Commercial facility cleaning'},
+            include_image_prompt=True)
+        self.assertEqual(draft['post_text'],
+            'Example Services: Commercial facility cleaning. Contact us for details.')
+        self.assertIn('generic conceptual marketing illustration',draft['image_prompt'])
+        self.assertIn('not a photograph of real workers',draft['image_prompt'])
+        self.assertEqual(draft['openai_requests'],0)
+        self.assertFalse(draft['publishing_enabled'])
+        with self.assertRaises(ValueError):
+            self.templates.service_spotlight(token=self.token,now=102,
+                platform='facebook',verified_facts={
+                    'business_name':'Example Services','product':'Not a service'})
+
     def test_missing_fact_rejected(self):
         with self.assertRaises(ValueError):
             self.templates.product_spotlight(token=self.token,now=101,

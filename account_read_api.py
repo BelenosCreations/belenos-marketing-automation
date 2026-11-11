@@ -194,12 +194,29 @@ class AccountReadAPI:
             } for request in requests],
             'publishing_enabled':False}
 
+    def create_local_service_draft(self, *, session_token, server_now,
+                                   platform, include_image_prompt):
+        """Explicit owner-confirmed service spotlight with no OpenAI calls."""
+        return self._create_local_spotlight(
+            session_token=session_token,server_now=server_now,
+            platform=platform,include_image_prompt=include_image_prompt,
+            kind='service')
+
     def create_local_product_draft(self, *, session_token, server_now,
                                    platform, include_image_prompt):
         """Explicit zero-OpenAI-call product draft from confirmed owner facts.
 
         No client-supplied facts, tenant, model or publication claims.
         """
+        return self._create_local_spotlight(
+            session_token=session_token,server_now=server_now,
+            platform=platform,include_image_prompt=include_image_prompt,
+            kind='product')
+
+    def _create_local_spotlight(self, *, session_token, server_now,
+                                platform, include_image_prompt, kind):
+        if kind not in ('product','service'):
+            raise ValueError('Unsupported local template')
         token=self._token(session_token)
         now=self._now(server_now)
         if self.ai_business_facts is None or self.ai_content_drafts is None or self.ai_policy is None:
@@ -209,7 +226,8 @@ class AccountReadAPI:
             raise ValueError('Owner-confirmed business facts required')
         template=LocalDraftTemplates(
             request_builder=AIDraftRequestBuilder(policy_store=self.ai_policy))
-        local=template.product_spotlight(
+        local=(template.product_spotlight if kind=='product'
+               else template.service_spotlight)(
             token=token,now=now,verified_facts=snapshot['facts'],
             platform=platform,include_image_prompt=include_image_prompt)
         if local['tenant_id']!=snapshot['tenant_id'] or local['openai_requests']!=0:

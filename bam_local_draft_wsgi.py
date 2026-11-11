@@ -21,9 +21,12 @@ def _object(pairs):
     return value
 
 class BAMLocalProductDraftWSGI:
-    def __init__(self,api,*,enabled=False,clock=None):
+    def __init__(self,api,*,enabled=False,clock=None,template='product'):
         if type(enabled) is not bool:
             raise ValueError('Boolean enabled flag required')
+        if template not in ('product','service'):
+            raise ValueError('Supported local template required')
+        self.template=template
         self.api=api
         self.enabled=enabled
         self.clock=time.time if clock is None else clock
@@ -102,7 +105,7 @@ class BAMLocalProductDraftWSGI:
         reply=lambda status,body:self._reply(start_response,status,body)
         if environ.get('wsgi.url_scheme')!='https':
             return reply('403 Forbidden',{'error':'HTTPS required'})
-        if environ.get('PATH_INFO')!=_PATH:
+        if environ.get('PATH_INFO')!=('/api/v1/ai/local-'+self.template+'-draft'):
             return reply('404 Not Found',{'error':'Not found'})
         if environ.get('REQUEST_METHOD')!='POST':
             return reply('405 Method Not Allowed',{'error':'POST required'})
@@ -118,8 +121,9 @@ class BAMLocalProductDraftWSGI:
             now=int(self.clock())
             if now<0:
                 raise RuntimeError('Invalid clock')
-            result=self.api.create_local_product_draft(
-                session_token=bearer[7:],server_now=now,**data)
+            create=(self.api.create_local_product_draft if self.template=='product'
+                    else self.api.create_local_service_draft)
+            result=create(session_token=bearer[7:],server_now=now,**data)
             return reply('201 Created',self._safe(
                 result,platform=data['platform'],
                 needs_media=data['include_image_prompt']))
