@@ -163,6 +163,12 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(edited['sessions_revoked'],1)
         self.assertEqual(edited['revision'],2)
+        _,events=self.call('/api/v1/team/activity',token=owner)
+        self.assertEqual(len(events['events']),1)
+        self.assertEqual(events['events'][0]['action'],'change_role')
+        self.assertNotIn('member@example.com',str(events))
+        self.assertEqual(self.call('/api/v1/team/activity',
+            token=member_token)[0]['status'],'401 Unauthorized')
         self.assertEqual(
             self.call('/api/v1/dashboard',token=member_token)[0]['status'],
             '401 Unauthorized')

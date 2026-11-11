@@ -24,6 +24,18 @@ class StubTeam:
                      'revision':2,'email':'editor@example.com','is_self':False}],
                 'publishing_enabled':False}
 
+    def activity_current(self,**kwargs):
+        self.calls.append(('activity',kwargs))
+        if self.denied:
+            raise PermissionError('Owner required')
+        return {'tenant_id':'shop','status':'private_team_activity',
+                'events':[{
+                    'event_id':11,'member_id':'person1','actor_id':'owner',
+                    'previous_role':'content_creator',
+                    'resulting_role':'viewer','action':'change_role',
+                    'changed_at':101,'revision_after':2}],
+                'publishing_enabled':False}
+
     def change_current(self,**kwargs):
         self.calls.append(('change',kwargs))
         if self.denied:
@@ -70,6 +82,21 @@ class TeamWSGITests(unittest.TestCase):
         self.assertFalse(data['publishing_enabled'])
         self.assertEqual(self.svc.calls[0],
                          ('list',{'token':'a'*43,'now':101}))
+
+    def test_private_team_activity_read_and_denial(self):
+        meta,data=self.call(path='/api/v1/team/activity')
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(meta['headers']['Cache-Control'],'no-store, private')
+        self.assertEqual(data['events'][0]['member_id'],'person1')
+        self.assertNotIn('email',str(data))
+        self.svc.denied=True
+        self.assertEqual(self.call(path='/api/v1/team/activity')
+                         [0]['status'],'401 Unauthorized')
+        self.assertEqual(self.call(path='/api/v1/team/activity',
+                         method='POST')[0]['status'],'405 Method Not Allowed')
+        self.assertEqual(self.call(path='/api/v1/team/activity',
+                         QUERY_STRING='tenant_id=other')[0]['status'],
+                         '400 Bad Request')
 
     def test_revisioned_role_edit_and_deactivate(self):
         for action,body in [

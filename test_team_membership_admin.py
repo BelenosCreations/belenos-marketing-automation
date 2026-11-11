@@ -82,6 +82,30 @@ class TeamMembershipAdminTests(unittest.TestCase):
         self.assertEqual(row,(self.owner_id,'content_creator','viewer',
                               'change_role',2))
 
+    def test_current_owner_can_read_scoped_member_audit(self):
+        self.assertEqual(self.admin.activity_current(
+            token=self.owner,now=101)['events'],[])
+        first=self.admin.change_current(
+            token=self.owner,member_id=self.member_id,
+            action='change_role',role='viewer',expected_revision=1,now=101)
+        second=self.admin.change_current(
+            token=self.owner,member_id=self.member_id,
+            action='deactivate',expected_revision=2,now=102)
+        self.assertEqual(second['revision'],3)
+        data=self.admin.activity_current(token=self.owner,now=103)
+        self.assertFalse(data['publishing_enabled'])
+        self.assertEqual(data['tenant_id'],'shop')
+        self.assertEqual(len(data['events']),2)
+        newest,older=data['events']
+        self.assertGreater(newest['event_id'],older['event_id'])
+        self.assertEqual(newest['action'],'deactivate')
+        self.assertEqual(newest['revision_after'],3)
+        self.assertEqual(newest['actor_id'],self.owner_id)
+        self.assertEqual(older['action'],'change_role')
+        self.assertNotIn('writer@example.com',str(data))
+        with self.assertRaises(PermissionError):
+            self.admin.activity_current(token=self.foreign,now=103)
+
     def test_deactivate_blocks_membership_and_tokens_atomically(self):
         result=self.admin.change_current(
             token=self.owner,member_id=self.member_id,
