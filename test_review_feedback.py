@@ -137,6 +137,79 @@ class ReviewFeedbackTests(unittest.TestCase):
             self.save(now=True)
         self.assertEqual(self.list()['items'],[])
 
+    def test_history_is_private_metadata_not_deleted_with_note(self):
+        created=self.save(now=102)
+        updated=self.save(now=103,note='Use a consented photo',
+                          expected_feedback_token=created['feedback_token'])
+        self.service.discard(token=self.manager,now=104,
+            request_id=self.rid,
+            expected_feedback_token=updated['feedback_token'])
+        history=self.service.history_current_business(
+            token=self.owner,now=105)
+        self.assertEqual(history['status'],'feedback_history_only')
+        self.assertFalse(history['approval_granted'])
+        self.assertFalse(history['publishing_enabled'])
+        self.assertFalse(history['truncated'])
+        self.assertEqual([event['action'] for event in history['events']],
+                         ['removed','updated','created'])
+        self.assertTrue(all(event['request_id']==self.rid
+                            for event in history['events']))
+        self.assertTrue(all(len(event['event_id'])==32
+                            for event in history['events']))
+        self.assertFalse(any('note' in event or 'actor_id' in event
+                             for event in history['events']))
+        self.assertEqual(self.list()['items'],[])
+        self.assertEqual(self.service.history_current_business(
+            token=self.other,now=105)['events'],[])
+        for unprivileged in (self.creator,self.viewer,'invalid'):
+            with self.assertRaises(PermissionError):
+                self.service.history_current_business(
+                    token=unprivileged,now=105)
+        self.assertEqual(len(self.service.history_current_business(
+            token=self.manager,now=105)['events']),3)
+
+    def test_feedback_and_audit_write_share_transaction(self):
+        self.db.execute("""CREATE TRIGGER reject_feedback_audit BEFORE
+            INSERT ON bam_review_feedback_events
+            BEGIN SELECT RAISE(ABORT,'audit unavailable'); END""")
+        with self.assertRaises(ValueError):
+            self.save()
+        self.assertEqual(self.list()['items'],[])
+        self.assertEqual(self.service.history_current_business(
+            token=self.owner,now=105)['events'],[])
+        self.db.execute('DROP TRIGGER reject_feedback_audit')
+        created=self.save()
+        self.db.execute("""CREATE TRIGGER reject_feedback_audit BEFORE
+            INSERT ON bam_review_feedback_events
+            BEGIN SELECT RAISE(ABORT,'audit unavailable'); END""")
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.service.discard(token=self.owner,now=103,
+                request_id=self.rid,
+                expected_feedback_token=created['feedback_token'])
+        self.assertEqual(len(self.list()['items']),1)
+        self.assertEqual(len(self.service.history_current_business(
+            token=self.owner,now=105)['events']),1)
+        self.db.execute('DROP TRIGGER reject_feedback_audit')
+
+    def test_history_caps_output_and_requires_current_membership(self):
+        last=None
+        for index in range(55):
+            item=self.save(now=200+index,
+                note='Review note '+str(index),
+                expected_feedback_token=last)
+            last=item['feedback_token']
+        audit=self.service.history_current_business(
+            token=self.owner,now=300)
+        self.assertEqual(len(audit['events']),50)
+        self.assertTrue(audit['truncated'])
+        self.assertEqual(audit['events'][0]['occurred_at'],254)
+        self.assertEqual(audit['events'][-1]['occurred_at'],205)
+        self.directory.set_member(Principal('owner','shop',Role.OWNER),
+                                  'manager',Role.VIEWER)
+        with self.assertRaises(PermissionError):
+            self.service.history_current_business(
+                token=self.manager,now=300)
+
     def test_deactivated_role_invalidates_existing_session(self):
         self.directory.set_member(Principal('owner','shop',Role.OWNER),
                                   'manager',Role.VIEWER)
