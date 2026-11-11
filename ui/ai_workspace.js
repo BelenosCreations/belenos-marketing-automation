@@ -6,17 +6,21 @@
   'use strict';
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./dashboard_http_client.js'),
-      require('./ai_draft_view.js'),require('./ai_settings_view.js'));
+      require('./ai_draft_view.js'),require('./ai_settings_view.js'),
+      require('./ai_facts_view.js'));
   else root.BAMAIWorkspace=factory(root.BAMReadClient,
-    root.BAMAIDraftView,root.BAMAISettingsView);
+    root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(client,draftView,settingsView){
+function(client,draftView,settingsView,factsView){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
-                   fetchImpl,origin,onError}){
+                   factsContainer,fetchImpl,origin,onError}){
     if(!document||!draftsContainer||!settingsContainer||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Workspace dependencies required');
+    if(factsContainer!==undefined&&
+       (!factsContainer||typeof factsContainer.replaceChildren!=='function'))
+      throw new TypeError('Invalid facts mount');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Invalid error callback');
     let active=null,epoch=0,requestVersion=0;
@@ -26,6 +30,7 @@ function(client,draftView,settingsView){
       active=null;
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
+      if(factsContainer)factsContainer.replaceChildren();
     }
     function activate({token,tenantId}){
       if(typeof token!=='string'||!token.trim()||token.length>2048||
@@ -39,11 +44,13 @@ function(client,draftView,settingsView){
       const mine=active,version=epoch,request=++requestVersion;
       try{
         // Fetch both before rendering either to avoid partial stale UI.
-        const [drafts,settings]=await Promise.all([
+        const [drafts,settings,facts]=await Promise.all([
           client.read({kind:'aiDrafts',token:mine.token,fetchImpl,origin,
                        expectedTenantId:mine.tenantId}),
           client.read({kind:'aiSettings',token:mine.token,fetchImpl,origin,
-                       expectedTenantId:mine.tenantId})
+                       expectedTenantId:mine.tenantId}),
+          factsContainer?client.read({kind:'aiFacts',token:mine.token,
+            fetchImpl,origin,expectedTenantId:mine.tenantId}):Promise.resolve(null)
         ]);
         if(version!==epoch||request!==requestVersion||active!==mine)return {stale:true};
         // Renderers validate all data before replacing the current mount.
@@ -60,6 +67,11 @@ function(client,draftView,settingsView){
             mode:settings.mode,own_key_configured:settings.ownKeyConfigured,
             memory:settings.memory,key_exposed:false,
             publishing_enabled:false},expectedTenantId:mine.tenantId});
+        if(factsContainer)factsView.render({document,container:factsContainer,
+          payload:{tenant_id:facts.tenantId,facts:facts.facts,
+            revision:facts.revision,provenance:facts.provenance,
+            confirmed_at:facts.confirmedAt,publishing_enabled:false},
+          expectedTenantId:mine.tenantId});
         return {stale:false,tenantId:mine.tenantId,
                 draftCount:drafts.drafts.length};
       }catch(error){
