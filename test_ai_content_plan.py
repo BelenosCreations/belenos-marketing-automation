@@ -64,9 +64,15 @@ class AIContentPlanTests(unittest.TestCase):
                                          revised_text='Short copy')
         self.assertEqual(revised['image_prompt'],original['image_prompt'])
         self.assertFalse(revised['publishing_enabled'])
-        image_revision=self.plan.apply_revision(original,
+        image_revision=self.plan.apply_revision(revised,
             target='image_prompt',revised_text='Blue neutral background')
-        self.assertEqual(image_revision['post_text'],'Original copy')
+        self.assertEqual(image_revision['post_text'],'Short copy')
+        followup=self.plan.revision_request(token=self.token,now=101,
+            verified_facts=self.facts,topic='Product highlight',
+            platform='facebook',current=revised,
+            target='image_prompt',instruction='Change background')
+        self.assertEqual(json.loads(followup['input_json'])['revision_target'],
+                         'image_prompt')
 
     def test_batch_is_bounded(self):
         args=dict(token=self.token,now=101,verified_facts=self.facts,
