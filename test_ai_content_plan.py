@@ -74,6 +74,19 @@ class AIContentPlanTests(unittest.TestCase):
         self.assertEqual(json.loads(followup['input_json'])['revision_target'],
                          'image_prompt')
 
+    def test_revision_response_is_single_field_only(self):
+        self.assertEqual(self.plan.parse_revision_response(
+            '{"revised_text":"Short copy"}',target='post_text'),'Short copy')
+        for payload in (
+            {'revised_text':'Text','published':True},
+            {'post_text':'Full draft','image_prompt':None},
+            {'revised_text':''},
+        ):
+            with self.assertRaises(ValueError):
+                self.plan.parse_revision_response(payload,target='post_text')
+        with self.assertRaises(ValueError):
+            self.plan.parse_revision_response('not json',target='image_prompt')
+
     def test_batch_is_bounded(self):
         args=dict(token=self.token,now=101,verified_facts=self.facts,
                   platform='facebook')
