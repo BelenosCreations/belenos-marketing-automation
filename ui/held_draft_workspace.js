@@ -1,0 +1,850 @@
+/* Explicit held-draft Content Studio: create and change hold state only.
+ * No publication, approval, upload, media verification, analytics or auto retry.
+ * All mutations are server-authorized; a tenant switch invalidates pending UI.
+ */
+(function(root,factory){
+  'use strict';
+  if(typeof module==='object'&&module.exports)
+    module.exports=factory(require('./dashboard_http_client.js'),
+      require('./held_draft_write_client.js'),
+      require('./pending_media_client.js'),
+      require('./content_risk_client.js'),
+      require('./held_draft_csv_import.js'),
+      require('./calendar_proposals_client.js'),
+      require('./review_feedback_client.js'));
+  else root.BAMHeldDraftWorkspace=factory(
+    root.BAMReadClient,root.BAMHeldDraftWriteClient,root.BAMPendingMediaClient,
+    root.BAMContentRiskClient,root.BAMHeldDraftCSVImport,
+    root.BAMCalendarProposalsClient,root.BAMReviewFeedbackClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient,csvImport,calendarClient,feedbackClient){
+  'use strict';
+  const channelNames=['facebook','instagram','linkedin','pinterest','tiktok','youtube'];
+  const holdNames=['needs_content','ready_for_review','postponed','unavailable'];
+  function make(document,tag,label){
+    const element=document.createElement(tag);
+    element.textContent=label;
+    return element;
+  }
+  function field(document,form,label,control){
+    const wrap=make(document,'div','');wrap.className='field';
+    const caption=make(document,'label',label);
+    wrap.append(caption,control);form.append(wrap);
+    return control;
+  }
+  function create({document,container,fetchImpl,origin,onError,onNotice,
+                   hashBytes,enableCalendarProposals=false,
+                   enableReviewFeedback=false}){
+    if(!document||!container||typeof container.replaceChildren!=='function'||
+       typeof fetchImpl!=='function'||typeof origin!=='string'||
+       (onError!==undefined&&typeof onError!=='function')||
+       (onNotice!==undefined&&typeof onNotice!=='function')||
+       (hashBytes!==undefined&&typeof hashBytes!=='function'))
+      throw new TypeError('Content Studio dependencies required');
+    if(typeof enableReviewFeedback!=='boolean')
+      throw new TypeError('Explicit private feedback preview switch required');
+    if(typeof enableCalendarProposals!=='boolean')
+      throw new TypeError('Explicit calendar proposal feature switch required');
+    let active=null,epoch=0,requestVersion=0,busy=false,model=null;
+    let canEdit=false,mediaEnabled=false,mediaStatusReady=false;
+    let mediaStatuses=new Map(),riskReports=new Map(),riskPending=new Set();
+    let plannedImport=null,calendarData=null,calendarSlots=null;
+    let calendarError=false;
+    // Filter state is purely local to the active business and never changes
+    // held content, approval, analytics, or backend query permissions.
+    let filterChannel='all',filterStatus='all',filterQuery='';
+    let filterPriority='all';
+    let reviewNotes=null,reviewNotesError=false;
+    function setMediaEnabled(allowed){
+      if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
+      mediaEnabled=allowed&&canEdit;
+      mediaStatusReady=false;mediaStatuses=new Map();
+      if(model&&active)render();
+    }
+    function setCanEdit(allowed){
+      if(typeof allowed!=='boolean')throw new TypeError('Trusted draft edit permission required');
+      canEdit=allowed;
+      if(!allowed){
+        mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
+      }
+      if(model&&active)render();
+    }
+    function clear(){
+      epoch++;requestVersion++;active=null;model=null;busy=false;canEdit=false;
+      mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
+      riskReports=new Map();riskPending=new Set();plannedImport=null;
+      calendarData=null;calendarSlots=null;calendarError=false;
+      filterChannel='all';filterStatus='all';filterQuery='';
+      filterPriority='all';
+      reviewNotes=null;reviewNotesError=false;
+      container.replaceChildren();
+    }
+    function activate({token,tenantId}){
+      if(typeof token!=='string'||!token.trim()||token.length>2048||
+         typeof tenantId!=='string'||!tenantId.trim()||tenantId.length>128)
+        throw new TypeError('Authenticated content session required');
+      clear();active={token,tenantId};
+    }
+    function render(){
+      if(!model||!active)return;
+      const viewingSession=active,viewingEpoch=epoch;
+      const wrap=make(document,'section','');
+      wrap.className='bam-held-draft-workspace';
+      wrap.append(make(document,'h2','Content Studio'));
+      const details=make(document,'section','');
+      details.className='bam-content-studio-filters';
+      details.append(make(document,'p',
+        'Create and organize unpublished content requests and optional draft calendar proposals. Approval, scheduling and publishing remain unavailable.'));
+      const filters=make(document,'div','');
+      filters.className='toolbar';
+      const statusSelect=make(document,'select','');
+      for(const status of ['all',...holdNames]){
+        const option=make(document,'option',
+          status==='all'?'Every draft status':status.replaceAll('_',' '));
+        option.value=status;statusSelect.append(option);
+      }
+      statusSelect.value=filterStatus;
+      statusSelect.setAttribute&&statusSelect.setAttribute(
+        'aria-label','Filter drafts by status');
+      filters.append(statusSelect);
+      const channelSelect=make(document,'select','');
+      for(const channel of ['all',...channelNames]){
+        const option=make(document,'option',
+          channel==='all'?'Every social channel':channel);
+        option.value=channel;channelSelect.append(option);
+      }
+      channelSelect.value=filterChannel;
+      channelSelect.setAttribute&&channelSelect.setAttribute(
+        'aria-label','Filter drafts by channel');
+      filters.append(channelSelect);
+      const textSearch=make(document,'input','');
+      textSearch.type='search';textSearch.maxLength=120;
+      textSearch.value=filterQuery;
+      textSearch.placeholder='Find text in your held drafts';
+      textSearch.setAttribute&&textSearch.setAttribute(
+        'aria-label','Search held draft text and guidance');
+      filters.append(textSearch);
+      const apply=make(document,'button','Apply draft filters');
+      apply.type='button';apply.className='secondary';
+      apply.addEventListener('click',()=>{
+        if(active!==viewingSession||epoch!==viewingEpoch)return;
+        if(!['all',...holdNames].includes(statusSelect.value)||
+           !['all',...channelNames].includes(channelSelect.value)||
+           !['all','urgent','high','normal','low'].includes(priorityFilter.value)||
+           typeof textSearch.value!=='string'||textSearch.value.length>120)
+          throw new TypeError('Invalid held draft filter');
+        filterStatus=statusSelect.value;filterChannel=channelSelect.value;
+        filterPriority=priorityFilter.value;
+        filterQuery=textSearch.value.trim().toLowerCase();
+        render();
+      });
+      filters.append(apply);
+      const clearFilters=make(document,'button','Clear draft filters');
+      clearFilters.type='button';clearFilters.className='secondary';
+      clearFilters.addEventListener('click',()=>{
+        if(active===viewingSession&&epoch===viewingEpoch){
+          filterStatus='all';filterChannel='all';filterQuery='';
+          filterPriority='all';render();
+        }
+      });
+      filters.append(clearFilters);
+      const priorityFilter=make(document,'select','');
+      for(const [value,label] of [
+         ['all','Every priority'],['urgent','Urgent (+2 or higher)'],
+         ['high','High (+1 or higher)'],['normal','Normal (0)'],
+         ['low','Low (below 0)']
+      ]){
+        const option=make(document,'option',label);
+        option.value=value;priorityFilter.append(option);
+      }
+      priorityFilter.value=filterPriority;
+      priorityFilter.setAttribute&&priorityFilter.setAttribute(
+        'aria-label','Filter held drafts by priority');
+      filters.append(priorityFilter);
+      details.append(filters);
+      const total=model.drafts.length;
+      const visible=model.drafts.filter(draft=>
+        (filterStatus==='all'||draft.status===filterStatus)&&
+        (filterChannel==='all'||draft.channel===filterChannel)&&
+        (filterPriority==='all'||
+          (filterPriority==='urgent'&&draft.priority>=2)||
+          (filterPriority==='high'&&draft.priority>=1)||
+          (filterPriority==='normal'&&draft.priority===0)||
+          (filterPriority==='low'&&draft.priority<0))&&
+        (!filterQuery||(draft.text+' '+draft.suggestion)
+          .toLowerCase().includes(filterQuery)));
+      details.append(make(document,'p',
+        'Showing '+visible.length+' of '+total+
+        ' private held drafts. Filters only change this view.'));
+
+      const counts=Object.fromEntries(holdNames.map(status=>[
+        status,model.drafts.filter(draft=>draft.status===status).length]));
+      const highIncomplete=model.drafts.filter(draft=>
+        draft.status==='needs_content'&&draft.priority>=1).length;
+      const outstanding=model.drafts
+        .filter(draft=>draft.status==='needs_content')
+        .reduce((sum,draft)=>sum+draft.missing.length,0);
+      const pulse=make(document,'section','');
+      pulse.className='bam-content-queue-pulse';
+      pulse.append(make(document,'h3','Unpublished content queue'));
+      pulse.append(make(document,'p',
+        counts.needs_content+' need content · '+
+        counts.ready_for_review+' ready for human review · '+
+        (counts.postponed+counts.unavailable)+
+        ' postponed/unavailable. No items are approved or scheduled.'));
+      pulse.append(make(document,'p',
+        highIncomplete+' high-priority drafts still need content. '+
+        outstanding+' total outstanding checklist items are shown in the held queue.'));
+      const shortcuts=make(document,'div','');
+      shortcuts.className='toolbar';
+      for(const [label,status,priority] of [
+        ['View high-priority content needs','needs_content','high'],
+        ['View drafts for human review','ready_for_review','all'],
+        ['View all held drafts','all','all']
+      ]){
+        const button=make(document,'button',label);
+        button.type='button';button.className='secondary';
+        button.addEventListener('click',()=>{
+          if(active!==viewingSession||epoch!==viewingEpoch)return;
+          filterStatus=status;filterPriority=priority;
+          filterChannel='all';filterQuery='';
+          render();
+        });
+        shortcuts.append(button);
+      }
+      pulse.append(shortcuts);
+      details.append(pulse);
+      wrap.append(details);
+      if(!canEdit){
+        wrap.append(make(document,'p','You can view held content but cannot create or edit it.'));
+      }
+      if(canEdit){
+      const form=make(document,'form','');form.className='panel stack';
+      form.append(make(document,'h3','New held draft'));
+      const channel=make(document,'select','');
+      for(const name of channelNames){
+        const option=make(document,'option',name[0].toUpperCase()+name.slice(1));
+        option.value=name;channel.append(option);
+      }
+      channel.value='facebook';
+      field(document,form,'Social platform',channel);
+      const prioritySelect=make(document,'select','');
+      for(const [value,label] of [
+        [-2,'Later (-2)'],[-1,'Low (-1)'],[0,'Normal (0)'],
+        [1,'High (+1)'],[2,'Urgent (+2)']
+      ]){
+        const option=make(document,'option',label);
+        option.value=String(value);
+        prioritySelect.append(option);
+      }
+      prioritySelect.value='0';
+      field(document,form,'Draft queue priority (higher reviewed first)',
+        prioritySelect);
+      const draftText=field(document,form,'Draft copy',make(document,'textarea',''));
+      draftText.maxLength=2000;draftText.required=true;draftText.rows=4;
+      const suggestion=field(document,form,'Content guidance',make(document,'textarea',''));
+      suggestion.maxLength=2000;suggestion.required=true;suggestion.rows=2;
+      const items=field(document,form,'Required items, separated by commas',
+        make(document,'input',''));
+      items.value='image';items.maxLength=950;items.required=true;
+      const submit=make(document,'button','Save as held draft');
+      submit.type='submit';submit.className='primary';submit.disabled=busy;
+      form.append(submit);
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();
+        if(busy||viewingSession!==active||viewingEpoch!==epoch)return;
+        const requiredItems=items.value.split(',').map(x=>x.trim());
+        const result=await createDraft({
+          channel:channel.value,draftText:draftText.value.trim(),
+          suggestion:suggestion.value.trim(),requiredItems,
+          priority:Number(prioritySelect.value)});
+        if(result.error&&onError)onError('Unable to save held draft');
+      });
+      wrap.append(form);
+      }
+      for(const status of holdNames){
+        const list=visible.filter(x=>x.status===status);
+        const section=make(document,'section','');
+        section.append(make(document,'h3',
+          status.replaceAll('_',' ')+' ('+list.length+')'));
+        for(const draft of list){
+          const article=make(document,'article','');
+          article.append(make(document,'h4',draft.channel));
+          article.append(make(document,'p',draft.text));
+          article.append(make(document,'p',draft.suggestion));
+          article.append(make(document,'p',
+            'Draft priority: '+draft.priority+
+            ' (review queue ordering only; never an automatic publishing order).'));
+          if(enableReviewFeedback){
+            if(reviewNotesError||!reviewNotes){
+              article.append(make(document,'p',
+                'Private editorial comments are unavailable; refresh before review.'));
+            }else{
+              const feedback=reviewNotes.items.find(x=>x.requestId===draft.id);
+              if(feedback){
+                const note=make(document,'section','');
+                note.className='bam-editorial-feedback';
+                note.append(make(document,'h5',
+                  'Private editorial feedback (not approval)'));
+                note.append(make(document,'p',feedback.note));
+                if(feedback.stale||feedback.draftRevision!==draft.revision)
+                  note.append(make(document,'p',
+                    'This comment refers to an earlier draft revision; request a fresh review.'));
+                article.append(note);
+              }
+            }
+          }
+          if(draft.missing.length)
+            article.append(make(document,'p',
+              'Still needed: '+draft.missing.join(', ')));
+          if(Number.isSafeInteger(draft.revision)&&draft.revision>=1){
+            const found=riskReports.get(draft.id);
+            if(found&&found.revision===draft.revision){
+              article.append(make(document,'p',
+                found.signalCount
+                  ?'Potential marketing claim flags: '+found.signalCount
+                  :'No heuristic flags found. This is not factual verification.'));
+              for(const signal of found.signals){
+                article.append(make(document,'p',
+                  signal.category.replaceAll('_',' ')+': '+signal.text));
+              }
+              if(found.truncated)
+                article.append(make(document,'p',
+                  'Additional risk flags omitted from this short preview.'));
+              article.append(make(document,'p',
+                'Heuristic screening is incomplete. Human factual and media review is still required.'));
+            }
+            const riskButton=make(document,'button',
+              'Check marketing claim risks');
+            riskButton.type='button';riskButton.className='secondary';
+            riskButton.disabled=riskPending.has(draft.id);
+            riskButton.addEventListener('click',()=>{
+              if(active!==viewingSession||epoch!==viewingEpoch)return;
+              void inspectRisk({requestId:draft.id,revision:draft.revision});
+            });
+            article.append(riskButton);
+          }
+          if(canEdit&&Number.isSafeInteger(draft.revision)&&draft.revision>=1){
+            for(const [target,label,initial] of [
+              ['draft_text','Save revised post copy',draft.text],
+              ['suggestion','Save revised content guidance',draft.suggestion]
+            ]){
+              const editor=make(document,'textarea','');
+              editor.value=initial;
+              editor.maxLength=2000;editor.rows=3;
+              article.append(editor);
+              const save=make(document,'button',label);
+              save.type='button';save.className='secondary';
+              save.disabled=busy;
+              save.addEventListener('click',async()=>{
+                if(busy||viewingSession!==active||viewingEpoch!==epoch)
+                  return;
+                await reviseDraft({requestId:draft.id,target,
+                  revisedText:editor.value.trim(),
+                  expectedRevision:draft.revision});
+              });
+              article.append(save);
+            }
+            article.append(make(document,'p',
+              'Text changes are version-checked and remain unpublished. No content is automatically approved.'));
+          }
+          if(enableCalendarProposals&&
+             (status==='needs_content'||status==='ready_for_review')){
+            const calendarSection=make(document,'section','');
+            calendarSection.className='bam-calendar-proposal';
+            calendarSection.append(make(document,'h4',
+              'Proposed posting time (not scheduled)'));
+            if(calendarError||!calendarData||!calendarSlots){
+              calendarSection.append(make(document,'p',
+                'Calendar proposal status unavailable. Refresh before changing a date.'));
+            }else{
+              const existing=calendarData.items.find(x=>x.requestId===draft.id);
+              if(existing){
+                calendarSection.append(make(document,'p',
+                  'Proposed: '+existing.localDate+' at '+existing.localTime+
+                  ' ('+existing.timezone+'). Not scheduled.'));
+                if(existing.contentChanged)
+                  calendarSection.append(make(document,'p',
+                    'Draft changed. Reconfirm this proposal after review.'));
+                if(!existing.slotCurrent)
+                  calendarSection.append(make(document,'p',
+                    'Posting preferences changed. Choose a current time.'));
+                if(canEdit){
+                  const remove=make(document,'button','Remove proposed time');
+                  remove.type='button';remove.className='secondary';
+                  remove.disabled=busy;
+                  remove.addEventListener('click',async()=>{
+                    if(busy||active!==viewingSession||epoch!==viewingEpoch)
+                      return;
+                    await removeProposal({requestId:draft.id,
+                      expectedProposalToken:existing.proposalToken});
+                  });
+                  calendarSection.append(remove);
+                }
+              }else{
+                calendarSection.append(make(document,'p',
+                  'No planned time attached to this draft.'));
+              }
+              if(canEdit&&Number.isSafeInteger(draft.revision)&&
+                 draft.revision>=1&&calendarSlots.status==='manual_preview'){
+                const used=new Set(calendarData.items
+                  .filter(x=>x.requestId!==draft.id)
+                  .map(x=>x.utcAt));
+                const available=calendarSlots.slots
+                  .filter(x=>!used.has(x.utcAt));
+                if(available.length){
+                  const choices=make(document,'select','');
+                  for(const slot of available){
+                    const option=make(document,'option',
+                      slot.localDate+' '+slot.localTime+
+                      ' ('+calendarSlots.timezone+')');
+                    option.value=slot.utcAt;choices.append(option);
+                  }
+                  choices.value=available[0].utcAt;
+                  calendarSection.append(choices);
+                  const add=make(document,'button',
+                    'Save draft date proposal (not schedule)');
+                  add.type='button';add.className='secondary';add.disabled=busy;
+                  add.addEventListener('click',async()=>{
+                    if(busy||active!==viewingSession||epoch!==viewingEpoch)
+                      return;
+                    await saveProposal({requestId:draft.id,
+                      expectedRevision:draft.revision,utcAt:choices.value,
+                      expectedProposalToken:existing?existing.proposalToken:null});
+                  });
+                  calendarSection.append(add);
+                }else{
+                  calendarSection.append(make(document,'p',
+                    'No unused manual posting times in this preview.'));
+                }
+              }else if(canEdit){
+                calendarSection.append(make(document,'p',
+                  'Choose Manual posting preferences in Settings before planning dates.'));
+              }
+            }
+            article.append(calendarSection);
+          }
+          if(canEdit&&mediaEnabled&&status==='needs_content'){
+            const item=draft.missing.find(value=>
+              /photo|image|picture|artwork|graphic/i.test(value));
+            if(item){
+              const state=mediaStatuses.get(draft.id+':'+item);
+              if(!mediaStatusReady){
+                article.append(make(document,'p',
+                  'Private image status unavailable. Refresh before submitting another file.'));
+              }else if(state==='pending_scan'){
+                article.append(make(document,'p',
+                  'Image received in private quarantine. Awaiting review; not verified, approved or publishable.'));
+                const remove=make(document,'button','Discard pending image');
+                remove.type='button';remove.className='secondary';
+                remove.disabled=busy;
+                remove.addEventListener('click',()=>{
+                  if(busy||viewingSession!==active||
+                     viewingEpoch!==epoch||!mediaEnabled)return;
+                  remove.disabled=true;
+                  const confirm=make(document,'button',
+                    'Confirm discard of unverified image');
+                  confirm.type='button';confirm.className='secondary';
+                  confirm.addEventListener('click',async()=>{
+                    if(busy||viewingSession!==active||viewingEpoch!==epoch)
+                      return;
+                    await discardImage({requestId:draft.id,item});
+                  });
+                  article.append(confirm);
+                });
+                article.append(remove);
+              }else{
+              const picker=make(document,'input','');
+              picker.type='file';
+              picker.accept='image/png,image/jpeg,image/webp';
+              article.append(picker);
+              const upload=make(document,'button',
+                'Send image for private review');
+              upload.type='button';upload.className='secondary';
+              upload.disabled=busy;
+              upload.addEventListener('click',async()=>{
+                if(busy||!active||active!==viewingSession||
+                   epoch!==viewingEpoch)return;
+                const file=picker.files&&picker.files[0];
+                if(!file){
+                  if(onError)onError('Choose an image before submitting.');
+                  return;
+                }
+                await stageImage({requestId:draft.id,item,file});
+              });
+              article.append(upload);
+              article.append(make(document,'p',
+                'This image stays private and pending. No safety, rights or approval review has occurred.'));
+              }
+            }
+          }
+          if(canEdit&&status!=='ready_for_review'){
+            const actions=status==='needs_content'
+              ?[['postponed','Postpone'],['unavailable','Mark unavailable']]
+              :[['needs_content','Reopen as needing content']];
+            for(const [target,label] of actions){
+              const button=make(document,'button',label);
+              button.type='button';button.className='secondary';
+              button.disabled=busy;
+              button.addEventListener('click',async()=>{
+                if(busy||active!==viewingSession||epoch!==viewingEpoch)return;
+                const result=await changeHold({requestId:draft.id,status:target,
+                  expectedRevision:draft.revision});
+                if(result.error&&onError)onError('Unable to change draft status');
+              });
+              article.append(button);
+            }
+          }
+          section.append(article);
+        }
+        wrap.append(section);
+      }
+      if(canEdit){
+        const bulk=make(document,'section','');
+        bulk.className='panel stack';
+        bulk.append(make(document,'h3','Advanced: import held drafts from CSV'));
+        bulk.append(make(document,'p',
+          'Import 1–20 unpublished drafts. Columns: channel,draft_text,suggestion,required_items. Separate required items with |. Missing items default to image. No publishing or AI requests.'));
+        const chooser=make(document,'input','');
+        chooser.type='file';chooser.accept='.csv,text/csv';
+        bulk.append(chooser);
+        const previewButton=make(document,'button','Preview CSV draft import');
+        previewButton.type='button';previewButton.className='secondary';
+        previewButton.disabled=busy;
+        previewButton.addEventListener('click',async()=>{
+          if(busy||active!==viewingSession||epoch!==viewingEpoch)return;
+          const file=chooser.files&&chooser.files[0];
+          if(!file||!Number.isSafeInteger(file.size)||file.size>131072||
+             file.size<1||typeof file.text!=='function'){
+            if(onError)onError('Choose a CSV file of 128 KiB or smaller.');
+            return;
+          }
+          try{
+            const source=await file.text();
+            if(active!==viewingSession||epoch!==viewingEpoch)return;
+            const entries=csvImport.parse(source);
+            const duplicates=new Set(model.drafts.map(x=>
+              x.channel+'\u0000'+x.text.toLowerCase().replace(/\s+/g,' ').trim()));
+            if(entries.some(x=>duplicates.has(
+                x.channel+'\u0000'+x.draftText.toLowerCase().replace(/\s+/g,' ').trim())))
+              throw new TypeError('Draft text already exists');
+            plannedImport=entries;
+            render();
+          }catch(error){
+            plannedImport=null;
+            if(onError)onError('CSV draft preview failed. Check columns, row count, and duplicates.');
+          }
+        });
+        bulk.append(previewButton);
+        if(plannedImport){
+          bulk.append(make(document,'p',
+            plannedImport.length+' unpublished drafts validated. Review the source CSV, then confirm import. This may partially complete if the server becomes unavailable.'));
+          for(const entry of plannedImport){
+            const row=make(document,'p',entry.channel+': '+entry.draftText);
+            bulk.append(row);
+          }
+          const confirm=make(document,'button',
+            'Confirm import of '+plannedImport.length+' held drafts');
+          confirm.type='button';confirm.className='primary';confirm.disabled=busy;
+          confirm.addEventListener('click',async()=>{
+            if(busy||active!==viewingSession||epoch!==viewingEpoch)return;
+            await importCSV();
+          });
+          bulk.append(confirm);
+          const cancel=make(document,'button','Cancel CSV import');
+          cancel.type='button';cancel.className='secondary';
+          cancel.addEventListener('click',()=>{
+            if(!busy&&active===viewingSession&&epoch===viewingEpoch){
+              plannedImport=null;render();
+            }
+          });
+          bulk.append(cancel);
+        }
+        wrap.append(bulk);
+      }
+      container.replaceChildren(wrap);
+    }
+    async function saveProposal({requestId,expectedRevision,utcAt,
+                                expectedProposalToken}){
+      if(!enableCalendarProposals||!active||!canEdit||busy||
+         !calendarData||!calendarSlots||calendarError||
+         calendarSlots.status!=='manual_preview'||
+         !calendarSlots.slots.some(x=>x.utcAt===utcAt)||
+         (calendarData.items.find(x=>x.requestId===requestId)?.proposalToken||null)
+            !==expectedProposalToken)
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const result=await calendarClient.propose({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,requestId,
+          expectedRevision,utcAt,expectedProposalToken});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const updated=await refresh();
+        if(updated.error||updated.stale)return updated;
+        if(onNotice)onNotice(
+          'Draft date proposal saved. This did not schedule or approve the post.');
+        return result;
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('Draft date proposal was not saved. Refresh current content and time settings.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine){busy=false;render();}
+      }
+    }
+    async function removeProposal({requestId,expectedProposalToken}){
+      if(!enableCalendarProposals||!active||!canEdit||busy||
+         !calendarData||!calendarData.items.some(x=>
+            x.requestId===requestId&&x.proposalToken===expectedProposalToken))
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const result=await calendarClient.discard({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,requestId,
+          expectedProposalToken});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const updated=await refresh();
+        if(updated.error||updated.stale)return updated;
+        if(onNotice)onNotice(
+          'Only the proposed date was removed. The unpublished draft remains.');
+        return result;
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('Could not confirm removal of this proposed date.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine){busy=false;render();}
+      }
+    }
+    async function importCSV(){
+      if(!active||!canEdit||busy||!plannedImport)return {error:true};
+      const mine=active,version=epoch,rows=plannedImport;
+      plannedImport=null;busy=true;
+      let created=0,error=false;
+      try{
+        for(const row of rows){
+          if(version!==epoch||active!==mine)return {stale:true};
+          await writeClient.createDraft({
+            origin,fetchImpl,token:mine.token,
+            expectedTenantId:mine.tenantId,
+            channel:row.channel,draftText:row.draftText,
+            suggestion:row.suggestion,requiredItems:[...row.requiredItems],
+            priority:row.priority});
+          created++;
+        }
+      }catch(failure){
+        error=true;
+      }finally{
+        if(version===epoch&&active===mine){
+          try{await refresh();}catch(unavailable){error=true;}
+          if(onNotice&&created)
+            onNotice(created+' held drafts saved as unpublished.');
+          if(error&&onError)
+            onError('CSV import stopped after '+created+
+              ' confirmed drafts. Review existing drafts before trying again.');
+          busy=false;render();
+        }
+      }
+      if(version!==epoch||active!==mine)return {stale:true};
+      return {stale:false,created,error};
+    }
+    async function inspectRisk({requestId,revision}){
+      if(!active||riskPending.has(requestId))return {error:true};
+      const mine=active,version=epoch;
+      riskPending.add(requestId);
+      render();
+      try{
+        const report=await riskClient.preview({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,
+          requestId,expectedRevision:revision});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const current=model&&model.drafts.find(x=>x.id===requestId);
+        if(!current||current.revision!==revision)return {stale:true};
+        riskReports.set(requestId,report);render();
+        return {stale:false,signalCount:report.signalCount};
+      }catch(error){
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(onError)onError(
+          'Marketing claim preview unavailable. No draft has been approved.');
+        return {error:true};
+      }finally{
+        riskPending.delete(requestId);
+        if(version===epoch&&active===mine)render();
+      }
+    }
+    async function refresh(){
+      if(!active)throw new TypeError('BAM sign-in required');
+      const mine=active,version=epoch,request=++requestVersion;
+      try{
+        const data=await readClient.read({kind:'drafts',token:mine.token,
+          fetchImpl,origin,expectedTenantId:mine.tenantId});
+        if(version!==epoch||active!==mine||request!==requestVersion)
+          return {stale:true};
+        if(mediaEnabled&&hashBytes&&data.drafts.length){
+          try{
+            const latest=await pendingClient.statuses({
+              origin,fetchImpl,token:mine.token,
+              expectedTenantId:mine.tenantId});
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            mediaStatuses=new Map(latest.items.map(x=>[
+              x.requestId+':'+x.item,x.status]));
+            mediaStatusReady=true;
+          }catch(error){
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            mediaStatuses=new Map();mediaStatusReady=false;
+            if(onError)onError('Private media status could not be checked. Image upload is temporarily disabled.');
+          }
+        }else{
+          mediaStatuses=new Map();mediaStatusReady=false;
+        }
+        if(enableCalendarProposals){
+          const [proposals,times]=await Promise.allSettled([
+            calendarClient.list({origin,fetchImpl,token:mine.token,
+                                 expectedTenantId:mine.tenantId}),
+            readClient.read({kind:'postingPreview',token:mine.token,
+              fetchImpl,origin,expectedTenantId:mine.tenantId})
+          ]);
+          if(version!==epoch||active!==mine||request!==requestVersion)
+            return {stale:true};
+          if(proposals.status==='fulfilled'&&times.status==='fulfilled'){
+            calendarData=proposals.value;calendarSlots=times.value;
+            calendarError=false;
+          }else{
+            calendarData=null;calendarSlots=null;calendarError=true;
+            if(onError)onError(
+              'Private draft calendar unavailable. Date changes are disabled.');
+          }
+        }
+        if(enableReviewFeedback){
+          try{
+            reviewNotes=await feedbackClient.list({
+              origin,fetchImpl,token:mine.token,
+              expectedTenantId:mine.tenantId});
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            reviewNotesError=false;
+          }catch(error){
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            reviewNotes=null;reviewNotesError=true;
+            if(onError)onError(
+              'Editorial feedback could not be loaded. Drafts remain unpublished.');
+          }
+        }
+        for(const [id,report] of riskReports){
+          const draft=data.drafts.find(x=>x.id===id);
+          if(!draft||draft.revision!==report.revision)
+            riskReports.delete(id);
+        }
+        model=data;render();
+        return {stale:false,tenantId:mine.tenantId,
+          heldCount:data.drafts.length};
+      }catch(error){
+        if(version!==epoch||active!==mine||request!==requestVersion)
+          return {stale:true};
+        clear();
+        if(onError)onError('Unable to load Content Studio');
+        return {stale:false,error:true};
+      }
+    }
+    async function mutate(op,args){
+      if(!active||busy||!canEdit)throw new TypeError('Content Studio not editable');
+      const mine=active,version=epoch;busy=true;
+      try{
+        const result=await op({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,...args});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const latest=await refresh();
+        if(latest.error||latest.stale)return latest;
+        return {stale:false,tenantId:result.tenantId,id:result.id,
+          status:result.status,
+          ...(result.revision===undefined?{}:{revision:result.revision}),
+          publishingEnabled:false};
+      }catch(error){
+        if(version!==epoch||active!==mine)return {stale:true};
+        // Reconcile an edit conflict or rejected response with current
+        // trusted draft data; never leave stale editor controls in place.
+        let refreshed=false;
+        try{
+          const latest=await refresh();
+          refreshed=Boolean(latest&&!latest.stale&&!latest.error);
+        }catch(readError){/* fail closed; no optimistic success */}
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(onError)onError(refreshed
+          ?'Content change was not confirmed. Current drafts were reloaded.'
+          :'Content change was not confirmed. Reload Content Studio before editing.');
+        render();
+        return {error:true,refreshed};
+      }finally{
+        if(version===epoch&&active===mine){
+          busy=false;render();
+        }
+      }
+    }
+    async function stageImage({requestId,item,file}){
+      if(!active||!canEdit||!mediaEnabled||busy||!hashBytes)
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const received=await pendingClient.stage({
+          origin,fetchImpl,token:mine.token,expectedTenantId:mine.tenantId,
+          requestId,item,file,hashBytes,
+          isCurrent:()=>version===epoch&&mine===active&&
+            canEdit&&mediaEnabled});
+        if(version!==epoch||mine!==active)return {stale:true};
+        const updated=await refresh();
+        if(updated.stale||updated.error)return updated;
+        if(onNotice)onNotice(
+          'Image received into private pending review. It is not verified, approved or ready to publish.');
+        return received;
+      }catch(error){
+        if(version===epoch&&mine===active&&onError)
+          onError('Image receipt unavailable. Check the selected file and private media configuration.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&mine===active){busy=false;render();}
+      }
+    }
+    async function discardImage({requestId,item}){
+      if(!active||!canEdit||!mediaEnabled||!mediaStatusReady||
+         mediaStatuses.get(requestId+':'+item)!=='pending_scan'||busy)
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const result=await pendingClient.discard({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,requestId,item});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const latest=await refresh();
+        if(latest.error||latest.stale)return latest;
+        if(onNotice)onNotice(
+          'Unverified pending image discarded. You may submit a replacement.');
+        return result;
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('Pending image could not be discarded; refresh to check its status.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine){busy=false;render();}
+      }
+    }
+    function createDraft(args){return mutate(writeClient.createDraft,args);}
+    function reviseDraft(args){return mutate(writeClient.reviseDraft,args);}
+    function changeHold(args){return mutate(writeClient.changeHold,args);}
+    return Object.freeze({activate,refresh,clear,inspectRisk,importCSV,
+      saveProposal,removeProposal,
+      createDraft,changeHold,
+      reviseDraft,
+      stageImage,discardImage,setCanEdit,setMediaEnabled});
+  }
+  return Object.freeze({create});
+});

@@ -1,0 +1,374 @@
+/* Authenticated AI workspace controller for BAM.
+ * Explicitly read-only; never persists bearer tokens in browser storage.
+ * Every async response is invalidated on account/business switch or logout.
+ */
+(function(root,factory){
+  'use strict';
+  if(typeof module==='object'&&module.exports)
+    module.exports=factory(require('./dashboard_http_client.js'),
+      require('./ai_draft_view.js'),require('./ai_settings_view.js'),
+      require('./ai_facts_view.js'),require('./ai_cost_view.js'),
+      require('./ai_facts_editor.js'),require('./local_product_draft_client.js'),
+      require('./ai_draft_edit_client.js'),
+      require('./ai_targeted_revision_client.js'),
+      require('./ai_memory_client.js'),
+      require('./ai_batch_preview_client.js'));
+  else root.BAMAIWorkspace=factory(root.BAMReadClient,
+    root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView,
+    root.BAMAICostView,root.BAMAIFactsEditor,root.BAMLocalProductDraftClient,
+    root.BAMAIDraftEditClient,root.BAMAITargetedRevisionClient,
+    root.BAMAIMemoryClient,root.BAMAIBatchPreviewClient);
+})(typeof globalThis!=='undefined'?globalThis:this,
+function(client,draftView,settingsView,factsView,costView,factsEditor,localClient,editClient,targetedClient,memoryClient,batchClient){
+  'use strict';
+  function create({document,draftsContainer,settingsContainer,
+                   factsContainer,costContainer,fetchImpl,origin,onError,
+                   copyText,openUrl,factsEditorContainer,
+                   canManageFacts=false,onSaveFacts,enableLocalTemplates=false,
+                   enableTargetedRevisions=false,secureRandom,
+                   enableBatchPreviews=false}){
+    if(!document||!draftsContainer||!settingsContainer||
+       typeof fetchImpl!=='function'||typeof origin!=='string')
+      throw new TypeError('Workspace dependencies required');
+    if(factsContainer!==undefined&&
+       (!factsContainer||typeof factsContainer.replaceChildren!=='function'))
+      throw new TypeError('Invalid facts mount');
+    if(costContainer!==undefined&&
+       (!costContainer||typeof costContainer.replaceChildren!=='function'))
+      throw new TypeError('Invalid AI cost mount');
+    if((copyText!==undefined||openUrl!==undefined)&&
+       (typeof copyText!=='function'||typeof openUrl!=='function'))
+      throw new TypeError('Manual image handoff requires both callbacks');
+    if(factsEditorContainer!==undefined&&
+       (!factsContainer||!factsEditorContainer||typeof factsEditorContainer.replaceChildren!=='function'||
+        typeof canManageFacts!=='boolean'||
+        (canManageFacts&&typeof onSaveFacts!=='function')))
+      throw new TypeError('Invalid fact editor dependencies');
+    if(onError!==undefined&&typeof onError!=='function')
+      throw new TypeError('Invalid error callback');
+    if(typeof enableLocalTemplates!=='boolean'||
+       (enableLocalTemplates&&!factsContainer))
+      throw new TypeError('Local templates require fact evidence');
+    if(typeof enableTargetedRevisions!=='boolean'||
+      (enableTargetedRevisions&&
+        (!secureRandom||typeof secureRandom.getRandomValues!=='function')))
+      throw new TypeError('AI revision feature needs an explicit secure opt-in');
+    let active=null,epoch=0,requestVersion=0,localPending=false,editPending=false;
+    if(typeof enableBatchPreviews!=='boolean')
+      throw new TypeError('Explicit AI advance preview switch required');
+    let regeneratePending=false,memoryPending=false,batchPending=false;
+    let mayManageFacts=canManageFacts,mayCreateDrafts=true;
+    function setCapabilities({manageFacts,createDrafts}){
+      if(typeof manageFacts!=='boolean'||typeof createDrafts!=='boolean')
+        throw new TypeError('Trusted capability flags required');
+      mayManageFacts=manageFacts;mayCreateDrafts=createDrafts;
+    }
+    function clear(){
+      epoch+=1;
+      requestVersion+=1;
+      active=null;localPending=false;editPending=false;
+      regeneratePending=false;memoryPending=false;batchPending=false;
+      mayManageFacts=false;mayCreateDrafts=false;
+      draftsContainer.replaceChildren();
+      settingsContainer.replaceChildren();
+      if(factsContainer)factsContainer.replaceChildren();
+      if(costContainer)costContainer.replaceChildren();
+      if(factsEditorContainer)factsEditorContainer.replaceChildren();
+    }
+    function activate({token,tenantId}){
+      if(typeof token!=='string'||!token.trim()||token.length>2048||
+         typeof tenantId!=='string'||!tenantId.trim()||tenantId.length>128)
+        throw new TypeError('Authenticated identity required');
+      clear();
+      active={token,tenantId};
+    }
+    async function manualRevise({draftId,target,revisedText,expectedRevision}){
+      if(!active||!mayCreateDrafts||editPending)
+        return {error:true};
+      const mine=active,version=epoch;
+      editPending=true;
+      try{
+        const result=await editClient.revise({
+          origin,fetchImpl,sessionToken:mine.token,expectedTenantId:mine.tenantId,
+          draftId,target,revisedText,expectedRevision});
+        if(version!==epoch||mine!==active)return {stale:true};
+        const updated=await refresh();
+        if(updated.stale||updated.error)return updated;
+        return {stale:false,revision:result.revision};
+      }catch(error){
+        if(version===epoch&&mine===active&&onError)
+          onError('Draft could not be saved. Refresh and confirm the current revision before editing again.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&mine===active)editPending=false;
+      }
+    }
+    async function saveMemory({memory,expectedMemory}){
+      if(!active||!mayCreateDrafts||memoryPending)return {error:true};
+      const mine=active,version=epoch;
+      memoryPending=true;
+      try{
+        const changed=await memoryClient.save({
+          origin,fetchImpl,sessionToken:mine.token,
+          expectedTenantId:mine.tenantId,memory,expectedMemory});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const latest=await refresh();
+        if(latest.stale||latest.error)return latest;
+        return {stale:false,tenantId:changed.tenantId};
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('AI writing preferences changed or could not be saved. Refresh before editing again.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine)memoryPending=false;
+      }
+    }
+    async function regenerate({draftId,target,instruction,topic,expectedRevision}){
+      if(!enableTargetedRevisions||!active||!mayCreateDrafts||regeneratePending)
+        return {error:true};
+      const mine=active,version=epoch;
+      regeneratePending=true;
+      try{
+        const requestKey=targetedClient.newRequestKey(secureRandom);
+        const result=await targetedClient.revise({
+          origin,fetchImpl,token:mine.token,expectedTenantId:mine.tenantId,
+          draftId,target,instruction,topic,expectedRevision,requestKey});
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(!result.revised){
+          if(onError)onError(
+            'AI request held: '+result.reason+'. Check the draft and quota before requesting another revision.');
+          return {held:true,reason:result.reason};
+        }
+        const updated=await refresh();
+        if(updated.stale||updated.error)return updated;
+        return {stale:false,revision:result.revision};
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('AI revision was not confirmed. Refresh the draft and check request status before trying again.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine)regeneratePending=false;
+      }
+    }
+    async function refresh(){
+      if(!active)throw new TypeError('Sign-in required');
+      const mine=active,version=epoch,request=++requestVersion;
+      try{
+        // Fetch both before rendering either to avoid partial stale UI.
+        const [drafts,settings,facts,costs]=await Promise.all([
+          client.read({kind:'aiDrafts',token:mine.token,fetchImpl,origin,
+                       expectedTenantId:mine.tenantId}),
+          client.read({kind:'aiSettings',token:mine.token,fetchImpl,origin,
+                       expectedTenantId:mine.tenantId}),
+          factsContainer?client.read({kind:'aiFacts',token:mine.token,
+            fetchImpl,origin,expectedTenantId:mine.tenantId}):Promise.resolve(null),
+          costContainer?client.read({kind:'aiCosts',token:mine.token,
+            fetchImpl,origin,expectedTenantId:mine.tenantId}):Promise.resolve(null)
+        ]);
+        if(version!==epoch||request!==requestVersion||active!==mine)return {stale:true};
+        // Renderers validate all data before replacing the current mount.
+        draftView.render({document,container:draftsContainer,
+          payload:{tenant_id:drafts.tenantId,publishing_enabled:false,
+            drafts:drafts.drafts.map(d=>({
+              tenant_id:drafts.tenantId,draft_id:d.id,platform:d.platform,
+              post_text:d.postText,image_prompt:d.imagePrompt,
+              needs_media:d.needsMedia,media_attached:d.mediaAttached,
+              status:d.status,revision:d.revision,publishing_enabled:false
+            }))},expectedTenantId:mine.tenantId,copyText,openUrl,
+          canEdit:mayCreateDrafts,onRevise:manualRevise,
+          canRegenerate:enableTargetedRevisions&&mayCreateDrafts,
+          onRegenerate:payload=>{
+            if(version!==epoch||active!==mine)return {stale:true};
+            return regenerate(payload);
+          }});
+        if(enableLocalTemplates&&mayCreateDrafts){
+          const action=document.createElement('section');
+          action.className='panel stack';
+          const heading=document.createElement('h3');
+          heading.textContent='No-API-cost business draft';
+          action.append(heading);
+          const subjectTypes=[];
+          if(facts&&facts.provenance==='owner_confirmed'){
+            for(const key of ['product','service']){
+              if(typeof facts.facts[key]==='string'&&facts.facts[key].trim())
+                subjectTypes.push(key);
+            }
+          }
+          const ready=facts&&facts.provenance==='owner_confirmed'&&
+            typeof facts.facts.business_name==='string'&&
+            facts.facts.business_name.trim()&&subjectTypes.length>0;
+          const detail=document.createElement('p');
+          detail.textContent=ready
+            ?'Create a simple factual product or service spotlight from owner-confirmed facts. Zero OpenAI requests; you must review it before use.'
+            :'First confirm business_name and either product or service under Settings.';
+          action.append(detail);
+          if(ready){
+            const templateChoice=document.createElement('select');
+            for(const key of subjectTypes){
+              const option=document.createElement('option');
+              option.value=key;
+              option.textContent=key==='product'?'Product spotlight':'Service spotlight';
+              templateChoice.append(option);
+            }
+            templateChoice.value=subjectTypes[0];
+            action.append(templateChoice);
+            const channel=document.createElement('select');
+            for(const platform of ['facebook','instagram','linkedin',
+                                   'pinterest','tiktok','youtube']){
+              const option=document.createElement('option');
+              option.value=platform;option.textContent=platform;
+              channel.append(option);
+            }
+            channel.value='facebook';
+            action.append(channel);
+            const imageChoice=document.createElement('input');
+            imageChoice.type='checkbox';imageChoice.checked=true;
+            const caption=document.createElement('label');
+            caption.textContent='Include generic ChatGPT image prompt';
+            caption.append(imageChoice);action.append(caption);
+            const button=document.createElement('button');
+            button.type='button';button.className='secondary';
+            button.textContent='Create cost-free marketing draft';
+            button.disabled=localPending;
+            button.addEventListener('click',async()=>{
+              if(localPending||active!==mine)return;
+              localPending=true;button.disabled=true;
+              try{
+                await localClient.create({origin,fetchImpl,
+                  sessionToken:mine.token,expectedTenantId:mine.tenantId,
+                  platform:channel.value,template:templateChoice.value,
+                  includeImagePrompt:imageChoice.checked});
+                if(version===epoch&&active===mine)await refresh();
+              }catch(error){
+                if(version===epoch&&active===mine&&onError)
+                  onError('Local draft unavailable. Confirm the business name and product and check content permissions.');
+              }finally{
+                if(version===epoch&&active===mine){
+                  localPending=false;button.disabled=false;
+                }
+              }
+            });
+            action.append(button);
+          }
+          draftsContainer.append(action);
+        }
+        if(enableBatchPreviews&&mayCreateDrafts){
+          const future=document.createElement('section');
+          future.className='panel stack';
+          const heading=document.createElement('h3');
+          heading.textContent='Plan future marketing topics';
+          future.append(heading);
+          const explanation=document.createElement('p');
+          explanation.textContent='Preview 1–14 distinct topics, one per line. This checks owner-confirmed business facts and planned individual OpenAI requests only. It creates no drafts, sends no OpenAI requests, reserves no quota and schedules nothing.';
+          future.append(explanation);
+          const topicsField=document.createElement('textarea');
+          topicsField.rows=5;topicsField.maxLength=4200;
+          topicsField.value='';
+          future.append(topicsField);
+          const platform=document.createElement('select');
+          for(const item of ['facebook','instagram','linkedin',
+                             'pinterest','tiktok','youtube']){
+            const option=document.createElement('option');
+            option.value=item;option.textContent=item;
+            platform.append(option);
+          }
+          platform.value='facebook';
+          future.append(platform);
+          const includeImage=document.createElement('input');
+          includeImage.type='checkbox';includeImage.checked=true;
+          const label=document.createElement('label');
+          label.textContent='Plan optional ChatGPT image prompts';
+          label.append(includeImage);future.append(label);
+          const details=document.createElement('section');
+          future.append(details);
+          const action=document.createElement('button');
+          action.type='button';action.className='secondary';
+          action.textContent='Preview advance topic plan';
+          action.disabled=batchPending;
+          action.addEventListener('click',async()=>{
+            if(batchPending||!mayCreateDrafts||active!==mine||
+               version!==epoch||request!==requestVersion)return;
+            batchPending=true;action.disabled=true;
+            details.replaceChildren();
+            try{
+              const topics=topicsField.value.split(/\r?\n/).map(x=>x.trim())
+                .filter(x=>x.length);
+              const proposed=await batchClient.preview({
+                origin,fetchImpl,token:mine.token,
+                expectedTenantId:mine.tenantId,topics,
+                platform:platform.value,
+                includeImagePrompt:includeImage.checked});
+              if(version!==epoch||active!==mine||request!==requestVersion)
+                return;
+              const label=document.createElement('p');
+              label.textContent=proposed.plannedIndividualRequests+
+                ' prospective per-post requests. Actual API requests: 0. Drafts created: 0. Cost not estimated. No quota reserved, no posts scheduled.';
+              details.append(label);
+              for(const item of proposed.items){
+                const row=document.createElement('p');
+                row.textContent=item.platform+' — '+item.topic+
+                  (item.imagePromptPlanned?' (optional image brief planned)':'');
+                details.append(row);
+              }
+            }catch(error){
+              if(version!==epoch||active!==mine||request!==requestVersion)
+                return;
+              if(onError)onError(
+                'Advance topic preview unavailable. Confirm business facts and use 1–14 distinct topics.');
+            }finally{
+              if(version===epoch&&active===mine&&request===requestVersion){
+                batchPending=false;action.disabled=false;
+              }
+            }
+          });
+          future.append(action);
+          draftsContainer.append(future);
+        }
+        settingsView.render({document,container:settingsContainer,
+          payload:{tenant_id:settings.tenantId,provider:'openai',
+            mode:settings.mode,own_key_configured:settings.ownKeyConfigured,
+            memory:settings.memory,key_exposed:false,
+            publishing_enabled:false},expectedTenantId:mine.tenantId,
+          canEdit:mayCreateDrafts,onSave:payload=>{
+            if(version!==epoch||active!==mine)return {stale:true};
+            return saveMemory(payload);
+          }});
+        if(factsContainer)factsView.render({document,container:factsContainer,
+          payload:{tenant_id:facts.tenantId,facts:facts.facts,
+            revision:facts.revision,provenance:facts.provenance,
+            confirmed_at:facts.confirmedAt,publishing_enabled:false},
+          expectedTenantId:mine.tenantId});
+        if(factsEditorContainer)factsEditor.render({document,
+          container:factsEditorContainer,
+          payload:{tenant_id:facts.tenantId,facts:facts.facts,
+            revision:facts.revision,provenance:facts.provenance,
+            confirmed_at:facts.confirmedAt,publishing_enabled:false},
+          expectedTenantId:mine.tenantId,
+          canManage:mayManageFacts,onSave:onSaveFacts});
+        if(costContainer)costView.render({document,container:costContainer,
+          payload:{tenant_id:costs.tenantId,events:costs.events,
+            input_tokens:costs.inputTokens,output_tokens:costs.outputTokens,
+            estimated_micro_usd:costs.estimatedMicroUsd,
+            pricing_basis:'operator_configured',
+            actual_billing_verified:false,publishing_enabled:false},
+          expectedTenantId:mine.tenantId});
+        return {stale:false,tenantId:mine.tenantId,
+                draftCount:drafts.drafts.length};
+      }catch(error){
+        if(version!==epoch||request!==requestVersion||active!==mine)
+          return {stale:true};
+        // Fail closed: never leave stale private content visible on errors.
+        draftsContainer.replaceChildren();
+        settingsContainer.replaceChildren();
+        if(factsContainer)factsContainer.replaceChildren();
+        if(costContainer)costContainer.replaceChildren();
+        if(factsEditorContainer)factsEditorContainer.replaceChildren();
+        // Do not expose private server error details to the user.
+        if(onError)onError('Unable to load AI workspace');
+        return {stale:false,error:true};
+      }
+    }
+    return Object.freeze({activate,refresh,clear,setCapabilities});
+  }
+  return Object.freeze({create});
+});
