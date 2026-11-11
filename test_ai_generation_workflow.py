@@ -68,6 +68,20 @@ class GenerationWorkflowTests(unittest.TestCase):
             self.generate()
         self.assertEqual(self.calls,[])
 
+    def test_fact_revision_changed_during_execution_rejects_draft(self):
+        self.facts.confirm(token=self.token,now=101,
+            facts={'business_name':'Example Shop'})
+        def changing_executor(**kwargs):
+            self.facts.confirm(token=self.token,now=102,
+                facts={'business_name':'Updated Shop'},expected_revision=1)
+            return {'post_text':'Old business name',
+                    'image_prompt':'Old business photo'}
+        self.workflow.executor=changing_executor
+        with self.assertRaises(ValueError):
+            self.generate()
+        self.assertEqual(self.drafts.list_mine(
+            token=self.token,now=103)['drafts'],[])
+
     def test_invalid_executor_response_is_not_staged(self):
         self.facts.confirm(token=self.token,now=101,
             facts={'business_name':'Example Shop'})
