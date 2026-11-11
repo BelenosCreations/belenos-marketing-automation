@@ -52,6 +52,7 @@
     // Filter state is purely local to the active business and never changes
     // held content, approval, analytics, or backend query permissions.
     let filterChannel='all',filterStatus='all',filterQuery='';
+    let filterPriority='all';
     let reviewNotes=null,reviewNotesError=false;
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
@@ -73,6 +74,7 @@
       riskReports=new Map();riskPending=new Set();plannedImport=null;
       calendarData=null;calendarSlots=null;calendarError=false;
       filterChannel='all';filterStatus='all';filterQuery='';
+      filterPriority='all';
       reviewNotes=null;reviewNotesError=false;
       container.replaceChildren();
     }
@@ -127,9 +129,11 @@
         if(active!==viewingSession||epoch!==viewingEpoch)return;
         if(!['all',...holdNames].includes(statusSelect.value)||
            !['all',...channelNames].includes(channelSelect.value)||
+           !['all','urgent','high','normal','low'].includes(priorityFilter.value)||
            typeof textSearch.value!=='string'||textSearch.value.length>120)
           throw new TypeError('Invalid held draft filter');
         filterStatus=statusSelect.value;filterChannel=channelSelect.value;
+        filterPriority=priorityFilter.value;
         filterQuery=textSearch.value.trim().toLowerCase();
         render();
       });
@@ -138,20 +142,77 @@
       clearFilters.type='button';clearFilters.className='secondary';
       clearFilters.addEventListener('click',()=>{
         if(active===viewingSession&&epoch===viewingEpoch){
-          filterStatus='all';filterChannel='all';filterQuery='';render();
+          filterStatus='all';filterChannel='all';filterQuery='';
+          filterPriority='all';render();
         }
       });
       filters.append(clearFilters);
+      const priorityFilter=make(document,'select','');
+      for(const [value,label] of [
+         ['all','Every priority'],['urgent','Urgent (+2 or higher)'],
+         ['high','High (+1 or higher)'],['normal','Normal (0)'],
+         ['low','Low (below 0)']
+      ]){
+        const option=make(document,'option',label);
+        option.value=value;priorityFilter.append(option);
+      }
+      priorityFilter.value=filterPriority;
+      priorityFilter.setAttribute&&priorityFilter.setAttribute(
+        'aria-label','Filter held drafts by priority');
+      filters.append(priorityFilter);
       details.append(filters);
       const total=model.drafts.length;
       const visible=model.drafts.filter(draft=>
         (filterStatus==='all'||draft.status===filterStatus)&&
         (filterChannel==='all'||draft.channel===filterChannel)&&
+        (filterPriority==='all'||
+          (filterPriority==='urgent'&&draft.priority>=2)||
+          (filterPriority==='high'&&draft.priority>=1)||
+          (filterPriority==='normal'&&draft.priority===0)||
+          (filterPriority==='low'&&draft.priority<0))&&
         (!filterQuery||(draft.text+' '+draft.suggestion)
           .toLowerCase().includes(filterQuery)));
       details.append(make(document,'p',
         'Showing '+visible.length+' of '+total+
         ' private held drafts. Filters only change this view.'));
+
+      const counts=Object.fromEntries(holdNames.map(status=>[
+        status,model.drafts.filter(draft=>draft.status===status).length]));
+      const highIncomplete=model.drafts.filter(draft=>
+        draft.status==='needs_content'&&draft.priority>=1).length;
+      const outstanding=model.drafts
+        .filter(draft=>draft.status==='needs_content')
+        .reduce((sum,draft)=>sum+draft.missing.length,0);
+      const pulse=make(document,'section','');
+      pulse.className='bam-content-queue-pulse';
+      pulse.append(make(document,'h3','Unpublished content queue'));
+      pulse.append(make(document,'p',
+        counts.needs_content+' need content · '+
+        counts.ready_for_review+' ready for human review · '+
+        (counts.postponed+counts.unavailable)+
+        ' postponed/unavailable. No items are approved or scheduled.'));
+      pulse.append(make(document,'p',
+        highIncomplete+' high-priority drafts still need content. '+
+        outstanding+' total outstanding checklist items are shown in the held queue.'));
+      const shortcuts=make(document,'div','');
+      shortcuts.className='toolbar';
+      for(const [label,status,priority] of [
+        ['View high-priority content needs','needs_content','high'],
+        ['View drafts for human review','ready_for_review','all'],
+        ['View all held drafts','all','all']
+      ]){
+        const button=make(document,'button',label);
+        button.type='button';button.className='secondary';
+        button.addEventListener('click',()=>{
+          if(active!==viewingSession||epoch!==viewingEpoch)return;
+          filterStatus=status;filterPriority=priority;
+          filterChannel='all';filterQuery='';
+          render();
+        });
+        shortcuts.append(button);
+      }
+      pulse.append(shortcuts);
+      details.append(pulse);
       wrap.append(details);
       if(!canEdit){
         wrap.append(make(document,'p','You can view held content but cannot create or edit it.'));
