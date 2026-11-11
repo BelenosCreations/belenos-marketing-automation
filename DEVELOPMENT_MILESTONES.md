@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Business-scoped social account status drilldown (2026-11-11)
+
+The signed-in dashboard Connections card now opens a deeper read-only view, using an authenticated `GET /api/v1/connections` route backed by `SocialConnectionDirectory`. The endpoint derives the tenant from a fresh session and separately checks analytics-read permission. Responses contain only provider platform, account alias, permitted read-only scope, effective connection state and timestamps; no vault references, tokens, publish scopes or user-selected business IDs. Strict browser contracts reject unexpected or forged metadata. Restricted roles are not permitted to fetch the details. The dashboard handles loading/error states without fabricating an account connection, and discards results after logout or business switch.
+
+**Verified:** [GitHub Actions run 43031957718](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43031957718), commit `badf0ac6`, **797 Python tests, 40 JavaScript UI scripts**, plus compilation. This is a mock-registry workflow, not real provider OAuth or publishing.
+
 ## Tenant-scoped, DST-safe posting-time preview (2026-11-11)
 
 A dedicated `posting_time_preview.py` service now derives a read-only seven-day list of possible Manual-mode local times from a business's saved posting preferences, omitting ambiguous fall-back hours and nonexistent spring-forward hours. It also reports an evidence hold for Smart mode rather than inventing peak-engagement suggestions. `GET /api/v1/posting-time-preview` resolves the tenant through the authenticated BAM session, disallows tenant query overrides, and cannot mutate content or schedule posts. The Settings UI displays and validates this response as informational only, including on business switches. No production queue, approval, social-token exchange or publishing permission is created.

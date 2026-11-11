@@ -4,6 +4,14 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Read-only connected-account drilldown
+
+The dashboard's Connections card optionally opens `GET /api/v1/connections`, which lists provider account status only when the current BAM session permits analytics-read access. The response is current-business scoped; account aliases, effective status and read-only scope are the only per-account fields beyond update/expiry timestamps. No OAuth tokens, vault references, permissions to publish, or mutable social configuration may be returned.
+
+`ui/connections_contract.js` validates a strict response, and `ui/live_dashboard_cards.js` loads detail only on explicit navigation. Restricted roles do not fetch the endpoint. A failed request displays unavailability, not an invented empty connection list; stale promises and old buttons are ignored after switching businesses or signing out. Provider status is for information only and never authorizes scheduling or publishing.
+
+**Verified:** [GitHub Actions run 43031957718](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43031957718): 797 Python tests, 40 JavaScript scripts.
+
 ## Local-only image receipt — pending and quarantined, not verified
 
 An opt-in `pending_media_dir` on `BAMOfflineGateway`, or `--pending-media-dir` on the loopback TLS runner, permits a separately guarded `PUT /api/v1/content/media-bytes` route after the existing authenticated metadata preflight. The request must carry a valid server-issued pending attachment ID and raw image bytes of the matching PNG/JPEG/WebP type and SHA-256 digest. A fresh session/membership check is enforced before reading and again before storing bytes. The local store is outside the source repository with private permissions and no download route.

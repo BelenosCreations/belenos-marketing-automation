@@ -1,3 +1,18 @@
+## Authenticated read-only Connections drilldown — 2026-11-11
+
+### Added
+- A new `GET /api/v1/connections` endpoint returns only the current business's authorized read-only provider connection status and safe account metadata. The account directory independently rechecks current membership and analytics-read permissions; request parameters cannot select a different business.
+- The authenticated large-card dashboard now opens a detailed Connections view, with statuses for connected, pending, reconnect required, expired, or revoked provider accounts. Connection details cannot expose OAuth tokens, vault keys, provider secrets, post publication rights or scheduling authorization.
+- Restricted roles receive a read-only access message rather than requesting sensitive connection details. Pending or failed reads fail closed; logout and business switches invalidate late responses and old card controls.
+- Strict browser data contracts and regression tests cover tenant isolation, stale sessions, malformed and duplicate account metadata, restricted business roles, and read-only labels.
+
+### Verification
+- **Passed:** [GitHub Actions run 43031957718](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43031957718), commit `badf0ac6`: **797 Python tests, 40 JavaScript UI test scripts**, and Python compilation.
+
+### Known limitations
+- This reports offline test-registry connections only. No social OAuth account linking, refresh-token exchange, real analytics import, provider publishing, or external credentials are enabled.
+- The browser state is informational and is not an authority to schedule or publish.
+
 ## Read-only posting-time preview — 2026-11-11
 
 ### Added
