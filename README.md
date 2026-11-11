@@ -674,3 +674,7 @@ The authenticated account adapter and read-only HTTPS WSGI now expose `GET /api/
 ## Idempotency enforcement hardening — 2026-11-10
 
 When an idempotency ledger is configured, sponsored generation now **requires** a request key rather than silently bypassing deduplication if a caller omits one. Additional tests cover missing keys and independent users sharing the same business. This safeguard reduces accidental duplicate quota usage; provider retries and ambiguous crashes still need explicit reconciliation.
+
+## Disabled-by-default AI draft generation HTTPS endpoint — 2026-11-10
+
+`bam_ai_write_wsgi.py` now provides a separate **disabled-by-default** `POST /api/v1/ai-generate` endpoint for a future authenticated deployment. It requires HTTPS, bearer authentication, a bounded JSON body, an idempotency key and a trusted server-side sponsorship-plan resolver. The client cannot choose business, model, quota, provider, API key, approval or publishing state. The billing month is derived from server UTC time, and the endpoint returns only a minimal held-draft reference. Tests cover disabled mode, request integrity, authentication, and exclusion of client-supplied scope/publishing claims. **This endpoint is not mounted into a deployed server, and enabling it requires verified secrets, cost controls, provider integration and operational approval.**
