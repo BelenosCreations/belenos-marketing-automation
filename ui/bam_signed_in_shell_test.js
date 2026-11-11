@@ -268,7 +268,9 @@ async function main(){
   assert.equal(e['active-business'].textContent,'Business: other');
   assert.equal(holds.other.length,0);
   assert.equal(e['bam-ai-facts-editor'].children[0].children.length,3);
-  assert.equal(e['bam-posting-preferences'].children[0].children.length,4);
+  assert.equal(e['bam-posting-preferences'].children[0].children.length,5);
+  assert.match(e['bam-posting-preferences'].children[0].children.at(-1)
+    .children[1].textContent,/no optimal times/);
   assert.equal(e['bam-content-studio'].children[0].children[2].tag,'p');
   assert.equal(aiByTenant.other.length,0);
   assert.equal(e['bam-ai-drafts'].children[0].children.length,3);
