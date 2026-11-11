@@ -64,3 +64,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 5. Wire authenticated GUI to live data, Settings-based AI mode and quota visibility, Content Studio and manual/smart scheduling.
 6. Add subscriptions and Google Play distribution only after pricing and billing policies are explicitly approved.
 7. Complete security review, integration tests, real browser tests and staged deployment before enabling publishing.
+
+### Structured Responses executor boundary
+
+`openai_responses_executor.py` constructs a strict OpenAI Responses API envelope and parses only completed assistant text output. It requires a trusted injected transport and does not resolve keys or perform networking. Configure the production transport with OpenAI credentials stored server-side, TLS verification, timeouts, explicit retries, safe request IDs and actual usage/cost accounting before enabling it. The adapter is not a general-purpose agent and cannot invoke tools or publish.
