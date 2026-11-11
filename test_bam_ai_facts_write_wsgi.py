@@ -70,5 +70,12 @@ class AIFactsWriteWSGITests(unittest.TestCase):
         (status,_),_=self.call(**{'wsgi.url_scheme':'http'})
         self.assertEqual(status,'403 Forbidden')
 
+    def test_duplicate_json_fields_rejected(self):
+        raw=b'{"facts":{"name":"Shop","name":"Override"},"expected_revision":0}'
+        (status,_),_=self.call(**{
+            'CONTENT_LENGTH':str(len(raw)),
+            'wsgi.input':io.BytesIO(raw)})
+        self.assertEqual(status,'400 Bad Request')
+
 if __name__=='__main__':
     unittest.main()
