@@ -108,7 +108,7 @@
     }
     function activeTenant(){return active?active.tenantId:null;}
     return Object.freeze({passwordSignIn,beginGoogle,googleSignIn,
-      signOut,refresh,activeTenant,clear});
+      signOut,refresh,activeTenant});
   }
   return Object.freeze({create});
 });
