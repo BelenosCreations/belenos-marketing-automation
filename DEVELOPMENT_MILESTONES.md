@@ -3,6 +3,12 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Alpha milestone — private team access activity (November 11, 2026)
+
+Owners can now inspect a **read-only, latest-30 access-change history** in Settings → Team. Events are persisted with the trusted actor/member identifiers, before-and-after roles, action, revision and server time. The backend derives the current business only from the owner session and applies tenant-scoped SQL filters *before* reading recent events. The HTTPS adapter and JavaScript contract verify exact response fields, descending event IDs, owner-only permissions and `publishing_enabled:false`. No invitation token, password, private media or email is included in activity history; the UI may label a member with their already-authorized roster email.
+
+**Verified source:** `d6a79329d2ed2ed5f7d37114aad557be60d464ab`, [Actions 43107012958](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43107012958) — 924 Python tests, browser regression suite and Python compilation **passed**. Offline Alpha only: no external account or publishing side effects. Release synchronization to `main` will use a reviewed CI-gated PR.
+
 ## Offline Alpha: existing-member team management — 2026-11-11
 
 Current business owners can privately list existing team members in Settings and change an active non-owner's role or deactivate that membership with **two-step confirmation**. The server derives the business from the current owner session; it does not accept a client tenant claim. Changes compare the member's current revision, atomically invalidate affected business sessions and append an actor/time audit event. An employee's unrelated business memberships/sessions remain untouched. An owner cannot use this feature to change themselves, modify another owner, or grant owner privileges. Reactivation and new-member invitations remain separate, not connected through this interface.

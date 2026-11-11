@@ -69,6 +69,26 @@ class TeamMembershipAdmin:
                 'status':'private_team_preview','members':members,
                 'publishing_enabled':False}
 
+    def activity_current(self, *, token, now=None):
+        """Read-only last 30 member-change metadata events for current owner.
+
+        No email, invite token, credential, or external publishing action.
+        SQL tenant filter applies before pagination; history is never global.
+        """
+        timestamp=int(time.time()) if now is None else now
+        owner=self._owner(token,timestamp)
+        rows=self.db.execute("""SELECT id,member_id,actor_id,
+                previous_role,resulting_role,action,changed_at,revision_after
+            FROM bam_team_member_audit WHERE tenant_id=?
+            ORDER BY id DESC LIMIT 30""",(owner.tenant_id,)).fetchall()
+        events=[{
+            'event_id':row[0],'member_id':row[1],'actor_id':row[2],
+            'previous_role':row[3],'resulting_role':row[4],
+            'action':row[5],'changed_at':row[6],'revision_after':row[7]}
+            for row in rows]
+        return {'tenant_id':owner.tenant_id,'status':'private_team_activity',
+                'events':events,'publishing_enabled':False}
+
     def change_current(self, *, token, member_id, action,
                        expected_revision, role=None, now=None):
         timestamp=int(time.time()) if now is None else now

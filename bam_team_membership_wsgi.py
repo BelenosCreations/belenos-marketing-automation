@@ -12,7 +12,7 @@ _TOKEN=re.compile(r'[A-Za-z0-9_-]{32,2048}\Z')
 _MEMBER=re.compile(r'[A-Za-z0-9_-]{1,128}\Z')
 _ROLES=frozenset(('owner','marketing_manager','content_creator','employee','viewer'))
 _ACTIONS=frozenset(('change_role','deactivate'))
-_PATHS=frozenset(('/api/v1/team/members','/api/v1/team/membership'))
+_PATHS=frozenset(('/api/v1/team/members','/api/v1/team/membership','/api/v1/team/activity'))
 
 def _unique(pairs):
     result={}
@@ -118,6 +118,43 @@ class BAMTeamMembershipWSGI:
         return value
 
     @staticmethod
+    def _safe_activity(value):
+        if (type(value) is not dict or set(value)!={
+              'tenant_id','status','events','publishing_enabled'} or
+            type(value['tenant_id']) is not str or
+            not value['tenant_id'].strip() or len(value['tenant_id'])>128 or
+            value['status']!='private_team_activity' or
+            type(value['events']) is not list or
+            len(value['events'])>30 or
+            value['publishing_enabled'] is not False):
+            raise RuntimeError('Invalid private team activity')
+        last_id=None
+        for event in value['events']:
+            if (type(event) is not dict or set(event)!={
+                'event_id','member_id','actor_id','previous_role',
+                'resulting_role','action','changed_at','revision_after'} or
+                type(event['event_id']) is not int or event['event_id']<1 or
+                (last_id is not None and event['event_id']>=last_id) or
+                type(event['member_id']) is not str or
+                _MEMBER.fullmatch(event['member_id']) is None or
+                type(event['actor_id']) is not str or
+                _MEMBER.fullmatch(event['actor_id']) is None or
+                event['previous_role'] not in _ROLES or
+                event['resulting_role'] not in _ROLES or
+                event['action'] not in _ACTIONS or
+                type(event['changed_at']) is not int or
+                event['changed_at']<0 or
+                type(event['revision_after']) is not int or
+                event['revision_after']<2 or
+                (event['action']=='deactivate' and
+                 event['previous_role']!=event['resulting_role']) or
+                (event['action']=='change_role' and
+                 event['previous_role']==event['resulting_role'])):
+                raise RuntimeError('Invalid team audit event')
+            last_id=event['event_id']
+        return value
+
+    @staticmethod
     def _safe_mutation(value,requested):
         if (type(value) is not dict or set(value)!={
                 'tenant_id','member_id','status','revision','sessions_revoked',
@@ -145,7 +182,8 @@ class BAMTeamMembershipWSGI:
         if path not in _PATHS:
             return reply('404 Not Found',{'error':'Not found'})
         method=environ.get('REQUEST_METHOD')
-        if ((path=='/api/v1/team/members' and method!='GET') or
+        if ((path in ('/api/v1/team/members','/api/v1/team/activity')
+             and method!='GET') or
                 (path=='/api/v1/team/membership' and method!='POST')):
             return reply('405 Method Not Allowed',{'error':'Method not allowed'})
         if not self.enabled or self.service is None:
@@ -162,6 +200,10 @@ class BAMTeamMembershipWSGI:
             if now<0:
                 raise RuntimeError('Invalid trusted clock')
             if method=='GET':
+                if path=='/api/v1/team/activity':
+                    result=self.service.activity_current(
+                        token=header[7:],now=now)
+                    return reply('200 OK',self._safe_activity(result))
                 result=self.service.list_current(token=header[7:],now=now)
                 return reply('200 OK',self._safe_roster(result))
             data=self._body(environ)

@@ -23,9 +23,11 @@
      throw new TypeError('Explicit member management preview switch required');
    let active=null,epoch=0,requestVersion=0,owner=false,summary=null,failed=false;
    let memberData=null,memberError=false,memberPending=false,confirming=null;
+   let auditData=null,auditError=false;
    function clear(){
      epoch++;requestVersion++;active=null;owner=false;summary=null;failed=false;
      memberData=null;memberError=false;memberPending=false;confirming=null;
+     auditData=null;auditError=false;
      container.replaceChildren();
    }
    function activate({token,tenantId}){
@@ -40,6 +42,7 @@
      if(!owner){
        requestVersion++;summary=null;failed=false;
        memberData=null;memberError=false;memberPending=false;confirming=null;
+       auditData=null;auditError=false;
      }
      render();
    }
@@ -76,6 +79,29 @@
            section.append(element(document,'p',
              'Only the business owner can manage existing memberships. Changes sign affected members out of this business; new invitations are not connected.'));
            const mine=active,version=epoch,roster=memberData;
+           section.append(element(document,'h3','Recent member changes'));
+           if(auditError){
+             section.append(element(document,'p',
+               'Private team activity could not be checked. Refresh to try again.'));
+           }else if(auditData&&auditData.events.length){
+             for(const event of auditData.events){
+               const who=roster.members.find(x=>x.id===event.memberId);
+               const display=who?(who.email||'Member '+who.id.slice(0,8))
+                 :'Member '+event.memberId.slice(0,8);
+               const description=event.action==='deactivate'
+                 ?'Access removed'
+                 :'Role changed from '+event.fromRole.replace(/_/g,' ')+
+                  ' to '+event.toRole.replace(/_/g,' ');
+               const at=new Date(event.changedAt*1000);
+               const when=Number.isNaN(at.getTime())
+                 ?'Time unavailable':at.toLocaleString();
+               section.append(element(document,'p',
+                 display+': '+description+' · '+when));
+             }
+           }else if(auditData){
+             section.append(element(document,'p',
+               'No recorded team access changes.'));
+           }
            for(const record of roster.members){
              const article=element(document,'article','');
              article.className='content-stack';
@@ -174,10 +200,24 @@
            if(epoch!==version||active!==mine||request!==requestVersion||!owner)
              return {stale:true};
            memberData=roster;memberError=false;
+           try{
+             const activity=await membersClient.activity({
+               token:mine.token,origin,fetchImpl,
+               expectedTenantId:mine.tenantId});
+             if(epoch!==version||active!==mine||request!==requestVersion||!owner)
+               return {stale:true};
+             auditData=activity;auditError=false;
+           }catch(error){
+             if(epoch!==version||active!==mine||request!==requestVersion||!owner)
+               return {stale:true};
+             auditData=null;auditError=true;
+             if(onError)onError('Private team access history unavailable');
+           }
          }catch(error){
            if(epoch!==version||active!==mine||request!==requestVersion||!owner)
              return {stale:true};
            memberData=null;memberError=true;confirming=null;
+           auditData=null;auditError=false;
            if(onError)onError('Private team member details unavailable');
          }
        }
@@ -188,7 +228,7 @@
        if(epoch!==version||active!==mine||request!==requestVersion||!owner)
          return {stale:true};
        summary=null;failed=true;memberData=null;memberError=false;
-       confirming=null;render();
+       confirming=null;auditData=null;auditError=false;render();
        if(onError)onError('Private team access counts unavailable');
        return {error:true};
      }

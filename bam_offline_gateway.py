@@ -221,7 +221,8 @@ class BAMOfflineGateway:
             return self.assets_wsgi(environ, start_response)
         if path in _AUTH_PATHS:
             return self.auth_wsgi(environ, start_response)
-        if path in ('/api/v1/team/members','/api/v1/team/membership'):
+        if path in ('/api/v1/team/members','/api/v1/team/membership',
+                    '/api/v1/team/activity'):
             return self.team_wsgi(environ,start_response)
         if path == '/api/v1/posting-preferences' and environ.get('REQUEST_METHOD') == 'PUT':
             return self.preference_write_wsgi(environ, start_response)
