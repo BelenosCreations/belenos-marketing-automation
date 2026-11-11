@@ -20,6 +20,8 @@
        !nonempty(payload.tenant_id,128)||!Array.isArray(payload.businesses)||
        !Array.isArray(payload.cards)||!Array.isArray(payload.drafts)||
        payload.publishing_enabled!==false||
+       (payload.pending_media_available!==undefined&&
+        typeof payload.pending_media_available!=='boolean')||
        (payload.role!==undefined&&!roles.has(payload.role))){
       throw new TypeError('Invalid authorized dashboard payload');
     }
@@ -72,6 +74,7 @@
     return {
       tenantId:payload.tenant_id,businesses,
       role:payload.role===undefined?'viewer':payload.role,
+      pendingMediaAvailable:payload.pending_media_available===true,
       cards:normalizedCards,drafts,
       analyticsAvailable:false,scheduleAvailable:false,
       publishingEnabled:false

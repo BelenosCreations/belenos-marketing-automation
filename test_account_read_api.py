@@ -81,6 +81,7 @@ class AccountReadAPITests(unittest.TestCase):
         self.assertIsNone(view['analytics']['series'])
         self.assertIsNone(view['schedule']['posts'])
         self.assertFalse(view['publishing_enabled'])
+        self.assertFalse(view['pending_media_available'])
         self.assertNotIn('vault/',str(view))
         with self.assertRaises(PermissionError):
             self.api.get_dashboard_view(session_token='wrong',server_now=101)

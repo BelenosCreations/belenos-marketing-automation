@@ -14,13 +14,17 @@ from ai_draft_request import AIDraftRequestBuilder
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
                  ai_content_drafts=None,ai_policy=None,
-                 ai_business_facts=None,ai_cost_ledger=None):
+                 ai_business_facts=None,ai_cost_ledger=None,
+                 pending_media_available=False):
         self.dashboard=dashboard
         self.posting_preferences=posting_preferences
         self.ai_content_drafts=ai_content_drafts
         self.ai_policy=ai_policy
         self.ai_business_facts=ai_business_facts
         self.ai_cost_ledger=ai_cost_ledger
+        if type(pending_media_available) is not bool:
+            raise ValueError('Trusted pending media capability required')
+        self.pending_media_available=pending_media_available
 
     @staticmethod
     def _token(value):
@@ -44,7 +48,9 @@ class AccountReadAPI:
     def get_dashboard_view(self, *, session_token, server_now):
         """Minimal presentation payload from authenticated tenant data."""
         overview=self.get_overview(session_token=session_token,server_now=server_now)
-        return build_dashboard_view(overview)
+        data=build_dashboard_view(overview)
+        data['pending_media_available']=self.pending_media_available
+        return data
 
     def activate_business(self, *, session_token, target_tenant_id, server_now):
         """Change business only after verifying target membership.

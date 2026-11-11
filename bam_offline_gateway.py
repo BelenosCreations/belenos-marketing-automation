@@ -108,7 +108,8 @@ class BAMOfflineGateway:
             self.dashboard, posting_preferences=self.preferences,
             ai_content_drafts=self.ai_drafts, ai_policy=self.ai_policy,
             ai_business_facts=self.ai_business_facts,
-            ai_cost_ledger=self.ai_costs)
+            ai_cost_ledger=self.ai_costs,
+            pending_media_available=enabled and pending_media_dir is not None)
         self.login_api = AuthLoginAPI(
             auth=self.identities, challenges=GoogleLoginChallenges(db),
             google_verifier=(google_verifier if google_verifier is not None

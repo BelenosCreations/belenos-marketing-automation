@@ -85,7 +85,10 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
         .includes(overview.role);
       ai.setCapabilities({manageFacts:overview.role==='owner',
         createDrafts:canEdit});
-      if(held)held.setCanEdit(canEdit);
+      if(held){
+        held.setCanEdit(canEdit);
+        held.setMediaEnabled(canEdit&&overview.pendingMediaAvailable);
+      }
       if(prefs)prefs.setCanManage(overview.role==='owner');
       const details=await ai.refresh();
       if(version!==epoch)return {stale:true};

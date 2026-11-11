@@ -106,6 +106,7 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         meta,dashboard=self.call('/api/v1/dashboard',token=token)
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(dashboard['tenant_id'],'shop')
+        self.assertFalse(dashboard['pending_media_available'])
         self.assertEqual(dashboard['cards'][2]['value'],1)
         self.assertEqual(dashboard['cards'][0]['value'],None)
         self.assertEqual(dashboard['schedule']['availability'],'not_connected')
@@ -506,6 +507,8 @@ class BAMOfflineGatewayTests(unittest.TestCase):
             self.app=BAMOfflineGateway(self.db,enabled=True,
                 clock=lambda:101,pending_media_dir=str(Path(folder)/'pending'))
             token=self.login()
+            _,capabilities=self.call('/api/v1/dashboard',token=token)
+            self.assertTrue(capabilities['pending_media_available'])
             meta,created=self.call('/api/v1/content/drafts',
                 method='POST',token=token,body={
                     'channel':'facebook','draft_text':'Test artwork',
