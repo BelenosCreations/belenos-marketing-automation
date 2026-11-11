@@ -52,7 +52,7 @@ function(dashboardModule,aiModule){
       }
       if(details.stale)return {stale:true};
       return {stale:false,tenantId:overview.tenantId,
-        draftCount:details.draftCount};
+        draftCount:details.draftCount,businesses:overview.businesses};
     }
     return Object.freeze({activate,refresh,clear,
       showDashboardSection:dashboard.show});
