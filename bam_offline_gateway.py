@@ -21,6 +21,7 @@ from bam_business_switch_wsgi import BAMBusinessSwitchWSGI
 from bam_content_write_wsgi import BAMContentWriteWSGI
 from bam_posting_preferences_wsgi import BAMPostingPreferencesWSGI
 from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
+from bam_ai_facts_write_wsgi import BAMAIFactsWriteWSGI
 from bam_read_wsgi import BAMReadWSGI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
@@ -113,6 +114,8 @@ class BAMOfflineGateway:
             self.read_api, enabled=enabled, clock=self.clock)
         self.upload_preflight_wsgi = BAMUploadPreflightWSGI(
             self.read_api, enabled=enabled, clock=self.clock)
+        self.facts_write_wsgi = BAMAIFactsWriteWSGI(
+            registry=self.ai_business_facts,enabled=enabled,clock=self.clock)
 
     @staticmethod
     def _unavailable(start_response, status, message):
@@ -134,6 +137,8 @@ class BAMOfflineGateway:
             return self.auth_wsgi(environ, start_response)
         if path == '/api/v1/posting-preferences' and environ.get('REQUEST_METHOD') == 'PUT':
             return self.preference_write_wsgi(environ, start_response)
+        if path == '/api/v1/ai-business-facts' and environ.get('REQUEST_METHOD') == 'PUT':
+            return self.facts_write_wsgi(environ, start_response)
         if path in _READ_PATHS:
             return self.read_wsgi(environ, start_response)
         if path == '/api/v1/businesses/activate':

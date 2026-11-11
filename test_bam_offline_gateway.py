@@ -363,6 +363,35 @@ class BAMOfflineGatewayTests(unittest.TestCase):
                   'byte_count':200,'role':'owner'})
         self.assertEqual(bad['status'],'400 Bad Request')
 
+    def test_owner_confirmed_fact_write_is_business_scoped(self):
+        shop=self.login('shop')
+        meta,saved=self.call('/api/v1/ai-business-facts',
+            method='PUT',token=shop,
+            body={'facts':{'business_name':'Example Shop',
+                           'product':'Custom tumblers'},
+                  'expected_revision':0})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(saved['revision'],1)
+        self.assertEqual(saved['provenance'],'owner_confirmed')
+        self.assertFalse(saved['publishing_enabled'])
+        _,shop_facts=self.call('/api/v1/ai-business-facts',token=shop)
+        self.assertEqual(shop_facts['facts']['product'],'Custom tumblers')
+        other=self.login('other')
+        _,other_facts=self.call('/api/v1/ai-business-facts',token=other)
+        self.assertEqual(other_facts['facts'],{})
+        denied,_=self.call('/api/v1/ai-business-facts',
+            method='PUT',token=other,
+            body={'facts':{'business_name':'Forged'},
+                  'expected_revision':0})
+        self.assertEqual(denied['status'],'403 Forbidden')
+        conflict,_=self.call('/api/v1/ai-business-facts',
+            method='PUT',token=shop,
+            body={'facts':{'business_name':'Stale'},
+                  'expected_revision':0})
+        self.assertEqual(conflict['status'],'409 Conflict')
+        _,again=self.call('/api/v1/ai-business-facts',token=shop)
+        self.assertEqual(again['facts']['product'],'Custom tumblers')
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')
