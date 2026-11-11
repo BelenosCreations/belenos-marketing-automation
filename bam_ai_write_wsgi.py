@@ -9,6 +9,14 @@ import json
 import re
 import time
 
+def _unique_object(pairs):
+    result={}
+    for key,value in pairs:
+        if key in result:
+            raise ValueError('Duplicate JSON field')
+        result[key]=value
+    return result
+
 class BAMAIWriteWSGI:
     def __init__(self, *, workflow,plan_resolver,enabled=False,clock=None):
         if not callable(plan_resolver) or type(enabled) is not bool:
@@ -66,7 +74,7 @@ class BAMAIWriteWSGI:
             body=stream.read(int(length))
             if len(body)!=int(length):
                 raise ValueError('Incomplete request')
-            value=json.loads(body.decode('utf-8'))
+            value=json.loads(body.decode('utf-8'),object_pairs_hook=_unique_object)
             if (type(value) is not dict or set(value)!={
                 'topic','platform','needs_media','include_image_prompt'} or
                 type(value['topic']) is not str or
