@@ -102,6 +102,25 @@ class AIPolicyTests(unittest.TestCase):
         self.assertEqual(self.store.get_memory(
             token=self.owner,now=101)['memory'],{})
 
+    def test_legacy_internal_memory_replace_uses_same_secret_guards(self):
+        for bad in (
+            {'api_key':'hidden'},
+            {'access_token':'hidden'},
+            {'password':'hidden'},
+            {'style':'sk-ABCDEFghijklmnopqrstuvwxyz12345'},
+            {'tone':' Whitespace '},
+            {' ':'invalid'},
+            {str(i):'safe' for i in range(41)},
+        ):
+            with self.subTest(bad=bad),self.assertRaises(ValueError):
+                self.store.replace_memory(
+                    token=self.owner,now=101,memory=bad)
+        self.assertEqual(
+            self.store.get_memory(token=self.owner,now=102)['memory'],{})
+        accepted=self.store.replace_memory(
+            token=self.owner,now=103,memory={'tone':'Brief'})
+        self.assertEqual(accepted['memory'],{'tone':'Brief'})
+
     def test_raw_key_rejected(self):
         with self.assertRaises(ValueError):
             self.store.set_mode(token=self.owner,now=101,

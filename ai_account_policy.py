@@ -155,14 +155,13 @@ class AIPolicyStore:
                 'publishing_enabled':False}
 
     def replace_memory(self, *, token, now, memory):
+        """Trusted internal replacement; UI uses compare-and-swap instead.
+
+        Same secret-resistant bounds as the checked external write route.
+        Do not expose this unconditional replacement through browser APIs.
+        """
         principal=self._editor(token,now)
-        if type(memory) is not dict or not all(
-            type(k) is str and len(k)<=80 and type(v) is str and len(v)<=2000
-            for k,v in memory.items()):
-            raise ValueError('Memory must be a small string dictionary')
-        encoded=json.dumps(memory,ensure_ascii=False,sort_keys=True)
-        if len(encoded.encode('utf-8'))>MEMORY_MAX_BYTES:
-            raise ValueError('Memory exceeds size limit')
+        encoded=self._encode_memory(memory)
         with self.db:
             self.db.execute("""INSERT INTO bam_ai_memories
                 (tenant_id,subject_id,memory_json,updated_at)
