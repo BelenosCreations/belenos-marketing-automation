@@ -54,3 +54,7 @@ Do not expose `bam_read_wsgi.py` directly to the public internet without a trust
 ### Authenticated AI workspace coordinator
 
 `ui/ai_workspace.js` accepts an authenticated in-memory token and active tenant from the future sign-in/business-switch shell, then fetches AI drafts and AI settings via HTTPS. It discards late results after a tenant switch or sign-out, and clears private views on current-session errors. Do not wire it to sample/demo credentials or browser storage. The corresponding `ui/ai_workspace_test.js` runs in Node CI. This is not a complete deployed authentication or AI generation workflow.
+
+### AI fact provenance read
+
+`GET /api/v1/ai-business-facts` returns the active business's owner-confirmed fact snapshot and revision. Browser consumers must use `ui/ai_facts_contract.js` and reject tenant mismatches. Owner confirmation is provenance, not independent verification. This route cannot edit facts, approve drafts or publish.
