@@ -4,6 +4,9 @@ on:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  group: bam-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -17,29 +20,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run dashboard interaction smoke tests
+      - name: Run all JavaScript UI regression tests
+        shell: bash
         run: |
-          node ui/dashboard_smoke_test.js
-          node ui/dashboard_data_contract_test.js
-          node ui/dashboard_live_view_test.js
-          node ui/dashboard_http_client_test.js
-          node ui/content_studio_contract_test.js
-          node ui/content_studio_view_test.js
-          node ui/posting_preferences_contract_test.js
-          node ui/ai_draft_contract_test.js
-          node ui/ai_draft_view_test.js
-          node ui/ai_settings_contract_test.js
-          node ui/ai_settings_view_test.js
-          node ui/ai_workspace_test.js
-          node ui/ai_facts_contract_test.js
-          node ui/ai_facts_view_test.js
-          node ui/ai_facts_editor_test.js
-          node ui/ai_workspace_facts_test.js
-          node ui/ai_cost_view_test.js
-          node ui/ai_write_client_test.js
-          node ui/ai_manual_image_handoff_test.js
-          node ui/ai_draft_manual_handoff_test.js
-          node ui/live_dashboard_cards_test.js
-          node ui/authenticated_workspace_controller_test.js
+          set -euo pipefail
+          for test_file in ui/*_test.js; do
+            node "$test_file"
+          done
       - name: Run offline tests
         run: python -m unittest discover -s . -p 'test_*.py' -v
