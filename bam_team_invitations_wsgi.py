@@ -97,21 +97,19 @@ class BAMTeamInvitationsWSGI:
             or type(obj['events']) is not list or len(obj['events'])>30
             or obj['publishing_enabled'] is not False):
             raise RuntimeError('Unsafe invitation activity')
-        previous=None
+        seen=set()
         for event in obj['events']:
             if (type(event) is not dict or set(event)!={
-                    'event_id','invitation_id','action','occurred_at'}
-                or type(event['event_id']) is not int
-                or event['event_id']<1
-                or (previous is not None and event['event_id']>=previous)
+                    'invitation_id','action','occurred_at'}
                 or type(event['invitation_id']) is not str
                 or IDENT.fullmatch(event['invitation_id']) is None
                 or event['action'] not in
                    ('delivered','delivery_failed','cancelled','accepted')
                 or type(event['occurred_at']) is not int
-                or event['occurred_at']<0):
+                or event['occurred_at']<0
+                or (event['invitation_id'],event['action']) in seen):
                 raise RuntimeError('Unsafe invitation history item')
-            previous=event['event_id']
+            seen.add((event['invitation_id'],event['action']))
         return obj
 
     @staticmethod

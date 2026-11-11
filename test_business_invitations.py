@@ -52,6 +52,9 @@ class InvitationTests(unittest.TestCase):
         self.assertNotIn(link,str(after))
         self.assertNotIn('guest@example.com',str(after))
         self.assertNotIn('token_hash',str(after))
+        # Globally incrementing SQLite event IDs must not leak another
+        # business's event volume through this tenant-scoped API.
+        self.assertNotIn('event_id',str(after))
         # Reopen offline storage without generating fictional history.
         another=BusinessInvitations(db=self.db,sessions=self.sessions,
             directory=self.directory,auth=self.auth,

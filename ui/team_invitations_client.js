@@ -93,20 +93,18 @@
        body.publishing_enabled!==false||
        !Array.isArray(body.events)||body.events.length>30)
       throw new TypeError('Untrusted invitation history');
-    let previous=null;
+    const seen=new Set();
     const events=body.events.map(row=>{
-      if(!exact(row,['event_id','invitation_id','action','occurred_at'])||
-         !Number.isSafeInteger(row.event_id)||row.event_id<1||
-         (previous!==null&&row.event_id>=previous)||
+      if(!exact(row,['invitation_id','action','occurred_at'])||
          !id.test(row.invitation_id)||
          !['delivered','delivery_failed','cancelled','accepted']
            .includes(row.action)||
-         !Number.isSafeInteger(row.occurred_at)||row.occurred_at<0)
+         !Number.isSafeInteger(row.occurred_at)||row.occurred_at<0||
+         seen.has(row.invitation_id+':'+row.action))
         throw new TypeError('Invalid invitation activity');
-      previous=row.event_id;
-      return Object.freeze({id:row.event_id,
-        invitationId:row.invitation_id,action:row.action,
-        occurredAt:row.occurred_at});
+      seen.add(row.invitation_id+':'+row.action);
+      return Object.freeze({invitationId:row.invitation_id,
+        action:row.action,occurredAt:row.occurred_at});
     });
     return Object.freeze({tenantId:body.tenant_id,
       events:Object.freeze(events),publishingEnabled:false});

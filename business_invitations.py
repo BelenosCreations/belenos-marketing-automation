@@ -107,14 +107,14 @@ class BusinessInvitations:
         principal=self._owner(owner_session,timestamp)
         if type(limit) is not int or not 1<=limit<=30:
             raise ValueError('Bounded invitation activity requested')
-        rows=self.db.execute("""SELECT event_id,invitation_id,action,occurred_at
+        rows=self.db.execute("""SELECT invitation_id,action,occurred_at
             FROM bam_business_invitation_events
             WHERE tenant_id=? ORDER BY event_id DESC LIMIT ?""",
             (principal.tenant_id,limit)).fetchall()
         return {'tenant_id':principal.tenant_id,
                 'status':'private_invitation_activity',
-                'events':[{'event_id':row[0],'invitation_id':row[1],
-                           'action':row[2],'occurred_at':row[3]}
+                'events':[{'invitation_id':row[0],
+                           'action':row[1],'occurred_at':row[2]}
                           for row in rows],
                 'publishing_enabled':False}
 

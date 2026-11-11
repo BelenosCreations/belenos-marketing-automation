@@ -21,7 +21,7 @@ class Stub:
     def history_current(self,**kwargs):
         self.calls.append(('history',kwargs))
         if self.denied: raise PermissionError('Not owner')
-        item={'event_id':2,'invitation_id':'a'*32,
+        item={'invitation_id':'a'*32,
               'action':'cancelled','occurred_at':99}
         if self.history_extra:item['token_hash']='secret'
         return {'tenant_id':'shop','status':'private_invitation_activity',

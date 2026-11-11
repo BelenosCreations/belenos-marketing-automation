@@ -28,7 +28,7 @@ const fetchImpl=async(url,opts)=>{
   if(url.endsWith('/team/invitations/activity'))
     return {ok:true,json:async()=>({tenant_id:'shop',
       status:'private_invitation_activity',
-      events:[{event_id:2,invitation_id:'a'.repeat(32),
+      events:[{invitation_id:'a'.repeat(32),
                action:'delivered',occurred_at:102}],
       publishing_enabled:false})};
   if(url.endsWith('/team/invitations'))

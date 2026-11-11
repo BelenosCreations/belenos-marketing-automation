@@ -14,7 +14,7 @@ async function main(){
         status:'cancelled',publishing_enabled:false}
       :url.endsWith('/activity')
       ?{tenant_id:'shop',status:'private_invitation_activity',
-        events:[{event_id:2,invitation_id:record.invitation_id,
+        events:[{invitation_id:record.invitation_id,
                  action:'cancelled',occurred_at:101}],
         publishing_enabled:false}
       :{tenant_id:'shop',status:'private_pending_invitations',
@@ -37,13 +37,13 @@ async function main(){
   assert.ok(Object.isFrozen(audit.events));
   assert.equal(calls[2].opts.method,'GET');
   assert.equal(calls[2].opts.credentials,'omit');
-  const event={event_id:1,invitation_id:record.invitation_id,
+  const event={invitation_id:record.invitation_id,
     action:'delivered',occurred_at:99};
   for(const unsafe of [
     {tenant_id:'shop',status:'private_invitation_activity',
       events:[{...event,email:'guest@example.com'}],publishing_enabled:false},
     {tenant_id:'shop',status:'private_invitation_activity',
-      events:[event,{...event,event_id:2}],publishing_enabled:false},
+      events:[event,{...event}],publishing_enabled:false},
     {tenant_id:'other',status:'private_invitation_activity',
       events:[event],publishing_enabled:false},
     {tenant_id:'shop',status:'private_invitation_activity',
