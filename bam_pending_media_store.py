@@ -64,6 +64,52 @@ class BAMPendingMediaStore:
                 'media_type':media_type,'sha256':sha256,
                 'max_bytes':MAX_BYTES[media_type]}
 
+
+    def statuses(self,*,token,now):
+        """List current-business pending receipt states, without file metadata."""
+        session=self.service.sessions.resolve_current(
+            token,directory=self.service.directory,now=now)
+        if session is None:
+            raise PermissionError('Active BAM session required')
+        tenant=session.principal.tenant_id
+        self.service._authorize(token=token,tenant_id=tenant,
+                                action=Action.READ_DRAFTS,now=now)
+        rows=self.service.attachments.db.execute(
+            """SELECT request_id,item,attachment_id FROM content_attachments
+            WHERE tenant_id=? AND status='pending'
+              AND media_type IN ('image/png','image/jpeg','image/webp')
+            ORDER BY created_at DESC,attachment_id DESC LIMIT 501""",
+            (tenant,)).fetchall()
+        if len(rows)>500:
+            raise ValueError('Pending media list too large')
+        request_cache={}
+        statuses={}
+        for request_id,item,attachment_id in rows:
+            if request_id not in request_cache:
+                request_cache[request_id]=self.service.requests.get(
+                    tenant_id=tenant,request_id=request_id)
+            draft=request_cache[request_id]
+            if (draft is None or draft['status']!='needs_content'
+                    or item not in draft['required_items']
+                    or item in draft['provided_items']):
+                continue
+            try:
+                info=os.lstat(self.root/(attachment_id+'.pending'))
+                received=(stat.S_ISREG(info.st_mode)
+                    and info.st_size>0 and info.st_nlink==1
+                    and (os.name!='posix' or
+                         stat.S_IMODE(info.st_mode)&0o077==0))
+            except FileNotFoundError:
+                received=False
+            state='pending_scan' if received else 'awaiting_file'
+            key=(request_id,item)
+            if key not in statuses or state=='pending_scan':
+                statuses[key]=state
+        return {'tenant_id':tenant,
+            'items':[{'request_id':rid,'item':item,'status':status}
+                     for (rid,item),status in sorted(statuses.items())],
+            'media_verified':False,'publishing_enabled':False}
+
     def receive(self,*,token,attachment_id,content,now):
         slot=self.authorize_slot(
             token=token,attachment_id=attachment_id,now=now)

@@ -65,6 +65,39 @@ class PendingMediaStoreTests(unittest.TestCase):
             self.store.receive(token=self.token,attachment_id=attachment,
                 content=PNG,now=103)
 
+
+    def test_statuses_are_scoped_and_never_verify_media(self):
+        before=self.store.statuses(token=self.token,now=102)
+        self.assertEqual(before['items'],[{
+            'request_id':self.rid,'item':'image','status':'awaiting_file'}])
+        self.assertFalse(before['media_verified'])
+        self.assertFalse(before['publishing_enabled'])
+        self.assertEqual(self.store.statuses(token=self.other,now=102)['items'],[])
+        self.store.receive(token=self.token,
+            attachment_id=self.pending['attachment_id'],content=PNG,now=102)
+        after=self.store.statuses(token=self.token,now=103)
+        self.assertEqual(after['items'][0]['status'],'pending_scan')
+        self.assertNotIn(self.pending['attachment_id'],str(after))
+        self.assertNotIn(str(self.store.root),str(after))
+        with self.assertRaises(PermissionError):
+            self.store.statuses(token='invalid',now=103)
+        self.service.set_hold(token=self.token,tenant_id='shop',
+            request_id=self.rid,status='postponed',now=104)
+        self.assertEqual(self.store.statuses(token=self.token,now=105)['items'],[])
+        self.service.set_hold(token=self.token,tenant_id='shop',
+            request_id=self.rid,status='needs_content',now=106)
+        self.assertEqual(self.store.statuses(token=self.token,now=107)
+                         ['items'][0]['status'],'pending_scan')
+
+    def test_status_read_rejects_symlinked_receipt(self):
+        target=self.store.root/(self.pending['attachment_id']+'.pending')
+        try:
+            target.symlink_to(Path(self.tmp.name)/'untrusted-target')
+        except OSError:
+            self.skipTest('Symlink unsupported')
+        result=self.store.statuses(token=self.token,now=102)
+        self.assertEqual(result['items'][0]['status'],'awaiting_file')
+
     def test_wrong_user_digest_type_and_closed_request_rejected(self):
         attachment=self.pending['attachment_id']
         with self.assertRaises((PermissionError,KeyError)):
