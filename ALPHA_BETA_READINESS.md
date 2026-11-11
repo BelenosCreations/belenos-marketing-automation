@@ -10,6 +10,7 @@
 | Password sign-in, business switching, logout, and role restrictions | **Offline scaffolding and tests** | Correct session expiry, revocation, role-change and current-tenant isolation under an actual hosted trusted identity service |
 | Existing-member team management | **Implemented offline, not hosted** | Owner-only roster, revision-checked role/deactivation, scoped session revocation and owner-private activity history; verify behavior with real accounts and devices before Beta |
 | Two-client collaboration & persistence | **File-backed local integration verified, not hosted** | Two authenticated independent gateways, shared drafts, stale writes and role-revocation after restart tested; still requires actual hosted multi-device and backup/restore exercises |
+| Local SQLite snapshot/restore | **Ephemeral offline regression verified; not a backup service** | Consistent temporary snapshots and SQLite integrity checked; requires encrypted off-site production backups, retention and a deployment-specific restore drill |
 | Held draft creation and copy revisions | **Implemented offline** | Create/edit/resume/review with two simultaneous editors and stale-revision conflict |
 | Draft priority and read-only calendar proposals | **Implemented offline** | No duplicate slots, cross-business separation, timezone/DST correction and no accidental scheduling |
 | Private review-feedback notes, change history, readiness summaries | **Implemented offline** | Audit metadata consistency, note permissions and unapproved status after every change |

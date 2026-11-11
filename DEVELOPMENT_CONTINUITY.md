@@ -3,7 +3,7 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified main code:** `d671af418be906b8350a717390233c9d9af1c47c`. **Most recent verified development source:** `17c5b470ba4891714953e993c499e1892a712d66` ([Actions 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364)). This newer source has not yet been merged into main.
+**Most recent verified main code:** `d671af418be906b8350a717390233c9d9af1c47c`. **Most recent verified development source:** `1444094af143eaa40c43402d995319f7921f2407` ([Actions 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364)). This newer source has not yet been merged into main.
 **Verification:** Full GitHub Actions [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) completed successfully on the exact merged commit. Integration candidate `748c3a1a` also passed [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217).
 **Merge:** [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) reconciled `main` with development; a two-parent integration history preserved both sets of changes. Development was fast-forwarded to main once the merged commit passed.
 **Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`. These are not off-site backups or enforced protection.
@@ -95,6 +95,15 @@ The Alpha regression suite now uses **two independently initialized BAM offline 
 This is a **local durability and isolation test**, not hosted multi-device collaboration, a tested production relational database migration or an actual deployed backend. No network communication, social publication or paid calls are performed.
 
 **Verified source:** `17c5b470ba4891714953e993c499e1892a712d66` at [GitHub Actions 43107825592](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43107825592): Python compilation, browser UI suite and **926 Python tests passed**. This documentation checkpoint remains pending its own full CI.
+
+
+## Offline SQLite snapshot/restore integrity exercise — November 11, 2026
+
+The offline Alpha now has a **temporary-file-only backup/restore regression drill** in `test_offline_sqlite_restore_drill.py`. It uses SQLite's consistent online backup API to snapshot a committed database and restore it into a separately initialized BAM gateway. The test verifies `PRAGMA integrity_check`, independent business draft data, recovery of the original version of a changed draft, hashed session-token storage, and preservation of business-scoped revocations and team audit after restoration. All test databases are removed after each run.
+
+**Critical scope:** This test **does not create or schedule an operational backup**. The ephemeral SQLite snapshots are unencrypted and must never become a production export routine. Future approved hosting still needs encrypted, access-controlled/off-site backups, lifecycle retention, monitoring and real recovery rehearsal with production infrastructure.
+
+**Verified code checkpoint:** `1444094af143eaa40c43402d995319f7921f2407`, [GitHub Actions run 43108646726](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43108646726) — Python compilation, browser UI suite and **928 Python tests passed**. The documentation-only follow-up commit must be verified separately; no external services, publishing or AI spending were activated.
 
 
 ## Candidate next work (no authorization required)

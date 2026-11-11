@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 — Ephemeral offline SQLite snapshot and restore drill
+
+- Added temporary-file, consistent SQLite backup and restore regression tests for business-isolated drafts, pre-snapshot revisions, hashed sessions, scoped revocations, and team audit persistence.
+- Verified SQLite integrity after snapshot and restoration; tests clean up temporary databases.
+- [GitHub Actions run 43108646726](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43108646726) passed on `1444094af143eaa40c43402d995319f7921f2407` with **928 Python tests**, browser regressions and compilation.
+- No operational, encrypted, scheduled or off-site backup was configured. No social publishing, hosting or paid service activation.
+
 ## 2026-11-11 — Separate-client persistence and collaboration verification
 
 - Added file-backed SQLite end-to-end tests with two independently initialized BAM gateways, separate owner/editor sessions and distinct business memberships.
