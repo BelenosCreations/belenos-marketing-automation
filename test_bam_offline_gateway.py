@@ -720,6 +720,67 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         bad,_=self.call('/api/v1/posting-time-preview')
         self.assertEqual(bad['status'],'401 Unauthorized')
 
+    def test_private_editorial_feedback_write_conflicts_and_isolation(self):
+        owner=self.login('shop')
+        draft=self.app.requests.list_for_business(
+            tenant_id='shop')[0]
+        rid=draft['request_id']
+        meta,initial=self.call('/api/v1/review-feedback',token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(initial['items'],[])
+        payload={'request_id':rid,'expected_revision':draft['revision'],
+                 'expected_feedback_token':None,
+                 'note':'Check photo consent before publication'}
+        meta,created=self.call('/api/v1/review-feedback',
+            method='PUT',token=owner,body=payload)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(created['status'],'feedback_only')
+        self.assertFalse(created['approval_granted'])
+        self.assertFalse(created['publishing_enabled'])
+        v1=created['feedback_token']
+        _,notes=self.call('/api/v1/review-feedback',token=owner)
+        self.assertEqual(len(notes['items']),1)
+        self.assertEqual(notes['items'][0]['feedback_token'],v1)
+        self.assertFalse(notes['items'][0]['stale'])
+        meta,updated=self.call('/api/v1/review-feedback',
+            method='PUT',token=owner,body={**payload,
+                'note':'Await a new customer-approved image',
+                'expected_feedback_token':v1})
+        self.assertEqual(meta['status'],'200 OK')
+        v2=updated['feedback_token']
+        self.assertNotEqual(v1,v2)
+        self.assertEqual(self.call('/api/v1/review-feedback',
+            method='PUT',token=owner,body={**payload,
+                'expected_feedback_token':v1})[0]['status'],'409 Conflict')
+        self.assertEqual(self.call('/api/v1/review-feedback',
+            method='DELETE',token=owner,body={'request_id':rid,
+                'expected_feedback_token':v1})[0]['status'],'409 Conflict')
+        another=self.login('other')
+        _,other_notes=self.call('/api/v1/review-feedback',token=another)
+        self.assertEqual(other_notes['items'],[])
+        self.assertEqual(self.call('/api/v1/review-feedback',
+            method='PUT',token=another,body=payload)[0]['status'],
+            '401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/review-feedback',
+            method='POST',token=owner,body={})[0]['status'],
+            '405 Method Not Allowed')
+        self.assertEqual(self.call('/api/v1/review-feedback',
+            token=owner,extra={'QUERY_STRING':'tenant_id=other'})[0]
+            ['status'],'400 Bad Request')
+        self.assertEqual(self.call('/api/v1/review-feedback',
+            method='PUT',token=owner,body={**payload,
+                'approval_granted':True})[0]['status'],
+            '400 Bad Request')
+        meta,removed=self.call('/api/v1/review-feedback',
+            method='DELETE',token=owner,body={'request_id':rid,
+                'expected_feedback_token':v2})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(removed['removed'],1)
+        _,after=self.call('/api/v1/review-feedback',token=owner)
+        self.assertEqual(after['items'],[])
+        self.assertEqual(self.call('/api/v1/review-feedback')[0]['status'],
+                         '401 Unauthorized')
+
     def test_private_editorial_readiness_is_not_an_approval(self):
         owner=self.login('shop')
         meta,created=self.call('/api/v1/content/drafts',method='POST',
