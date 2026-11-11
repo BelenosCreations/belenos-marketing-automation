@@ -323,6 +323,42 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(meta['status'],'401 Unauthorized')
         self.assertNotIn('session_token',body)
 
+    def test_risk_hints_are_nonpublishing_and_tenant_scoped(self):
+        token=self.login('shop')
+        meta,created=self.call('/api/v1/content/drafts',method='POST',
+            token=token,body={'channel':'facebook',
+                'draft_text':'Today only $18 - guaranteed',
+                'suggestion':'Check price and guarantee',
+                'required_items':['image']})
+        self.assertEqual(meta['status'],'201 Created')
+        rid=created['request_id']
+        meta,preview=self.call('/api/v1/content/risk-preview',
+            token=token,extra={'QUERY_STRING':'request_id='+rid})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(preview['request_id'],rid)
+        self.assertEqual(preview['tenant_id'],'shop')
+        self.assertEqual(preview['revision'],1)
+        self.assertTrue(preview['review_required'])
+        self.assertFalse(preview['extraction_complete'])
+        self.assertFalse(preview['publishing_enabled'])
+        self.assertEqual([s['category'] for s in preview['signals']],
+            ['urgency_or_availability','price_or_discount','guarantee'])
+        other=self.login('other')
+        self.assertEqual(self.call('/api/v1/content/risk-preview',
+            token=other,extra={'QUERY_STRING':'request_id='+rid})[0]['status'],
+            '404 Not Found')
+        self.assertEqual(self.call('/api/v1/content/risk-preview',
+            token=token,extra={'QUERY_STRING':'request_id='+rid+
+                '&publishing_enabled=true'})[0]['status'],'400 Bad Request')
+        self.assertEqual(self.call('/api/v1/content/risk-preview',
+            token=token,method='POST',body={},
+            extra={'QUERY_STRING':'request_id='+rid})[0]['status'],
+            '405 Method Not Allowed')
+        self.assertEqual(self.call('/api/v1/content/risk-preview',
+            extra={'QUERY_STRING':'request_id='+rid})[0]['status'],
+            '401 Unauthorized')
+        self.assertNotIn('approved',str(preview))
+
     def test_held_draft_copy_edit_requires_fresh_revision(self):
         token=self.login('shop')
         meta,created=self.call('/api/v1/content/drafts',method='POST',

@@ -12,6 +12,7 @@ from ai_local_templates import LocalDraftTemplates
 from ai_draft_request import AIDraftRequestBuilder
 from posting_time_preview import build_posting_time_preview
 from access_policy import Action, Resource, require_permission
+from truthguard_risk_signals import scan_risk_signals
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
@@ -124,6 +125,34 @@ class AccountReadAPI:
             raise RuntimeError('AI Content Studio not configured')
         return self.ai_content_drafts.list_mine(
             token=self._token(session_token),now=self._now(server_now))
+
+    def get_content_risk_preview(self, *, session_token, server_now,
+                                 request_id):
+        """Show limited heuristic risk hints only; no approval or publishing."""
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('BAM session required')
+        tenant=session.principal.tenant_id
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content service not configured')
+        draft=service.get(token=token,tenant_id=tenant,
+                          request_id=request_id,now=now)
+        if draft is None:
+            raise KeyError('Draft unavailable')
+        report=scan_risk_signals(draft['draft_text'])
+        all_signals=report['signals']
+        return {'tenant_id':tenant,'request_id':request_id,
+                'revision':draft['revision'],
+                'signals':all_signals[:50],
+                'signal_count':len(all_signals),
+                'truncated':len(all_signals)>50,
+                'review_required':True,
+                'extraction_complete':False,
+                'status':'held','publishing_enabled':False}
 
     def get_team_overview(self, *, session_token, server_now):
         """Owner-only counts for current business; no member IDs or email leaks."""
