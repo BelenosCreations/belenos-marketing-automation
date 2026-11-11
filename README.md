@@ -682,3 +682,7 @@ When an idempotency ledger is configured, sponsored generation now **requires** 
 ## Owner-confirmed business facts HTTPS editing boundary — 2026-11-10
 
 `bam_ai_facts_write_wsgi.py` provides a separate **disabled-by-default** `PUT /api/v1/ai-business-facts` adapter for future owner-facing Settings. It accepts only a bounded facts dictionary and expected revision, derives the business and confirming identity from the active bearer session, and rejects unauthorized creators, stale revisions and client-supplied tenant claims. Tests cover permission checks, optimistic concurrency and disabled/HTTPS safeguards. It is not mounted in the deployed app; owner confirmation remains distinct from independent external factual verification.
+
+## Explicit-action AI browser write client — 2026-11-10
+
+`ui/ai_write_client.js` provides two narrowly scoped authenticated HTTPS operations for a future UI: owner-confirming a business fact snapshot, and requesting an unpublished AI draft using an externally supplied idempotency key. The browser cannot supply tenant IDs, publishing controls, model choices, quota plans or API secrets; requests use bearer authorization, no cookies, no caching and no automatic retries. The operations are **not** automatically invoked by the dashboard and require explicit user actions once the sign-in shell and disabled-by-default endpoints are safely connected. Its security tests passed in an isolated JavaScript harness and were added to CI.
