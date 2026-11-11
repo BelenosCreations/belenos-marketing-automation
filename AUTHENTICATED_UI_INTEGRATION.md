@@ -4,6 +4,10 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Confirmed sign-out on all devices
+
+The signed-in shell exposes the existing `POST /api/v1/auth/logout-everywhere` session revocation via a separate warning, Confirm and Cancel UI. On confirmation the in-memory session is cleared before network delivery. Success is reported only when the server confirms the revoked-session count; otherwise the user is told that other devices may still have valid sessions. This is not social OAuth token revocation or a device enrollment manager. **Verified:** [run 43036158603](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43036158603).
+
 ## Owner-only Team Access panel
 
 The Team Access panel reads `GET /api/v1/team-overview` only for a trusted active-business owner. The server checks `MANAGE_TEAM`, returns strictly aggregate active role counts and inactive membership count and never exposes member IDs, email addresses, invitations or permission-changing actions. The browser validates all totals and discards stale data on business/session change. An optional failed count read does not require sign-out. **Verified:** [run 43035508617](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43035508617) (809 Python, 44 JavaScript).

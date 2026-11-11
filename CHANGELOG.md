@@ -1,3 +1,16 @@
+## Explicit sign-out from all BAM devices — 2026-11-11
+
+### Added
+- The authenticated Settings page offers a two-step, explicit **Sign out on all devices** action, plus a warning and Cancel control.
+- On confirmation the shell clears private DOM and the in-memory BAM session before calling the existing authenticated `POST /api/v1/auth/logout-everywhere`. A successful response reports the revoked-session count; an unconfirmed network response warns that other device sessions may remain valid.
+- Signed-in HTML shell regression tests cover cancellation, confirmation, session clearing, correct bearer session and the dedicated route. Existing tests separately exercise server-side session revocation and stale concurrent sign-ins.
+
+### Verification
+- **Passed:** [GitHub Actions run 43036158603](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43036158603) on `c13fb91e`: 809 Python tests, 44 JavaScript UI scripts and compilation.
+
+### Known limitations
+- This is a local-only security workflow, not a production device-management screen. Neither social-media account connections nor external social tokens are revoked; no live publishing or cloud hosting is activated.
+
 ## Owner-only aggregate team access — 2026-11-11
 
 ### Added

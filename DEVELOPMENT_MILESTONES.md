@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Explicit global BAM session sign-out (2026-11-11)
+
+The signed-in Settings page now offers a separate warning, Confirm and Cancel for signing out on all BAM devices. Confirmation clears the browser's private workspace and token before requesting the already-tested backend session revocation route; only a trusted server response can confirm the number of sessions revoked. An unavailable response must never imply that other sessions were revoked. This does not touch provider OAuth or publishing rights.
+
+**Verified:** [run 43036158603](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43036158603), commit `c13fb91e`, 809 Python and 44 JavaScript tests.
+
 ## Owner-only aggregate team access in Settings (2026-11-11)
 
 The signed-in Settings page now shows current-business membership counts only to owners. The strict `GET /api/v1/team-overview` service derives tenant identity from the live session and requires server-checked `MANAGE_TEAM` permission. It aggregates roles and inactive memberships without exposing employee emails, IDs, or invitation tokens. The UI clears data after business switching, role change or sign-out and treats failures as unavailable rather than fabricated zeros. Invitations and role management remain intentionally disconnected.
