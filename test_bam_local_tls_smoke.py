@@ -4,6 +4,7 @@ Uses only ephemeral, loopback-only TLS and test data. Never contacts external
 services or turns on social posting. Requires OpenSSL on the test runner.
 """
 import json
+import hashlib
 from pathlib import Path
 import shutil
 import socket
@@ -53,7 +54,8 @@ class HTTPSPreviewSmokeTests(unittest.TestCase):
             # the connection is opened from this test thread, served in worker.
             with sqlite3.connect(dbfile,check_same_thread=False) as db:
                 gateway=BAMOfflineGateway(db,enabled=True,
-                    serve_browser_assets=True)
+                    serve_browser_assets=True,
+                    pending_media_dir=str(p/'private-media'))
                 with make_server('127.0.0.1',0,
                     lambda environ,start:[],handler_class=_QuietHandler) as server:
                     port=server.server_port
@@ -71,12 +73,20 @@ class HTTPSPreviewSmokeTests(unittest.TestCase):
                         urllib.request.ProxyHandler({}),
                         urllib.request.HTTPSHandler(context=test_tls))
                     base='https://localhost:'+str(port)
-                    def get(path,*,method='GET',body=None,token=None):
+                    def get(path,*,method='GET',body=None,token=None,
+                            body_bytes=None,content_type=None,extra_headers=None):
                         headers={'Accept':'application/json'}
                         raw=None
+                        if body is not None and body_bytes is not None:
+                            raise ValueError('Choose JSON or raw bytes')
                         if body is not None:
                             raw=json.dumps(body).encode('utf-8')
                             headers['Content-Type']='application/json'
+                        if body_bytes is not None:
+                            raw=body_bytes
+                            headers['Content-Type']=content_type
+                        if extra_headers:
+                            headers.update(extra_headers)
                         if token:
                             headers['Authorization']='Bearer '+token
                         request=urllib.request.Request(base+path,data=raw,
@@ -123,6 +133,57 @@ class HTTPSPreviewSmokeTests(unittest.TestCase):
                         self.assertFalse(draft['publishing_enabled'])
                         code,_,raw=get('/api/v1/drafts',token=token)
                         self.assertEqual(len(json.loads(raw)['drafts']),1)
+                        # A real loopback HTTPS byte transfer remains private.
+                        png=b'\\x89PNG\\r\\n\\x1a\\n'+b'local-fixture-not-a-real-image'
+                        digest=hashlib.sha256(png).hexdigest()
+                        code,_,raw=get('/api/v1/content/upload-preflight',
+                            method='POST',token=token,body={
+                                'request_id':draft['request_id'],
+                                'item':'image','media_type':'image/png',
+                                'sha256':digest,'byte_count':len(png)})
+                        self.assertEqual(code,202)
+                        intent=json.loads(raw)
+                        self.assertEqual(intent['status'],'pending')
+                        self.assertIsNone(intent['upload_url'])
+                        attachment=intent['attachment_id']
+                        code,_,raw=get('/api/v1/content/media-status',
+                            token=token)
+                        self.assertEqual(code,200)
+                        self.assertEqual(json.loads(raw)['items'],[{
+                            'request_id':draft['request_id'],'item':'image',
+                            'status':'awaiting_file'}])
+                        code,_,raw=get('/api/v1/content/media-bytes',
+                            method='PUT',token=token,body_bytes=png,
+                            content_type='image/png',extra_headers={
+                                'X-BAM-Attachment-ID':attachment})
+                        self.assertEqual(code,202)
+                        accepted=json.loads(raw)
+                        self.assertEqual(accepted['status'],'pending_scan')
+                        self.assertFalse(accepted['media_verified'])
+                        self.assertFalse(accepted['publishing_enabled'])
+                        self.assertEqual((p/'private-media'/(
+                            attachment+'.pending')).read_bytes(),png)
+                        code,_,raw=get('/api/v1/content/media-status',
+                            token=token)
+                        status=json.loads(raw)
+                        self.assertEqual(status['items'][0]['status'],
+                                         'pending_scan')
+                        self.assertNotIn(attachment,str(status))
+                        self.assertNotIn('storage_key',str(status))
+                        code,_,raw=get('/api/v1/drafts',token=token)
+                        self.assertEqual(json.loads(raw)['drafts'][0]['status'],
+                                         'needs_content')
+                        code,_,raw=get('/api/v1/content/media-pending',
+                            method='DELETE',token=token,body={
+                                'request_id':draft['request_id'],
+                                'item':'image'})
+                        self.assertEqual(code,200)
+                        self.assertEqual(json.loads(raw)['removed'],1)
+                        self.assertFalse((p/'private-media'/(
+                            attachment+'.pending')).exists())
+                        code,_,raw=get('/api/v1/content/media-status',
+                            token=token)
+                        self.assertEqual(json.loads(raw)['items'],[])
                         with self.assertRaises(urllib.error.HTTPError) as denied:
                             get('/README.md')
                         self.assertEqual(denied.exception.code,404)
@@ -146,6 +207,8 @@ class HTTPSPreviewSmokeTests(unittest.TestCase):
                         self.assertEqual(json.loads(raw)['tenant_id'],'second-business')
                         code,_,raw=get('/api/v1/drafts',token=new_token)
                         self.assertEqual(json.loads(raw)['drafts'],[])
+                        code,_,raw=get('/api/v1/content/media-status',token=new_token)
+                        self.assertEqual(json.loads(raw)['items'],[])
                         code,_,raw=get('/api/v1/auth/logout',method='POST',
                             token=new_token,body={})
                         self.assertTrue(json.loads(raw)['signed_out'])
