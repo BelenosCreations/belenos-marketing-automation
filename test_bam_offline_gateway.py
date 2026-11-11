@@ -720,6 +720,47 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         bad,_=self.call('/api/v1/posting-time-preview')
         self.assertEqual(bad['status'],'401 Unauthorized')
 
+    def test_feedback_audit_survives_note_removal_without_text(self):
+        owner=self.login('shop')
+        rid=self.app.requests.list_for_business(
+            tenant_id='shop')[0]['request_id']
+        meta,initial=self.call('/api/v1/review-feedback-history',
+                               token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(initial['events'],[])
+        data={'request_id':rid,'expected_revision':1,
+              'expected_feedback_token':None,'note':'Review original photo'}
+        meta,saved=self.call('/api/v1/review-feedback',
+            method='PUT',token=owner,body=data)
+        self.assertEqual(meta['status'],'200 OK')
+        _,events=self.call('/api/v1/review-feedback-history',token=owner)
+        self.assertEqual(len(events['events']),1)
+        self.assertEqual(events['events'][0]['action'],'created')
+        self.assertNotIn('Review original photo',str(events))
+        self.assertFalse(events['publishing_enabled'])
+        self.assertEqual(self.call('/api/v1/review-feedback',
+            method='DELETE',token=owner,
+            body={'request_id':rid,
+                  'expected_feedback_token':saved['feedback_token']})[0]
+            ['status'],'200 OK')
+        _,after=self.call('/api/v1/review-feedback-history',token=owner)
+        self.assertEqual([item['action'] for item in after['events']],
+                         ['removed','created'] if
+                         after['events'][0]['occurred_at']>
+                         after['events'][1]['occurred_at'] else
+                         sorted(['removed','created']))
+        self.assertEqual(self.call('/api/v1/review-feedback-history',
+            method='POST',token=owner,body={})[0]['status'],
+            '405 Method Not Allowed')
+        self.assertEqual(self.call('/api/v1/review-feedback-history',
+            token=owner,extra={'QUERY_STRING':'tenant_id=other'})[0]
+            ['status'],'400 Bad Request')
+        other=self.login('other')
+        self.assertEqual(self.call('/api/v1/review-feedback-history',
+            token=other)[0]['status'],'401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/review-feedback-history')[0]
+                         ['status'],'401 Unauthorized')
+
     def test_private_editorial_feedback_write_conflicts_and_isolation(self):
         owner=self.login('shop')
         draft=self.app.requests.list_for_business(

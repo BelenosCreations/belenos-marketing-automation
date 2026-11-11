@@ -24,6 +24,17 @@ class Fake:
              'updated_at':100,'approval_granted':False,
              'publishing_enabled':self.unsafe}],
            'approval_granted':False,'publishing_enabled':False}
+    def history_current_business(self,**kwargs):
+        self.calls.append(('history',kwargs))
+        if self.denied:
+            raise PermissionError('owner required')
+        return {'tenant_id':'shop','status':'feedback_history_only',
+                'events':[{'event_id':'c'*32,'request_id':RID,
+                           'action':'updated','draft_revision':2,
+                           'occurred_at':102}],
+                'truncated':False,
+                'approval_granted':self.unsafe,
+                'publishing_enabled':False}
     def save(self,**kwargs):
         self.calls.append(('save',kwargs))
         if self.denied:
@@ -86,6 +97,30 @@ class FeedbackTransportTests(unittest.TestCase):
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(deleted['removed'],1)
         self.assertFalse(deleted['publishing_enabled'])
+
+    def test_history_is_owner_only_nonapproval_metadata(self):
+        path='/api/v1/review-feedback-history'
+        meta,data=self.call(PATH_INFO=path)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(meta['headers']['Cache-Control'],'no-store, private')
+        self.assertEqual(data['events'][0]['action'],'updated')
+        self.assertEqual(data['events'][0]['draft_revision'],2)
+        self.assertFalse(data['approval_granted'])
+        self.assertFalse(data['publishing_enabled'])
+        self.assertNotIn('note',str(data))
+        self.assertEqual(self.service.calls[-1],(
+            'history',{'token':'t'*43,'now':103}))
+        self.assertEqual(self.call(PATH_INFO=path,
+            REQUEST_METHOD='PUT')[0]['status'],'405 Method Not Allowed')
+        self.assertEqual(self.call(PATH_INFO=path,
+            QUERY_STRING='tenant_id=other')[0]['status'],'400 Bad Request')
+        self.service.unsafe=True
+        self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
+                         '503 Service Unavailable')
+        self.service.unsafe=False
+        self.service.denied=True
+        self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
+                         '401 Unauthorized')
 
     def test_forged_write_and_invalid_transport_fail_closed(self):
         for extra,status in [
