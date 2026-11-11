@@ -6,7 +6,7 @@ function node(tag){return {tag,textContent:'',children:[],
   replaceChildren(...items){this.children=items}}}
 const document={createElement:node};
 const drafts=node('main'),settings=node('main'),facts=node('main'),
-  costs=node('main');
+  costs=node('main'),editor=node('main');
 const fetchImpl=async(url)=>({ok:true,json:async()=>{
   if(url.endsWith('/ai-drafts'))
     return {tenant_id:'shop',publishing_enabled:false,drafts:[]};
@@ -26,8 +26,11 @@ const fetchImpl=async(url)=>({ok:true,json:async()=>{
   throw new Error('Unexpected route');
 }});
 async function main(){
+  const saved=[];
   const workspace=create({document,draftsContainer:drafts,
     settingsContainer:settings,factsContainer:facts,costContainer:costs,
+    factsEditorContainer:editor,canManageFacts:true,
+    onSaveFacts:payload=>saved.push(payload),
     fetchImpl,origin:'https://bam.example'});
   workspace.activate({token:'valid',tenantId:'shop'});
   assert.equal((await workspace.refresh()).draftCount,0);
@@ -35,6 +38,9 @@ async function main(){
   assert.equal(facts.children[0].children[2].textContent,
                'product: Custom tumblers');
   assert.match(costs.children[0].children[4].textContent,/\$0\.0018/);
+  editor.children[0].children[4].listeners.click();
+  assert.equal(saved.length,1);
+  assert.equal(saved[0].expectedTenantId,'shop');
   const broken=create({document,draftsContainer:drafts,
     settingsContainer:settings,factsContainer:facts,costContainer:costs,
     fetchImpl:async()=>({ok:false}),origin:'https://bam.example'});
@@ -42,6 +48,7 @@ async function main(){
   assert.equal((await broken.refresh()).error,true);
   assert.equal(facts.children.length,0);
   assert.equal(costs.children.length,0);
+  assert.equal(editor.children.length,0);
   workspace.clear();
   assert.equal(facts.children.length,0);
   assert.equal(costs.children.length,0);
