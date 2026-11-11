@@ -1,3 +1,18 @@
+# Changelog
+
+## 2026-11-11 — Product direction clarified: direct social APIs and collaboration (documentation)
+
+### Changed
+- Rewrote the README as a current BAM product overview rather than an accumulating phase log; separated implemented local-alpha capabilities from future hosted/paid/publishing features.
+- Made **direct official social-platform APIs** the core publishing and analytics architecture, starting with eligible Facebook business Pages. **Metricool is not required** for onboarding, publishing, scheduling or Smart analytics; older Metricool-first documentation is superseded.
+- Documented same-business team collaboration, business-specific permissions, shared tenant infrastructure, AI/media cost controls, and the operator-funded sponsored OpenAI model without promising unlimited free services.
+- Added `PRODUCT_PLAN.md` with implementation gates, owner-approval checkpoints, verification criteria and a cost-conscious multi-tenant hosting strategy.
+
+### Test and deployment status
+- Documentation changes only; **no runtime tests were executed for this documentation update**.
+- Previously committed security changes may remain unverified; consult `DEVELOPMENT_CONTINUITY.md` and the exact-SHA GitHub Actions run before merging or deploying.
+- **No live social connection, publication, scheduling, hosting or paid AI was activated.**
+
 ## 2026-11-11 — Stale-role safety for team invitations and trusted facts
 
 - Require current tenant-specific sessions for issuing/revoking offline team invitations, changing business scheduling settings, and owner-only TruthGuard fact approval/revocation/lookup.
