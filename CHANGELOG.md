@@ -1,5 +1,16 @@
 # Changelog
 
+## Authenticated AI workspace coordinator — 2026-11-10
+
+### Added
+- `ui/ai_workspace.js`: read-only session-scoped AI Content Studio and Settings loading, with stale-response cancellation on business switch/logout.
+- `ui/ai_workspace_test.js`: tests for business-switch race conditions, logout and failed-load cleanup.
+
+### Fixed
+- Clear previously rendered private AI content when a current-session read fails.
+- Corrected an existing HTTP-client test assertion to count all three requests.
+
+
 ## AI business-switch integration regression — 2026-11-10
 
 ### Added
