@@ -1,5 +1,16 @@
 # Changelog
 
+## Trusted image association for held AI drafts — 2026-11-10
+
+### Added
+- AI draft method to link an image only after the existing attachment registry confirms trusted verification for the exact business, draft and item.
+- Browser contract and read-only UI state distinguishing missing media from verified attached media.
+- Tests for unverified images, mismatched draft references and continued factual-review holds.
+
+### Not enabled
+- Direct uploads, scanner service, automatic approvals or social publishing.
+
+
 ## Authenticated AI workspace coordinator — 2026-11-10
 
 ### Added
