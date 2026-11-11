@@ -1,5 +1,16 @@
 # Changelog
 
+## Disabled-by-default authenticated AI generation endpoint — 2026-11-10
+
+### Added
+- Separate HTTPS-only `POST /api/v1/ai-generate` WSGI adapter, disabled by default.
+- Bearer-session, idempotency-key, bounded-body and server-owned quota/month constraints; minimal unpublished draft response.
+- Offline tests for disabled mode, unauthorized calls, invalid client scope and unsafe publishing claims.
+
+### Not enabled
+- Public endpoint mounting, provider API calls, billing or social publishing.
+
+
 ## Required generation request keys when deduplication is configured — 2026-11-10
 
 ### Fixed
