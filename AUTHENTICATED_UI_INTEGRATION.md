@@ -2,7 +2,7 @@
 
 Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory`.
 
-## Current verified design boundaries
+See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.\n\n## Current verified design boundaries
 
 - BAM is a multi-business application, not limited to Belenos Creations or Busy B Cleaning.
 - Email/password and Google sign-in are approved, but production login and Google token validation infrastructure are not deployed.
@@ -29,7 +29,7 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 8. Connect Content Studio read and write operations to authorized backend APIs, preserving held-content and approval safeguards.
 9. Build a trusted media upload, ownership/permission verification and malware-scanning pipeline before allowing users to complete content requests with real files.
 10. Implement real scheduling and platform integration only after explicit publishing approvals, API permissions and separate release security review.
-11. Run the complete Python and Node CI suite and review GitHub Actions outcomes. Current CI outcomes have not been independently verified through available tooling.
+11. Wire the OpenAI-only generation service through server-verified business facts, per-user AI memory, trusted encrypted credentials, sponsored usage controls and held-draft review. Support optional external ChatGPT-created image uploads without requiring another signup.\n12. Run the complete Python and Node CI suite and review GitHub Actions outcomes. Current CI outcomes have not been independently verified through available tooling.
 
 ## Safe manual validation commands
 
