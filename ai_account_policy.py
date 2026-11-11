@@ -40,6 +40,12 @@ class AIPolicyStore:
                            Resource(session.principal.tenant_id))
         return session.principal
 
+    def _editor(self, token, now):
+        principal=self._principal(token,now)
+        require_permission(principal,Action.CREATE_DRAFT,
+                           Resource(principal.tenant_id))
+        return principal
+
     def get_mode(self, *, token, now):
         principal=self._principal(token,now)
         row=self.db.execute("""SELECT ai_mode,credential_ref
@@ -52,7 +58,7 @@ class AIPolicyStore:
                 'key_exposed':False,'publishing_enabled':False}
 
     def set_mode(self, *, token, now, mode, credential_ref=None):
-        principal=self._principal(token,now)
+        principal=self._editor(token,now)
         if type(mode) is not str or mode not in AI_MODES:
             raise ValueError('Unsupported AI mode')
         current=self.db.execute('''SELECT credential_ref FROM bam_ai_preferences
@@ -89,7 +95,7 @@ class AIPolicyStore:
         A trusted vault service must revoke/delete the underlying secret.
         This method never returns the reference or raw API key.
         """
-        principal=self._principal(token,now)
+        principal=self._editor(token,now)
         with self.db:
             self.db.execute("""UPDATE bam_ai_preferences
                 SET ai_mode='bam_sponsored',credential_ref=NULL,updated_at=?
@@ -107,7 +113,7 @@ class AIPolicyStore:
                 'publishing_enabled':False}
 
     def replace_memory(self, *, token, now, memory):
-        principal=self._principal(token,now)
+        principal=self._editor(token,now)
         if type(memory) is not dict or not all(
             type(k) is str and len(k)<=80 and type(v) is str and len(v)<=2000
             for k,v in memory.items()):
