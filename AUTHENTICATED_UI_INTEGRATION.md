@@ -4,6 +4,10 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Owner-only Team Access panel
+
+The Team Access panel reads `GET /api/v1/team-overview` only for a trusted active-business owner. The server checks `MANAGE_TEAM`, returns strictly aggregate active role counts and inactive membership count and never exposes member IDs, email addresses, invitations or permission-changing actions. The browser validates all totals and discards stale data on business/session change. An optional failed count read does not require sign-out. **Verified:** [run 43035508617](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43035508617) (809 Python, 44 JavaScript).
+
 ## Independent held-draft copy and guidance editing
 
 The business-scoped Content Studio GET response now includes a monotonically increasing held-draft revision. Each draft exposes a separate explicit Save for `draft_text` or `suggestion`, sending only `request_id`, `target`, `revised_text` and `expected_revision` via `PUT /api/v1/content/drafts`. The disabled-by-default backend verifies current business and editor permission, checks the expected revision atomically, and returns a version-confirmed result; the browser re-reads tenant content. Stale revisions reject the change rather than silently overriding a coworker's edit, and logout or business switching invalidates pending actions.

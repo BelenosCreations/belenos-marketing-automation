@@ -1,3 +1,18 @@
+## Owner-only aggregate team access — 2026-11-11
+
+### Added
+- An authenticated, read-only `GET /api/v1/team-overview` route returns aggregate active membership counts by role and inactive count, only after the server checks current-business `MANAGE_TEAM` permission. Client-supplied role, tenant overrides and mutations are rejected.
+- Settings now includes a Team Access panel. Owners see anonymized role totals; managers, creators, employees and viewers receive an access-restricted explanation without a private team request.
+- No member names, subject IDs, email addresses, invitation secrets or publication authority are returned. Team invitations are explicitly shown as unavailable rather than implied to work.
+- Pending reads are cleared after business rotation, logout or a role downgrade. A failed optional team-count read does not revoke an otherwise valid BAM session.
+- Added Python transport/role checks and JavaScript schema/workspace/HTML shell regressions.
+
+### Verification
+- **Passed:** [GitHub Actions run 43035508617](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43035508617), commit `65f7663c`: **809 Python tests, 44 JavaScript UI test scripts**, plus Python compilation.
+
+### Known limitations
+- Read-only aggregate counts cannot invite, enroll, grant roles or revoke permissions. Google browser login, live provider OAuth, production hosting and social publishing remain disabled.
+
 ## Version-guarded independent Content Studio editing — 2026-11-11
 
 ### Added

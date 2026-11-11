@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Owner-only aggregate team access in Settings (2026-11-11)
+
+The signed-in Settings page now shows current-business membership counts only to owners. The strict `GET /api/v1/team-overview` service derives tenant identity from the live session and requires server-checked `MANAGE_TEAM` permission. It aggregates roles and inactive memberships without exposing employee emails, IDs, or invitation tokens. The UI clears data after business switching, role change or sign-out and treats failures as unavailable rather than fabricated zeros. Invitations and role management remain intentionally disconnected.
+
+**Verified:** [run 43035508617](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43035508617), commit `65f7663c`: 809 Python tests, 44 JavaScript UI scripts, Python compilation.
+
 ## Independent, revision-safe held Content Studio draft editing (2026-11-11)
 
 The held content request table now supports a monotonic `revision`, including an in-place local SQLite migration for older databases. The backend can atomically revise exactly one field—`draft_text` or `suggestion`—only after current business membership and edit permission checks, with an expected-revision compare-and-update. Hold transitions and attachment completion also advance revision. `bam_content_revise_wsgi.py` accepts only these bounded revision fields through an explicitly enabled HTTPS-only local gateway and returns `409 Conflict` for stale writes, without allowing tenant, role, publishing or approval claims. The signed-in Content Studio shows separate manual text editors and refreshes the trusted tenant view after each confirmed save. Existing review-intent records become stale if approved copy changes, requiring renewed human review.
