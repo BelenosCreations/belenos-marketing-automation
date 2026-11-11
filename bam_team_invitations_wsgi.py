@@ -7,8 +7,8 @@ import json
 import re
 import time
 
-TOKEN=re.compile(r'[A-Za-z0-9_-]{32,2048}\\Z')
-IDENT=re.compile(r'[a-f0-9]{32}\\Z')
+TOKEN=re.compile(r'[A-Za-z0-9_-]{32,2048}\Z')
+IDENT=re.compile(r'[a-f0-9]{32}\Z')
 ROLES=frozenset(('marketing_manager','content_creator','employee','viewer'))
 
 def unique(pairs):
