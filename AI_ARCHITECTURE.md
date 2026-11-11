@@ -28,7 +28,7 @@ These are deployment scenarios, not identity roles. A user may own multiple busi
 - **ChatGPT-assisted free images:** Users may independently create/revise images using ChatGPT Free or paid, then upload/share the resulting images to BAM. This is **optional**, not a required signup or a claim that BAM can invoke ChatGPT Free programmatically. Uploaded media must pass the existing trusted attachment validation workflow.
 - **TruthGuard:** The existing per-business verified fact registry, claim review and content approvals remain mandatory. AI drafts, revised drafts and image prompts do not bypass fact verification or approval.
 
-`ai_content_plan.py` provides offline combined-output, targeted-revision and bounded-batch request planning, with tests. It does not execute OpenAI calls or create images.
+`ai_content_plan.py` provides offline combined-output, targeted-revision and bounded-batch request planning, with tests. `ai_local_templates.py` provides a zero-API-cost, literal verified-fact product spotlight for simple cases. Neither executes OpenAI calls or creates images.
 
 ## Simple onboarding and direct social connections
 
@@ -47,7 +47,8 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 
 - `ai_account_policy.py`: server-session-scoped AI mode and isolated user/business memory preferences; mode switching supports a **trusted vault reference only**, never raw API key handling.
 - `ai_sponsorship.py`: explicit owner/invited/public plan descriptors and SQLite conditional sponsored-request quota reservation.
-- `ai_draft_request.py` and `ai_content_plan.py`: verified-facts-only OpenAI request construction, combined post/optional image prompt output, independent component revisions and bounded batch planning. **Not a payment gateway, complete cost ledger or distributed production rate limiter.**
+- `ai_draft_request.py` and `ai_content_plan.py`: verified-facts-only OpenAI request construction, combined post/optional image prompt output, independent component revisions and bounded batch planning.
+- `ai_local_templates.py`: authenticated, literal-fact, zero-API-cost draft fallback. **Not a payment gateway, complete cost ledger or distributed production rate limiter.**
 - `test_ai_account_policy.py` and `test_ai_sponsorship.py`: offline regression coverage for separation, mode changes, invalid credentials and quotas.
 
 **Not implemented:** actual OpenAI API calls, prompt orchestration, encryption vault, billing/Google Play subscriptions, real user onboarding, direct Facebook OAuth/Page publishing, live scheduling or production multi-worker enforcement. Existing BAM work is preserved and publishing remains disabled.
