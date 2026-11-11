@@ -49,15 +49,18 @@ async function main(){
   ])await assert.rejects(()=>change({...ctx,fetchImpl,...bad}),TypeError);
   await assert.rejects(()=>list({...ctx,fetchImpl,
     origin:'http://bam.example'}),TypeError);
-  await assert.rejects(()=>list({...ctx,fetchImpl:async()=>({
-    ok:true,json:async()=>({...roster,tenant_id:'other'}})}),TypeError);
-  await assert.rejects(()=>list({...ctx,fetchImpl:async()=>({
-    ok:true,json:async()=>({...roster,publishing_enabled:true}})}),TypeError);
-  await assert.rejects(()=>change({...ctx,fetchImpl:async()=>({
-    ok:true,json:async()=>({tenant_id:'shop',member_id:id,
-      status:'updated',revision:2,sessions_revoked:1,
-      publishing_enabled:true})}),memberId:id,action:'change_role',
-      role:'viewer',expectedRevision:1}),TypeError);
+  const wrongTenant=async()=>({ok:true,
+    json:async()=>({...roster,tenant_id:'other'})});
+  await assert.rejects(()=>list({...ctx,fetchImpl:wrongTenant}),TypeError);
+  const unsafePublishing=async()=>({ok:true,
+    json:async()=>({...roster,publishing_enabled:true})});
+  await assert.rejects(()=>list({...ctx,fetchImpl:unsafePublishing}),TypeError);
+  const unsafeChange=async()=>({ok:true,json:async()=>({
+    tenant_id:'shop',member_id:id,status:'updated',revision:2,
+    sessions_revoked:1,publishing_enabled:true})});
+  await assert.rejects(()=>change({...ctx,fetchImpl:unsafeChange,
+    memberId:id,action:'change_role',role:'viewer',
+    expectedRevision:1}),TypeError);
   assert.equal(calls.length,count);
   console.log('BAM private team membership client tests passed');
 }
