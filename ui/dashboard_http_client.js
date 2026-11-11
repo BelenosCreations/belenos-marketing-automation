@@ -4,9 +4,10 @@
  */
 (function(root,factory){
   'use strict';
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./dashboard_data_contract.js'),require('./content_studio_contract.js'),require('./posting_preferences_contract.js'),require('./ai_draft_contract.js'),require('./ai_settings_contract.js'),require('./ai_facts_contract.js'));
-  else root.BAMReadClient=factory(root.BAMDashboardData,root.BAMContentStudioData,root.BAMPostingPreferencesData,root.BAMAIDraftData,root.BAMAISettingsData,root.BAMAIFactsData);
-})(typeof globalThis!=='undefined'?globalThis:this,function(contract,studioContract,postingContract,aiDraftContract,aiSettingsContract,aiFactsContract){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./dashboard_data_contract.js'),require('./content_studio_contract.js'),require('./posting_preferences_contract.js'),require('./ai_draft_contract.js'),require('./ai_settings_contract.js'),require('./ai_facts_contract.js'),
+      require('./ai_cost_contract.js'));
+  else root.BAMReadClient=factory(root.BAMDashboardData,root.BAMContentStudioData,root.BAMPostingPreferencesData,root.BAMAIDraftData,root.BAMAISettingsData,root.BAMAIFactsData,root.BAMAICostData);
+})(typeof globalThis!=='undefined'?globalThis:this,function(contract,studioContract,postingContract,aiDraftContract,aiSettingsContract,aiFactsContract,aiCostContract){
   'use strict';
   const routes=Object.freeze({
     dashboard:'/api/v1/dashboard',
@@ -14,7 +15,8 @@
     preferences:'/api/v1/posting-preferences',
     aiDrafts:'/api/v1/ai-drafts',
     aiSettings:'/api/v1/ai-settings',
-    aiFacts:'/api/v1/ai-business-facts'
+    aiFacts:'/api/v1/ai-business-facts',
+    aiCosts:'/api/v1/ai-cost-summary'
   });
   async function read({kind,token,fetchImpl,origin,expectedTenantId}){
     if(!Object.prototype.hasOwnProperty.call(routes,kind))
@@ -46,6 +48,7 @@
     if(kind==='aiDrafts')return aiDraftContract.normalize(body);
     if(kind==='aiSettings')return aiSettingsContract.normalize(body);
     if(kind==='aiFacts')return aiFactsContract.normalize(body);
+    if(kind==='aiCosts')return aiCostContract.normalize(body);
     if(!body||typeof body!=='object'||body.publishing_enabled!==false)
       throw new TypeError('Invalid read-only response');
     return body;
