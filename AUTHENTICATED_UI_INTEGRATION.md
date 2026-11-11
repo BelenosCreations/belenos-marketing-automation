@@ -24,6 +24,12 @@ The signed-in shell exposes the existing `POST /api/v1/auth/logout-everywhere` s
 
 The Team Access panel reads `GET /api/v1/team-overview` only for a trusted active-business owner. The server checks `MANAGE_TEAM`, returns strictly aggregate active role counts and inactive membership count and never exposes member IDs, email addresses, invitations or permission-changing actions. The browser validates all totals and discards stale data on business/session change. An optional failed count read does not require sign-out. **Verified:** [run 43035508617](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43035508617) (809 Python, 44 JavaScript).
 
+## Zero-cost advance AI topic preview
+
+An authorized creator can input 1–14 future topics in AI Drafts and call `POST /api/v1/ai/batch-preview` with only those topics, the selected platform and whether a future prompt may be needed. The backend resolves the business from the current session, checks CREATE_DRAFT permission and owner-confirmed facts, and returns only metadata about hypothetical individual model requests. The browser rejects any response implying provider execution, quota reservation, draft creation, known charges or publication. The AI Preview remains a read-only-in-effect operation, with no OpenAI API calls; it is not a scheduling queue or discounted batch execution. The UI discards late results after switching businesses or losing edit capability.
+
+**Verified:** [GitHub Actions run 43058003130](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43058003130), 845 Python and 55 JavaScript tests.
+
 ## Private AI writing preferences in Settings
 
 Authorized users can edit their own per-business AI writing guidance through separate label/value rows. The browser sends exactly `memory` and `expected_memory` to `PUT /api/v1/ai-memory`. The server resolves current session identity/business, authorizes draft creation, validates bounded nonsecret values, and compares the prior state before saving. A conflict requires the user to refresh; it does not silently overwrite another browser's preferences. Viewers do not see the editor; changing business or signing out invalidates late UI actions. This is not an owner fact-verification screen, provider key store, automatic AI generation or publishing control.

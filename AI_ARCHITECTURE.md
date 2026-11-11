@@ -96,3 +96,7 @@ The AI Drafts browser component can display a separate, two-step, cost-aware con
 ### Editable, isolated AI writing preferences
 
 Per-user/per-business writing guidance can be changed by an authenticated creator in BAM Settings. The text is restricted by length and secret-like-name checks, atomically compares with previously read preferences, and is never treated as independently verified business truth. The editor calls no OpenAI API and cannot select a billing plan or grant social publishing permissions. The offline gateway exposes only authenticated preference updates; no public hosting or provider key storage is activated.
+
+### Cost-free advance topic planning (not generation)
+
+The offline `AIBatchPreview` validates 1–14 future per-post ideas against owner-confirmed business facts and the requester's actual AI mode, then returns a scoped planning summary. The authenticated browser interface clearly displays **zero** provider requests made, **zero** drafts created, and **no** calculated bill, reservation or scheduling. This is a preflight planning aid. It does not execute an OpenAI provider Batch job, guarantee discounted pricing, assemble final published posts or authorize paid generation.

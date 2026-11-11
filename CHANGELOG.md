@@ -1,3 +1,19 @@
+## Zero-cost, authenticated advance marketing topic planning — 2026-11-11
+
+### Added
+- A user/business-scoped `AIBatchPreview` validates 1–14 distinct topics and existing owner-confirmed business facts before assembling a future OpenAI-compatible plan. It returns only the safe topic list, platform, fact revision and explanatory counts; no prompts, personal memories or business fact values are disclosed in the response.
+- `POST /api/v1/ai/batch-preview` runs solely through the opted-in *offline* HTTPS gateway with live session/role checks, strict JSON and nonpublishing output validation. It never calls OpenAI, reserves quota, stages drafts, grants approval, estimates a bill or creates a publishing schedule.
+- The authenticated AI Drafts view now includes **Plan future marketing topics**, with one topic per line, a platform and an optional image-prompt flag. The result is clearly labeled as an informational advance plan, not generated posts. Stale account, role or business requests are ignored and a viewer cannot access planning controls.
+- The existing trusted internal AI memory-write path now shares the secret-resistant validation used by the new checked Settings editor, closing a bypass for likely credential strings.
+- Added Python business isolation, HTTP boundary and zero-spend tests, plus JavaScript client/DOM tests for malformed topics, forged billing or publishing claims, duplicate lists, failed server calls and stale sessions.
+
+### Verification
+- **Passed:** [GitHub Actions run 43058003130](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43058003130), commit `97f8f2de`: **845 Python tests and 55 JavaScript UI test scripts**, plus Python compilation.
+
+### Known limitations
+- This is **not** generated content, provider Batch API processing, a discounted price, a future job, a confirmed cost, quota entitlement or a publishing queue. An operator must separately authorize and deploy paid AI generation with spend, security, and provider controls. The preview does not guarantee that future model output will be factual or accepted.
+- The signed-in preview is still a restricted local/offline development application, not a hosted production service.
+
 ## Isolated per-user AI writing preference editor — 2026-11-11
 
 ### Added

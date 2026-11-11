@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Zero-spend advance AI topic batch planning (2026-11-11)
+
+`AIBatchPreview` and a strict `POST /api/v1/ai/batch-preview` gateway route let an authenticated editor preview 1–14 distinct future topic requests using current owner-confirmed facts, their business, and the account's AI mode, without sending or charging any OpenAI API requests. The service generates **metadata only**: a list of topics/platform/image-prompt intentions, owner-facts revision and count of proposed per-topic model requests. It refuses to claim that a provider job ran, a discount was calculated, quota was reserved, a draft was created, or a post was scheduled. The AI Drafts page exposes this as a cost-free **Plan future marketing topics** section; viewers do not see it and session/business-switch checks stop stale responses. The legacy internal memory replacement is also hardened to apply the same credential-resistant validation as external preference writes.
+
+**Verified:** [GitHub Actions run 43058003130](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43058003130), commit `97f8f2de`: 845 Python and 55 JavaScript test scripts, plus compilation.
+
 ## Current-user, current-business AI writing preference editing (2026-11-11)
 
 BAM Settings now lets an authorized creator edit their own AI writing preferences, such as tone, target audience and desired length, without modifying another user's preferences even within the same business. `AIPolicyStore.replace_memory_checked` enforces the prior-state optimistic check under the server-resolved subject/business scope; stale writes fail with a conflict instead of overwriting another device's updates. `bam_ai_memory_wsgi.py` provides a strict HTTPS PUT adapter with bounded text and no client-selected tenant or publication fields. `ui/ai_memory_client.js` and the Settings editor validate and persist only these preferences, with role-aware controls, stale-response handling and no model API calls. This remains separate from owner-confirmed business facts and is unsuitable for passwords or credentials.
