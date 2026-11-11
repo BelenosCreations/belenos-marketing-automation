@@ -601,3 +601,7 @@ The authenticated read API and HTTPS WSGI adapter now expose `GET /api/v1/ai-set
 ## Nested AI Settings presentation milestone — 2026-11-10
 
 `ui/ai_settings_view.js` provides a read-only Settings → AI panel showing the active OpenAI funding mode, hidden personal-key configured status, and the current user's content preferences. All values use text-only DOM insertion; the renderer validates business identity before replacing its container. No key values, edit controls, or publishing actions are exposed. `ui/ai_settings_view_test.js` is included in the CI workflow. The view is a reusable component, not yet connected to a deployed Settings navigation shell.
+
+## AI settings and draft business-switch regression checkpoint — 2026-11-10
+
+The existing account API integration tests now exercise real AI policy memory, persistent AI drafts, authenticated reads and business switching together. The test verifies that a second business does not inherit the first business's AI memory or draft content, and that no key reference is exposed. This expands regression coverage for the approved multi-business architecture; CI completion is still unverified.
