@@ -1,5 +1,16 @@
 # Changelog
 
+## Secret-free OpenAI Settings read — 2026-11-10
+
+### Added
+- Authenticated read-only `/api/v1/ai-settings` endpoint for OpenAI mode and per-user business-scoped memory.
+- Strict browser validation rejecting raw credential fields and cross-business settings responses.
+- Python WSGI and Node client regression tests in CI.
+
+### Not enabled
+- Personal API-key upload, encrypted vault, mode-changing HTTP endpoint, billing or AI generation.
+
+
 ## AI Content Studio read-only integration — 2026-11-10
 
 ### Added
