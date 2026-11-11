@@ -14,12 +14,14 @@ async function main(){
         publishing_enabled:false}};
   };
   const base={origin:'https://bam.example',token:'valid',
+    expectedTenantId:'shop',
     fetchImpl};
   const result=await generate({...base,requestKey:key,topic:'Tumblers',
     platform:'facebook',needsMedia:true,includeImagePrompt:true});
   assert.equal(result.created,true);
   assert.equal(calls[0].options.method,'POST');
   assert.equal(calls[0].options.credentials,'omit');
+  assert.equal(calls[0].options.mode,'same-origin');
   assert.equal(calls[0].options.headers['Idempotency-Key'],key);
   assert.deepEqual(JSON.parse(calls[0].options.body),{
     topic:'Tumblers',platform:'facebook',
@@ -37,7 +39,10 @@ async function main(){
   await assert.rejects(()=>generate({...base,origin:'http://bam.example',
     requestKey:key,topic:'Tumblers',platform:'facebook',needsMedia:true,
     includeImagePrompt:true}),TypeError);
-  assert.equal(calls.length,2);
+  await assert.rejects(()=>generate({...base,expectedTenantId:'other',
+    requestKey:key,topic:'Tumblers',platform:'facebook',needsMedia:true,
+    includeImagePrompt:true}),TypeError);
+  assert.equal(calls.length,3);
   console.log('BAM AI explicit write client tests passed');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
