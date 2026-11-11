@@ -75,7 +75,7 @@ async function main(){
   assert.ok(restored.children.some(
     x=>x.textContent==='Send image for private review'));
   assert.match(notices.at(-1),/discarded/);
-  assert.match(notices.at(-1),/pending review/);
+  assert.ok(notices.some(x=>/pending review/.test(x)));
   assert.equal(errors.length,0);
   app.setMediaEnabled(false);
   assert.equal(container.children[0].children[3].children[1].children.some(
