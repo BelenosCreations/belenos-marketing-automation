@@ -56,7 +56,7 @@ class CalendarProposalTests(unittest.TestCase):
             required_items=['image'],now=NOW-4)
     def propose(self,**changes):
         args={'token':self.owner,'now':NOW,
-              'request_id':self.draft['request_id'],
+              'request_id':self.draft,
               'expected_revision':1,'utc_at':FIRST}
         args.update(changes)
         return self.calendar.propose(**args)
@@ -70,7 +70,7 @@ class CalendarProposalTests(unittest.TestCase):
         self.assertEqual(entries['tenant_id'],'shop')
         self.assertEqual(len(entries['items']),1)
         self.assertEqual(entries['items'][0]['request_id'],
-                         self.draft['request_id'])
+                         self.draft)
         self.assertEqual(entries['items'][0]['utc_at'],FIRST)
         self.assertEqual(entries['items'][0]['local_time'],'10:00')
         self.assertTrue(entries['items'][0]['slot_current'])
@@ -93,14 +93,14 @@ class CalendarProposalTests(unittest.TestCase):
             draft_text='Another product',suggestion='Need photo',
             required_items=['image'],now=NOW)
         with self.assertRaises(ValueError):
-            self.propose(request_id=another['request_id'])
+            self.propose(request_id=another)
         self.assertEqual(self.propose(utc_at=SECOND)['status'],
                          'proposal_only')
         self.assertEqual(len(self.calendar.list_mine_business(
             token=self.owner,now=NOW)['items']),1)
         changed=self.service.revise(
             token=self.creator,tenant_id='shop',
-            request_id=self.draft['request_id'],target='draft_text',
+            request_id=self.draft,target='draft_text',
             revised_text='Updated product copy',expected_revision=1,now=NOW+1)
         self.assertEqual(changed['revision'],2)
         item=self.calendar.list_mine_business(
@@ -146,15 +146,15 @@ class CalendarProposalTests(unittest.TestCase):
         self.propose()
         with self.assertRaises(PermissionError):
             self.calendar.discard(token=self.viewer,now=NOW,
-                                  request_id=self.draft['request_id'])
+                                  request_id=self.draft)
         removed=self.calendar.discard(token=self.creator,now=NOW,
-                                      request_id=self.draft['request_id'])
+                                      request_id=self.draft)
         self.assertEqual(removed['removed'],1)
         self.assertEqual(removed['posts_scheduled'],0)
         self.assertEqual(self.calendar.discard(token=self.owner,now=NOW,
-            request_id=self.draft['request_id'])['removed'],0)
+            request_id=self.draft)['removed'],0)
         self.assertIsNotNone(self.requests.get(
-            tenant_id='shop',request_id=self.draft['request_id']))
+            tenant_id='shop',request_id=self.draft))
 
 if __name__=='__main__':
     unittest.main()
