@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 — Private owner-only access-change history
+
+- Added a tenant-scoped read-only recent member-change audit, owner-only `GET /api/v1/team/activity`, strict response validation and a deeper Settings history view.
+- Displays only recorded access events; no invented activity, credentials, invitation tokens or cross-business history.
+- Verified `d6a79329d2ed2ed5f7d37114aad557be60d464ab` with [GitHub Actions 43107012958](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43107012958): **924 Python tests**, browser regression scripts and compilation passed.
+- No live hosting, invitation email, publishing or paid AI changes.
+
 ## 2026-11-11 — Owner-controlled existing-member access (offline Alpha)
 
 - Added strict owner-only current-business team roster with verified member emails, non-owner role changes, deactivation and two-stage Settings confirmation.

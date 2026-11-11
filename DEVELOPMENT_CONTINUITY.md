@@ -3,7 +3,7 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified main code:** `d671af418be906b8350a717390233c9d9af1c47c`. **Most recent verified development source:** `38e799dba7df86378c0f89ecb216626df07cfff2` ([Actions 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364)). This newer source has not yet been merged into main.
+**Most recent verified main code:** `d671af418be906b8350a717390233c9d9af1c47c`. **Most recent verified development source:** `d6a79329d2ed2ed5f7d37114aad557be60d464ab` ([Actions 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364)). This newer source has not yet been merged into main.
 **Verification:** Full GitHub Actions [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) completed successfully on the exact merged commit. Integration candidate `748c3a1a` also passed [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217).
 **Merge:** [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) reconciled `main` with development; a two-parent integration history preserved both sets of changes. Development was fast-forwarded to main once the merged commit passed.
 **Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`. These are not off-site backups or enforced protection.
@@ -80,6 +80,13 @@ Current business owners can privately list existing team members in Settings and
 Backend: `team_membership_admin.py`, `bam_team_membership_wsgi.py`, migration-safe `accounts.py`, and the disabled-by-default offline gateway routes `GET /api/v1/team/members` and `POST /api/v1/team/membership`. Browser: `ui/team_members_client.js`, `ui/team_overview_workspace.js`, signed-in shell Team settings. Only verified member email is disclosed to the current business owner, and private roster state is cleared on sign-out/business switching. No live hosting, email delivery, social publishing or paid AI was enabled.
 
 **Code CI:** `38e799dba7df86378c0f89ecb216626df07cfff2` passed [run 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364), including **922 Python tests**, JavaScript UI regressions and Python compilation. The following docs-only commit will require an independent green run.
+
+## Alpha milestone — private team access activity (November 11, 2026)
+
+Owners can now inspect a **read-only, latest-30 access-change history** in Settings → Team. Events are persisted with the trusted actor/member identifiers, before-and-after roles, action, revision and server time. The backend derives the current business only from the owner session and applies tenant-scoped SQL filters *before* reading recent events. The HTTPS adapter and JavaScript contract verify exact response fields, descending event IDs, owner-only permissions and `publishing_enabled:false`. No invitation token, password, private media or email is included in activity history; the UI may label a member with their already-authorized roster email.
+
+**Verified source:** `d6a79329d2ed2ed5f7d37114aad557be60d464ab`, [Actions 43107012958](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43107012958) — 924 Python tests, browser regression suite and Python compilation **passed**. Offline Alpha only: no external account or publishing side effects. Release synchronization to `main` will use a reviewed CI-gated PR.
+
 
 ## Candidate next work (no authorization required)
 
