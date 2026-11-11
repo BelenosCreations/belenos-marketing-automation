@@ -6,7 +6,9 @@ The platform is being designed to support independent organizations, multiple bu
 
 **Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
 
-> **Approved AI direction:** Three usage scenarios (owner-only two posts/day, 5–10 invited users, and potential paid public Google Play release), OpenAI-only generation, default BAM-sponsored AI with optional personal OpenAI API key, and independent per-user AI memories. See [AI architecture and approved requirements](AI_ARCHITECTURE.md). Exact public pricing and quotas are not finalized.\n\n> **Development status:** Offline development prototype with password-and-Google authentication foundations, a responsive mobile-first GUI demonstration, and an authenticated dashboard card contract. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Approved AI direction:** Three usage scenarios (owner-only two posts/day, 5–10 invited users, and potential paid public Google Play release), OpenAI-only generation, default BAM-sponsored AI with optional personal OpenAI API key, and independent per-user AI memories. See [AI architecture and approved requirements](AI_ARCHITECTURE.md). Exact public pricing and quotas are not finalized.
+
+> **Development status:** Offline development prototype with password-and-Google authentication foundations, a responsive mobile-first GUI demonstration, and an authenticated dashboard card contract. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Current functional capabilities (offline development build)
 
@@ -20,8 +22,11 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **Local developer interface:** `dev_server.py` plus `dev_client.py` let developers inspect business accounts and held drafts over a loopback-only HTTP gateway without production credentials.
 - **Interactive graphical preview:** `ui/bam_dashboard_prototype.html` demonstrates large mobile-first cards, drilldown content screens, sample analytics, business switching, and light/dark appearance, using sample data only.
 - **Backend card contract:** `dashboard_cards.py` supplies permission-aware content counts and explicitly unavailable scheduling values for eventual live UI integration.
+- **AI draft backend:** owner-confirmed business fact registry, OpenAI-only structured draft planning, sponsored quota reservations, optional idempotency protection, held drafts, verified-image references and targeted revisions. Drafts are not approved or published.
+- **AI provider boundary:** disabled-by-default OpenAI HTTPS transport and a strict structured Responses adapter, with operator-configured token cost estimates. No real provider connection or billing is enabled.
+- **Authenticated AI workspace components:** read-only drafts, AI settings, owner-confirmed fact provenance and estimated usage panels; integration into the complete sign-in shell is pending.
 
-**Not yet implemented:** production BAM login enrollment and recovery, native Android user interface, hosted API, provider token exchange, actual media uploads, AI draft generation, production scheduler, or automatic social posting. The latest integrated code and tests are committed but a passing current-branch test run has not been independently verified.
+**Not yet implemented:** production BAM login enrollment and recovery, native Android user interface, hosted API, provider token exchange, actual media uploads, live AI draft generation, production scheduler, or automatic social posting. The latest integrated code and tests are committed but a passing current-branch test run has not been independently verified.
 
 ## Product identity
 
