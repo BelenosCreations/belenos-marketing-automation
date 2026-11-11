@@ -1,5 +1,16 @@
 # Changelog
 
+## AI request reconciliation and JSON ambiguity hardening — 2026-11-10
+
+### Added
+- Authenticated, business/user-scoped read-only generation request status lookup.
+- Duplicate JSON-key rejection for AI generation and owner-confirmed fact writes.
+- Regression tests for failed/completed status isolation and ambiguous request bodies.
+
+### Limitations
+- No automatic retry or live provider billing reconciliation.
+
+
 ## Business-bound AI generation hold responses — 2026-11-10
 
 ### Fixed
