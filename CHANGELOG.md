@@ -1,5 +1,17 @@
 # Changelog
 
+## Approved structured AI content plan — 2026-11-10
+
+### Added
+- `ai_content_plan.py`: one structured post plus optional image-prompt request, targeted copy/image-prompt revisions, and bounded advance draft batches.
+- `ai_local_templates.py`: verified-fact-only, zero-API-cost product spotlight draft.
+- Offline tests for structured output, component preservation, batch validation and local template safeguards.
+- Documented optional ChatGPT Free/paid image creation as a user-operated workflow, not a BAM API integration.
+
+### Safeguards
+- All generated or templated content remains pending verification and approval; no image generation or publication is claimed.
+
+
 ## Approved OpenAI-only AI architecture — 2026-11-10
 
 ### Added
