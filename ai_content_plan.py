@@ -67,7 +67,7 @@ class AIContentPlan:
             raise ValueError('Only a single component can be revised')
         if type(instruction) is not str or not instruction.strip() or len(instruction)>500:
             raise ValueError('Revision instruction required')
-        if type(current) is not dict or set(current)<{'post_text','image_prompt'}:
+        if type(current) is not dict or not {'post_text','image_prompt'}.issubset(current):
             raise ValueError('Existing structured draft required')
         # Revalidate content, and preserve the untargeted component verbatim.
         validated=self.parse_response({
@@ -98,7 +98,11 @@ class AIContentPlan:
         if type(revised_text) is not str or not revised_text.strip() or (
             len(revised_text)>(4000 if target=='post_text' else 2000)):
             raise ValueError('Invalid revision')
-        result=AIContentPlan.parse_response(current,include_image_prompt=True)
+        if type(current) is not dict or not {'post_text','image_prompt'}.issubset(current):
+            raise ValueError('Existing structured draft required')
+        result=AIContentPlan.parse_response({
+            'post_text':current['post_text'],
+            'image_prompt':current['image_prompt']},include_image_prompt=True)
         result[target]=revised_text
         result['status']='draft_pending_verification'
         return result
