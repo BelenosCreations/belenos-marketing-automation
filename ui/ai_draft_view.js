@@ -16,12 +16,15 @@
     return node;
   }
   function render({document,container,payload,expectedTenantId,
-                   copyText,openUrl}){
+                   copyText,openUrl,canEdit=false,onRevise}){
     if(!document||!container||typeof container.replaceChildren!=='function')
       throw new TypeError('Valid AI draft mount required');
     if((copyText!==undefined||openUrl!==undefined)&&
        (typeof copyText!=='function'||typeof openUrl!=='function'))
       throw new TypeError('Manual image handoff actions required');
+    if(typeof canEdit!=='boolean'||
+       (canEdit&&typeof onRevise!=='function'))
+      throw new TypeError('Editing requires an explicit trusted callback');
     const model=contract.normalize(payload);
     if(expectedTenantId!==undefined&&model.tenantId!==expectedTenantId)
       throw new TypeError('Unexpected business response');
@@ -50,6 +53,36 @@
         :draft.mediaAttached
           ?'Media verified and attached — awaiting factual verification and approval'
           :'Awaiting factual verification and approval'));
+      if(canEdit){
+        const copyBox=el(document,'textarea','');
+        copyBox.value=draft.postText;
+        copyBox.maxLength=4000;
+        copyBox.rows=3;
+        item.append(copyBox);
+        const saveCopy=el(document,'button','Save post copy');
+        saveCopy.type='button';
+        saveCopy.addEventListener('click',()=>onRevise({
+          draftId:draft.id,target:'post_text',
+          revisedText:copyBox.value.trim(),expectedRevision:draft.revision
+        }));
+        item.append(saveCopy);
+        if(draft.imagePrompt!==null){
+          const promptBox=el(document,'textarea','');
+          promptBox.value=draft.imagePrompt;
+          promptBox.maxLength=2000;promptBox.rows=3;
+          item.append(promptBox);
+          const savePrompt=el(document,'button','Save image prompt');
+          savePrompt.type='button';
+          savePrompt.addEventListener('click',()=>onRevise({
+            draftId:draft.id,target:'image_prompt',
+            revisedText:promptBox.value.trim(),
+            expectedRevision:draft.revision
+          }));
+          item.append(savePrompt);
+        }
+        item.append(el(document,'p',
+          'Each change affects only the selected component. Changing the image prompt requires new media verification. All drafts remain unpublished.'));
+      }
       wrapper.append(item);
     }
     container.replaceChildren(wrapper);

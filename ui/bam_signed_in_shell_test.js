@@ -118,6 +118,18 @@ async function main(){
         publishing_enabled:false};
       return {ok:true,json:async()=>data['ai-business-facts']};
     }
+    if(kind==='ai-drafts'&&opts.method==='PUT'){
+      const edit=JSON.parse(opts.body);
+      const existing=aiByTenant[currentTenant].find(d=>d.draft_id===edit.draft_id);
+      if(!existing||edit.expected_revision!==existing.revision)
+        throw new Error('Stale edit revision');
+      existing[edit.target]=edit.revised_text;
+      existing.revision++;
+      if(edit.target==='image_prompt'){
+        existing.media_attached=false;existing.status='needs_media';
+      }
+      return {ok:true,json:async()=>({...existing})};
+    }
     if(kind==='local-product-draft'&&opts.method==='POST'){
       const payload=JSON.parse(opts.body);
       const newDraft={tenant_id:currentTenant,draft_id:'c'.repeat(32),
@@ -206,6 +218,25 @@ async function main(){
   await localButton.listeners.click();
   assert.equal(aiByTenant.shop.length,1);
   assert.equal(aiByTenant.shop[0].status,'needs_media');
+  const editable=e['bam-ai-drafts'].children[0].children[2];
+  const copyEditor=editable.children.find(x=>x.tag==='textarea'&&
+    x.value==='Example Shop: Custom tumblers. Contact us for details.');
+  const copySave=editable.children.find(x=>x.textContent==='Save post copy');
+  assert.ok(copyEditor&&copySave);
+  copyEditor.value='Edited product copy';
+  await copySave.listeners.click();
+  assert.equal(aiByTenant.shop[0].post_text,'Edited product copy');
+  assert.equal(aiByTenant.shop[0].revision,2);
+  const refreshed=e['bam-ai-drafts'].children[0].children[2];
+  const promptEditor=refreshed.children.find(x=>x.tag==='textarea'&&
+    x.value==='Generic conceptual graphic');
+  const promptSave=refreshed.children.find(
+    x=>x.textContent==='Save image prompt');
+  assert.ok(promptEditor&&promptSave);
+  promptEditor.value='New illustration concept';
+  await promptSave.listeners.click();
+  assert.equal(aiByTenant.shop[0].image_prompt,'New illustration concept');
+  assert.equal(aiByTenant.shop[0].revision,3);
   assert.equal(e['bam-ai-drafts'].children[0].children.length,3);
   assert.deepEqual(data['posting-preferences'].manual_times,['10:00','18:30']);
   assert.equal(e['overview-panel'].hidden,true);
