@@ -19,6 +19,10 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Pending media metadata — not an upload
+
+`POST /api/v1/content/upload-preflight` is deliberately disabled by default and exposed only through the offline gateway. It accepts metadata for an existing required content item in the session's current business. Authorization is server-side and no uploaded bytes, storage keys, presigned URLs or permissions are returned. The response contains an unverified `pending` attachment ID and `publishing_enabled:false`. An attachment remains unusable until a separately trusted storage, inspection, malware/consent verification and acceptance pipeline is implemented. Do not add an Upload button that implies a file has been transferred merely because metadata preflight succeeded.
+
 ## Owner-only Smart/Manual posting preferences
 
 `bam_posting_preferences_wsgi.py` exposes a disabled-by-default `PUT /api/v1/posting-preferences` route through the offline BAM gateway, parallel to its existing authenticated GET endpoint. The only accepted client fields are `mode` (Smart/Manual), a valid server-checked IANA timezone and up to 24 unique 24-hour local posting times. Manual requires times; Smart must not include them. The trusted account read API checks current tenant membership and the business owner role before any update.

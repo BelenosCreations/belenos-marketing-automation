@@ -1,3 +1,18 @@
+## Pending-only media metadata preflight — 2026-11-10
+
+### Added
+- Introduced `bam_upload_preflight_wsgi.py`, a separate disabled-by-default HTTPS-only attachment preflight route. It validates business-session identity, current edit access, associated content request/checklist item, allowed media type, exact SHA-256 digest and bounded file size.
+- `AccountReadAPI.begin_content_upload_preflight` derives tenant identity from the session, delegates to `ContentUploadPreflight`, and registers only a private **pending** attachment metadata record. It never returns a storage key or signed upload URL and cannot mark a file verified, attach bytes, approve or publish.
+- Wired the preflight to `bam_offline_gateway.py` and added transport, malformed-request, forged-role/tenant, cross-business and end-to-end tests.
+- Kept the existing manual ChatGPT image handoff concept unchanged. Users cannot yet transfer their images into BAM.
+
+### Verified tests
+- **Passed:** [GitHub Actions run 42959953634](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959953634), commit `07456b3a`: Python compilation, **742 Python tests and 30 JavaScript UI scripts**.
+
+### Known limitations
+- A preflight metadata record is not an uploaded or verified file. No object-store integration, server-side file transfer, malware scan, consent review, image validation/preview, or publishing eligibility is provided.
+- Production quotas, secure storage lifecycle, cleanup and anti-abuse controls are still needed before media upload can safely be turned on.
+
 ## Owner-controlled Smart/Manual posting times — 2026-11-10
 
 ### Added

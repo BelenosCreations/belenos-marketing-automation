@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Pending-only media metadata preflight (2026-11-10)
+
+A new disabled-by-default `bam_upload_preflight_wsgi.py` route delegates file **metadata** registration to the existing authenticated `ContentUploadPreflight`. It validates a server-derived tenant, the specific held content request and required checklist item, permitted MIME family, SHA-256 hash, and bounded size before recording a private `pending` attachment. It does not receive file bytes, reveal the storage key, authorize upload, mark verification, grant publishing or satisfy a content request. This is only groundwork for the approved user-controlled ChatGPT media return path, pending real private storage and trusted scanning.
+
+**Verified [GitHub Actions run 42959953634](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959953634): 742 Python tests and 30 JS scripts, plus Python compilation.**
+
 ## Owner-only Smart/Manual posting time Settings (2026-11-10)
 
 The signed-in Settings panel now includes `ui/posting_preferences_workspace.js`, an explicit owner-editable interface for Smart or Manual posting time preferences and an IANA timezone. Only a current business owner can save these through the disabled-by-default `bam_posting_preferences_wsgi.py` PUT endpoint, wired into the offline BAM composition root. The server derives the business from its authorized session and rejects any client-supplied role, tenant, schedule or publication claim. The browser validates strict response structure and confirms writes with a fresh tenant-scoped GET. User interface state is invalidated on sign-out and business switch. These preferences never schedule or publish content.
