@@ -122,3 +122,8 @@ Independent recovery branches were saved at `checkpoint/alpha-last-green-2026-11
 ### Collaboration durability evidence (offline only)
 
 Two independent local gateway instances now pass a file-backed SQLite integration test covering shared drafts, conflicting simultaneous editor revisions, business-scoped role-change revocation and state persistence after reinitialization. This is stronger than a single mocked session, **but not evidence of an actually hosted or secure multi-device Beta**. See `test_offline_two_client_collaboration.py` and the [Alpha readiness gate](ALPHA_BETA_READINESS.md).
+
+
+### Offline data recovery evidence
+
+The local Alpha test suite now exercises a **consistent SQLite snapshot and restore in temporary directories**. It confirms that business-isolated drafts, session revocation and member audit records survive restoration, while edits made after the snapshot are not mistakenly included. This is test evidence only: **production backups, encryption, off-site storage and restore operations are not configured**. See `test_offline_sqlite_restore_drill.py` and [Alpha/Beta readiness](ALPHA_BETA_READINESS.md).

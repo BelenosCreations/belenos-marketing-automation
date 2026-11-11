@@ -173,3 +173,7 @@ Gates are **capability and authorization gates, not release dates**. Independent
 - [Changelog](CHANGELOG.md)
 
 When a historical document mentions Metricool, treat that mention as **superseded architecture**, not an open requirement. Preserve historical notes for traceability, but implement **direct official platform integrations** as the only approved core publishing direction.
+
+### Offline recovery evidence (November 11, 2026)
+
+The local Alpha test suite verifies SQLite's online backup/restore consistency, database integrity, business draft isolation, member-change audit and tenant-scoped revoked sessions across restore. The test snapshots are temporary and unencrypted, so Gate B still requires **an approved encrypted off-site backup service, retention policy, recovery monitoring and production-database restore drill**. This test alone does not authorize or configure a backup provider.

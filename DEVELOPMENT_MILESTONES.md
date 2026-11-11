@@ -3,6 +3,14 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Offline SQLite snapshot/restore integrity exercise — November 11, 2026
+
+The offline Alpha now has a **temporary-file-only backup/restore regression drill** in `test_offline_sqlite_restore_drill.py`. It uses SQLite's consistent online backup API to snapshot a committed database and restore it into a separately initialized BAM gateway. The test verifies `PRAGMA integrity_check`, independent business draft data, recovery of the original version of a changed draft, hashed session-token storage, and preservation of business-scoped revocations and team audit after restoration. All test databases are removed after each run.
+
+**Critical scope:** This test **does not create or schedule an operational backup**. The ephemeral SQLite snapshots are unencrypted and must never become a production export routine. Future approved hosting still needs encrypted, access-controlled/off-site backups, lifecycle retention, monitoring and real recovery rehearsal with production infrastructure.
+
+**Verified code checkpoint:** `1444094af143eaa40c43402d995319f7921f2407`, [GitHub Actions run 43108646726](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43108646726) — Python compilation, browser UI suite and **928 Python tests passed**. The documentation-only follow-up commit must be verified separately; no external services, publishing or AI spending were activated.
+
 ## Durable two-client collaboration simulation — 2026-11-11
 
 The Alpha regression suite now uses **two independently initialized BAM offline gateways and separate SQLite connections to the same file-backed database** to simulate two logged-in people working in one business, alongside a second isolated business. This validates end-to-end authentication, shared held-draft visibility, editor revision conflicts and correct retries. Owner role changes invalidate affected business sessions across both instances but preserve valid access to another business. After a simulated app restart, member roles, access revocation and draft contents remain intact.
