@@ -444,6 +444,23 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (private proposed draft calendar)
+
+### Added
+- Tenant-isolated persistence for draft-only possible posting times, restricted to unambiguous upcoming owner-configured Manual-mode slots and versioned held content.
+- Strict authenticated HTTPS GET/POST/DELETE proposal-only routes, plus validated browser clients and Content Studio save/remove controls.
+- Read-only proposed-calendar detail beneath the Scheduled dashboard drilldown, clearly separated from genuine scheduled posts (none are enabled).
+
+### Safety and verification
+- Reject stale draft revisions, conflicting business slots, unauthorized roles, cross-business access, unsafe time inputs and ambiguous/nonexistent DST times.
+- Saved proposals remain `proposal_only`, return `posts_scheduled: 0`, and never grant approval or publication.
+- GitHub Actions [run 43060585710](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43060585710) passed for commit `912c1ebc` (Python compilation, all Python and JavaScript tests).
+
+### Known limitations
+- Calendar proposals are not executable jobs and do not schedule social posts. Outdated proposals require manual attention.
+- The local HTTPS preview is not a deployed public service; real provider connections and publishing remain disabled.
+
+
 ## Multi-business session rotation, offline WSGI integration and branded shell — 2026-11-10
 
 ### Added

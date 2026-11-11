@@ -193,3 +193,9 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 **Project:** BAM (Belenos Automatic Marketing)  
 **Status:** Active development · publishing disabled
 
+
+## Proposed draft calendar — non-executable (2026-11-11)
+
+Content Studio can save or remove a **business-private proposed date/time** for a held draft from an owner's existing Manual posting-time preferences. The Scheduled dashboard drilldown separately shows proposed dates, including whether the draft revision or configured time is now stale. No proposal is an approved post, social publishing job, external calendar event, or future automation command. The HTTPS route `/api/v1/calendar-proposals` uses an active business membership and separate draft read/edit permissions. Duplicate slots within the same business are refused; nonexistent and ambiguous daylight-saving times cannot be selected. Proposals stay read-only for viewers and remain tenant-isolated. Removing a proposal never removes its underlying draft.
+
+All calendar proposal operations are confined to the opt-in local HTTPS development adapter. The workflow performs no paid AI call or external scheduling. Actual scheduling still requires a separate, authorized production integration and owner-approved rollout.
