@@ -17,6 +17,10 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Disabled-by-default sign-in boundary
+
+`bam_auth_wsgi.py` now has three strict HTTPS-only POST routes: `/api/v1/auth/password`, `/api/v1/auth/google-challenge`, and `/api/v1/auth/google`. Authentication requires `enabled=True` plus a trusted `AuthLoginAPI` with a throttle, a real server-side Google signature/issuer/audience/nonce verifier, and business membership checks. The existing localhost HTTP developer server does not mount these routes. `ui/auth_login_client.js` uses same-origin JSON POST, no cookies or retries, and gives the eventual authenticated shell a validated token and tenant context held in memory. It does not implement Google OAuth browser redirects, production enrollment, or server-side sign-out. A complete authentication service must still provide TLS, rate limits by IP, monitoring, account recovery, secure session revocation, and real-browser testing.
+
 ## Remaining steps before real authenticated GUI
 
 1. Establish a production database with migrations, backups, transactional consistency and secure key management.
