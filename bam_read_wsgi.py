@@ -52,9 +52,9 @@ class BAMReadWSGI:
         try:
             now=int(self.clock())
             if path=='/api/v1/posting-time-preview' and environ.get('QUERY_STRING'):
-            return self._response(start_response,'400 Bad Request',
-                {'error':'Unexpected query parameters'})
-        if path=='/api/v1/dashboard':
+                return self._response(start_response,'400 Bad Request',
+                    {'error':'Unexpected query parameters'})
+            if path=='/api/v1/dashboard':
                 body=self.api.get_dashboard_view(
                     session_token=token,server_now=now)
             elif path=='/api/v1/drafts':
