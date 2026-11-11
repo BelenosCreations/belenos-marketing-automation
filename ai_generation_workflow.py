@@ -5,11 +5,14 @@ No OpenAI network client, raw key handling, media generation or publishing is
 provided by this module. Sponsored attempts consume a quota reservation
 before the executor is invoked, including failed attempts.
 """
+import hashlib
+import json
 from ai_content_plan import AIContentPlan
 from ai_sponsorship import SponsorshipPlan
 
 class AIDraftGenerationWorkflow:
-    def __init__(self, *, plan, facts, quota, drafts, executor):
+    def __init__(self, *, plan, facts, quota, drafts, executor,
+                 idempotency=None):
         if not isinstance(plan,AIContentPlan):
             raise TypeError('Structured content planner required')
         if not callable(executor):
@@ -19,10 +22,12 @@ class AIDraftGenerationWorkflow:
         self.quota=quota
         self.drafts=drafts
         self.executor=executor
+        self.idempotency=idempotency
 
     def generate_sponsored(self, *, token, now, topic, platform,
                            month, sponsorship_plan,
-                           include_image_prompt=True,needs_media=False):
+                           include_image_prompt=True,needs_media=False,
+                           request_key=None):
         if not isinstance(sponsorship_plan,SponsorshipPlan):
             raise ValueError('Server-configured sponsorship plan required')
         if type(needs_media) is not bool or type(include_image_prompt) is not bool:
@@ -35,6 +40,44 @@ class AIDraftGenerationWorkflow:
             platform=platform,include_image_prompt=include_image_prompt)
         if request['mode']!='bam_sponsored':
             raise ValueError('Personal OpenAI key requires a separate vault-backed executor')
+        if request_key is not None:
+            if self.idempotency is None:
+                raise ValueError('Request deduplication store not configured')
+            fingerprint=hashlib.sha256(json.dumps({
+                'tenant':request['tenant_id'],
+                'subject':request['subject_id'],
+                'fact_revision':request['fact_revision'],
+                'input':request['input_json'],
+                'platform':platform,'month':month,
+                'include_image_prompt':include_image_prompt,
+                'needs_media':needs_media},sort_keys=True,
+                ensure_ascii=False).encode('utf-8')).hexdigest()
+            claim=self.idempotency.claim(token=token,now=now,
+                request_key=request_key,fingerprint=fingerprint)
+            if not claim['claimed']:
+                return {'created':False,
+                    'reason':'already_'+claim['status'],
+                    'publishing_enabled':False}
+        try:
+            result=self._execute_sponsored(token=token,now=now,
+                request=request,platform=platform,month=month,
+                sponsorship_plan=sponsorship_plan,
+                include_image_prompt=include_image_prompt,
+                needs_media=needs_media)
+        except Exception:
+            if request_key is not None:
+                self.idempotency.finish(token=token,now=now,
+                    request_key=request_key,status='failed')
+            raise
+        if request_key is not None:
+            self.idempotency.finish(token=token,now=now,
+                request_key=request_key,
+                status='completed' if result['created'] else 'failed',
+                draft_id=result['draft']['draft_id'] if result['created'] else None)
+        return result
+
+    def _execute_sponsored(self, *, token,now,request,platform,month,
+                           sponsorship_plan,include_image_prompt,needs_media):
         reservation=self.quota.reserve(token=token,now=now,
             plan=sponsorship_plan,month=month)
         if not reservation['reserved']:
