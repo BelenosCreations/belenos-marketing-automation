@@ -1,30 +1,20 @@
-# BAM verification checkpoint — 2026-11-10
+# BAM verification checkpoint — 2026-11-11
 
-## Executed verification
+## Current GitHub development branch verification
 
-The archived, user-provided `belenos_automation_phase3_2_offline.zip` was extracted into an isolated local working directory. The command executed was:
+**Repository:** `BelenosCreations/belenos-marketing-automation`  
+**Branch:** `development/phase-3-5-account-directory`  
+**Verified commit:** `2618f1399f4a3edb515e4ec296c7802dd3157ad5`  
+**CI:** [GitHub Actions run 43019581144](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43019581144)
 
-```sh
-python -m unittest discover -s belenos_automation -p 'test_*.py' -v
-```
+**Result:** 784 Python unit/integration tests passed, 37 JavaScript UI regression scripts passed, and Python compilation passed. Tests include localhost-only ephemeral HTTPS socket integration, tenant/account/session isolation, and pending-only image receipt. This is test execution, not production security assessment or approval to launch.
 
-**Result:** 26 tests executed, 26 passed, 0 failures, 0 errors (approximately 0.014 seconds).
+## Archived original Phase 3.2 package
 
-Coverage in this run: Phase 3.2 `engine.py`, `optimizer.py`, and `workflow.py` tests, including invented-promotion restrictions, approval gates, source/link policy, daylight-saving conversion, duplicate slots, and revocation.
-
-## GitHub development branch verification
-
-The current development branch contains newer Phase 3.5–6.1 modules that are **not included in the archived Phase 3.2 package**. The above successful result does not validate these newer modules.
-
-A GitHub Actions workflow exists at `.github/workflows/tests.yml` and specifies Python 3.12 with `python -m unittest discover -s . -p 'test_*.py' -v`. A check of the latest development commit's combined statuses returned no reported status entries; a separate workflow-run lookup returned no runs for an earlier commit. This does not establish that the current branch passed CI.
+The earlier supplied `belenos_automation_phase3_2_offline.zip` was extracted into an isolated local working directory. The original 26 Phase 3.2 tests passed. That historical result applies only to the original package and should not be confused with the current development branch.
 
 ## Release gate
 
-Until the full current-branch test suite has been executed successfully, BAM must be treated as an offline development prototype. No live publishing is enabled. Production readiness additionally requires authoritative content approval validation, upload scanning/consent, real authentication and mobile/backend integration.
+A fully deployed multiuser BAM service is **not** available. The loopback-only TLS test preview is not safe to expose publicly. Real email verification/enrollment, Google OAuth, encrypted and concurrent production storage, media scanning and rights review, social-provider connections, operational monitoring, scheduling and explicit live-publishing approval remain outstanding.
 
-## Next verification actions
-
-1. Run the entire current development branch suite in GitHub Actions or a checkout with Python 3.12.
-2. Correct any failing tests and re-run; record exact command, commit SHA and results.
-3. Review scheduling timezone edge cases and verify server-owned approval state before creating jobs.
-4. Keep README and CHANGELOG synchronized with the actual verified scope.
+Run the entire current-branch CI after future changes. Do not claim green verification from tests attached to an older commit. Never commit real passwords, provider tokens, TLS keys or personal customer data.

@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Persistent pending-media visibility and session-safe transfer (2026-11-11)
+
+The optional local media receipt path now has a strict read-only `GET /api/v1/content/media-status` route and tenant-scoped store summarization. Valid media metadata appears as `awaiting_file`; a private, regular, owner-readable quarantine file with the expected server-generated name appears as `pending_scan`. Results exclude raw media, hashes, attachment IDs and storage paths. Missing checklist items remain missing and are not approved. The UI refreshes these statuses as part of Content Studio reads; it hides the picker when a file is already awaiting review and fails closed when status cannot be confirmed. An upload client session validity callback prevents late bytes being sent after a logout or business switch between asynchronous request stages. This is not a media scanner or trusted approval pathway.
+
+**Verified:** [GitHub Actions run 43019581144](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43019581144): 784 Python tests and 37 JavaScript tests passed, plus compilation, commit `2618f139`.
+
 ## Content Studio capability redraw fix (2026-11-11)
 
 The private media capability toggle now re-renders Content Studio immediately, including revocation, rather than waiting for another read. This corrects a failing browser DOM regression without enabling any media approval or publishing. Verify the full GitHub Actions suite before considering the milestone complete.

@@ -1,3 +1,20 @@
+## Persistent, isolated pending-media receipt status — 2026-11-11
+
+### Added
+- `BAMPendingMediaStore.statuses` derives tenant and READ_DRAFTS permission from the live BAM session and exposes only `awaiting_file` or `pending_scan` for active, missing image checklist items. It never returns attachment IDs, file paths, digests, raw bytes, media verification, approval or publishing permission.
+- `BAMPendingMediaStatusWSGI` provides a default-disabled HTTPS-only, read-only `GET /api/v1/content/media-status` endpoint with strict response validation and no tenant-selection query parameter.
+- Content Studio retrieves authenticated pending status after refresh and displays either a pending private review message or an image upload control, avoiding repeat submission when an image was already received. Failed status checks fail closed by disabling image transfer, without signing out the user.
+- The browser stops a stale media transfer between hashing, metadata preflight and byte receipt when the business changes or the session is cleared.
+- Added backend, browser client and DOM regression tests covering tenant isolation, status persistence, malformed data, forged approval and session-change cancellation.
+
+### Verification
+- **Passed:** [GitHub Actions run 43019581144](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43019581144) on commit `2618f139`: **784 Python tests, 37 JavaScript test scripts**, and Python compilation.
+- The earlier image-status mock had an unreachable response branch; this was corrected before verifying the complete suite.
+
+### Known limitations
+- Pending image status reflects only a private quarantine receipt, not a media scan, consent/rights check, an approved attachment, a public gallery, or a ready-to-publish draft.
+- Quarantined files still need lifecycle/retention controls and a separate trusted verification pipeline. The local preview is limited to loopback HTTPS and never enables live scheduling or publishing.
+
 ## Content Studio pending-media capability redraw regression — 2026-11-11
 
 ### Fixed
