@@ -13,10 +13,12 @@ from ai_content_plan import AIContentPlan
 from ai_sponsorship import SponsoredAIQuota
 from ai_generation_idempotency import AIGenerationIdempotency
 from ai_generation_workflow import AIDraftGenerationWorkflow
+from ai_targeted_revision_workflow import AITargetedRevisionWorkflow
 from ai_cost_ledger import AICostLedger
 from openai_responses_executor import OpenAIResponsesExecutor
 from openai_https_transport import OpenAITransport
 from bam_ai_write_wsgi import BAMAIWriteWSGI
+from bam_ai_revision_wsgi import BAMAIRevisionWSGI
 from bam_ai_facts_write_wsgi import BAMAIFactsWriteWSGI
 
 @dataclass(frozen=True)
@@ -28,6 +30,8 @@ class DisabledAIBundle:
     idempotency: AIGenerationIdempotency
     costs: AICostLedger
     workflow: AIDraftGenerationWorkflow
+    revision_workflow: AITargetedRevisionWorkflow
+    revision_app: BAMAIRevisionWSGI
     generate_app: BAMAIWriteWSGI
     facts_app: BAMAIFactsWriteWSGI
 
@@ -48,7 +52,13 @@ def build_disabled_ai_bundle(*, db,sessions,directory,plan_resolver):
         plan=AIContentPlan(request_builder=AIDraftRequestBuilder(
             policy_store=policy)),facts=facts,quota=quota,drafts=drafts,
         executor=executor,idempotency=idempotency)
+    revision_workflow=AITargetedRevisionWorkflow(
+        plan=workflow.plan,facts=facts,quota=quota,drafts=drafts,
+        executor=executor,idempotency=idempotency)
+    revision_app=BAMAIRevisionWSGI(workflow=revision_workflow,
+        plan_resolver=plan_resolver,enabled=False)
     return DisabledAIBundle(policy,facts,drafts,quota,idempotency,costs,
-        workflow,BAMAIWriteWSGI(workflow=workflow,
+        workflow,revision_workflow,revision_app,
+        BAMAIWriteWSGI(workflow=workflow,
             plan_resolver=plan_resolver,enabled=False),
         BAMAIFactsWriteWSGI(registry=facts,enabled=False))

@@ -34,6 +34,13 @@ class DisabledAICompositionTests(unittest.TestCase):
             output=b''.join(app(env,lambda status,headers:
                 statuses.append(status)))
             return statuses[0],json.loads(output)
+        self.assertIs(bundle.revision_workflow.idempotency,bundle.idempotency)
+        self.assertIs(bundle.revision_workflow.drafts,bundle.drafts)
+        revised=invoke(bundle.revision_app,'/api/v1/ai/targeted-revision',
+            'POST',{'draft_id':'a'*32,'expected_revision':1,
+                    'target':'post_text','instruction':'Shorten',
+                    'topic':'Product'})
+        self.assertEqual(revised[0],'503 Service Unavailable')
         generated=invoke(bundle.generate_app,'/api/v1/ai-generate',
             'POST',{'topic':'Product','platform':'facebook',
                 'needs_media':True,'include_image_prompt':True})
