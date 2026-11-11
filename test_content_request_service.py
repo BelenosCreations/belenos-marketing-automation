@@ -138,6 +138,33 @@ class ContentRequestServiceTests(unittest.TestCase):
                 tenant_id='other',request_id=rid,target='draft_text',
                 revised_text='Cross tenant',expected_revision=2,now=103)
 
+    def test_creator_can_reprioritize_without_changing_copy_revision(self):
+        rid=self.create()
+        before=self.service.get(token=self.tokens['owner'],
+            tenant_id='shop',request_id=rid,now=101)
+        after=self.service.set_priority(
+            token=self.tokens['creator'],tenant_id='shop',
+            request_id=rid,priority=2,
+            expected_priority_token=before['priority_token'],now=102)
+        self.assertEqual(after['priority'],2)
+        self.assertEqual(after['revision'],before['revision'])
+        self.assertNotEqual(after['priority_token'],before['priority_token'])
+        with self.assertRaises(ValueError):
+            self.service.set_priority(
+                token=self.tokens['owner'],tenant_id='shop',
+                request_id=rid,priority=1,
+                expected_priority_token=before['priority_token'],now=103)
+        with self.assertRaises(PermissionError):
+            self.service.set_priority(
+                token=self.tokens['viewer'],tenant_id='shop',
+                request_id=rid,priority=1,
+                expected_priority_token=after['priority_token'],now=103)
+        with self.assertRaises(PermissionError):
+            self.service.set_priority(
+                token=self.tokens['creator'],tenant_id='other',
+                request_id=rid,priority=1,
+                expected_priority_token=after['priority_token'],now=103)
+
     def test_owner_can_postpone(self):
         rid=self.create()
         self.assertEqual(self.service.set_hold(token=self.tokens['owner'],

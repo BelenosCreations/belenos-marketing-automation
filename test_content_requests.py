@@ -85,6 +85,8 @@ class ContentRequestsTests(unittest.TestCase):
             before=upgraded.get(tenant_id='shop',request_id='a'*32)
             self.assertEqual(before['draft_text'],'Legacy draft')
             self.assertEqual(before['revision'],1)
+            self.assertEqual(len(before['priority_token']),32)
+            self.assertEqual(before['priority'],1)
             after=upgraded.revise(tenant_id='shop',request_id='a'*32,
                 target='suggestion',revised_text='Better guidance',
                 expected_revision=1,now=101)
@@ -92,8 +94,57 @@ class ContentRequestsTests(unittest.TestCase):
             self.assertEqual(after['draft_text'],'Legacy draft')
             self.assertEqual(after['suggestion'],'Better guidance')
             self.assertEqual(len(upgraded.list_for_business(tenant_id='shop')),1)
+            # Reinitialization is idempotent; it does not rotate a saved token.
+            ContentRequests(old_db)
+            self.assertEqual(upgraded.get(tenant_id='shop',
+                request_id='a'*32)['priority_token'],before['priority_token'])
         finally:
             old_db.close()
+
+    def test_priority_edit_rotates_version_without_invalidating_copy(self):
+        before=self.queue.get(tenant_id='shop',request_id=self.r)
+        saved=self.queue.set_priority(
+            tenant_id='shop',request_id=self.r,priority=-2,
+            expected_priority_token=before['priority_token'],now=102)
+        self.assertEqual(saved['priority'],-2)
+        self.assertNotEqual(saved['priority_token'],before['priority_token'])
+        self.assertEqual(saved['revision'],before['revision'])
+        self.assertEqual(saved['draft_text'],before['draft_text'])
+        self.assertEqual(saved['provided_items'],before['provided_items'])
+        self.assertEqual(saved['status'],before['status'])
+        with self.assertRaises(ValueError):
+            self.queue.set_priority(
+                tenant_id='shop',request_id=self.r,priority=2,
+                expected_priority_token=before['priority_token'],now=103)
+        with self.assertRaises(KeyError):
+            self.queue.set_priority(
+                tenant_id='other',request_id=self.r,priority=2,
+                expected_priority_token=saved['priority_token'],now=103)
+        with self.assertRaises(ValueError):
+            self.queue.set_priority(
+                tenant_id='shop',request_id=self.r,priority=True,
+                expected_priority_token=saved['priority_token'],now=103)
+        for invalid in ('wrong',None,True,4):
+            with self.assertRaises(ValueError):
+                self.queue.set_priority(
+                    tenant_id='shop',request_id=self.r,priority=1,
+                    expected_priority_token=invalid,now=103)
+        self.assertEqual(self.queue.get(tenant_id='shop',
+            request_id=self.r)['priority'],-2)
+
+    def test_priority_sort_uses_latest_stored_metadata(self):
+        second=self.queue.create(tenant_id='shop',channel='instagram',
+            draft_text='Another draft',suggestion='Confirm artwork',
+            required_items=['photo'],now=101,priority=0)
+        start=self.queue.get(tenant_id='shop',request_id=self.r)
+        self.assertEqual(self.queue.list_for_business(
+            tenant_id='shop')[0]['request_id'],self.r)
+        lowered=self.queue.set_priority(
+            tenant_id='shop',request_id=self.r,priority=-4,
+            expected_priority_token=start['priority_token'],now=102)
+        self.assertEqual(lowered['revision'],1)
+        self.assertEqual(self.queue.list_for_business(
+            tenant_id='shop')[0]['request_id'],second)
 
     def test_partial_content_stays_held(self):
         self.assertEqual(self.queue.provide(tenant_id='shop',request_id=self.r,

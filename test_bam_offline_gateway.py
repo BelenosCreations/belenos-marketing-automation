@@ -760,6 +760,66 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(self.call('/api/v1/review-feedback-history')[0]
                          ['status'],'401 Unauthorized')
 
+    def test_priority_edit_preserves_existing_review_and_proposal_versions(self):
+        owner=self.login('shop')
+        draft=self.app.requests.list_for_business(tenant_id='shop')[0]
+        rid=draft['request_id']
+        _,notesBefore=self.call('/api/v1/review-feedback',token=owner)
+        self.assertEqual(notesBefore['items'],[])
+        # A saved reviewer note stays current because priority metadata is
+        # not an edit to copy, attachments, or content revision.
+        _,note=self.call('/api/v1/review-feedback',method='PUT',
+            token=owner,body={'request_id':rid,
+            'expected_revision':draft['revision'],
+            'expected_feedback_token':None,
+            'note':'Customer must confirm artwork ownership'})
+        self.assertEqual(note['status'],'feedback_only')
+        beforeRevision=draft['revision']
+        oldVersion=draft['priority_token']
+        meta,saved=self.call('/api/v1/content/priority',method='PUT',
+            token=owner,body={'request_id':rid,'priority':2,
+                              'expected_priority_token':oldVersion})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(saved['priority'],2)
+        self.assertEqual(saved['status'],'held_priority_only')
+        self.assertEqual(saved['revision'],beforeRevision)
+        self.assertFalse(saved['publishing_enabled'])
+        self.assertNotEqual(saved['priority_token'],oldVersion)
+        _,drafts=self.call('/api/v1/drafts',token=owner)
+        changed=next(row for row in drafts['drafts']
+                     if row['request_id']==rid)
+        self.assertEqual(changed['revision'],beforeRevision)
+        self.assertEqual(changed['priority'],2)
+        self.assertEqual(changed['priority_token'],saved['priority_token'])
+        _,notesAfter=self.call('/api/v1/review-feedback',token=owner)
+        self.assertFalse(notesAfter['items'][0]['stale'])
+        self.assertEqual(notesAfter['items'][0]['feedback_token'],
+                         note['feedback_token'])
+        self.assertEqual(self.call('/api/v1/content/priority',
+            method='PUT',token=owner,body={'request_id':rid,'priority':1,
+                    'expected_priority_token':oldVersion})[0]['status'],
+                         '409 Conflict')
+        self.assertEqual(self.call('/api/v1/content/priority',
+            method='PUT',token=owner,body={'request_id':rid,'priority':1,
+                    'expected_priority_token':saved['priority_token'],
+                    'publish_now':True})[0]['status'],'400 Bad Request')
+        other=self.login('other')
+        self.assertEqual(self.call('/api/v1/content/priority',
+            method='PUT',token=other,body={'request_id':rid,'priority':1,
+                    'expected_priority_token':saved['priority_token']})[0]
+                         ['status'],'404 Not Found')
+        self.assertEqual(self.call('/api/v1/content/priority',
+            token=owner)[0]['status'],'405 Method Not Allowed')
+        self.assertEqual(self.call('/api/v1/content/priority',
+            method='PUT',token=owner,extra={'QUERY_STRING':'tenant_id=other'},
+            body={'request_id':rid,'priority':1,
+                  'expected_priority_token':saved['priority_token']})[0]
+                         ['status'],'400 Bad Request')
+        self.assertEqual(self.call('/api/v1/content/priority',
+            method='PUT',body={'request_id':rid,'priority':1,
+                'expected_priority_token':saved['priority_token']})[0]
+                         ['status'],'401 Unauthorized')
+
     def test_private_editorial_feedback_write_conflicts_and_isolation(self):
         owner=self.login('shop')
         draft=self.app.requests.list_for_business(
