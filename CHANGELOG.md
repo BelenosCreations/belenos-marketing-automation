@@ -1,5 +1,15 @@
 # Changelog
 
+## Owner-confirmed AI facts write boundary — 2026-11-10
+
+### Added
+- Disabled-by-default HTTPS `PUT /api/v1/ai-business-facts` endpoint for authorized owner confirmation.
+- Strict bounded JSON input, active-business session scoping, optimistic revision checks and tests.
+
+### Limitations
+- Not mounted in a production service; owner confirmation is provenance, not independent verification.
+
+
 ## Disabled-by-default authenticated AI generation endpoint — 2026-11-10
 
 ### Added
