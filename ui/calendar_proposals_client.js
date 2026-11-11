@@ -53,7 +53,7 @@
   let previous='';
   const entries=body.items.map(row=>{
     if(!exact(row,['request_id','draft_revision','current_revision',
-      'utc_at','local_date','local_time','timezone','content_changed',
+      'utc_at','local_date','local_time','timezone','proposal_token','content_changed',
       'slot_current','publishing_enabled'])||
       !id.test(row.request_id)||
       !Number.isSafeInteger(row.draft_revision)||row.draft_revision<1||
@@ -64,6 +64,7 @@
       typeof row.local_time!=='string'||!clock.test(row.local_time)||
       typeof row.timezone!=='string'||!row.timezone.trim()||
       row.timezone.length>80||
+      typeof row.proposal_token!=='string'||!id.test(row.proposal_token)||
       typeof row.content_changed!=='boolean'||
       typeof row.slot_current!=='boolean'||
       row.publishing_enabled!==false||
@@ -74,7 +75,8 @@
       requestId:row.request_id,draftRevision:row.draft_revision,
       currentRevision:row.current_revision,utcAt:row.utc_at,
       localDate:row.local_date,localTime:row.local_time,
-      timezone:row.timezone,contentChanged:row.content_changed,
+      timezone:row.timezone,proposalToken:row.proposal_token,
+      contentChanged:row.content_changed,
       slotCurrent:row.slot_current,publishingEnabled:false});
   });
   return Object.freeze({tenantId:body.tenant_id,
@@ -82,31 +84,38 @@
     status:'proposal_only',postsScheduled:0,publishingEnabled:false});
  }
  async function propose(options){
-  const {requestId,expectedRevision,utcAt}=options;
+  const {requestId,expectedRevision,utcAt,expectedProposalToken}=options;
   if(!id.test(requestId)||!Number.isSafeInteger(expectedRevision)||
-     expectedRevision<1||typeof utcAt!=='string'||!utc.test(utcAt))
+     expectedRevision<1||typeof utcAt!=='string'||!utc.test(utcAt)||
+     !(expectedProposalToken===null||
+       (typeof expectedProposalToken==='string'&&id.test(expectedProposalToken))))
     throw new TypeError('Current draft and trusted future slot required');
   const result=await request(options,'POST',{
-    request_id:requestId,expected_revision:expectedRevision,utc_at:utcAt});
+    request_id:requestId,expected_revision:expectedRevision,utc_at:utcAt,
+    expected_proposal_token:expectedProposalToken});
   safeEnvelope(result,options.expectedTenantId,
-    ['tenant_id','request_id','utc_at','status',
+    ['tenant_id','request_id','utc_at','proposal_token','status',
      'posts_scheduled','publishing_enabled']);
-  if(result.request_id!==requestId||result.utc_at!==utcAt)
+  if(result.request_id!==requestId||result.utc_at!==utcAt||
+     typeof result.proposal_token!=='string'||!id.test(result.proposal_token))
     throw new TypeError('Proposal mismatch');
   return Object.freeze({tenantId:result.tenant_id,
-    requestId,utcAt,status:'proposal_only',
+    requestId,utcAt,proposalToken:result.proposal_token,
+    status:'proposal_only',
     postsScheduled:0,publishingEnabled:false});
  }
  async function discard(options){
-  const {requestId}=options;
-  if(!id.test(requestId))throw new TypeError('Valid draft ID required');
-  const result=await request(options,'DELETE',{request_id:requestId});
+  const {requestId,expectedProposalToken}=options;
+  if(!id.test(requestId)||typeof expectedProposalToken!=='string'||
+     !id.test(expectedProposalToken))throw new TypeError('Current draft proposal version required');
+  const result=await request(options,'DELETE',{
+    request_id:requestId,expected_proposal_token:expectedProposalToken});
   safeEnvelope(result,options.expectedTenantId,
     ['tenant_id','request_id','removed','status',
      'posts_scheduled','publishing_enabled']);
   if(result.request_id!==requestId||
      !Number.isSafeInteger(result.removed)||
-     ![0,1].includes(result.removed))
+     result.removed!==1)
     throw new TypeError('Untrusted proposal removal');
   return Object.freeze({tenantId:result.tenant_id,requestId,
     removed:result.removed,status:'proposal_only',

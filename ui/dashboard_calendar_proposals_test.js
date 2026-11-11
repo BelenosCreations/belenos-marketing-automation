@@ -41,7 +41,8 @@ const fetchImpl=async(url,opts)=>{
      publishing_enabled:false,items:[{
        request_id:rid,draft_revision:1,current_revision:2,
        utc_at:utc,local_date:'2026-11-11',local_time:'10:00',
-       timezone:'America/New_York',content_changed:true,
+       timezone:'America/New_York',proposal_token:'b'.repeat(32),
+       content_changed:true,
        slot_current:false,publishing_enabled:false
      }]})};
  }

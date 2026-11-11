@@ -206,7 +206,8 @@
                   remove.addEventListener('click',async()=>{
                     if(busy||active!==viewingSession||epoch!==viewingEpoch)
                       return;
-                    await removeProposal({requestId:draft.id});
+                    await removeProposal({requestId:draft.id,
+                      expectedProposalToken:existing.proposalToken});
                   });
                   calendarSection.append(remove);
                 }
@@ -238,7 +239,8 @@
                     if(busy||active!==viewingSession||epoch!==viewingEpoch)
                       return;
                     await saveProposal({requestId:draft.id,
-                      expectedRevision:draft.revision,utcAt:choices.value});
+                      expectedRevision:draft.revision,utcAt:choices.value,
+                      expectedProposalToken:existing?existing.proposalToken:null});
                   });
                   calendarSection.append(add);
                 }else{
@@ -391,11 +393,14 @@
       }
       container.replaceChildren(wrap);
     }
-    async function saveProposal({requestId,expectedRevision,utcAt}){
+    async function saveProposal({requestId,expectedRevision,utcAt,
+                                expectedProposalToken}){
       if(!enableCalendarProposals||!active||!canEdit||busy||
          !calendarData||!calendarSlots||calendarError||
          calendarSlots.status!=='manual_preview'||
-         !calendarSlots.slots.some(x=>x.utcAt===utcAt))
+         !calendarSlots.slots.some(x=>x.utcAt===utcAt)||
+         (calendarData.items.find(x=>x.requestId===requestId)?.proposalToken||null)
+            !==expectedProposalToken)
         return {error:true};
       const mine=active,version=epoch;
       busy=true;
@@ -403,7 +408,7 @@
         const result=await calendarClient.propose({
           origin,fetchImpl,token:mine.token,
           expectedTenantId:mine.tenantId,requestId,
-          expectedRevision,utcAt});
+          expectedRevision,utcAt,expectedProposalToken});
         if(version!==epoch||active!==mine)return {stale:true};
         const updated=await refresh();
         if(updated.error||updated.stale)return updated;
@@ -418,16 +423,18 @@
         if(version===epoch&&active===mine){busy=false;render();}
       }
     }
-    async function removeProposal({requestId}){
+    async function removeProposal({requestId,expectedProposalToken}){
       if(!enableCalendarProposals||!active||!canEdit||busy||
-         !calendarData||!calendarData.items.some(x=>x.requestId===requestId))
+         !calendarData||!calendarData.items.some(x=>
+            x.requestId===requestId&&x.proposalToken===expectedProposalToken))
         return {error:true};
       const mine=active,version=epoch;
       busy=true;
       try{
         const result=await calendarClient.discard({
           origin,fetchImpl,token:mine.token,
-          expectedTenantId:mine.tenantId,requestId});
+          expectedTenantId:mine.tenantId,requestId,
+          expectedProposalToken});
         if(version!==epoch||active!==mine)return {stale:true};
         const updated=await refresh();
         if(updated.error||updated.stale)return updated;

@@ -7,7 +7,7 @@ function node(tag){return {tag,children:[],textContent:'',className:'',
   replaceChildren(...items){this.children=items},
   addEventListener(name,fn){this.listeners[name]=fn}}}
 const document={createElement:node},container=node('main');
-const rid='a'.repeat(32),utc='2026-11-11T15:00:00+00:00';
+const rid='a'.repeat(32),version='b'.repeat(32),utc='2026-11-11T15:00:00+00:00';
 let proposal=null,tenant='shop';
 const calls=[],notices=[],errors=[];
 const fetchImpl=async(url,options)=>{
@@ -33,17 +33,21 @@ const fetchImpl=async(url,options)=>{
     if(options.method==='POST'){
       const request=JSON.parse(options.body);
       assert.deepEqual(request,{
-        request_id:rid,expected_revision:1,utc_at:utc});
+        request_id:rid,expected_revision:1,utc_at:utc,
+        expected_proposal_token:null});
       proposal={request_id:rid,draft_revision:1,current_revision:1,
         utc_at:utc,local_date:'2026-11-11',local_time:'10:00',
-        timezone:'America/New_York',content_changed:false,
+        timezone:'America/New_York',proposal_token:version,
+        content_changed:false,
         slot_current:true,publishing_enabled:false};
       return {ok:true,status:201,json:async()=>({
-        tenant_id:'shop',request_id:rid,utc_at:utc,status:'proposal_only',
+        tenant_id:'shop',request_id:rid,utc_at:utc,
+        proposal_token:version,status:'proposal_only',
         posts_scheduled:0,publishing_enabled:false})};
     }
     if(options.method==='DELETE'){
-      assert.deepEqual(JSON.parse(options.body),{request_id:rid});
+      assert.deepEqual(JSON.parse(options.body),{
+        request_id:rid,expected_proposal_token:version});
       proposal=null;
       return {ok:true,status:200,json:async()=>({
         tenant_id:'shop',request_id:rid,removed:1,status:'proposal_only',
