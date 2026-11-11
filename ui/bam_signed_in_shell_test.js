@@ -51,6 +51,8 @@ const data={
     manual_times:[],configured:false,publishing_enabled:false},
   connections:{tenant_id:'shop',visibility:'authorized',connections:[],
     publishing_enabled:false},
+  'calendar-proposals':{tenant_id:'shop',status:'proposal_only',items:[],
+    posts_scheduled:0,publishing_enabled:false},
   'team-overview':{tenant_id:'shop',roles:{owner:1,marketing_manager:0,
     content_creator:0,employee:0,viewer:0},active_members:1,
     inactive_members:0,invitation_status:'not_connected',publishing_enabled:false},

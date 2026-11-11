@@ -9,11 +9,13 @@
       require('./held_draft_write_client.js'),
       require('./pending_media_client.js'),
       require('./content_risk_client.js'),
-      require('./held_draft_csv_import.js'));
+      require('./held_draft_csv_import.js'),
+      require('./calendar_proposals_client.js'));
   else root.BAMHeldDraftWorkspace=factory(
     root.BAMReadClient,root.BAMHeldDraftWriteClient,root.BAMPendingMediaClient,
-    root.BAMContentRiskClient,root.BAMHeldDraftCSVImport);
-})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient,csvImport){
+    root.BAMContentRiskClient,root.BAMHeldDraftCSVImport,
+    root.BAMCalendarProposalsClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient,csvImport,calendarClient){
   'use strict';
   const channelNames=['facebook','instagram','linkedin','pinterest','tiktok','youtube'];
   const holdNames=['needs_content','ready_for_review','postponed','unavailable'];
@@ -28,17 +30,21 @@
     wrap.append(caption,control);form.append(wrap);
     return control;
   }
-  function create({document,container,fetchImpl,origin,onError,onNotice,hashBytes}){
+  function create({document,container,fetchImpl,origin,onError,onNotice,
+                   hashBytes,enableCalendarProposals=false}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string'||
        (onError!==undefined&&typeof onError!=='function')||
        (onNotice!==undefined&&typeof onNotice!=='function')||
        (hashBytes!==undefined&&typeof hashBytes!=='function'))
       throw new TypeError('Content Studio dependencies required');
+    if(typeof enableCalendarProposals!=='boolean')
+      throw new TypeError('Explicit calendar proposal feature switch required');
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
     let canEdit=false,mediaEnabled=false,mediaStatusReady=false;
     let mediaStatuses=new Map(),riskReports=new Map(),riskPending=new Set();
-    let plannedImport=null;
+    let plannedImport=null,calendarData=null,calendarSlots=null;
+    let calendarError=false;
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
       mediaEnabled=allowed&&canEdit;
@@ -57,6 +63,7 @@
       epoch++;requestVersion++;active=null;model=null;busy=false;canEdit=false;
       mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
       riskReports=new Map();riskPending=new Set();plannedImport=null;
+      calendarData=null;calendarSlots=null;calendarError=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -72,7 +79,7 @@
       wrap.className='bam-held-draft-workspace';
       wrap.append(make(document,'h2','Content Studio'));
       wrap.append(make(document,'p',
-        'Create and organize unpublished content requests. Upload, approval, scheduling and publishing remain unavailable.'));
+        'Create and organize unpublished content requests and optional draft calendar proposals. Approval, scheduling and publishing remain unavailable.'));
       if(!canEdit){
         wrap.append(make(document,'p','You can view held content but cannot create or edit it.'));
       }
@@ -170,6 +177,80 @@
             }
             article.append(make(document,'p',
               'Text changes are version-checked and remain unpublished. No content is automatically approved.'));
+          }
+          if(enableCalendarProposals&&
+             (status==='needs_content'||status==='ready_for_review')){
+            const calendarSection=make(document,'section','');
+            calendarSection.className='bam-calendar-proposal';
+            calendarSection.append(make(document,'h4',
+              'Proposed posting time (not scheduled)'));
+            if(calendarError||!calendarData||!calendarSlots){
+              calendarSection.append(make(document,'p',
+                'Calendar proposal status unavailable. Refresh before changing a date.'));
+            }else{
+              const existing=calendarData.items.find(x=>x.requestId===draft.id);
+              if(existing){
+                calendarSection.append(make(document,'p',
+                  'Proposed: '+existing.localDate+' at '+existing.localTime+
+                  ' ('+existing.timezone+'). Not scheduled.'));
+                if(existing.contentChanged)
+                  calendarSection.append(make(document,'p',
+                    'Draft changed. Reconfirm this proposal after review.'));
+                if(!existing.slotCurrent)
+                  calendarSection.append(make(document,'p',
+                    'Posting preferences changed. Choose a current time.'));
+                if(canEdit){
+                  const remove=make(document,'button','Remove proposed time');
+                  remove.type='button';remove.className='secondary';
+                  remove.disabled=busy;
+                  remove.addEventListener('click',async()=>{
+                    if(busy||active!==viewingSession||epoch!==viewingEpoch)
+                      return;
+                    await removeProposal({requestId:draft.id});
+                  });
+                  calendarSection.append(remove);
+                }
+              }else{
+                calendarSection.append(make(document,'p',
+                  'No planned time attached to this draft.'));
+              }
+              if(canEdit&&Number.isSafeInteger(draft.revision)&&
+                 draft.revision>=1&&calendarSlots.status==='manual_preview'){
+                const used=new Set(calendarData.items
+                  .filter(x=>x.requestId!==draft.id)
+                  .map(x=>x.utcAt));
+                const available=calendarSlots.slots
+                  .filter(x=>!used.has(x.utcAt));
+                if(available.length){
+                  const choices=make(document,'select','');
+                  for(const slot of available){
+                    const option=make(document,'option',
+                      slot.localDate+' '+slot.localTime+
+                      ' ('+calendarSlots.timezone+')');
+                    option.value=slot.utcAt;choices.append(option);
+                  }
+                  choices.value=available[0].utcAt;
+                  calendarSection.append(choices);
+                  const add=make(document,'button',
+                    'Save draft date proposal (not schedule)');
+                  add.type='button';add.className='secondary';add.disabled=busy;
+                  add.addEventListener('click',async()=>{
+                    if(busy||active!==viewingSession||epoch!==viewingEpoch)
+                      return;
+                    await saveProposal({requestId:draft.id,
+                      expectedRevision:draft.revision,utcAt:choices.value});
+                  });
+                  calendarSection.append(add);
+                }else{
+                  calendarSection.append(make(document,'p',
+                    'No unused manual posting times in this preview.'));
+                }
+              }else if(canEdit){
+                calendarSection.append(make(document,'p',
+                  'Choose Manual posting preferences in Settings before planning dates.'));
+              }
+            }
+            article.append(calendarSection);
           }
           if(canEdit&&mediaEnabled&&status==='needs_content'){
             const item=draft.missing.find(value=>
@@ -310,6 +391,57 @@
       }
       container.replaceChildren(wrap);
     }
+    async function saveProposal({requestId,expectedRevision,utcAt}){
+      if(!enableCalendarProposals||!active||!canEdit||busy||
+         !calendarData||!calendarSlots||calendarError||
+         calendarSlots.status!=='manual_preview'||
+         !calendarSlots.slots.some(x=>x.utcAt===utcAt))
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const result=await calendarClient.propose({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,requestId,
+          expectedRevision,utcAt});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const updated=await refresh();
+        if(updated.error||updated.stale)return updated;
+        if(onNotice)onNotice(
+          'Draft date proposal saved. This did not schedule or approve the post.');
+        return result;
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('Draft date proposal was not saved. Refresh current content and time settings.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine){busy=false;render();}
+      }
+    }
+    async function removeProposal({requestId}){
+      if(!enableCalendarProposals||!active||!canEdit||busy||
+         !calendarData||!calendarData.items.some(x=>x.requestId===requestId))
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const result=await calendarClient.discard({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,requestId});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const updated=await refresh();
+        if(updated.error||updated.stale)return updated;
+        if(onNotice)onNotice(
+          'Only the proposed date was removed. The unpublished draft remains.');
+        return result;
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('Could not confirm removal of this proposed date.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine){busy=false;render();}
+      }
+    }
     async function importCSV(){
       if(!active||!canEdit||busy||!plannedImport)return {error:true};
       const mine=active,version=epoch,rows=plannedImport;
@@ -393,6 +525,24 @@
           }
         }else{
           mediaStatuses=new Map();mediaStatusReady=false;
+        }
+        if(enableCalendarProposals){
+          const [proposals,times]=await Promise.allSettled([
+            calendarClient.list({origin,fetchImpl,token:mine.token,
+                                 expectedTenantId:mine.tenantId}),
+            readClient.read({kind:'postingPreview',token:mine.token,
+              fetchImpl,origin,expectedTenantId:mine.tenantId})
+          ]);
+          if(version!==epoch||active!==mine||request!==requestVersion)
+            return {stale:true};
+          if(proposals.status==='fulfilled'&&times.status==='fulfilled'){
+            calendarData=proposals.value;calendarSlots=times.value;
+            calendarError=false;
+          }else{
+            calendarData=null;calendarSlots=null;calendarError=true;
+            if(onError)onError(
+              'Private draft calendar unavailable. Date changes are disabled.');
+          }
         }
         for(const [id,report] of riskReports){
           const draft=data.drafts.find(x=>x.id===id);
@@ -489,6 +639,7 @@
     function reviseDraft(args){return mutate(writeClient.reviseDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
     return Object.freeze({activate,refresh,clear,inspectRisk,importCSV,
+      saveProposal,removeProposal,
       createDraft,changeHold,
       reviseDraft,
       stageImage,discardImage,setCanEdit,setMediaEnabled});

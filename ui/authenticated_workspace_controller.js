@@ -60,7 +60,8 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
       enableLocalTemplates,enableBatchPreviews});
     const held=contentStudioContainer?heldModule.create({document,
       container:contentStudioContainer,fetchImpl,origin,onError,
-      hashBytes:hashMediaBytes,onNotice}):null;
+      hashBytes:hashMediaBytes,onNotice,
+      enableCalendarProposals}):null;
     const prefs=postingPreferencesContainer?prefsModule.create({document,
       container:postingPreferencesContainer,fetchImpl,origin,onError}):null;
     const team=teamOverviewContainer?teamModule.create({document,
