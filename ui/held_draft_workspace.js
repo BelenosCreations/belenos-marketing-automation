@@ -166,6 +166,18 @@
       }
       channel.value='facebook';
       field(document,form,'Social platform',channel);
+      const prioritySelect=make(document,'select','');
+      for(const [value,label] of [
+        [-2,'Later (-2)'],[-1,'Low (-1)'],[0,'Normal (0)'],
+        [1,'High (+1)'],[2,'Urgent (+2)']
+      ]){
+        const option=make(document,'option',label);
+        option.value=String(value);
+        prioritySelect.append(option);
+      }
+      prioritySelect.value='0';
+      field(document,form,'Draft queue priority (higher reviewed first)',
+        prioritySelect);
       const draftText=field(document,form,'Draft copy',make(document,'textarea',''));
       draftText.maxLength=2000;draftText.required=true;draftText.rows=4;
       const suggestion=field(document,form,'Content guidance',make(document,'textarea',''));
@@ -182,7 +194,8 @@
         const requiredItems=items.value.split(',').map(x=>x.trim());
         const result=await createDraft({
           channel:channel.value,draftText:draftText.value.trim(),
-          suggestion:suggestion.value.trim(),requiredItems});
+          suggestion:suggestion.value.trim(),requiredItems,
+          priority:Number(prioritySelect.value)});
         if(result.error&&onError)onError('Unable to save held draft');
       });
       wrap.append(form);
@@ -197,6 +210,9 @@
           article.append(make(document,'h4',draft.channel));
           article.append(make(document,'p',draft.text));
           article.append(make(document,'p',draft.suggestion));
+          article.append(make(document,'p',
+            'Draft priority: '+draft.priority+
+            ' (review queue ordering only; never an automatic publishing order).'));
           if(enableReviewFeedback){
             if(reviewNotesError||!reviewNotes){
               article.append(make(document,'p',
