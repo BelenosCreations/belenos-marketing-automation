@@ -19,9 +19,10 @@ function(client,draftView,settingsView){
       throw new TypeError('Workspace dependencies required');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Invalid error callback');
-    let active=null,epoch=0;
+    let active=null,epoch=0,requestVersion=0;
     function clear(){
       epoch+=1;
+      requestVersion+=1;
       active=null;
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
@@ -35,7 +36,7 @@ function(client,draftView,settingsView){
     }
     async function refresh(){
       if(!active)throw new TypeError('Sign-in required');
-      const mine=active,version=epoch;
+      const mine=active,version=epoch,request=++requestVersion;
       try{
         // Fetch both before rendering either to avoid partial stale UI.
         const [drafts,settings]=await Promise.all([
@@ -44,7 +45,7 @@ function(client,draftView,settingsView){
           client.read({kind:'aiSettings',token:mine.token,fetchImpl,origin,
                        expectedTenantId:mine.tenantId})
         ]);
-        if(version!==epoch||active!==mine)return {stale:true};
+        if(version!==epoch||request!==requestVersion||active!==mine)return {stale:true};
         // Renderers validate all data before replacing the current mount.
         draftView.render({document,container:draftsContainer,
           payload:{tenant_id:drafts.tenantId,publishing_enabled:false,
