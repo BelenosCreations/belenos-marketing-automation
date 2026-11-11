@@ -6,9 +6,11 @@
 (function(root,factory){
   'use strict';
   if(typeof module==='object'&&module.exports)
-    module.exports=factory(require('./auth_login_client.js'));
-  else root.BAMSessionController=factory(root.BAMAuthClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(client){
+    module.exports=factory(require('./auth_login_client.js'),
+      require('./business_switch_client.js'));
+  else root.BAMSessionController=factory(root.BAMAuthClient,
+    root.BAMBusinessSwitchClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(client,switchClient){
   'use strict';
   function create({origin,fetchImpl,workspace,onError}){
     if(typeof origin!=='string'||typeof fetchImpl!=='function'||
@@ -17,11 +19,11 @@
        typeof workspace.clear!=='function'||
        (onError!==undefined&&typeof onError!=='function'))
       throw new TypeError('Authenticated workspace required');
-    let active=null,epoch=0,signingIn=false;
+    let active=null,epoch=0,signingIn=false,pendingSwitch=null;
     function clear(){
       epoch++;
-      const prior=active;
-      active=null;
+      const prior=active||pendingSwitch;
+      active=null;pendingSwitch=null;
       workspace.clear();
       return prior;
     }
@@ -36,7 +38,8 @@
       }
     }
     async function complete(login){
-      if(active||signingIn)throw new TypeError('Sign out before signing in again');
+      if(active||signingIn||pendingSwitch)
+        throw new TypeError('Sign out before signing in again');
       signingIn=true;
       const version=++epoch;
       let session=null;
@@ -54,7 +57,9 @@
            loaded.tenantId!==session.tenantId)
           throw new Error('Authenticated workspace unavailable');
         return Object.freeze({status:'ready',tenantId:session.tenantId,
-          draftCount:loaded.draftCount,publishingEnabled:false});
+          draftCount:loaded.draftCount,
+          businesses:Array.isArray(loaded.businesses)?loaded.businesses:[],
+          publishingEnabled:false});
       }catch(error){
         if(version!==epoch)return {stale:true};
         clear();
@@ -74,7 +79,8 @@
         origin,fetchImpl,challengeId,idToken,tenantId}));
     }
     function beginGoogle(){
-      if(active||signingIn)throw new TypeError('Sign out before Google sign-in');
+      if(active||signingIn||pendingSwitch)
+        throw new TypeError('Sign out before Google sign-in');
       return client.beginGoogle({origin,fetchImpl});
     }
     async function signOut({everywhere=false}={}){
@@ -97,7 +103,7 @@
            result.tenantId!==mine.tenantId)
           throw new Error('Workspace refresh failed');
         return {stale:false,tenantId:mine.tenantId,
-          draftCount:result.draftCount};
+          draftCount:result.draftCount,businesses:result.businesses};
       }catch(error){
         if(version!==epoch||active!==mine)return {stale:true};
         clear();
@@ -106,9 +112,46 @@
         return {stale:false,error:true};
       }
     }
+    async function switchBusiness({tenantId}){
+      if(!active||signingIn||pendingSwitch)
+        throw new TypeError('Active BAM session required');
+      if(typeof tenantId!=='string'||!tenantId.trim()||
+         tenantId===active.tenantId||tenantId.length>128)
+        throw new TypeError('Different BAM business required');
+      const previous=active,version=++epoch;
+      active=null;pendingSwitch=previous;
+      workspace.clear();
+      let replacement=null;
+      try{
+        replacement=await switchClient.activate({origin,fetchImpl,
+          sessionToken:previous.sessionToken,targetTenantId:tenantId});
+        if(version!==epoch){
+          await revokeDetached(replacement);
+          return {stale:true};
+        }
+        pendingSwitch=null;active=replacement;
+        workspace.activate({
+          token:replacement.sessionToken,tenantId:replacement.tenantId});
+        const loaded=await workspace.refresh();
+        if(version!==epoch||active!==replacement)return {stale:true};
+        if(!loaded||loaded.error||loaded.stale||
+           loaded.tenantId!==tenantId)
+          throw new Error('Switched BAM workspace unavailable');
+        return Object.freeze({status:'ready',tenantId,
+          draftCount:loaded.draftCount,
+          businesses:Array.isArray(loaded.businesses)?loaded.businesses:[],
+          publishingEnabled:false});
+      }catch(error){
+        if(version!==epoch)return {stale:true};
+        clear();
+        await revokeDetached(replacement||previous);
+        if(onError)onError('Business switch unavailable; sign in again');
+        return {status:'error',publishingEnabled:false};
+      }
+    }
     function activeTenant(){return active?active.tenantId:null;}
     return Object.freeze({passwordSignIn,beginGoogle,googleSignIn,
-      signOut,refresh,activeTenant});
+      signOut,refresh,switchBusiness,activeTenant});
   }
   return Object.freeze({create});
 });
