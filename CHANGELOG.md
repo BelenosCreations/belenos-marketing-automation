@@ -1,5 +1,16 @@
 # Changelog
 
+## Explicit owner-confirmed business facts editor — 2026-11-10
+
+### Added
+- Nested AI Settings fact editor with owner-only display, explicit Save action, unique key validation and optimistic revision payload.
+- Optional integration with the authenticated AI workspace and business-switch cleanup.
+- JavaScript regression tests for manual save, duplicate facts and permission display; selected tests passed in isolated harness.
+
+### Limitations
+- Production login and write endpoint mounting remain disabled; backend must independently enforce owner permission.
+
+
 ## Disabled-by-default AI service composition — 2026-11-10
 
 ### Added
