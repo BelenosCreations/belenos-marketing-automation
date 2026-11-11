@@ -15,4 +15,8 @@ for(const role of ['owner','marketing_manager','content_creator','employee','vie
 assert.equal(normalize(base).role,'viewer');
 for(const role of ['admin','superuser','',null,123,true])
  assert.throws(()=>normalize({...base,role}),TypeError);
+assert.equal(normalize(base).pendingMediaAvailable,false);
+assert.equal(normalize({...base,pending_media_available:true}).pendingMediaAvailable,true);
+for(const invalid of ['true',1,null,[],{}])
+ assert.throws(()=>normalize({...base,pending_media_available:invalid}),TypeError);
 console.log('BAM dashboard capability role contract tests passed');
