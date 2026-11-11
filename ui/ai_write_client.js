@@ -58,8 +58,9 @@
          !/^[0-9a-f]{32}$/.test(result.draft_id)||
          !['needs_media','draft_pending_verification'].includes(result.status))
         throw new TypeError('Invalid held draft response');
-    }else if(!['already_completed','already_failed','already_in_progress',
-               'limit_reached','not_entitled'].includes(result.reason))
+    }else if(result.tenant_id!==expectedTenantId||
+       !['already_completed','already_failed','already_in_progress',
+         'limit_reached','not_entitled'].includes(result.reason))
       throw new TypeError('Invalid generation hold reason');
     return result;
   }
