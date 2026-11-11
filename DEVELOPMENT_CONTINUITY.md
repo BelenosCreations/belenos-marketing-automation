@@ -5,7 +5,9 @@
 **Active branch:** `development/phase-3-5-account-directory`.
 **Most recent verified branch commit:** `74e55d5393a38fbee663b6ec82e72c4ada01c2ec` (Actions run 43092809091 successful).
 **Verification:** [GitHub Actions run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) completed successfully. Earlier [run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513) reported 882 Python tests, 72 JavaScript UI test scripts and compilation passed. New code after `74e55d53` remains unverified while runners are queued.
-**Latest unverified code checkpoint:** `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions jobs remain queued; do not assert a green code result or merge/deploy on that basis.
+**Latest unverified code checkpoint:** `94e894da3777d14fc3c129c0c7f4685d32e595c2`. GitHub Actions jobs remain queued; do not assert a green code result or merge/deploy on that basis.
+
+After a rejected draft mutation, Content Studio refreshes the authenticated list; the browser test simulates a 409 stale hold and verifies no optimistic success. This is unverified until CI executes.
 
 **Unverified security changes since the last successful run:** editorial recheck and intake, the native and legacy approval facades, revision-checked held-draft hold actions, and compare-and-swap verified-media references. New Python and browser regression tests are committed. Confirm full Python, UI and compilation suites before updating this checkpoint.
 

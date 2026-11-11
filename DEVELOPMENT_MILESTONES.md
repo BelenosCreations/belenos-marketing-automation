@@ -17,6 +17,8 @@ This offline alpha batch strengthens the places that evaluate or change private 
 - Verified-media **attachment references** are now saved with revision compare-and-swap, preventing a concurrent image/permission update from unintentionally erasing another update.
 - New Python, browser, HTTPS adapter and integrated offline gateway regressions cover conflicts, stale role grants, business separation and blocked publishing.
 
+Content Studio now reloads authenticated draft data after a rejected edit (including a stale 409 conflict) rather than leaving obsolete controls on screen. The new browser regression checks that a rejected hold produces no optimistic success and that the current revision is fetched. This remains an offline alpha change with GitHub CI pending.
+
 **Testing status at documentation time:** latest code commit `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions runs for this batch are **queued** without test jobs; these changes are *committed but not yet verified*. The most recent separately confirmed successful workflow is [run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) at `74e55d53`. Do not merge or deploy while the batch remains unverified. Social publishing, production OAuth and paid AI remain off.
 
 ## Proposed draft calendar, zero scheduled posts (2026-11-11)

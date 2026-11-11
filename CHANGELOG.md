@@ -10,6 +10,8 @@
 - Held-draft hold APIs and Content Studio now submit the current draft revision; an outdated hold cannot overwrite a newer revision and maps to HTTP 409 Conflict.
 - Concurrent verified-media references are written only if the previously read draft revision is still current.
 
+- Content Studio refreshes the current authenticated draft list on rejected mutations, including stale editor conflicts, without pretending the rejected write succeeded. Added a browser regression for a simulated HTTP 409.
+
 ### Tests
 - Additional tenant, role-change, stale hold, concurrent media and authenticated WSGI regression coverage committed.
 - **Pending CI:** workflow runs for code checkpoint `800e3277` and its predecessors are queued; no new successful test claim is made.
