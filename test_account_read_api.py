@@ -10,6 +10,8 @@ from social_connection_directory import SocialConnectionDirectory
 from account_dashboard import AccountDashboard
 from account_read_api import AccountReadAPI
 from posting_preferences import PostingPreferences
+from ai_account_policy import AIPolicyStore
+from ai_content_drafts import AIContentDraftStore
 
 class AccountReadAPITests(unittest.TestCase):
     def setUp(self):
@@ -35,8 +37,11 @@ class AccountReadAPITests(unittest.TestCase):
             switcher=BusinessSwitcher(self.db,self.sessions,directory),
             social_connections=SocialConnectionDirectory(
                 registry=registry,directory=directory,sessions=self.sessions))
+        ai_policy=AIPolicyStore(db=self.db,sessions=self.sessions,directory=directory)
         self.api=AccountReadAPI(dashboard,posting_preferences=PostingPreferences(
-            db=self.db,sessions=self.sessions,directory=directory))
+            db=self.db,sessions=self.sessions,directory=directory),
+            ai_policy=ai_policy,ai_content_drafts=AIContentDraftStore(
+                db=self.db,policy_store=ai_policy))
 
     def tearDown(self):
         self.db.close()
@@ -102,6 +107,32 @@ class AccountReadAPITests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.api.get_posting_preferences(
                 session_token='bad',server_now=101)
+
+    def test_ai_settings_and_drafts_isolated_across_business_switch(self):
+        self.api.ai_policy.replace_memory(token=self.token,now=101,
+            memory={'tone':'friendly'})
+        draft=self.api.ai_content_drafts.stage(token=self.token,now=101,
+            platform='facebook',
+            response={'post_text':'Product spotlight',
+                      'image_prompt':'Neutral photo'},
+            include_image_prompt=True,needs_media=True)
+        settings=self.api.get_ai_settings(
+            session_token=self.token,server_now=102)
+        self.assertEqual(settings['memory'],{'tone':'friendly'})
+        self.assertNotIn('vault:',str(settings))
+        drafts=self.api.list_ai_content_drafts(
+            session_token=self.token,server_now=102)
+        self.assertEqual(drafts['drafts'][0]['draft_id'],draft['draft_id'])
+        self.assertFalse(drafts['publishing_enabled'])
+        switched=self.api.activate_business(session_token=self.token,
+            target_tenant_id='b',server_now=103)
+        second=self.api.get_ai_settings(
+            session_token=switched['session_token'],server_now=104)
+        self.assertEqual(second['memory'],{})
+        self.assertEqual(self.api.list_ai_content_drafts(
+            session_token=switched['session_token'],
+            server_now=104)['drafts'],[])
+        self.assertNotIn('friendly',str(second))
 
     def test_logout_revokes_token(self):
         self.assertTrue(self.api.logout(session_token=self.token,server_now=101)['signed_out'])
