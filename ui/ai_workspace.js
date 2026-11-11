@@ -10,13 +10,15 @@
       require('./ai_facts_view.js'),require('./ai_cost_view.js'),
       require('./ai_facts_editor.js'),require('./local_product_draft_client.js'),
       require('./ai_draft_edit_client.js'),
-      require('./ai_targeted_revision_client.js'));
+      require('./ai_targeted_revision_client.js'),
+      require('./ai_memory_client.js'));
   else root.BAMAIWorkspace=factory(root.BAMReadClient,
     root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView,
     root.BAMAICostView,root.BAMAIFactsEditor,root.BAMLocalProductDraftClient,
-    root.BAMAIDraftEditClient,root.BAMAITargetedRevisionClient);
+    root.BAMAIDraftEditClient,root.BAMAITargetedRevisionClient,
+    root.BAMAIMemoryClient);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(client,draftView,settingsView,factsView,costView,factsEditor,localClient,editClient,targetedClient){
+function(client,draftView,settingsView,factsView,costView,factsEditor,localClient,editClient,targetedClient,memoryClient){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
                    factsContainer,costContainer,fetchImpl,origin,onError,
@@ -50,7 +52,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
         (!secureRandom||typeof secureRandom.getRandomValues!=='function')))
       throw new TypeError('AI revision feature needs an explicit secure opt-in');
     let active=null,epoch=0,requestVersion=0,localPending=false,editPending=false;
-    let regeneratePending=false;
+    let regeneratePending=false,memoryPending=false;
     let mayManageFacts=canManageFacts,mayCreateDrafts=true;
     function setCapabilities({manageFacts,createDrafts}){
       if(typeof manageFacts!=='boolean'||typeof createDrafts!=='boolean')
@@ -61,7 +63,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
       epoch+=1;
       requestVersion+=1;
       active=null;localPending=false;editPending=false;
-      regeneratePending=false;
+      regeneratePending=false;memoryPending=false;
       mayManageFacts=false;mayCreateDrafts=false;
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
@@ -95,6 +97,26 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
         return {error:true};
       }finally{
         if(version===epoch&&mine===active)editPending=false;
+      }
+    }
+    async function saveMemory({memory,expectedMemory}){
+      if(!active||!mayCreateDrafts||memoryPending)return {error:true};
+      const mine=active,version=epoch;
+      memoryPending=true;
+      try{
+        const changed=await memoryClient.save({
+          origin,fetchImpl,sessionToken:mine.token,
+          expectedTenantId:mine.tenantId,memory,expectedMemory});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const latest=await refresh();
+        if(latest.stale||latest.error)return latest;
+        return {stale:false,tenantId:changed.tenantId};
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('AI writing preferences changed or could not be saved. Refresh before editing again.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine)memoryPending=false;
       }
     }
     async function regenerate({draftId,target,instruction,topic,expectedRevision}){
@@ -230,7 +252,11 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
           payload:{tenant_id:settings.tenantId,provider:'openai',
             mode:settings.mode,own_key_configured:settings.ownKeyConfigured,
             memory:settings.memory,key_exposed:false,
-            publishing_enabled:false},expectedTenantId:mine.tenantId});
+            publishing_enabled:false},expectedTenantId:mine.tenantId,
+          canEdit:mayCreateDrafts,onSave:payload=>{
+            if(version!==epoch||active!==mine)return {stale:true};
+            return saveMemory(payload);
+          }});
         if(factsContainer)factsView.render({document,container:factsContainer,
           payload:{tenant_id:facts.tenantId,facts:facts.facts,
             revision:facts.revision,provenance:facts.provenance,
