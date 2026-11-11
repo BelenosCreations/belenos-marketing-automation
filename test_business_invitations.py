@@ -157,6 +157,30 @@ class InvitationTests(unittest.TestCase):
             verified_subject_id=self.guest,token=link,now=104)
             ['membership_created'])
 
+    def test_audit_write_failure_rolls_back_redemption_and_membership(self):
+        issued=self.invite()
+        link=self.outbox[-1][2]
+        self.db.execute("""CREATE TRIGGER block_invitation_acceptance_audit
+            BEFORE INSERT ON bam_business_invitation_events
+            WHEN NEW.action='accepted'
+            BEGIN SELECT RAISE(ABORT,'simulated audit storage failure'); END""")
+        self.db.commit()
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.invites.accept_trusted(verified_subject_id=self.guest,
+                token=link,now=103)
+        self.assertIsNone(self.directory.resolve('shop',self.guest))
+        self.assertIsNone(self.db.execute("""SELECT consumed_at FROM
+            bam_business_invitations WHERE invitation_id=?""",
+            (issued['invitation_id'],)).fetchone()[0])
+        self.db.execute("DROP TRIGGER block_invitation_acceptance_audit")
+        self.db.commit()
+        self.assertTrue(self.invites.accept_trusted(
+            verified_subject_id=self.guest,token=link,now=104)
+            ['membership_created'])
+        self.assertEqual([e['action'] for e in self.invites.history_current(
+            owner_session=self.owner_token,now=105)['events']],
+            ['accepted','delivered'])
+
     def test_invite_and_accept(self):
         self.invite()
         token=self.outbox[-1][2]
