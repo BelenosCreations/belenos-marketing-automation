@@ -70,3 +70,7 @@ The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_fa
 ### AI draft generation write endpoint
 
 `bam_ai_write_wsgi.py` exposes a separate disabled-by-default `POST /api/v1/ai-generate` adapter. It accepts only `topic`, `platform`, `needs_media`, and `include_image_prompt` in JSON, plus an idempotency header and bearer session over HTTPS. Business identity, UTC billing month, sponsorship plan, model, API credentials and publish permissions remain server-owned. This adapter is not mounted or enabled in the development server.
+
+### Owner-confirmed fact updates
+
+`bam_ai_facts_write_wsgi.py` provides a disabled-by-default owner-authorized `PUT /api/v1/ai-business-facts` endpoint. The client supplies `facts` and `expected_revision` only. Tenant identity and owner permission are determined from the bearer session. Conflicting revisions require refreshing the fact snapshot before resubmission. This is not mounted in the current app.
