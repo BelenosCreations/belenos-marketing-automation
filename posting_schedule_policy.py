@@ -106,7 +106,7 @@ class SchedulingPlanner:
             hours.update((8,9,11,16))
         if any(word in audience for word in ('business','office','professional')):
             hours.update((8,12,13,17))
-        if any(word in audience for word in ('family','parent','consumer')):
+        if any(word in audience for word in ('family','families','parent','consumer')):
             hours.update((10,18,19,20))
         selected=[pair for pair in candidates if pair[0].hour in hours]
         if not selected:
