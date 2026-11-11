@@ -105,15 +105,21 @@ class ReviewFeedbackTests(unittest.TestCase):
         self.assertFalse(self.list()['items'][0]['stale'])
 
     def test_creator_viewer_cannot_edit_or_remove(self):
-        for token in (self.creator,self.viewer,self.other,'bogus'):
+        for token in (self.creator,self.viewer,'bogus'):
             with self.assertRaises(PermissionError):
                 self.save(token=token)
+        with self.assertRaises(KeyError):
+            self.save(token=self.other)
         created=self.save()
-        for token in (self.creator,self.viewer,self.other,'bogus'):
+        for token in (self.creator,self.viewer,'bogus'):
             with self.assertRaises(PermissionError):
                 self.service.discard(token=token,now=103,
                     request_id=self.rid,
                     expected_feedback_token=created['feedback_token'])
+        with self.assertRaises(ValueError):
+            self.service.discard(token=self.other,now=103,
+                request_id=self.rid,
+                expected_feedback_token=created['feedback_token'])
         self.assertEqual(len(self.list()['items']),1)
 
     def test_reject_unsafe_payload_and_invalid_draft(self):
