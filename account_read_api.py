@@ -9,9 +9,11 @@ from dashboard_cards import build_dashboard_cards
 from dashboard_view import build_dashboard_view
 
 class AccountReadAPI:
-    def __init__(self, dashboard: AccountDashboard, posting_preferences=None):
+    def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
+                 ai_content_drafts=None):
         self.dashboard=dashboard
         self.posting_preferences=posting_preferences
+        self.ai_content_drafts=ai_content_drafts
 
     @staticmethod
     def _token(value):
@@ -51,6 +53,13 @@ class AccountReadAPI:
             target_tenant_id=target_tenant_id,now=self._now(server_now))
         result['overview']['dashboard_cards']=build_dashboard_cards(result['overview'])['cards']
         return result
+
+    def list_ai_content_drafts(self, *, session_token, server_now):
+        """Read only the authenticated user's drafts in the active business."""
+        if self.ai_content_drafts is None:
+            raise RuntimeError('AI Content Studio not configured')
+        return self.ai_content_drafts.list_mine(
+            token=self._token(session_token),now=self._now(server_now))
 
     def get_posting_preferences(self, *, session_token, server_now):
         token=self._token(session_token)
