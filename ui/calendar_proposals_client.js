@@ -23,10 +23,10 @@
      expectedTenantId.length>128)
     throw new TypeError('Trusted BAM calendar session required');
  }
- async function request(options,method,body){
+ async function request(options,method,body,route='calendar-proposals'){
   context(options);
   const response=await options.fetchImpl(
-    options.origin+'/api/v1/calendar-proposals',{
+    options.origin+'/api/v1/'+route,{
       method,mode:'same-origin',credentials:'omit',cache:'no-store',
       redirect:'error',headers:{Authorization:'Bearer '+options.token,
        Accept:'application/json',
@@ -112,5 +112,51 @@
     removed:result.removed,status:'proposal_only',
     postsScheduled:0,publishingEnabled:false});
  }
- return Object.freeze({list,propose,discard});
+
+ async function suggest(options){
+  const body=await request(options,'GET',null,'calendar-suggestions');
+  if(!exact(body,['tenant_id','status','preference_status',
+     'unassigned_held_count','available_slot_count','items',
+     'posts_scheduled','publishing_enabled'])||
+     body.tenant_id!==options.expectedTenantId||
+     body.status!=='suggestion_preview_only'||
+     !['manual_preview','not_configured','needs_audience_data']
+        .includes(body.preference_status)||
+     !Number.isSafeInteger(body.unassigned_held_count)||
+     body.unassigned_held_count<0||body.unassigned_held_count>5000||
+     !Number.isSafeInteger(body.available_slot_count)||
+     body.available_slot_count<0||body.available_slot_count>100||
+     !Array.isArray(body.items)||body.items.length>20||
+     body.items.length>Math.min(body.unassigned_held_count,
+                                 body.available_slot_count)||
+     (body.preference_status!=='manual_preview'&&body.items.length)||
+     body.posts_scheduled!==0||body.publishing_enabled!==false)
+    throw new TypeError('Untrusted draft-only suggestions');
+  const seenIds=new Set(),seenTimes=new Set();
+  const items=body.items.map(row=>{
+   if(!exact(row,['request_id','draft_revision','utc_at',
+      'local_date','local_time','timezone','publishing_enabled'])||
+      typeof row.request_id!=='string'||!id.test(row.request_id)||
+      !Number.isSafeInteger(row.draft_revision)||row.draft_revision<1||
+      typeof row.utc_at!=='string'||!utc.test(row.utc_at)||
+      typeof row.local_date!=='string'||!date.test(row.local_date)||
+      typeof row.local_time!=='string'||!clock.test(row.local_time)||
+      typeof row.timezone!=='string'||!row.timezone.trim()||
+      row.timezone.length>80||row.publishing_enabled!==false||
+      seenIds.has(row.request_id)||seenTimes.has(row.utc_at))
+     throw new TypeError('Untrusted draft-only suggestion');
+   seenIds.add(row.request_id);seenTimes.add(row.utc_at);
+   return Object.freeze({requestId:row.request_id,
+     draftRevision:row.draft_revision,utcAt:row.utc_at,
+     localDate:row.local_date,localTime:row.local_time,
+     timezone:row.timezone,publishingEnabled:false});
+  });
+  return Object.freeze({tenantId:body.tenant_id,
+   status:'suggestion_preview_only',
+   preferenceStatus:body.preference_status,
+   unassignedHeldCount:body.unassigned_held_count,
+   availableSlotCount:body.available_slot_count,
+   items:Object.freeze(items),postsScheduled:0,publishingEnabled:false});
+ }
+ return Object.freeze({list,propose,discard,suggest});
 });
