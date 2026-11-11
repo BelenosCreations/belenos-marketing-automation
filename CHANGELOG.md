@@ -1,5 +1,12 @@
 # Changelog
 
+## Nested AI Settings presentation — 2026-11-10
+
+### Added
+- Read-only Settings → AI component showing OpenAI mode, configured-but-hidden key status and isolated content preferences.
+- DOM regression test for safe rendering and cross-business response rejection; added to CI.
+
+
 ## Secret-free OpenAI Settings read — 2026-11-10
 
 ### Added
