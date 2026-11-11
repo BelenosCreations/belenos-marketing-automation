@@ -7,7 +7,7 @@ This document preserves detailed phase-by-phase development notes originally app
 
 An append-only `bam_business_invitation_events` SQLite table now records trusted delivery success/failure, cancellation and accepted invitations transactionally with their status changes. A read-only owner-scoped service, strict `GET /api/v1/team/invitations/activity` WSGI route, validated browser client and optional Team Settings activity panel expose **metadata only**, never invitation tokens or recipient emails. Activity is strictly isolated to the signed-in business and cleared on logout/business switching. Missing historical events are never fabricated. This work is offline-only and requires an explicit trusted delivery callback even for a private preview.
 
-**Verification:** current code through `13fd9ff2` and this documentation must pass exact-SHA Actions; the previous merged main checkpoint `7662dd29` passed [Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700). Do not infer a hosted invitation service or publishing capability.
+**Verification:** The full audit/code/documentation checkpoint `538bb79d874821e406b2521384d3feaad0297c33` passed [GitHub Actions 43122286878](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43122286878), including JS syntax/UI tests and offline Python. This status-only documentation follow-up requires its own CI. No hosting or publishing was enabled.
 
 ## Owner-invitation control hardening and CI syntax checks — November 11, 2026
 

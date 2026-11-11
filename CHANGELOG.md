@@ -6,7 +6,7 @@
 - Added owner-only `GET /api/v1/team/invitations/activity`, disabled unless the separately trusted delivery callback is configured. The HTTPS adapter validates exact, bounded, descending activity records and refuses additional sensitive fields.
 - Added strict browser response validation, an optional deeper Team Settings activity view and lifecycle guards against showing old-business activity after logout.
 - Added Python service, HTTP boundary, end-to-end gateway, and JavaScript client/UI regressions. Historical invitation actions before installation are **not backfilled**.
-- **Test status:** [Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700) passed on the preceding merged main checkpoint `7662dd2976`. The new invitation-audit code through `13fd9ff23cd62dfcc7910d5e4b27659631673568` and this documentation are pending a new exact-SHA CI result. Do not mark them verified yet.
+- **Test status:** [GitHub Actions 43122286878](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43122286878) **passed** on full code/documentation checkpoint `538bb79d874821e406b2521384d3feaad0297c33`: Python compilation, JavaScript syntax and UI tests, plus all offline Python regressions. This follow-up status-only commit must be independently verified.
 - No external email delivery, hosted rollout, paid AI, OAuth or social posting was activated.
 
 ## 2026-11-11 — Owner-private invitation safety and CI syntax gate
