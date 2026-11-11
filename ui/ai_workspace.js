@@ -15,7 +15,8 @@
 function(client,draftView,settingsView,factsView,costView){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
-                   factsContainer,costContainer,fetchImpl,origin,onError}){
+                   factsContainer,costContainer,fetchImpl,origin,onError,
+                   copyText,openUrl}){
     if(!document||!draftsContainer||!settingsContainer||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Workspace dependencies required');
@@ -25,6 +26,9 @@ function(client,draftView,settingsView,factsView,costView){
     if(costContainer!==undefined&&
        (!costContainer||typeof costContainer.replaceChildren!=='function'))
       throw new TypeError('Invalid AI cost mount');
+    if((copyText!==undefined||openUrl!==undefined)&&
+       (typeof copyText!=='function'||typeof openUrl!=='function'))
+      throw new TypeError('Manual image handoff requires both callbacks');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Invalid error callback');
     let active=null,epoch=0,requestVersion=0;
@@ -68,7 +72,7 @@ function(client,draftView,settingsView,factsView,costView){
               post_text:d.postText,image_prompt:d.imagePrompt,
               needs_media:d.needsMedia,media_attached:d.mediaAttached,
               status:d.status,revision:d.revision,publishing_enabled:false
-            }))},expectedTenantId:mine.tenantId});
+            }))},expectedTenantId:mine.tenantId,copyText,openUrl});
         settingsView.render({document,container:settingsContainer,
           payload:{tenant_id:settings.tenantId,provider:'openai',
             mode:settings.mode,own_key_configured:settings.ownKeyConfigured,
