@@ -10,6 +10,7 @@ from dashboard_view import build_dashboard_view
 from content_upload_preflight import ContentUploadPreflight
 from ai_local_templates import LocalDraftTemplates
 from ai_draft_request import AIDraftRequestBuilder
+from posting_time_preview import build_posting_time_preview
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
@@ -134,6 +135,13 @@ class AccountReadAPI:
             raise RuntimeError('Posting preferences not configured')
         return self.posting_preferences.get(token=token,
             tenant_id=session.principal.tenant_id,now=now)
+
+    def get_posting_time_preview(self, *, session_token, server_now):
+        """Propose informational next-week slots; never schedule or publish."""
+        now=self._now(server_now)
+        preferences=self.get_posting_preferences(
+            session_token=session_token,server_now=now)
+        return build_posting_time_preview(preferences,server_now=now)
 
     def set_posting_preferences(self, *, session_token, server_now,
                                 mode, timezone, manual_times):

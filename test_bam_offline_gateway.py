@@ -558,6 +558,32 @@ class BAMOfflineGatewayTests(unittest.TestCase):
             method='PUT',token=token,body={})
         self.assertEqual(meta['status'],'503 Service Unavailable')
 
+    def test_read_only_posting_time_preview_is_session_scoped(self):
+        owner=self.login('shop')
+        self.app.preferences.set(token=owner,tenant_id='shop',
+            mode='manual',timezone='America/New_York',
+            manual_times=['10:00','18:30'],now=101)
+        meta,preview=self.call('/api/v1/posting-time-preview',token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(preview['tenant_id'],'shop')
+        self.assertEqual(preview['status'],'manual_preview')
+        self.assertGreater(len(preview['slots']),0)
+        self.assertFalse(preview['publishing_enabled'])
+        self.assertNotIn('queued',str(preview))
+        other=self.login('other')
+        _,missing=self.call('/api/v1/posting-time-preview',token=other)
+        self.assertEqual(missing['tenant_id'],'other')
+        self.assertEqual(missing['status'],'not_configured')
+        self.assertEqual(missing['slots'],[])
+        bad,_=self.call('/api/v1/posting-time-preview',
+            token=owner,method='POST',body={'tenant_id':'other'})
+        self.assertEqual(bad['status'],'405 Method Not Allowed')
+        bad,_=self.call('/api/v1/posting-time-preview',
+            token=owner,extra={'QUERY_STRING':'tenant_id=other'})
+        self.assertEqual(bad['status'],'400 Bad Request')
+        bad,_=self.call('/api/v1/posting-time-preview')
+        self.assertEqual(bad['status'],'401 Unauthorized')
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')
