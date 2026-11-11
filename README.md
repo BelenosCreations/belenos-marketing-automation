@@ -702,3 +702,7 @@ When an idempotency ledger is configured, sponsored generation now **requires** 
 ## AI generation hold response business binding — 2026-11-10
 
 Both newly created drafts and idempotent/non-entitled generation holds now carry the authenticated business identifier. The browser rejects responses for a different active business, including successful-looking held results. This closes a cross-business display ambiguity during account switches. Regression coverage was extended for the offline HTTP integration and browser write client; the selected JavaScript test passed in the isolated harness.
+
+## AI request reconciliation and strict JSON hardening — 2026-11-10
+
+The idempotency ledger now supports a private read-only status lookup for the same authenticated user and business, returning completed/failed/in-progress state without triggering a retry or exposing another user's draft. Both AI write endpoints now reject duplicate JSON keys, including nested owner-confirmed facts, to prevent ambiguous request interpretation. Regression tests cover request status isolation, failed request holds and duplicate-key rejection. No retry, external billing reconciliation or provider calls were enabled.
