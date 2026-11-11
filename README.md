@@ -117,3 +117,8 @@ On **November 11, 2026**, the backlog of Alpha development was reconciled into `
 Independent recovery branches were saved at `checkpoint/alpha-last-green-2026-11-11` (`74e55d53`), `checkpoint/alpha-ci-green-2026-11-11` (`cff912f9`) and `checkpoint/alpha-pre-merge-2026-11-11` (`f66522a4`). These are Git references, not enforced branch protection or off-site backups.
 
 **Ongoing policy:** New features stay on the development branch; after a meaningful tested milestone (or before divergence exceeds roughly 50 commits), use a reviewed pull request to merge into `main`, then fast-forward development to the resulting verified merge. Never rewrite history or delete checkpoints as part of routine synchronization. Verify the exact merge candidate with full offline CI, and verify `main` again after merging. A green test run is not approval to deploy, connect paid APIs, or publish posts.
+
+
+### Collaboration durability evidence (offline only)
+
+Two independent local gateway instances now pass a file-backed SQLite integration test covering shared drafts, conflicting simultaneous editor revisions, business-scoped role-change revocation and state persistence after reinitialization. This is stronger than a single mocked session, **but not evidence of an actually hosted or secure multi-device Beta**. See `test_offline_two_client_collaboration.py` and the [Alpha readiness gate](ALPHA_BETA_READINESS.md).
