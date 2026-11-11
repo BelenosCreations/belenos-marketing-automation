@@ -5,12 +5,17 @@ const {create}=require('./authenticated_session_controller.js');
 function environment({badDashboard=false,failedLogin=false}={}){
   const requests=[],events=[],errors=[];
   let refreshFailure=badDashboard;
+  let currentTenant='shop';
+  const businesses=[{tenantId:'shop',name:'Example Shop'},
+    {tenantId:'other',name:'Second Service'}];
   const workspace={
-    activate:({token,tenantId})=>events.push(['activate',token,tenantId]),
+    activate:({token,tenantId})=>{
+      currentTenant=tenantId;events.push(['activate',token,tenantId]);
+    },
     clear:()=>events.push(['clear']),
     refresh:async()=>refreshFailure
       ?{stale:false,error:true}
-      :{stale:false,tenantId:'shop',draftCount:2}
+      :{stale:false,tenantId:currentTenant,draftCount:2,businesses}
   };
   const fetchImpl=async(url,opts)=>{
     requests.push({url,opts});
@@ -18,6 +23,10 @@ function environment({badDashboard=false,failedLogin=false}={}){
       return failedLogin?{ok:false}:{
         ok:true,json:async()=>({
           session_token:'a'.repeat(43),publishing_enabled:false})};
+    if(url.endsWith('/businesses/activate'))
+      return {ok:true,json:async()=>({
+        session_token:'s'.repeat(43),tenant_id:'other',
+        publishing_enabled:false})};
     if(url.endsWith('/google-challenge'))
       return {ok:true,json:async()=>({
         challenge_id:'b'.repeat(43),nonce:'c'.repeat(43),expires_at:400,
@@ -40,7 +49,10 @@ async function main(){
     email:'owner@example.com',password:'correct horse battery staple',
     tenantId:'shop'});
   assert.deepEqual(signed,{status:'ready',tenantId:'shop',
-    draftCount:2,publishingEnabled:false});
+    draftCount:2,businesses:[
+      {tenantId:'shop',name:'Example Shop'},
+      {tenantId:'other',name:'Second Service'}],
+    publishingEnabled:false});
   assert.equal(a.c.activeTenant(),'shop');
   assert.equal(a.events.filter(x=>x[0]==='activate').length,1);
   assert.equal(a.events.filter(x=>x[0]==='activate')[0][1],'a'.repeat(43));
@@ -48,7 +60,17 @@ async function main(){
     email:'owner@example.com',password:'correct horse battery staple',
     tenantId:'other'}),TypeError);
   assert.deepEqual(await a.c.refresh(),{
-    stale:false,tenantId:'shop',draftCount:2});
+    stale:false,tenantId:'shop',draftCount:2,businesses:[
+      {tenantId:'shop',name:'Example Shop'},
+      {tenantId:'other',name:'Second Service'}]});
+  const switched=await a.c.switchBusiness({tenantId:'other'});
+  assert.equal(switched.status,'ready');
+  assert.equal(switched.tenantId,'other');
+  assert.equal(a.c.activeTenant(),'other');
+  assert.equal(a.requests.at(-1).opts.headers.Authorization,
+    'Bearer '+'a'.repeat(43));
+  assert.equal(a.requests.at(-1).url.endsWith('/businesses/activate'),true);
+  assert.equal(a.events.filter(x=>x[0]==='activate').length,2);
   const before=a.events.length;
   const out=await a.c.signOut({everywhere:true});
   assert.deepEqual(out,{localCleared:true,serverRevoked:true,
@@ -56,7 +78,7 @@ async function main(){
   assert.equal(a.c.activeTenant(),null);
   assert.equal(a.events[before][0],'clear');
   assert.equal(a.requests.at(-1).opts.headers.Authorization,
-    'Bearer '+'a'.repeat(43));
+    'Bearer '+'s'.repeat(43));
   await assert.rejects(()=>a.c.refresh(),TypeError);
 
   const b=environment({failedLogin:true});
@@ -113,6 +135,36 @@ async function main(){
   assert.equal(delayed.activeTenant(),null);
   assert.equal(events.includes('activated'),false);
   assert.equal(requests.at(-1).url.endsWith('/logout'),true);
+
+  // A sign-out during a pending business switch must clear the old workspace
+  // and revoke the late replacement, not reactivate another business.
+  const sw=environment();
+  await sw.c.passwordSignIn({email:'owner@example.com',
+    password:'correct horse battery staple',tenantId:'shop'});
+  let respondSwitch;
+  const calls=[];
+  const delayedSwitch=create({origin:'https://bam.example',
+    fetchImpl:async(url,opts)=>{
+      calls.push({url,opts});
+      if(url.endsWith('/password'))return {ok:true,json:async()=>({
+        session_token:'a'.repeat(43),publishing_enabled:false})};
+      if(url.endsWith('/businesses/activate'))
+        return new Promise(resolve=>{respondSwitch=resolve});
+      if(url.endsWith('/logout'))return {ok:true,json:async()=>({
+        signed_out:true,publishing_enabled:false})};
+      throw Error('Unexpected route '+url);
+    },workspace:{activate:()=>{},clear:()=>{},
+      refresh:async()=>({stale:false,tenantId:'shop',draftCount:0,businesses:[]})}});
+  await delayedSwitch.passwordSignIn({email:'owner@example.com',
+    password:'correct horse battery staple',tenantId:'shop'});
+  const change=delayedSwitch.switchBusiness({tenantId:'other'});
+  assert.equal(typeof respondSwitch,'function');
+  assert.equal((await delayedSwitch.signOut()).localCleared,true);
+  respondSwitch({ok:true,json:async()=>({
+    session_token:'s'.repeat(43),tenant_id:'other',publishing_enabled:false})});
+  assert.deepEqual(await change,{stale:true});
+  assert.equal(delayedSwitch.activeTenant(),null);
+  assert.equal(calls.at(-1).opts.headers.Authorization,'Bearer '+'s'.repeat(43));
 
   console.log('BAM authenticated session workspace lifecycle tests passed');
 }
