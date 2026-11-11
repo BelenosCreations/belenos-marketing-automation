@@ -55,6 +55,17 @@ class RevisionHTTPE2ETests(unittest.TestCase):
             drafts=self.drafts,executor=execute,
             idempotency=AIGenerationIdempotency(
                 db=self.db,policy_store=policy))
+        self.last_error=None
+        self.last_result=None
+        original_revise=workflow.revise_sponsored
+        def diagnose(**kwargs):
+            try:
+                self.last_result=original_revise(**kwargs)
+                return self.last_result
+            except Exception as error:
+                self.last_error=type(error).__name__+': '+str(error)
+                raise
+        workflow.revise_sponsored=diagnose
         self.workflow=workflow
         self.app=BAMAIRevisionWSGI(workflow=workflow,enabled=True,
             plan_resolver=lambda **kwargs:SponsorshipPlan(
@@ -79,7 +90,9 @@ class RevisionHTTPE2ETests(unittest.TestCase):
 
     def test_copy_then_image_revision_still_pending_review(self):
         code,saved=self.send()
-        self.assertEqual(code,'201 Created')
+        self.assertEqual(code,'201 Created',
+                         'Workflow: '+repr(self.last_error)+
+                         ' Result: '+repr(self.last_result))
         self.assertEqual(saved['revision'],2)
         self.assertFalse(saved['publishing_enabled'])
         self.assertEqual(self.calls[0][1],500)
