@@ -101,6 +101,16 @@
       aiCostContainer:byId('bam-ai-cost'),
       contentStudioContainer:byId('bam-content-studio'),
       postingPreferencesContainer:byId('bam-posting-preferences'),
+      onNotice:message,
+      hashMediaBytes:async buffer=>{
+        if(!(buffer instanceof ArrayBuffer)||
+           !window.crypto||!window.crypto.subtle||
+           typeof window.crypto.subtle.digest!=='function')
+          throw new TypeError('Secure image hashing unavailable');
+        const digest=await window.crypto.subtle.digest('SHA-256',buffer);
+        return Array.from(new Uint8Array(digest),
+          value=>value.toString(16).padStart(2,'0')).join('');
+      },
       onOpenContentStudio:()=>showPanel('content'),
       fetchImpl,origin,onError:message,
       copyText:text=>{
