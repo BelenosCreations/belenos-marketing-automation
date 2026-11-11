@@ -570,3 +570,7 @@ The idempotency ledger now supports a private read-only status lookup for the sa
 ## Disabled-by-default AI service composition — 2026-11-10
 
 `bam_ai_offline_factory.py` now assembles policy, business facts, structured content planning, quota reservations, request idempotency, held draft storage, cost ledger, OpenAI Responses executor and both WSGI write endpoints into a deliberately disabled service bundle. No credentials are read, no network requests are possible through the default transport, and neither write endpoint is enabled. An offline regression test checks these boundaries. Production enabling requires a separately reviewed composition root, secrets, cost limits and full verification.
+
+## Explicit owner-confirmed business facts editor — 2026-11-10
+
+`ui/ai_facts_editor.js` adds an optional nested Settings editor for authorized business owners. Facts are never invented or autosaved: an owner must explicitly confirm and save them, with the current revision and active business attached to the request. Duplicate or incomplete fields are rejected. The authenticated AI workspace can mount this editor using a trusted `onSaveFacts` callback; the backend independently checks ownership and revision. Selected JavaScript tests passed in an isolated harness and were added to CI. The production sign-in and write API are not mounted.
