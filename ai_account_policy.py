@@ -107,8 +107,12 @@ class AIPolicyStore:
     def _encode_memory(memory):
         if (type(memory) is not dict or len(memory)>40 or any(
                 type(key) is not str or not key.strip() or
-                len(key)>80 or type(value) is not str or
-                not value.strip() or len(value)>2000
+                key!=key.strip() or len(key)>80 or
+                re.search(r'api.?key|token|secret|password|credential|vault',
+                          key,re.I) is not None or
+                type(value) is not str or not value.strip() or
+                value!=value.strip() or len(value)>2000 or
+                re.match(r'sk-[A-Za-z0-9_-]{12,}',value) is not None
                 for key,value in memory.items())):
             raise ValueError('Memory must be a bounded string dictionary')
         encoded=json.dumps(memory,ensure_ascii=False,sort_keys=True)
