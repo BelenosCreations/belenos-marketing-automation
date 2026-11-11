@@ -1,5 +1,23 @@
 # Changelog
 
+## Multi-business session rotation, offline WSGI integration and branded shell — 2026-11-10
+
+### Added
+- Connected the previously approved BAM icon, wordmarks and Android adaptive launcher templates from the main branch to the active development branch, preserving source files and verification tests.
+- Built `bam_offline_gateway.py`: disabled-by-default composition of real SQLite identities, login and logout, business membership, dashboard, owner-confirmed AI facts, draft views, estimated cost and posting preferences through strict HTTPS WSGI adapters.
+- Added `bam_business_switch_wsgi.py` and `ui/business_switch_client.js`: authenticated, tenant-checked business switching issues a new session and revokes the old one; invalid target businesses or client-supplied role claims are rejected.
+- Added a business selector in the mobile-first signed-in HTML shell. Selecting a different permitted business clears the old dashboard before receiving the new tenant's data. Stale responses are discarded.
+- Added extensive end-to-end Python and JavaScript tests for tenant isolation, unauthorized changes, HTTPS requirements, in-flight sign-out and abandoned token cleanup.
+
+### Test status
+- **Passed:** [GitHub Actions run 42954241030](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42954241030), commit `30da362dd56ac25aed076e656f96c0b691757db2`: Python compilation, **717 Python tests and 26 JavaScript UI test scripts**.
+
+### Known limitations
+- The unified WSGI gateway remains a local direct-call integration fixture, not a production HTTP listener, deployed website or Android APK.
+- Brand assets and native launcher templates are not an installed app.
+- Production TLS and OAuth/Google client configuration, verified email/password enrollment and recovery, server-level rate limits, real social/API connections, media scanning and publishing review remain mandatory.
+- Publishing, live OpenAI generation and paid billing were not enabled.
+
 ## Authenticated large-card HTML shell and session lifecycle — 2026-11-10
 
 ### Added
