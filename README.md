@@ -605,3 +605,7 @@ The authenticated read API and HTTPS WSGI adapter now expose `GET /api/v1/ai-set
 ## AI settings and draft business-switch regression checkpoint — 2026-11-10
 
 The existing account API integration tests now exercise real AI policy memory, persistent AI drafts, authenticated reads and business switching together. The test verifies that a second business does not inherit the first business's AI memory or draft content, and that no key reference is exposed. This expands regression coverage for the approved multi-business architecture; CI completion is still unverified.
+
+## Authenticated AI workspace coordination milestone — 2026-11-10
+
+`ui/ai_workspace.js` now coordinates the read-only AI drafts and AI Settings components using an in-memory bearer session, the active business identity and two validated HTTPS reads. A generation counter discards late responses when the user switches businesses or signs out; failed current-session loads clear both sensitive views. `ui/ai_workspace_test.js` exercises cross-business stale-response handling, logout, successful rendering and error cleanup. The existing HTTP client test was also corrected to count all requests it actually performs. This is a reusable integration controller, not a connected sign-in flow or deployed GUI. No publishing or credential storage has been added.
