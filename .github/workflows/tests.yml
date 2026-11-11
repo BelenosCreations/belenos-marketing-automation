@@ -20,6 +20,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate JavaScript module and test syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for source in ui/*.js; do
+            node --check "$source"
+          done
       - name: Run all JavaScript UI regression tests
         shell: bash
         run: |
