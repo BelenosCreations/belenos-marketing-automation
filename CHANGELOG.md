@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 — Owner-controlled existing-member access (offline Alpha)
+
+- Added strict owner-only current-business team roster with verified member emails, non-owner role changes, deactivation and two-stage Settings confirmation.
+- Added migration-safe revision tokens, stale-write HTTP 409 responses, same-business session revocation and local audit records.
+- Added Python/JavaScript/WSGI end-to-end tests; **922 Python tests and browser suite passed** at [run 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364) on commit `38e799dba7df86378c0f89ecb216626df07cfff2`.
+- Invitation delivery, production enrollment, reactivation, live hosting, paid AI and publishing remain disabled.
+
 ## 2026-11-11 — Alpha code synchronized into main (verified)
 
 - Reconciled the former 993-commit development lead and three independent `main` branding commits through [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) and merge commit `f774564d7348e47f34ae0ee9da6279cf14a93677`. Maintained full source history; no force push, reset, or deletion of development work.

@@ -129,6 +129,63 @@ class BAMOfflineGatewayTests(unittest.TestCase):
                 self.assertIn(expected,value)
                 self.assertFalse(value['publishing_enabled'])
 
+    def test_owner_private_roster_change_and_revocation(self):
+        owner=self.login('shop')
+        person=self.app.identities.register_password(
+            email='member@example.com',
+            password='long unique member password',now=100)
+        self.app.identities.set_email_verified_trusted(
+            subject_id=person,verified=True)
+        self.app.directory.set_member(
+            Principal(self.subject,'shop',Role.OWNER),
+            person,Role.CONTENT_CREATOR)
+        self.app.directory.set_member(
+            Principal('other-owner','other',Role.OWNER),
+            person,Role.VIEWER)
+        member_token=self.app.identities.login_password(
+            email='member@example.com',password='long unique member password',
+            tenant_id='shop',now=101)
+        other_token=self.app.identities.login_password(
+            email='member@example.com',password='long unique member password',
+            tenant_id='other',now=101)
+        meta,roster=self.call('/api/v1/team/members',token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(roster['tenant_id'],'shop')
+        self.assertEqual(len(roster['members']),2)
+        self.assertNotIn('other-owner',str(roster))
+        self.assertEqual(
+            self.call('/api/v1/team/members',token=member_token)[0]['status'],
+            '401 Unauthorized')
+        data={'member_id':person,'action':'change_role',
+              'role':'viewer','expected_revision':1}
+        meta,edited=self.call('/api/v1/team/membership',
+            method='POST',body=data,token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(edited['sessions_revoked'],1)
+        self.assertEqual(edited['revision'],2)
+        self.assertEqual(
+            self.call('/api/v1/dashboard',token=member_token)[0]['status'],
+            '401 Unauthorized')
+        self.assertEqual(
+            self.call('/api/v1/dashboard',token=other_token)[0]['status'],
+            '200 OK')
+        self.assertEqual(
+            self.call('/api/v1/team/membership',method='POST',
+                body=data,token=owner)[0]['status'],'409 Conflict')
+        meta,done=self.call('/api/v1/team/membership',
+            method='POST',token=owner,
+            body={'member_id':person,'action':'deactivate',
+                  'expected_revision':2})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(done['status'],'deactivated')
+        self.assertEqual(
+            self.call('/api/v1/team/members',token=other_token)[0]['status'],
+            '401 Unauthorized')
+        _,updated=self.call('/api/v1/team/members',token=owner)
+        self.assertFalse(next(x for x in updated['members']
+            if x['member_id']==person)['active'])
+        self.assertFalse(updated['publishing_enabled'])
+
     def test_team_overview_owner_only_aggregate_without_ids(self):
         owner=self.login('shop')
         meta,overview=self.call('/api/v1/team-overview',token=owner)
