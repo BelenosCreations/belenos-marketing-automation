@@ -14,7 +14,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 BAM now has a runnable **local account and content-workflow demonstration**, built from the same multi-business authorization services intended for later mobile and hosted interfaces. The current capabilities are:
 
-- **Independent BAM identity sessions:** short-lived, hashed-token sessions, role freshness checks, business-scoped switching, per-session logout, and identity-wide logout.
+- **Independent BAM identity sessions:** short-lived, hashed-token sessions, role freshness checks, business-scoped switching, per-session logout, and identity-wide logout. A disabled-by-default HTTPS-only sign-in adapter and in-memory browser login client now cover password and verified-Google pathways, without enabling production enrollment.
 - **Multiple businesses under one identity:** isolated business profiles, current roles, social connection metadata, and content request queues.
 - **Social platform preparation:** account connection metadata, offline OAuth-state/PKCE scaffolding, read-only analytics import boundaries, scheduling previews, and audience-window ranking. **No live social account is connected by the demo.**
 - **Held marketing content:** authorized users can create manual drafts, request photos/permissions or other supporting materials, see what is missing, postpone unavailable content, and reopen incomplete drafts. All drafts remain unscheduled.
@@ -26,7 +26,7 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **AI provider boundary:** disabled-by-default OpenAI HTTPS transport and a strict structured Responses adapter, with operator-configured token cost estimates. No real provider connection or billing is enabled.
 - **Authenticated AI workspace components:** read-only drafts, AI settings, owner-confirmed fact provenance, an optional explicit owner fact editor, and estimated usage panels; integration into the complete sign-in shell is pending.
 
-**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **676 passing Python tests and 22 passing JavaScript UI tests** at commit `fa3647b` on 2026-11-10 (Eastern). This is offline regression verification, not production approval.
+**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **689 passing Python tests and 23 passing JavaScript UI test scripts** at commit `9ef6e73` on 2026-11-10 (Eastern). This is offline regression verification, not production approval.
 
 ## Product identity
 
@@ -148,7 +148,7 @@ The repository contains a growing set of offline Python modules, strict authenti
 
 **UI.** The [sample dashboard](ui/bam_dashboard_prototype.html) demonstrates large home cards and deeper settings; `ui/live_dashboard_cards.js`, `ui/ai_workspace.js`, and `ui/authenticated_workspace_controller.js` provide read-only authenticated components awaiting the production sign-in shell. They clear on logout/business switch and do not publish.
 
-**API boundaries.** `bam_read_wsgi.py` provides read-only HTTPS endpoints. Separate disabled-by-default `bam_ai_write_wsgi.py` and `bam_ai_facts_write_wsgi.py` constrain generation and owner fact confirmation to authenticated, validated requests. None of these should be considered deployed production APIs.
+**Auth transport.** `bam_auth_wsgi.py` offers disabled-by-default, strict JSON HTTPS routes for password login and one-time Google sign-in challenges, backed by `AuthLoginAPI` and a required sign-in throttle. `ui/auth_login_client.js` validates responses and retains sessions only in the authenticated shell's memory. Real provider verification and production gateway policies still require configuration. Neither component is activated by the existing HTTP demo server.\n\n**API boundaries.** `bam_read_wsgi.py` provides read-only HTTPS endpoints. Separate disabled-by-default `bam_ai_write_wsgi.py` and `bam_ai_facts_write_wsgi.py` constrain generation and owner fact confirmation to authenticated, validated requests. None of these should be considered deployed production APIs.
 
 ## Development records and verification
 
@@ -156,7 +156,7 @@ The repository contains a growing set of offline Python modules, strict authenti
 - [Changelog](CHANGELOG.md) records additions, fixes and known limitations.
 - [Authenticated UI integration](AUTHENTICATED_UI_INTEGRATION.md) documents session lifecycle and browser contracts.
 - [AI architecture](AI_ARCHITECTURE.md) records approved generation design and safety requirements.
-- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete 676-test Python suite and all 22 discovered JavaScript UI regression scripts passed together in [GitHub Actions run 42951059295](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42951059295) on commit `fa3647b`. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
+- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete 689-test Python suite and all 23 discovered JavaScript UI regression scripts passed together in [GitHub Actions run 42951600141](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42951600141) on commit `9ef6e73`. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
 
 ## Operational boundaries
 
