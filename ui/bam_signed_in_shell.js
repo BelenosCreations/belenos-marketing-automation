@@ -121,6 +121,7 @@
       contentStudioContainer:byId('bam-content-studio'),
       postingPreferencesContainer:byId('bam-posting-preferences'),
       teamOverviewContainer:byId('bam-team-overview'),
+      enableTeamManagement:true,
       onNotice:message,
       hashMediaBytes:async buffer=>{
         if(!(buffer instanceof ArrayBuffer)||
