@@ -1,3 +1,19 @@
+## Opt-in, confirmation-gated targeted AI regeneration controls — 2026-11-11
+
+### Added
+- `ui/ai_targeted_revision_client.js` strictly validates a one-component revision request and private, unpublished response. A cryptographic randomness dependency generates a 128-bit idempotency key with no insecure fallback.
+- AI Drafts has separate, explicitly prepared/confirmed actions for regenerating post copy or an existing image prompt. It displays a warning that a provider request may consume BAM-sponsored allowance or charge a personal API key. Two user actions are required; there is no silent regeneration or automatic retry.
+- The authenticated workspace ignores late responses after a business or session switch, reloads the current draft only after a verified success and does not claim a held provider attempt completed.
+- The feature is **opt-in and disabled by default**. The ordinary signed-in application does not configure it, the offline gateway does not mount a live paid revision route, and no OpenAI call is enabled.
+- Added browser-client, two-step DOM and full workspace regression tests for strict data contracts, confirmation, request idempotency header, secure entropy, permissions, stale buttons and no publishing.
+
+### Verification
+- **Passed:** [GitHub Actions run 43054882416](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43054882416), commit `6ebe7d86`: **830 Python tests, 50 JavaScript UI scripts**, plus Python compilation.
+
+### Known limitations
+- Actual OpenAI provider execution, encrypted key vault, distributed usage accounting, operator activation and public hosting remain separate release gates. A renderable UI test does not mean AI regeneration is available to users.
+- A targeted edit is still unpublished and unapproved; changing the prompt requires fresh media verification.
+
 ## Disabled-by-default targeted AI revision HTTPS boundary — 2026-11-11
 
 ### Added

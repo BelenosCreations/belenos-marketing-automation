@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Explicit, opt-in targeted AI revision interface (2026-11-11)
+
+The AI Content Drafts panel now has optional separate controls to prepare and confirm an AI copy revision or existing image-prompt revision. A usage warning explains that the request may consume sponsored quota or charge the key owner; there is no implicit AI request. `ui/ai_targeted_revision_client.js` requires cryptographic idempotency keys, verifies the current business and expected draft revision and rejects provider/publishing/approval claims. The workspace sends only one request per confirmed action, refreshes trusted draft data on success and discards stale session results. The normal signed-in app does **not** enable the opt-in flag, and the offline gateway has no active paid provider route.
+
+**Verified:** [GitHub Actions run 43054882416](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43054882416), commit `6ebe7d86`, 830 Python tests and 50 JavaScript scripts, plus compilation. This is readiness scaffolding, not a live paid capability.
+
 ## Strict targeted AI revision HTTP integration (2026-11-11)
 
 `bam_ai_revision_wsgi.py` exposes a separately disabled HTTPS endpoint for an authenticated targeted AI draft revision. Its strict request shape permits only draft ID, expected revision, component, instruction, topic and idempotency key. The server selects sponsorship policy and UTC month. The offline AI composition factory shares the existing per-user, per-business facts, draft store, sponsored quota and idempotency, and keeps OpenAI transport disabled. Injected-executor WSGI/E2E tests confirm single-component changes, stale/replayed request rejection, cross-tenant isolation and invalidation of earlier media matches on image-prompt edits. An API metadata mismatch was discovered and corrected before successful CI verification.

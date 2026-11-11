@@ -88,3 +88,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 ### Offline targeted revision HTTPS integration
 
 `bam_ai_revision_wsgi.py` now provides a separately disabled-by-default authenticated POST boundary for targeted draft edits. Server-side policy controls month, quota, token limit and credentials; user input cannot specify a business, entitlement, model or publication state. The offline composition root keeps provider transport disabled. End-to-end tests inject a fake executor and verify draft revision and media-hold behavior. Production OpenAI execution and billing remain unconnected.
+
+### Optional targeted revision controls (still disabled)
+
+The AI Drafts browser component can display a separate, two-step, cost-aware confirmation for regenerating only post text or only an existing image prompt. The browser uses a cryptographically generated idempotency key, checks draft revisions and never accepts returned publication claims. Operator configuration must explicitly enable the feature; the normal offline signed-in shell leaves it disabled. The backend still needs the production security and paid-usage gates before real OpenAI traffic.

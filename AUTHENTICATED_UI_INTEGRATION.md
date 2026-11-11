@@ -24,6 +24,12 @@ The signed-in shell exposes the existing `POST /api/v1/auth/logout-everywhere` s
 
 The Team Access panel reads `GET /api/v1/team-overview` only for a trusted active-business owner. The server checks `MANAGE_TEAM`, returns strictly aggregate active role counts and inactive membership count and never exposes member IDs, email addresses, invitations or permission-changing actions. The browser validates all totals and discards stale data on business/session change. An optional failed count read does not require sign-out. **Verified:** [run 43035508617](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43035508617) (809 Python, 44 JavaScript).
 
+## Opt-in targeted AI regeneration UI (disabled in ordinary preview)
+
+`ui/ai_draft_view.js` can optionally render two-step **Prepare / Confirm** controls to regenerate exactly one AI draft component, post text or an existing image prompt. The user supplies a topic/instruction and reviews an explicit notice about potential sponsored or personal-key API usage before confirmation. The private `ui/ai_targeted_revision_client.js` sends only the current draft/revision/component and an opaque cryptographically generated idempotency key. `ui/ai_workspace.js` discards stale business responses and refreshes the draft after confirmed success; held/failed responses cannot masquerade as successful revisions. This feature is **off by default** and is not enabled in the normal offline shell. It does not approve media or publish.
+
+**Verified:** [GitHub Actions run 43054882416](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43054882416), 830 Python and 50 JavaScript tests.
+
 ## Independent held-draft copy and guidance editing
 
 The business-scoped Content Studio GET response now includes a monotonically increasing held-draft revision. Each draft exposes a separate explicit Save for `draft_text` or `suggestion`, sending only `request_id`, `target`, `revised_text` and `expected_revision` via `PUT /api/v1/content/drafts`. The disabled-by-default backend verifies current business and editor permission, checks the expected revision atomically, and returns a version-confirmed result; the browser re-reads tenant content. Stale revisions reject the change rather than silently overriding a coworker's edit, and logout or business switching invalidates pending actions.
