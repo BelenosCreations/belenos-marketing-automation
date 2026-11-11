@@ -283,6 +283,49 @@ class BAMOfflineGatewayTests(unittest.TestCase):
             body={'request_id':'a'*32,'status':'published'})
         self.assertEqual(meta['status'],'400 Bad Request')
 
+
+    def test_owner_can_set_smart_and_manual_times_without_publishing(self):
+        token=self.login('shop')
+        manual={'mode':'manual','timezone':'America/New_York',
+                'manual_times':['18:30','10:00']}
+        meta,result=self.call('/api/v1/posting-preferences',
+            method='PUT',token=token,body=manual)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(result['mode'],'manual')
+        self.assertEqual(result['manual_times'],['10:00','18:30'])
+        self.assertFalse(result['publishing_enabled'])
+        _,read=self.call('/api/v1/posting-preferences',token=token)
+        self.assertEqual(read['manual_times'],['10:00','18:30'])
+        other=self.login('other')
+        self.assertEqual(self.call('/api/v1/posting-preferences',
+            method='PUT',token=other,body=manual)[0]['status'],
+            '401 Unauthorized')
+        _,other_read=self.call('/api/v1/posting-preferences',token=other)
+        self.assertFalse(other_read['configured'])
+        _,smart=self.call('/api/v1/posting-preferences',
+            method='PUT',token=token,
+            body={'mode':'smart','timezone':'America/New_York',
+                  'manual_times':[]})
+        self.assertEqual(smart['mode'],'smart')
+        self.assertEqual(smart['manual_times'],[])
+
+    def test_posting_write_refuses_privilege_claims_and_invalid_times(self):
+        token=self.login()
+        for bad in [
+                {'mode':'manual','timezone':'America/New_York',
+                 'manual_times':['10:00'],'tenant_id':'other'},
+                {'mode':'manual','timezone':'America/New_York',
+                 'manual_times':['10:00'],'publish':True},
+                {'mode':'manual','timezone':'America/New_York',
+                 'manual_times':['25:00']},
+                {'mode':'smart','timezone':'America/New_York',
+                 'manual_times':['10:00']}]:
+            meta,_=self.call('/api/v1/posting-preferences',
+                method='PUT',token=token,body=bad)
+            self.assertEqual(meta['status'],'400 Bad Request')
+        _,saved=self.call('/api/v1/posting-preferences',token=token)
+        self.assertFalse(saved['configured'])
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')
