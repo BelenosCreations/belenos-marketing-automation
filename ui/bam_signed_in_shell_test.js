@@ -144,7 +144,7 @@ async function main(){
     if(Object.prototype.hasOwnProperty.call(data,kind))
       return {ok:true,json:async()=>({
         ...data[kind],tenant_id:currentTenant,
-        ...(kind==='dashboard'?{role:currentTenant==='shop'?'owner':'content_creator'}:{}),
+        ...(kind==='dashboard'?{role:currentTenant==='shop'?'owner':'viewer'}:{}),
         ...(kind==='drafts'?{drafts:holds[currentTenant]}:{}),
         ...(kind==='ai-drafts'?{drafts:aiByTenant[currentTenant]}:{})})};
     throw new Error('Unexpected request '+url);
