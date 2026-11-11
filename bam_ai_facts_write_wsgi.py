@@ -6,6 +6,14 @@ business and confirming user are derived from the session, never request JSON.
 import json
 import time
 
+def _unique_object(pairs):
+    result={}
+    for key,value in pairs:
+        if key in result:
+            raise ValueError('Duplicate JSON field')
+        result[key]=value
+    return result
+
 class BAMAIFactsWriteWSGI:
     def __init__(self, *, registry,enabled=False,clock=None):
         if type(enabled) is not bool:
@@ -57,7 +65,7 @@ class BAMAIFactsWriteWSGI:
             raw=stream.read(int(length))
             if len(raw)!=int(length):
                 raise ValueError('Incomplete request')
-            data=json.loads(raw.decode('utf-8'))
+            data=json.loads(raw.decode('utf-8'),object_pairs_hook=_unique_object)
             if type(data) is not dict or set(data)!={
                 'facts','expected_revision'} or (
                 type(data['expected_revision']) is not int or
