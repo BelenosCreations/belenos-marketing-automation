@@ -597,3 +597,7 @@ The authenticated read adapter and HTTPS-only WSGI component now support `GET /a
 ## Secret-free OpenAI Settings read milestone — 2026-11-10
 
 The authenticated read API and HTTPS WSGI adapter now expose `GET /api/v1/ai-settings` for the signed-in user's current business. The response includes only OpenAI mode, whether a personal key is configured, and the user's isolated memory preferences; it never returns a raw API key or encrypted-vault reference. `ui/ai_settings_contract.js` and the HTTPS client validate this response and reject unexpected secret-bearing fields or mismatched business IDs. Regression tests are included in CI. This is read-only infrastructure; the future Settings screen must still implement safe, server-validated mode changes and vault integration.
+
+## Nested AI Settings presentation milestone — 2026-11-10
+
+`ui/ai_settings_view.js` provides a read-only Settings → AI panel showing the active OpenAI funding mode, hidden personal-key configured status, and the current user's content preferences. All values use text-only DOM insertion; the renderer validates business identity before replacing its container. No key values, edit controls, or publishing actions are exposed. `ui/ai_settings_view_test.js` is included in the CI workflow. The view is a reusable component, not yet connected to a deployed Settings navigation shell.
