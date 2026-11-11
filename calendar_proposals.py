@@ -6,6 +6,7 @@ approval or auto-publishing service is permitted to execute these records.
 """
 import re
 import sqlite3
+import uuid
 
 from access_policy import Action, Resource, require_permission
 from posting_time_preview import build_posting_time_preview
@@ -31,8 +32,24 @@ class CalendarProposals:
             timezone TEXT NOT NULL,
             updated_at INTEGER NOT NULL,
             updated_by TEXT NOT NULL,
+            proposal_token TEXT NOT NULL,
             PRIMARY KEY(tenant_id,request_id),
             UNIQUE(tenant_id,utc_at))""")
+        # Preserve existing local proposals while introducing an independent
+        # write-version token. Unlike second-resolution timestamps, a fresh
+        # random token prevents stale update/delete and remove/recreate ABA.
+        columns={row[1] for row in
+                 db.execute('PRAGMA table_info(bam_calendar_proposals)')}
+        if 'proposal_token' not in columns:
+            db.execute("ALTER TABLE bam_calendar_proposals "
+                       "ADD COLUMN proposal_token TEXT NOT NULL DEFAULT ''")
+        for tenant,request_id in db.execute(
+                "SELECT tenant_id,request_id FROM bam_calendar_proposals "
+                "WHERE proposal_token=''").fetchall():
+            db.execute("UPDATE bam_calendar_proposals "
+                       "SET proposal_token=? WHERE tenant_id=? AND request_id=? "
+                       "AND proposal_token=''",
+                       (uuid.uuid4().hex,tenant,request_id))
         db.commit()
 
     def _authorize(self,*,token,now,action):
@@ -56,7 +73,7 @@ class CalendarProposals:
                                    action=Action.READ_DRAFTS)
         tenant=principal.tenant_id
         rows=self.db.execute("""SELECT request_id,draft_revision,utc_at,
-            local_date,local_time,timezone
+            local_date,local_time,timezone,proposal_token
             FROM bam_calendar_proposals WHERE tenant_id=?
             ORDER BY utc_at ASC LIMIT 201""",(tenant,)).fetchall()
         if len(rows)>200:
@@ -64,7 +81,7 @@ class CalendarProposals:
         preview=self._preview(token=token,tenant=tenant,now=now)
         permitted={row['utc_at'] for row in preview['slots']}
         items=[]
-        for request_id,revision,utc_at,day,clock,zone in rows:
+        for request_id,revision,utc_at,day,clock,zone,proposal_token in rows:
             draft=self.content_service.get(
                 token=token,tenant_id=tenant,request_id=request_id,now=now)
             current_revision=draft['revision'] if draft else None
@@ -77,7 +94,7 @@ class CalendarProposals:
                 'request_id':request_id,'draft_revision':revision,
                 'current_revision':current_revision,
                 'utc_at':utc_at,'local_date':day,'local_time':clock,
-                'timezone':zone,
+                'timezone':zone,'proposal_token':proposal_token,
                 'content_changed':content_changed,
                 'slot_current':slot_current,
                 'publishing_enabled':False
@@ -86,12 +103,16 @@ class CalendarProposals:
                 'items':items,'posts_scheduled':0,
                 'publishing_enabled':False}
 
-    def propose(self,*,token,now,request_id,expected_revision,utc_at):
+    def propose(self,*,token,now,request_id,expected_revision,utc_at,
+                expected_proposal_token):
         principal=self._authorize(token=token,now=now,
                                    action=Action.EDIT_DRAFT)
         if (type(request_id) is not str or _ID.fullmatch(request_id) is None
                 or type(expected_revision) is not int or expected_revision<1
-                or type(utc_at) is not str or _UTC.fullmatch(utc_at) is None):
+                or type(utc_at) is not str or _UTC.fullmatch(utc_at) is None
+                or (expected_proposal_token is not None and
+                    (type(expected_proposal_token) is not str or
+                     _ID.fullmatch(expected_proposal_token) is None))):
             raise ValueError('Validated held draft and future slot required')
         tenant=principal.tenant_id
         draft=self.content_service.get(
@@ -117,10 +138,20 @@ class CalendarProposals:
                     tenant_id=tenant,request_id=request_id)
                 if current is None or current['revision']!=expected_revision:
                     raise ValueError('Draft changed; refresh before proposing')
+                stored=self.db.execute(
+                    "SELECT proposal_token FROM bam_calendar_proposals "
+                    "WHERE tenant_id=? AND request_id=?",
+                    (tenant,request_id)).fetchone()
+                current_token=stored[0] if stored else None
+                if current_token!=expected_proposal_token:
+                    raise ValueError(
+                        'Proposal changed; refresh before changing date')
+                proposal_token=uuid.uuid4().hex
                 self.db.execute("""INSERT INTO bam_calendar_proposals
                    (tenant_id,request_id,draft_revision,utc_at,
-                    local_date,local_time,timezone,updated_at,updated_by)
-                   VALUES (?,?,?,?,?,?,?,?,?)
+                    local_date,local_time,timezone,updated_at,updated_by,
+                    proposal_token)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(tenant_id,request_id) DO UPDATE SET
                     draft_revision=excluded.draft_revision,
                     utc_at=excluded.utc_at,
@@ -128,14 +159,17 @@ class CalendarProposals:
                     local_time=excluded.local_time,
                     timezone=excluded.timezone,
                     updated_at=excluded.updated_at,
-                    updated_by=excluded.updated_by""",
+                    updated_by=excluded.updated_by,
+                    proposal_token=excluded.proposal_token""",
                     (tenant,request_id,expected_revision,utc_at,
                      slot['local_date'],slot['local_time'],
-                     preview['timezone'],now,principal.subject_id))
+                     preview['timezone'],now,principal.subject_id,
+                     proposal_token))
         except sqlite3.IntegrityError as exc:
             raise ValueError('Proposed time already used by this business') from exc
         return {'tenant_id':tenant,'request_id':request_id,
-                'utc_at':utc_at,'status':'proposal_only',
+                'utc_at':utc_at,'proposal_token':proposal_token,
+                'status':'proposal_only',
                 'posts_scheduled':0,'publishing_enabled':False}
 
     def suggest_unassigned(self, *, token, now):
@@ -188,15 +222,19 @@ class CalendarProposals:
             'items':items,'posts_scheduled':0,'publishing_enabled':False
         }
 
-    def discard(self,*,token,now,request_id):
+    def discard(self,*,token,now,request_id,expected_proposal_token):
         principal=self._authorize(token=token,now=now,
                                    action=Action.EDIT_DRAFT)
-        if type(request_id) is not str or _ID.fullmatch(request_id) is None:
-            raise ValueError('Validated draft request required')
+        if (type(request_id) is not str or _ID.fullmatch(request_id) is None
+                or type(expected_proposal_token) is not str or
+                _ID.fullmatch(expected_proposal_token) is None):
+            raise ValueError('Validated draft proposal version required')
         with self.db:
             deleted=self.db.execute("""DELETE FROM bam_calendar_proposals
-                WHERE tenant_id=? AND request_id=?""",
-                (principal.tenant_id,request_id))
+                WHERE tenant_id=? AND request_id=? AND proposal_token=?""",
+                (principal.tenant_id,request_id,expected_proposal_token))
+            if deleted.rowcount!=1:
+                raise ValueError('Proposal changed; refresh before removing date')
         return {'tenant_id':principal.tenant_id,
                 'request_id':request_id,'removed':deleted.rowcount,
                 'status':'proposal_only','posts_scheduled':0,

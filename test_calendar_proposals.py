@@ -57,7 +57,8 @@ class CalendarProposalTests(unittest.TestCase):
     def propose(self,**changes):
         args={'token':self.owner,'now':NOW,
               'request_id':self.draft,
-              'expected_revision':1,'utc_at':FIRST}
+              'expected_revision':1,'utc_at':FIRST,
+              'expected_proposal_token':None}
         args.update(changes)
         return self.calendar.propose(**args)
 
@@ -94,8 +95,11 @@ class CalendarProposalTests(unittest.TestCase):
             required_items=['image'],now=NOW)
         with self.assertRaises(ValueError):
             self.propose(request_id=another)
-        self.assertEqual(self.propose(utc_at=SECOND)['status'],
-                         'proposal_only')
+        saved=self.calendar.list_mine_business(
+            token=self.owner,now=NOW)['items'][0]
+        self.assertEqual(self.propose(
+            utc_at=SECOND,expected_proposal_token=saved['proposal_token']
+            )['status'],'proposal_only')
         self.assertEqual(len(self.calendar.list_mine_business(
             token=self.owner,now=NOW)['items']),1)
         changed=self.service.revise(
@@ -108,8 +112,11 @@ class CalendarProposalTests(unittest.TestCase):
         self.assertTrue(item['content_changed'])
         with self.assertRaises(ValueError):
             self.propose(utc_at=FIRST,now=NOW+1)
+        latest=self.calendar.list_mine_business(
+            token=self.owner,now=NOW+1)['items'][0]
         restored=self.propose(utc_at=FIRST,now=NOW+1,
-                              expected_revision=2)
+            expected_revision=2,
+            expected_proposal_token=latest['proposal_token'])
         self.assertEqual(restored['posts_scheduled'],0)
         current=self.calendar.list_mine_business(
             token=self.owner,now=NOW+1)['items'][0]
@@ -146,15 +153,73 @@ class CalendarProposalTests(unittest.TestCase):
         self.propose()
         with self.assertRaises(PermissionError):
             self.calendar.discard(token=self.viewer,now=NOW,
-                                  request_id=self.draft)
+                                  request_id=self.draft,
+                                  expected_proposal_token='a'*32)
+        current=self.calendar.list_mine_business(
+            token=self.owner,now=NOW)['items'][0]
+        version=current['proposal_token']
         removed=self.calendar.discard(token=self.creator,now=NOW,
-                                      request_id=self.draft)
+            request_id=self.draft,expected_proposal_token=version)
         self.assertEqual(removed['removed'],1)
         self.assertEqual(removed['posts_scheduled'],0)
-        self.assertEqual(self.calendar.discard(token=self.owner,now=NOW,
-            request_id=self.draft)['removed'],0)
+        with self.assertRaises(ValueError):
+            self.calendar.discard(token=self.owner,now=NOW,
+                request_id=self.draft,expected_proposal_token=version)
         self.assertIsNotNone(self.requests.get(
             tenant_id='shop',request_id=self.draft))
+
+    def test_calendar_conflict_versions_prevent_stale_reassignment(self):
+        original=self.propose()
+        first_version=original['proposal_token']
+        moved=self.propose(utc_at=SECOND,
+            expected_proposal_token=first_version)
+        self.assertNotEqual(first_version,moved['proposal_token'])
+        with self.assertRaises(ValueError):
+            self.propose(utc_at=FIRST,
+                expected_proposal_token=first_version)
+        with self.assertRaises(ValueError):
+            self.calendar.discard(token=self.owner,now=NOW,
+                request_id=self.draft,
+                expected_proposal_token=first_version)
+        self.assertEqual(self.calendar.discard(
+            token=self.owner,now=NOW,request_id=self.draft,
+            expected_proposal_token=moved['proposal_token'])['removed'],1)
+        recreated=self.propose()
+        self.assertNotEqual(recreated['proposal_token'],
+                            first_version)
+        with self.assertRaises(ValueError):
+            self.calendar.discard(token=self.owner,now=NOW,
+                request_id=self.draft,
+                expected_proposal_token=first_version)
+        self.assertEqual(len(self.calendar.list_mine_business(
+            token=self.owner,now=NOW)['items']),1)
+
+    def test_existing_sqlite_calendar_rows_migrate_without_loss(self):
+        legacy=sqlite3.connect(':memory:')
+        legacy.execute("""CREATE TABLE bam_calendar_proposals(
+            tenant_id TEXT NOT NULL,request_id TEXT NOT NULL,
+            draft_revision INTEGER NOT NULL,utc_at TEXT NOT NULL,
+            local_date TEXT NOT NULL,local_time TEXT NOT NULL,
+            timezone TEXT NOT NULL,updated_at INTEGER NOT NULL,
+            updated_by TEXT NOT NULL,
+            PRIMARY KEY(tenant_id,request_id),UNIQUE(tenant_id,utc_at))""")
+        legacy.execute("""INSERT INTO bam_calendar_proposals VALUES(
+            ?,?,?,?,?,?,?,?,?)""",('shop',self.draft,1,FIRST,
+            '2026-11-11','10:00','America/New_York',NOW,'owner'))
+        legacy.commit()
+        CalendarProposals(db=legacy,sessions=self.sessions,
+            directory=self.directory,content_service=self.service,
+            preferences=self.prefs)
+        first=legacy.execute(
+            'SELECT proposal_token FROM bam_calendar_proposals').fetchone()[0]
+        self.assertEqual(len(first),32)
+        CalendarProposals(db=legacy,sessions=self.sessions,
+            directory=self.directory,content_service=self.service,
+            preferences=self.prefs)
+        self.assertEqual(legacy.execute(
+            'SELECT proposal_token FROM bam_calendar_proposals').fetchone()[0],
+            first)
+        legacy.close()
 
     def test_suggest_unassigned_is_read_only_and_collision_free(self):
         second=self.service.create(
