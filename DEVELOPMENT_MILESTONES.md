@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Tenant-scoped, DST-safe posting-time preview (2026-11-11)
+
+A dedicated `posting_time_preview.py` service now derives a read-only seven-day list of possible Manual-mode local times from a business's saved posting preferences, omitting ambiguous fall-back hours and nonexistent spring-forward hours. It also reports an evidence hold for Smart mode rather than inventing peak-engagement suggestions. `GET /api/v1/posting-time-preview` resolves the tenant through the authenticated BAM session, disallows tenant query overrides, and cannot mutate content or schedule posts. The Settings UI displays and validates this response as informational only, including on business switches. No production queue, approval, social-token exchange or publishing permission is created.
+
+**Verified:** [GitHub Actions run 43023029480](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43023029480), commit `9a2eee75`, **795 Python tests and 38 JavaScript test scripts**, plus compilation.
+
 ## Full local TLS image receipt-to-discard smoke (2026-11-11)
 
 The existing single-process ephemeral HTTPS socket integration test now exercises real request bytes through BAM's loopback gateway: password login, creation of a held draft needing an image, private upload-preflight registration, image-byte receipt, persistent `awaiting_file` / `pending_scan` status reads, unchanged draft hold, explicit pending deletion, and separate-business isolation after a session switch. The disposable file is constructed in the test and remains unverified throughout. No public network, real customer data, scanner, social provider or paid model API is contacted.

@@ -1,3 +1,17 @@
+## Read-only posting-time preview — 2026-11-11
+
+### Added
+- `posting_time_preview.py` generates bounded future manual posting-time previews from saved, authenticated tenant preferences without creating a queue, approval, or publishing instruction. Nonexistent or ambiguous daylight-saving wall times are omitted rather than silently shifted or guessed.
+- A strictly read-only `GET /api/v1/posting-time-preview` route derives the business from the live BAM session. No tenant query override or POST action is accepted.
+- The authenticated Settings panel shows possible next-seven-day local posting times, with explicit language that these are not scheduled posts. Smart mode reports missing verified audience evidence rather than inventing recommendations.
+- Browser response validation rejects malformed preview claims, duplicate/unsorted slots and any implied publication. Business-switch tests verify the previous tenant's saved preferences do not appear in the new tenant's preview.
+
+### Verification
+- **Passed:** [GitHub Actions run 43023029480](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43023029480) on commit `9a2eee75`: **795 Python tests, 38 JavaScript test scripts**, Python compilation.
+
+### Known limitations
+- Posting-time previews do not create jobs, schedule content, estimate engagement, or enable publishing. Smart recommendations still require trusted platform analytics and explicit business configuration. The local-only HTTPS app remains an offline prototype.
+
 ## Verified local HTTPS image lifecycle smoke test — 2026-11-11
 
 ### Added
