@@ -32,6 +32,8 @@
     const loginButton=byId('sign-in-button');
     const logoutButton=byId('logout'),refreshButton=byId('refresh');
     const businessLabel=byId('active-business');
+    const businessSelect=byId('business-switch');
+    const switchLabel=byId('business-switch-label');
     const nav=[...document.querySelectorAll('[data-bam-panel]')];
     const panels={
       overview:byId('overview-panel'),
@@ -45,13 +47,30 @@
       logoutButton.hidden=true;
       businessLabel.hidden=true;
       businessLabel.textContent='';
+      businessSelect.hidden=true;switchLabel.hidden=true;
+      businessSelect.replaceChildren();
     }
-    function signedInView(tenantId){
+    function signedInView(tenantId,businesses=[]){
       signInView.hidden=true;
       workspaceView.hidden=false;
       logoutButton.hidden=false;
       businessLabel.hidden=false;
       businessLabel.textContent='Business: '+tenantId;
+      const choices=[];
+      for(const business of businesses){
+        if(!business||typeof business.tenantId!=='string'||
+           !business.tenantId||typeof business.name!=='string')
+          throw new TypeError('Trusted business list required');
+        const option=document.createElement('option');
+        option.value=business.tenantId;
+        option.textContent=business.name;
+        choices.push(option);
+      }
+      businessSelect.replaceChildren(...choices);
+      businessSelect.value=tenantId;
+      businessSelect.disabled=choices.length<=1;
+      businessSelect.hidden=choices.length<=1;
+      switchLabel.hidden=choices.length<=1;
       showPanel('overview');
     }
     function showPanel(name){
@@ -107,7 +126,7 @@
       try{
         const outcome=await controller.passwordSignIn({email,password,tenantId});
         if(outcome.status==='ready'){
-          signedInView(outcome.tenantId);
+          signedInView(outcome.tenantId,outcome.businesses);
           message('Signed in. Drafts and publishing controls remain restricted.');
         }else{
           signedOutView();
@@ -119,6 +138,30 @@
       }finally{
         pending=false;loginButton.disabled=false;
       }
+    });
+    businessSelect.addEventListener('change',async()=>{
+      const target=businessSelect.value;
+      if(target===controller.activeTenant())return;
+      businessSelect.disabled=true;
+      message('Verifying access to the selected business...');
+      try{
+        const result=await controller.switchBusiness({tenantId:target});
+        if(result.status==='ready'){
+          signedInView(result.tenantId,result.businesses);
+          message('Switched to '+businessLabel.textContent+'.');
+        }else if(result.stale){
+          signedOutView();
+          message('Session changed; sign in to continue.');
+        }else{
+          signedOutView();
+          message('Business switch unavailable; sign in again.');
+        }
+      }catch(error){
+        const tenant=controller.activeTenant();
+        if(tenant)businessSelect.value=tenant;
+        else signedOutView();
+        message('Could not change BAM business.');
+      }finally{businessSelect.disabled=businessSelect.hidden;}
     });
     logoutButton.addEventListener('click',async()=>{
       // Remove all private DOM before the network request.
@@ -136,6 +179,7 @@
         signedOutView();
         message('Session unavailable; please sign in again.');
       }else if(!result.stale){
+        signedInView(result.tenantId,result.businesses);
         message('BAM data refreshed for the active business.');
       }
     });
