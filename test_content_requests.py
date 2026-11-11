@@ -63,6 +63,38 @@ class ContentRequestsTests(unittest.TestCase):
         self.assertEqual(self.queue.get(tenant_id='shop',
             request_id=self.r)['revision'],4)
 
+    def test_legacy_content_database_migrates_without_losing_requests(self):
+        import json
+        old_db=sqlite3.connect(':memory:')
+        try:
+            old_db.execute("""CREATE TABLE content_requests (
+                request_id TEXT PRIMARY KEY,tenant_id TEXT NOT NULL,
+                channel TEXT NOT NULL,draft_text TEXT NOT NULL,
+                suggestion TEXT NOT NULL,required_items TEXT NOT NULL,
+                provided_items TEXT NOT NULL DEFAULT '{}',status TEXT NOT NULL,
+                priority INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL)""")
+            old_db.execute("""INSERT INTO content_requests
+                (request_id,tenant_id,channel,draft_text,suggestion,
+                 required_items,provided_items,status,priority,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                ('a'*32,'shop','facebook','Legacy draft','Need image',
+                 json.dumps(['image']),'{}','needs_content',1,100,100))
+            old_db.commit()
+            upgraded=ContentRequests(old_db)
+            before=upgraded.get(tenant_id='shop',request_id='a'*32)
+            self.assertEqual(before['draft_text'],'Legacy draft')
+            self.assertEqual(before['revision'],1)
+            after=upgraded.revise(tenant_id='shop',request_id='a'*32,
+                target='suggestion',revised_text='Better guidance',
+                expected_revision=1,now=101)
+            self.assertEqual(after['revision'],2)
+            self.assertEqual(after['draft_text'],'Legacy draft')
+            self.assertEqual(after['suggestion'],'Better guidance')
+            self.assertEqual(len(upgraded.list_for_business(tenant_id='shop')),1)
+        finally:
+            old_db.close()
+
     def test_partial_content_stays_held(self):
         self.assertEqual(self.queue.provide(tenant_id='shop',request_id=self.r,
             item='photo',content_reference='asset:123',now=101),'needs_content')

@@ -87,6 +87,22 @@ class ApprovalIntentTests(unittest.TestCase):
         self.receipt['payload']['draft_sha256']='bad'
         with self.assertRaises(ValueError):self.record()
 
+    def test_editing_approved_copy_invalidates_old_review_intent(self):
+        self.complete()
+        intent=self.record()['intent_id']
+        old=self.requests.get(tenant_id='shop',request_id=self.id)
+        updated=self.service.revise(token=self.owner,tenant_id='shop',
+            request_id=self.id,target='draft_text',
+            revised_text='A corrected custom print',
+            expected_revision=old['revision'],now=103)
+        self.assertEqual(updated['status'],'ready_for_review')
+        self.assertEqual(updated['draft_text'],'A corrected custom print')
+        inspected=self.ledger.inspect(token=self.owner,tenant_id='shop',
+            intent_id=intent,now=104)
+        self.assertTrue(inspected['requires_new_review'])
+        self.assertFalse(inspected['draft_unchanged'])
+        self.assertFalse(inspected['publishing_enabled'])
+
     def test_content_hold_requires_new_review(self):
         self.complete()
         record=self.record()
