@@ -1,5 +1,13 @@
 # Changelog
 
+## AI authorization and response hardening — 2026-11-10
+
+### Fixed
+- Deny Viewer-role attempts to change AI funding mode, user memory or personal-key reference.
+- Reject targeted AI revision outputs with extra fields, including model-generated publishing claims.
+- Added regression tests for both safeguards.
+
+
 ## Trusted image association for held AI drafts — 2026-11-10
 
 ### Added
