@@ -103,6 +103,16 @@
           <div class="panel" id="bam-ai-facts"></div>
           <div class="panel" id="bam-ai-facts-editor"></div>
         </div>
+        <div class="panel stack" id="session-controls">
+          <h2>Account security</h2>
+          <p class="muted">End your BAM sessions on this and your other signed-in devices. This does not disconnect any social media account.</p>
+          <button class="secondary" id="logout-everywhere" type="button">Sign out on all devices</button>
+          <p class="muted tiny" id="logout-everywhere-warning" hidden>This will immediately clear this browser's private BAM data and request revocation of your other active BAM sessions.</p>
+          <div class="toolbar">
+            <button class="primary" id="logout-everywhere-confirm" type="button" hidden>Confirm sign out on all devices</button>
+            <button class="secondary" id="logout-everywhere-cancel" type="button" hidden>Cancel</button>
+          </div>
+        </div>
         <p class="muted tiny">Detailed controls and owner-only fact changes require their authenticated backend endpoints. Publishing stays disabled.</p>
       </section>
     </div>

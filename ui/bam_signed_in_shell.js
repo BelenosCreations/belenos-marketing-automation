@@ -31,6 +31,17 @@
     const notice=byId('notice'),form=byId('login-form');
     const loginButton=byId('sign-in-button');
     const logoutButton=byId('logout'),refreshButton=byId('refresh');
+    const logoutAll=byId('logout-everywhere');
+    const logoutAllConfirm=byId('logout-everywhere-confirm');
+    const logoutAllCancel=byId('logout-everywhere-cancel');
+    const logoutAllWarning=byId('logout-everywhere-warning');
+    let globalLogoutPending=false;
+    function resetGlobalLogout(){
+      logoutAllConfirm.hidden=true;
+      logoutAllCancel.hidden=true;
+      logoutAllWarning.hidden=true;
+      logoutAll.disabled=false;
+    }
     const businessLabel=byId('active-business');
     const businessSelect=byId('business-switch');
     const switchLabel=byId('business-switch-label');
@@ -43,6 +54,7 @@
     };
     function message(text){notice.textContent=text;}
     function signedOutView(){
+      resetGlobalLogout();
       workspaceView.hidden=true;
       signInView.hidden=false;
       logoutButton.hidden=true;
@@ -52,6 +64,7 @@
       businessSelect.replaceChildren();
     }
     function signedInView(tenantId,businesses=[]){
+      resetGlobalLogout();
       signInView.hidden=true;
       workspaceView.hidden=false;
       logoutButton.hidden=false;
@@ -180,6 +193,38 @@
         else signedOutView();
         message('Could not change BAM business.');
       }finally{businessSelect.disabled=businessSelect.hidden;}
+    });
+    logoutAll.addEventListener('click',()=>{
+      if(!controller.activeTenant()||pending||globalLogoutPending)return;
+      logoutAllConfirm.hidden=false;
+      logoutAllCancel.hidden=false;
+      logoutAllWarning.hidden=false;
+      logoutAll.disabled=true;
+    });
+    logoutAllCancel.addEventListener('click',()=>{
+      if(globalLogoutPending)return;
+      resetGlobalLogout();
+    });
+    logoutAllConfirm.addEventListener('click',async()=>{
+      if(globalLogoutPending||pending||!controller.activeTenant()||
+         logoutAllConfirm.hidden)return;
+      globalLogoutPending=true;
+      // Fail-safe: remove private DOM and tokens before network revocation.
+      signedOutView();
+      message('Signing out all BAM sessions...');
+      try{
+        const result=await controller.signOut({everywhere:true});
+        if(result.serverRevoked){
+          message('BAM sessions revoked on all devices ('+
+            result.sessionsRevoked+' sessions).');
+        }else{
+          message('This page was signed out, but server-wide revocation could not be confirmed. Other sessions may remain valid until expiry.');
+        }
+      }catch(error){
+        message('This page is signed out. Could not confirm revocation on other devices.');
+      }finally{
+        globalLogoutPending=false;
+      }
     });
     logoutButton.addEventListener('click',async()=>{
       // Remove all private DOM before the network request.

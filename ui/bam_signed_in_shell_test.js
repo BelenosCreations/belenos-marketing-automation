@@ -16,7 +16,9 @@ function node(tag='div'){
 }
 function fixture(){
   const ids=['sign-in-view','workspace-view','notice','login-form',
-    'sign-in-button','logout','refresh','active-business',
+    'sign-in-button','logout','logout-everywhere',
+    'logout-everywhere-confirm','logout-everywhere-cancel',
+    'logout-everywhere-warning','refresh','active-business',
     'business-switch','business-switch-label',
     'overview-panel','drafts-panel','content-panel','settings-panel',
     'email','password','business','appearance',
@@ -72,6 +74,7 @@ async function main(){
   assert.match(html,/id="login-form"/);
   assert.match(html,/id="bam-dashboard"/);
   assert.match(html,/id="business-switch"/);
+  assert.match(html,/id="logout-everywhere-confirm"/);
   assert.match(html,/data-bam-panel="settings"/);
   assert.match(html,/src="\.\.\/branding\/source\/app_icon\.svg"/);
   assert.doesNotMatch(html,/class="mark"[^>]*>B<\/span>/);
@@ -92,8 +95,10 @@ async function main(){
   const fetchImpl=async(url,opts)=>{
     requests.push({url,opts});
     const kind=url.split('/').pop();
-    if(kind==='password')return {ok:true,json:async()=>({
-      session_token:'a'.repeat(43),publishing_enabled:false})};
+    if(kind==='password'){
+      currentTenant=JSON.parse(opts.body).tenant_id;
+      return {ok:true,json:async()=>({
+      session_token:'a'.repeat(43),publishing_enabled:false})};}
     if(kind==='activate'){
       currentTenant=JSON.parse(opts.body).target_tenant_id;
       return {ok:true,json:async()=>({tenant_id:currentTenant,
@@ -172,6 +177,8 @@ async function main(){
         publishing_enabled:false};
       return {ok:true,json:async()=>data['posting-preferences']};
     }
+    if(kind==='logout-everywhere')return {ok:true,json:async()=>({
+      signed_out:true,sessions_revoked:3,publishing_enabled:false})};
     if(kind==='logout')return {ok:true,json:async()=>({
       signed_out:true,publishing_enabled:false})};
     if(kind==='posting-preferences'&&opts.method==='GET'&&currentTenant==='other')
@@ -324,6 +331,26 @@ async function main(){
   assert.equal(e['bam-ai-facts'].children.length,0);
   assert.equal(requests.at(-1).opts.headers.Authorization,
     'Bearer '+'s'.repeat(43));
+  // Account security is a separate, explicit two-step action.
+  e.business.value='shop';
+  e.email.value='owner@example.com';
+  e.password.value='correct horse battery staple';
+  await e['login-form'].listeners.submit({preventDefault(){}});
+  assert.equal(e['logout-everywhere-confirm'].hidden,true);
+  e['logout-everywhere'].listeners.click();
+  assert.equal(e['logout-everywhere-confirm'].hidden,false);
+  assert.equal(requests.some(r=>r.url.endsWith('/logout-everywhere')),false);
+  e['logout-everywhere-cancel'].listeners.click();
+  assert.equal(e['logout-everywhere-confirm'].hidden,true);
+  assert.equal(e['workspace-view'].hidden,false);
+  e['logout-everywhere'].listeners.click();
+  await e['logout-everywhere-confirm'].listeners.click();
+  assert.equal(e['workspace-view'].hidden,true);
+  assert.equal(e['bam-dashboard'].children.length,0);
+  assert.equal(requests.at(-1).url.endsWith('/logout-everywhere'),true);
+  assert.equal(requests.at(-1).opts.headers.Authorization,
+    'Bearer '+'a'.repeat(43));
+  assert.match(e.notice.textContent,/3 sessions/);
   const insecure=fixture();
   const result=mount({document:insecure.document,window,
     origin:'file:///',fetchImpl});
