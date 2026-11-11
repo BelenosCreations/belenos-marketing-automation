@@ -1,3 +1,17 @@
+## Actionable scheduling and human-review dashboard details — 2026-11-11
+
+### Added
+- The large Scheduled card now opens a read-only seven-day Manual-mode posting-time preview derived from the current signed-in business, with a link to owner-only Posting Time settings. It explicitly distinguishes suggested clock slots from real scheduled posts and never claims audience-optimal Smart times without verified data.
+- The Approvals card now lists only that business's requests currently marked `ready_for_review`, with an explicit link to Content Studio. Reviewable content remains unapproved, unpublished and unscheduled.
+- Both drilldowns clear tenant-sensitive state after business switching or sign-out, invalidate stale async replies and show unavailable/error states instead of synthetic schedule data.
+- Added independent browser regression coverage for manual time previews, explicit navigation, human-review labels, failed preview reads, and cancellation of stale requests.
+
+### Verification
+- **Passed:** [GitHub Actions run 43032704184](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43032704184), commit `03d1495a`: **797 Python tests, 41 JavaScript test scripts**, and Python compilation.
+
+### Known limitations
+- No real provider scheduling, audience analysis, human approval recording, social publication or external marketing account OAuth was activated. The current HTTPS preview remains offline and loopback-only.
+
 ## Authenticated read-only Connections drilldown — 2026-11-11
 
 ### Added

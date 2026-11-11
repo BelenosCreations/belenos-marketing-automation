@@ -4,6 +4,12 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Scheduling and review details inside the large-card dashboard
+
+The Scheduled card loads `GET /api/v1/posting-time-preview` only after explicit drilldown navigation. It displays possible Manual-mode clock slots with the IANA timezone, flags skipped DST hours, and labels Smart timing as awaiting verified audience evidence. It does not show fake scheduled posts or create jobs. The Settings link navigates to the already-connected owner-controlled time editor.
+
+The Approvals card filters business-verified dashboard drafts for `ready_for_review`, explains that they are not approved/scheduled, and links to Content Studio. Both views use `textContent` rendering and lifecycle checks to stop old business controls and late network responses from appearing after token rotation. **Verified:** [run 43032704184](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43032704184).
+
 ## Read-only connected-account drilldown
 
 The dashboard's Connections card optionally opens `GET /api/v1/connections`, which lists provider account status only when the current BAM session permits analytics-read access. The response is current-business scoped; account aliases, effective status and read-only scope are the only per-account fields beyond update/expiry timestamps. No OAuth tokens, vault references, permissions to publish, or mutable social configuration may be returned.

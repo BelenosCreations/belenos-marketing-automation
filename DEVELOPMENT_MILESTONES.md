@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Detailed Scheduled and Approvals dashboard cards (2026-11-11)
+
+The authenticated large-card overview now has useful drilldowns for scheduling and human-review readiness, in addition to the already verified Content and Connections panels. The Scheduled panel calls the existing `GET /api/v1/posting-time-preview` route only for read-only possible Manual-mode local clock times, respects DST ambiguity notes, and links to business-owner posting preferences. No queued or published items are implied. The Approvals panel lists only business-scoped `ready_for_review` requests from the trusted dashboard, explicitly stating that these are not yet approved; it links to Content Studio without adding an approval or publication action. Both panels guard against stale responses after logout or business switching.
+
+**Verified:** [GitHub Actions run 43032704184](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43032704184), commit `03d1495a`, **797 Python tests, 41 JavaScript test scripts**, plus compilation.
+
 ## Business-scoped social account status drilldown (2026-11-11)
 
 The signed-in dashboard Connections card now opens a deeper read-only view, using an authenticated `GET /api/v1/connections` route backed by `SocialConnectionDirectory`. The endpoint derives the tenant from a fresh session and separately checks analytics-read permission. Responses contain only provider platform, account alias, permitted read-only scope, effective connection state and timestamps; no vault references, tokens, publish scopes or user-selected business IDs. Strict browser contracts reject unexpected or forged metadata. Restricted roles are not permitted to fetch the details. The dashboard handles loading/error states without fabricating an account connection, and discards results after logout or business switch.
