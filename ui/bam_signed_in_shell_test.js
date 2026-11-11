@@ -47,6 +47,8 @@ const data={
   drafts:{tenant_id:'shop',publishing_enabled:false,drafts:[]},
   'posting-preferences':{tenant_id:'shop',mode:'smart',timezone:null,
     manual_times:[],configured:false,publishing_enabled:false},
+  connections:{tenant_id:'shop',visibility:'authorized',connections:[],
+    publishing_enabled:false},
   'posting-time-preview':{tenant_id:'shop',mode:'smart',timezone:null,
     status:'not_configured',slots:[],skipped_dst:0,truncated:false,
     publishing_enabled:false},

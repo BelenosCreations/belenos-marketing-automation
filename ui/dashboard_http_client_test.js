@@ -75,6 +75,22 @@ async function main(){
       ...proposal,slots:[{local_date:'2026-11-11',local_time:'10:00',
         utc_at:'2026-11-11T15:00:00+00:00'}]
     })})}),TypeError);
+  const social={tenant_id:'shop',visibility:'authorized',connections:[
+    {platform:'facebook',account_id:'page',scope:'read_insights',
+     status:'connected',updated_at:100,expires_at:null,
+     publishing_enabled:false}],publishing_enabled:false};
+  const details=await read({...options,kind:'connections',
+    expectedTenantId:'shop',fetchImpl:async(url,opts)=>{
+      assert.equal(url,'https://bam.example/api/v1/connections');
+      assert.equal(opts.method,'GET');
+      return {ok:true,json:async()=>social};
+    }});
+  assert.equal(details.connections[0].accountId,'page');
+  assert.equal(details.connections[0].publishingEnabled,false);
+  await assert.rejects(()=>read({...options,kind:'connections',
+    expectedTenantId:'shop',fetchImpl:async()=>({ok:true,
+      json:async()=>({...social,connections:[{...social.connections[0],
+        vault_reference:'secret'}]})})}),TypeError);
   console.log('BAM HTTPS read-only client tests passed');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

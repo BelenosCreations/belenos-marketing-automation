@@ -5,15 +5,17 @@
 (function(root,factory){
   'use strict';
   if(typeof module==='object'&&module.exports)module.exports=factory(require('./dashboard_data_contract.js'),require('./content_studio_contract.js'),require('./posting_preferences_contract.js'),require('./ai_draft_contract.js'),require('./ai_settings_contract.js'),require('./ai_facts_contract.js'),
-      require('./ai_cost_contract.js'),require('./posting_time_preview_contract.js'));
-  else root.BAMReadClient=factory(root.BAMDashboardData,root.BAMContentStudioData,root.BAMPostingPreferencesData,root.BAMAIDraftData,root.BAMAISettingsData,root.BAMAIFactsData,root.BAMAICostData,root.BAMPostingTimePreviewData);
-})(typeof globalThis!=='undefined'?globalThis:this,function(contract,studioContract,postingContract,aiDraftContract,aiSettingsContract,aiFactsContract,aiCostContract,previewContract){
+      require('./ai_cost_contract.js'),require('./posting_time_preview_contract.js'),
+      require('./connections_contract.js'));
+  else root.BAMReadClient=factory(root.BAMDashboardData,root.BAMContentStudioData,root.BAMPostingPreferencesData,root.BAMAIDraftData,root.BAMAISettingsData,root.BAMAIFactsData,root.BAMAICostData,root.BAMPostingTimePreviewData,root.BAMConnectionsData);
+})(typeof globalThis!=='undefined'?globalThis:this,function(contract,studioContract,postingContract,aiDraftContract,aiSettingsContract,aiFactsContract,aiCostContract,previewContract,connectionsContract){
   'use strict';
   const routes=Object.freeze({
     dashboard:'/api/v1/dashboard',
     drafts:'/api/v1/drafts',
     preferences:'/api/v1/posting-preferences',
     postingPreview:'/api/v1/posting-time-preview',
+    connections:'/api/v1/connections',
     aiDrafts:'/api/v1/ai-drafts',
     aiSettings:'/api/v1/ai-settings',
     aiFacts:'/api/v1/ai-business-facts',
@@ -47,6 +49,7 @@
     if(kind==='drafts')return studioContract.normalize(body);
     if(kind==='preferences')return postingContract.normalize(body);
     if(kind==='postingPreview')return previewContract.normalize(body);
+    if(kind==='connections')return connectionsContract.normalize(body);
     if(kind==='aiDrafts')return aiDraftContract.normalize(body);
     if(kind==='aiSettings')return aiSettingsContract.normalize(body);
     if(kind==='aiFacts')return aiFactsContract.normalize(body);
