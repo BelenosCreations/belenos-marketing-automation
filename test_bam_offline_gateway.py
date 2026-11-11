@@ -744,11 +744,10 @@ class BAMOfflineGatewayTests(unittest.TestCase):
                   'expected_feedback_token':saved['feedback_token']})[0]
             ['status'],'200 OK')
         _,after=self.call('/api/v1/review-feedback-history',token=owner)
-        self.assertEqual([item['action'] for item in after['events']],
-                         ['removed','created'] if
-                         after['events'][0]['occurred_at']>
-                         after['events'][1]['occurred_at'] else
-                         sorted(['removed','created']))
+        # Both events may share the same test-clock second, so ordering by
+        # event ID is intentionally not a claim about write order.
+        self.assertEqual(sorted(item['action'] for item in after['events']),
+                         ['created','removed'])
         self.assertEqual(self.call('/api/v1/review-feedback-history',
             method='POST',token=owner,body={})[0]['status'],
             '405 Method Not Allowed')
