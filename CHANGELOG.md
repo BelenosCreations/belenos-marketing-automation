@@ -1,5 +1,15 @@
 # Changelog
 
+## Persistent AI draft staging — 2026-11-10
+
+### Added
+- `ai_content_drafts.py`: business/user-isolated SQLite storage for structured post and optional image prompt, explicit media-needed holds, and optimistic revision counters.
+- `test_ai_content_drafts.py`: tests for draft persistence, no-publish state, user/business isolation, media requirements and stale-edit rejection.
+
+### Limitations
+- No actual OpenAI calls, image uploads, verified-media linking or publishing.
+
+
 ## Reversible personal OpenAI key mode — 2026-11-10
 
 ### Fixed
