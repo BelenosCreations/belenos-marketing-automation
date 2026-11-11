@@ -227,6 +227,30 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(cancelled['status'],'cancelled')
         self.assertEqual(configured.business_invitations.pending_current(
             owner_session=token,now=101)['items'],[])
+        # The trusted WSGI composition exposes audit metadata only, scoped to
+        # the current owner business. No address or invitation secret leaks.
+        activity_env={'PATH_INFO':'/api/v1/team/invitations/activity',
+            'REQUEST_METHOD':'GET','wsgi.url_scheme':'https',
+            'HTTP_AUTHORIZATION':'Bearer '+token}
+        meta={}
+        audit=json.loads(b''.join(configured(
+            activity_env,lambda status,headers:
+                meta.update(status=status,headers=dict(headers)))))
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual([x['action'] for x in audit['events']],
+                         ['cancelled','delivered'])
+        self.assertEqual(audit['events'][0]['invitation_id'],
+                         invited['invitation_id'])
+        self.assertNotIn(outbox[0][2],str(audit))
+        self.assertNotIn('invitee@example.com',str(audit))
+        other=self.login('other')
+        activity_env['HTTP_AUTHORIZATION']='Bearer '+other
+        denied={}
+        b''.join(configured(activity_env,
+            lambda status,headers:denied.update(status=status)))
+        self.assertEqual(denied['status'],'401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/team/invitations/activity',
+            token=token)[0]['status'],'503 Service Unavailable')
 
     def test_team_overview_owner_only_aggregate_without_ids(self):
         owner=self.login('shop')
