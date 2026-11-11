@@ -13,7 +13,7 @@ class TenantApprovalService:
         self.directory=directory
 
     def _actor(self, token, tenant_id, action, now):
-        session=self.sessions.resolve(token,now=now)
+        session=self.sessions.resolve_current(token,directory=self.directory,now=now)
         if session is None or not self.directory.authorize(session.principal,action,tenant_id):
             raise PermissionError('Access denied')
         return session.principal.subject_id

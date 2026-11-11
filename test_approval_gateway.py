@@ -41,6 +41,20 @@ class ApprovalGatewayTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.gateway.decide_post(token=self.manager_token,tenant_id='belenos',post_id=self.community,decision='revoked',at=self.at)
 
+    def test_new_owner_role_requires_a_fresh_session(self):
+        self.directory.set_member(self.owner,'manager',Role.OWNER)
+        with self.assertRaises(PermissionError):
+            self.gateway.decide_post(token=self.manager_token,
+                tenant_id='belenos',post_id=self.promo,
+                decision='approved',at=self.at)
+        # An explicitly issued current-role session has the new permissions.
+        fresh=self.sessions.issue(
+            Principal('manager','belenos',Role.OWNER),
+            now=int(self.at.timestamp()))
+        self.gateway.decide_post(token=fresh,
+            tenant_id='belenos',post_id=self.promo,
+            decision='approved',at=self.at)
+
     def test_role_downgrade_immediate(self):
         self.directory.set_member(self.owner,'manager',Role.VIEWER)
         with self.assertRaises(PermissionError):

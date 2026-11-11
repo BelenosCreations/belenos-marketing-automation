@@ -11,7 +11,7 @@ class ApprovalGateway:
         self.ownership = TenantResources(db)
 
     def _principal(self, token, tenant_id, action, now):
-        session = self.sessions.resolve(token, now=now)
+        session = self.sessions.resolve_current(token,directory=self.directory,now=now)
         if session is None or not self.directory.authorize(session.principal, action, tenant_id):
             raise PermissionError('Access denied')
         return self.directory.resolve(tenant_id, session.principal.subject_id)

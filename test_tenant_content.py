@@ -50,6 +50,20 @@ class TenantNativeTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.service.decide_post(token=self.owner_token,tenant_id='belenos',post_id='missing',decision='approved',now=101)
 
+    def test_role_upgrade_requires_current_session_for_approval(self):
+        self.directory.set_member(self.owner,'manager',Role.OWNER)
+        with self.assertRaises(PermissionError):
+            self.service.decide_post(token=self.manager_token,
+                tenant_id='belenos',post_id='shared',
+                decision='approved',now=101)
+        current=self.sessions.issue(
+            Principal('manager','belenos',Role.OWNER),now=100)
+        self.service.decide_post(token=current,
+            tenant_id='belenos',post_id='shared',
+            decision='approved',now=101)
+        self.assertEqual(self.content.get_post('belenos','shared')[2],
+                         'approved')
+
     def test_role_change_rechecked(self):
         self.directory.set_member(self.owner,'manager',Role.VIEWER)
         with self.assertRaises(PermissionError):
