@@ -33,9 +33,11 @@
         item.append(el(document,'h4','Image prompt — copy to ChatGPT if desired'));
         item.append(el(document,'p',draft.imagePrompt));
       }
-      item.append(el(document,'p',draft.needsMedia
+      item.append(el(document,'p',draft.needsMedia&&!draft.mediaAttached
         ?'Media needed — this draft is on hold'
-        :'Awaiting factual verification and approval'));
+        :draft.mediaAttached
+          ?'Media verified and attached — awaiting factual verification and approval'
+          :'Awaiting factual verification and approval'));
       wrapper.append(item);
     }
     container.replaceChildren(wrapper);
