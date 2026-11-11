@@ -1,5 +1,12 @@
 # Changelog
 
+## Generation-time fact revision guard — 2026-11-10
+
+### Fixed
+- Reject AI output when owner-confirmed business facts change during generation, rather than staging content grounded in an obsolete snapshot.
+- Added regression test for a mid-generation fact update.
+
+
 ## Quota-gated AI generation orchestration — 2026-11-10
 
 ### Added
