@@ -19,7 +19,8 @@
   }
   function create({document,container,fetchImpl,origin,onError,
                    onOpenContentStudio,onOpenPostingSettings,
-                   enableCalendarProposals=false}){
+                   enableCalendarProposals=false,
+                   enableCalendarSuggestions=false}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Dashboard dependencies required');
@@ -29,19 +30,22 @@
       throw new TypeError('Content Studio navigation callback required');
     if(onOpenPostingSettings!==undefined&&typeof onOpenPostingSettings!=='function')
       throw new TypeError('Posting settings navigation callback required');
-    if(typeof enableCalendarProposals!=='boolean')
+    if(typeof enableCalendarProposals!=='boolean'||
+       typeof enableCalendarSuggestions!=='boolean')
       throw new TypeError('Explicit calendar preview feature switch required');
     let active=null,epoch=0,requestVersion=0,current=null,view='home';
     let connectionData=null,connectionPending=false,connectionError=false;
     let connectionRequest=0;
     let postingPreview=null,previewPending=false,previewError=false;
     let previewRequest=0,calendarData=null,calendarError=false;
+    let suggestionsData=null,suggestionsError=false;
     function clear(){
       epoch++;requestVersion++;connectionRequest++;previewRequest++;
       active=null;current=null;view='home';
       connectionData=null;connectionPending=false;connectionError=false;
       postingPreview=null;previewPending=false;previewError=false;
       calendarData=null;calendarError=false;
+      suggestionsData=null;suggestionsError=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -85,10 +89,13 @@
       previewPending=true;previewError=false;
       if(view==='scheduled')show('scheduled');
       try{
-        const [data,proposals]=await Promise.allSettled([
+        const [data,proposals,suggestions]=await Promise.allSettled([
           client.read({kind:'postingPreview',token:mine.token,
             fetchImpl,origin,expectedTenantId:mine.tenantId}),
           enableCalendarProposals?calendarClient.list({
+            origin,fetchImpl,token:mine.token,
+            expectedTenantId:mine.tenantId}):Promise.resolve(null),
+          enableCalendarSuggestions?calendarClient.suggest({
             origin,fetchImpl,token:mine.token,
             expectedTenantId:mine.tenantId}):Promise.resolve(null)
         ]);
@@ -106,6 +113,14 @@
           }else{
             calendarData=null;calendarError=true;
             if(onError)onError('Private draft calendar could not be loaded');
+          }
+        }
+        if(enableCalendarSuggestions){
+          if(suggestions.status==='fulfilled'){
+            suggestionsData=suggestions.value;suggestionsError=false;
+          }else{
+            suggestionsData=null;suggestionsError=true;
+            if(onError)onError('Draft-only time suggestions could not be loaded');
           }
         }
         return data.status==='fulfilled'
@@ -275,6 +290,49 @@
             }
             wrap.append(calendar);
           }
+          if(enableCalendarSuggestions){
+            const planner=element(document,'section','');
+            planner.append(element(document,'h3',
+              'Possible dates for unassigned drafts — suggestions only'));
+            if(previewPending)
+              planner.append(element(document,'p','Checking held draft options...'));
+            else if(suggestionsError||!suggestionsData)
+              planner.append(element(document,'p',
+                'Draft suggestions unavailable; no dates were assigned.'));
+            else if(suggestionsData.preferenceStatus!=='manual_preview')
+              planner.append(element(document,'p',
+                'Owner-configured Manual times are needed. Smart recommendations require verified audience data.'));
+            else if(!suggestionsData.items.length)
+              planner.append(element(document,'p',
+                'No unassigned drafts can be paired with an open Manual slot right now.'));
+            else{
+              planner.append(element(document,'p',
+                'Preview only. Save any chosen date in Content Studio; nothing is scheduled or approved.'));
+              for(const suggestion of suggestionsData.items){
+                const item=element(document,'article','');
+                const draft=current.drafts.find(x=>x.id===suggestion.requestId);
+                item.append(element(document,'p',
+                  suggestion.localDate+' at '+suggestion.localTime+
+                  ' ('+suggestion.timezone+')'));
+                item.append(element(document,'p',
+                  draft?'Held draft: '+draft.text:
+                  'Held draft reference: '+suggestion.requestId.slice(0,8)));
+                planner.append(item);
+              }
+              if(suggestionsData.unassignedHeldCount>suggestionsData.items.length)
+                planner.append(element(document,'p',
+                  'Additional held drafts do not currently have suggested slots.'));
+            }
+            if(onOpenContentStudio){
+              const manage=element(document,'button','Choose a proposed date in Content Studio');
+              manage.type='button';manage.className='secondary';
+              manage.addEventListener('click',()=>{
+                if(active===scope&&epoch===scopeEpoch)onOpenContentStudio();
+              });
+              planner.append(manage);
+            }
+            wrap.append(planner);
+          }
         }else if(section==='approvals'){
           wrap.append(element(document,'p',
             'Ready-for-review requests are not approved or scheduled posts.'));
@@ -359,6 +417,7 @@
         connectionData=null;connectionPending=false;connectionError=false;
         postingPreview=null;previewPending=false;previewError=false;
         calendarData=null;calendarError=false;
+        suggestionsData=null;suggestionsError=false;
         current=data;show(view);
         if(view==='connections'&&
            data.cards.connections.availability==='available')
