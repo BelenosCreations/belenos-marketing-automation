@@ -1,5 +1,12 @@
 # Changelog
 
+## Image-prompt revision reopens media hold — 2026-11-10
+
+### Fixed
+- Revising an AI image prompt invalidates its prior verified-image association and reopens the media-needed hold.
+- Revising only post text preserves the existing verified-image association; regression tests cover both cases.
+
+
 ## AI fact provenance workspace integration — 2026-11-10
 
 ### Added
