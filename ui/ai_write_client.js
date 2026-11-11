@@ -10,7 +10,7 @@
   'use strict';
   function validate({origin,token,fetchImpl}){
     if(typeof origin!=='string'||!/^https:\/\/[^/?#]+$/.test(origin)||
-       typeof token!=='string'||!token.trim()||token.length>2048||
+       typeof token!=='string'||!/^[A-Za-z0-9_-]+$/.test(token)||token.length>2048||
        typeof fetchImpl!=='function')
       throw new TypeError('Secure authenticated AI client required');
   }
