@@ -64,6 +64,22 @@ class EditorialReviewServiceTests(unittest.TestCase):
     def test_cross_business_denied(self):
         with self.assertRaises(PermissionError):self.check(tenant_id='busy_b',topic='facility_care')
 
+    def test_old_business_session_rejected_even_with_new_membership(self):
+        # A session for Belenos must not authorize another tenant merely
+        # because the same identity also holds a membership there.
+        self.directory.set_member(
+            Principal('other_owner','busy_b',Role.OWNER),
+            'owner',Role.MARKETING_MANAGER)
+        with self.assertRaises(PermissionError):
+            self.check(tenant_id='busy_b',topic='facility_care')
+
+    def test_role_change_revokes_stale_editorial_session(self):
+        self.directory.set_member(
+            Principal('owner','belenos',Role.OWNER),
+            'manager',Role.VIEWER)
+        with self.assertRaises(PermissionError):
+            self.check('manager')
+
     def test_revoked_token_denied(self):
         self.sessions.revoke(self.tokens['owner'],now=100)
         with self.assertRaises(PermissionError):self.check()
