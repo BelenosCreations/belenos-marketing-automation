@@ -1,5 +1,15 @@
 # Changelog
 
+## Quota-gated AI generation orchestration — 2026-11-10
+
+### Added
+- `ai_generation_workflow.py`: owner-confirmed facts → sponsored quota reservation → trusted executor → strict structured validation → held draft staging.
+- Tests for missing facts, quota exhaustion, personal-key mode isolation, malformed executor output and no publishing.
+
+### Limitations
+- No OpenAI network executor, encrypted key vault, production cost accounting, real image generation or social publishing.
+
+
 ## Image-prompt revision reopens media hold — 2026-11-10
 
 ### Fixed
