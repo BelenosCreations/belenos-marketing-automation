@@ -2,6 +2,11 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Verified CI recovery and UI privacy regression (2026-11-10)
+
+The recovered development branch was checked against the actual GitHub Actions logs instead of relying on previously unverified test claims. The initial blocker was a Python syntax error in `bam_ai_write_wsgi.py`. After fixing it, the complete suite exposed four failing assertions: one family-audience smart-schedule bug and three regression expectations inconsistent with current viewer permission, competitor blocking, and invitation TTL semantics. These were corrected without relaxing cross-tenant checks or publication gates. A new UI test verifies the owner facts editor is cleared after read failures. The CI workflow discovers all JavaScript UI scripts automatically and cancels superseded runs. **Verified run 42951059295:** 676 Python tests and 22 JavaScript UI regression scripts passed, plus Python compilation. [Successful run](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42951059295). This is an offline test milestone; it does not activate social publishing, paid AI calls or a hosted Android app.
+
+
 ## Phase 3.4 session prototype
 
 `sessions.py` provides an **offline, server-side** session storage prototype with opaque random bearer tokens, SHA-256 hashes at rest, expiry, and revocation. This is not a login system: identity verification, employee enrollment, role freshness, secure HTTPS transport, credential handling, API middleware, CSRF protection (if cookies are used), and mobile biometric unlock still require implementation and security review. Production access must validate current account membership and role on every request; a session's stored role alone is insufficient. No publishing capability has been enabled.
