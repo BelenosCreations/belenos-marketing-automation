@@ -1,5 +1,12 @@
 # Changelog
 
+## Required generation request keys when deduplication is configured — 2026-11-10
+
+### Fixed
+- Reject missing idempotency keys in deduplicated AI generation workflows.
+- Added same-business, different-user isolation tests.
+
+
 ## Private AI usage summary and Settings panel — 2026-11-10
 
 ### Added
