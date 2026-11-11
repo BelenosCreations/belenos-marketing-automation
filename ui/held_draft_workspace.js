@@ -109,6 +109,32 @@
           if(draft.missing.length)
             article.append(make(document,'p',
               'Still needed: '+draft.missing.join(', ')));
+          if(canEdit&&mediaEnabled&&status==='needs_content'){
+            const item=draft.missing.find(value=>
+              /photo|image|picture|artwork|graphic/i.test(value));
+            if(item){
+              const picker=make(document,'input','');
+              picker.type='file';
+              picker.accept='image/png,image/jpeg,image/webp';
+              article.append(picker);
+              const upload=make(document,'button',
+                'Send image for private review');
+              upload.type='button';upload.className='secondary';
+              upload.disabled=busy;
+              upload.addEventListener('click',async()=>{
+                if(busy||!active)return;
+                const file=picker.files&&picker.files[0];
+                if(!file){
+                  if(onError)onError('Choose an image before submitting.');
+                  return;
+                }
+                await stageImage({requestId:draft.id,item,file});
+              });
+              article.append(upload);
+              article.append(make(document,'p',
+                'This image stays private and pending. No safety, rights or approval review has occurred.'));
+            }
+          }
           if(canEdit&&status!=='ready_for_review'){
             const actions=status==='needs_content'
               ?[['postponed','Postpone'],['unavailable','Mark unavailable']]
