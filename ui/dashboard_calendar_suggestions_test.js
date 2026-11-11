@@ -22,9 +22,9 @@ const fetchImpl=async(url,options)=>{
       {id:'approvals',label:'Approvals',value:0,availability:'available'},
       {id:'content',label:'Content',value:1,availability:'available'},
       {id:'connections',label:'Connections',value:0,availability:'available'}],
-    drafts:[{id:rid,channel:'facebook',text:'Custom shirt idea',
+    drafts:[{request_id:rid,channel:'facebook',draft_text:'Custom shirt idea',
       suggestion:'Need product image',status:'needs_content',
-      missing:['image']}],
+      missing_items:['image']}],
     analytics:{availability:'not_connected',series:null},
     schedule:{availability:'not_connected',posts:null},
     publishing_enabled:false})};
