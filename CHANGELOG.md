@@ -1,5 +1,16 @@
 # Changelog
 
+## AI generation idempotency and duplicate protection — 2026-11-10
+
+### Added
+- Durable per-business/per-user generation request claims with fingerprint checks and completed/failed states.
+- Optional generation-workflow integration preventing duplicate sponsored quota reservations, provider calls and drafts.
+- Tests for replay, changed inputs, failed attempts and cross-business isolation.
+
+### Limitations
+- Production endpoints must require request keys; crash recovery and provider billing reconciliation remain pending.
+
+
 ## AI token usage and estimated-cost accounting — 2026-11-10
 
 ### Added
