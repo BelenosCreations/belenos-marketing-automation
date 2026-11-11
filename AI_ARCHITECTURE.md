@@ -80,3 +80,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 ### Idempotent generation requests
 
 `ai_generation_idempotency.py` tracks 32-character random request keys and SHA-256 fingerprints by business/user. When supplied to `AIDraftGenerationWorkflow`, repeated requests return a held status without a second provider call or quota reservation. Production HTTP generation endpoints must require idempotency keys and use durable shared storage. In-progress and failed requests must not be automatically retried without reconciliation.
+
+### Request status and ambiguous JSON
+
+`AIGenerationIdempotency.status` returns the authenticated caller's own request state without initiating any provider request. In-progress and failed requests remain held for explicit operational reconciliation. AI generation and owner-fact WSGI adapters reject duplicate JSON keys rather than silently accepting the last value.
