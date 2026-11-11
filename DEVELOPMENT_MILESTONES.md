@@ -9,6 +9,13 @@ A dedicated `CalendarProposals` table stores at most one current proposed date p
 
 **Verified:** [run 43060585710](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43060585710), commit `912c1ebc`, Python and JavaScript suites and compilation passed. No external provider requests, public hosting, paid AI or publication occurred.
 
+
+## Version-safe collaboration on draft date proposals (2026-11-11)
+
+A fresh 32-character random proposal version is stored on each saved draft-date proposal. `CalendarProposals.propose` compares the submitted current proposal version (or null for creation) with the database record within the write transaction; `discard` deletes only the matching current version and rejects stale removals. Updates rotate versions, preventing stale editor races and same-draft delete/recreate ABA. The constructor upgrades existing calendar proposal tables in place and backfills tokens without deleting posts or changing the proposed local times. `BAMCalendarProposalsWSGI` uses strict JSON keys, explicit version types and `409 Conflict` on verified stale edits. The browser client and Content Studio carry the version between GET and explicitly invoked writes, and keep display data and draft revisions tenant-bound. This does not authorize scheduling or publishing.
+
+**Verified:** [GitHub Actions run 43080077237](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43080077237), commit `d03753f2`: 859 Python tests and 60 JavaScript test scripts passed, Python compilation passed. Release gate remains closed.
+
 ## Read-only unassigned draft time suggestions (2026-11-11)
 
 `CalendarProposals.suggest_unassigned` safely previews possible dates without writing. It first resolves an active tenant-scoped draft-read session, selects unassigned held drafts by explicit priority and created-time order, and excludes slots already occupied by saved proposals. The service returns only draft IDs, draft revisions, selected local and UTC times, safe counts, a preference-mode status and nonpublishing flags—no post copy or credentials. `GET /api/v1/calendar-suggestions` validates the exact response shape and cannot POST, DELETE, approve or schedule. A separate opt-in browser client and authenticated dashboard panel show the potential times and link to manual Content Studio choices. The UI discards stale session/business responses. The preview permits up to 20 suggestions; Smart mode cannot imply audience recommendations without verified evidence.

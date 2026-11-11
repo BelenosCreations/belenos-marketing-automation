@@ -444,6 +444,23 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (version-safe draft calendar collaboration)
+
+### Added
+- One-time proposal-version tokens for every saved draft-calendar assignment, and migration that backfills already saved SQLite records without loss.
+- Compare-and-set semantics on proposed-time update/delete, including protection against stale tabs, concurrent edits and delete/recreate ABA conflicts.
+- Version-aware strict HTTPS validation and Content Studio browser requests, with 409 refresh-required responses on stale writes.
+
+### Fixed
+- Prevent older editors from silently changing or removing another editor's newer saved draft time. No write can create an approved post or scheduling job.
+
+### Test status
+- **Passed:** [GitHub Actions run 43080077237](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43080077237) for commit `d03753f2`: 859 Python tests, 60 JavaScript test scripts, and Python compilation.
+
+### Known limitations
+- Version checks run in the offline local SQLite gateway; production database concurrency controls, authorization review, host deployment and external social scheduling are still pending. Proposal tokens are not secrets or login credentials.
+
+
 ## Phase 3.5 — 2026-11-11 (safe unassigned draft time suggestions)
 
 ### Added
