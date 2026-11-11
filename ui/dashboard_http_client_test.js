@@ -60,6 +60,21 @@ async function main(){
   await assert.rejects(()=>read({...options,kind:'preferences',
     fetchImpl:async()=>({ok:true,json:async()=>({...prefs,
       timezone:'America/New_York'})})}),TypeError);
+  const proposal={tenant_id:'shop',mode:'smart',
+    timezone:'America/New_York',status:'needs_audience_data',
+    slots:[],skipped_dst:0,truncated:false,publishing_enabled:false};
+  const preview=await read({...options,kind:'postingPreview',
+    expectedTenantId:'shop',fetchImpl:async(url)=>{
+      assert.equal(url,'https://bam.example/api/v1/posting-time-preview');
+      return {ok:true,json:async()=>proposal};
+    }});
+  assert.equal(preview.status,'needs_audience_data');
+  assert.equal(preview.slots.length,0);
+  await assert.rejects(()=>read({...options,kind:'postingPreview',
+    fetchImpl:async()=>({ok:true,json:async()=>({
+      ...proposal,slots:[{local_date:'2026-11-11',local_time:'10:00',
+        utc_at:'2026-11-11T15:00:00+00:00'}]
+    })})}),TypeError);
   console.log('BAM HTTPS read-only client tests passed');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

@@ -47,6 +47,9 @@ const data={
   drafts:{tenant_id:'shop',publishing_enabled:false,drafts:[]},
   'posting-preferences':{tenant_id:'shop',mode:'smart',timezone:null,
     manual_times:[],configured:false,publishing_enabled:false},
+  'posting-time-preview':{tenant_id:'shop',mode:'smart',timezone:null,
+    status:'not_configured',slots:[],skipped_dst:0,truncated:false,
+    publishing_enabled:false},
   'ai-drafts':{tenant_id:'shop',drafts:[],publishing_enabled:false},
   'ai-settings':{tenant_id:'shop',provider:'openai',mode:'bam_sponsored',
     own_key_configured:false,memory:{},key_exposed:false,
@@ -154,6 +157,19 @@ async function main(){
     }
     if(kind==='logout')return {ok:true,json:async()=>({
       signed_out:true,publishing_enabled:false})};
+    if(kind==='posting-time-preview'){
+      const config=data['posting-preferences'];
+      const manual=config.configured&&config.mode==='manual';
+      return {ok:true,json:async()=>({
+        tenant_id:currentTenant,mode:config.mode,
+        timezone:config.timezone,
+        status:!config.configured?'not_configured':
+          manual?'manual_preview':'needs_audience_data',
+        slots:manual?[{local_date:'2026-11-11',local_time:'10:00',
+          utc_at:'2026-11-11T15:00:00+00:00'}]:[],
+        skipped_dst:0,truncated:false,publishing_enabled:false
+      })};
+    }
     if(Object.prototype.hasOwnProperty.call(data,kind))
       return {ok:true,json:async()=>({
         ...data[kind],tenant_id:currentTenant,
@@ -240,6 +256,8 @@ async function main(){
   assert.equal(aiByTenant.shop[0].revision,3);
   assert.equal(e['bam-ai-drafts'].children[0].children.length,3);
   assert.deepEqual(data['posting-preferences'].manual_times,['10:00','18:30']);
+  assert.match(e['bam-posting-preferences'].children[0].children.at(-1)
+    .children[1].textContent,/Possible next-seven-day/);
   assert.equal(e['overview-panel'].hidden,true);
   e.appearance.listeners.change({target:{value:'light'}});
   assert.equal(f.document.documentElement.dataset.theme,'light');

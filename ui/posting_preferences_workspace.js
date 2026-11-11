@@ -23,7 +23,7 @@
        typeof fetchImpl!=='function'||typeof origin!=='string'||
        (onError!==undefined&&typeof onError!=='function'))
       throw new TypeError('Posting preference workspace required');
-    let active=null,epoch=0,requestVersion=0,busy=false,data=null;
+    let active=null,epoch=0,requestVersion=0,busy=false,data=null,preview=null;
     let canManage=false;
     function setCanManage(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted owner role required');
@@ -31,7 +31,8 @@
       if(active&&data)render();
     }
     function clear(){
-      epoch++;requestVersion++;active=null;data=null;busy=false;canManage=false;
+      epoch++;requestVersion++;active=null;data=null;preview=null;
+      busy=false;canManage=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -39,6 +40,34 @@
          typeof tenantId!=='string'||!tenantId.trim()||tenantId.length>128)
         throw new TypeError('Signed-in business required');
       clear();active={token,tenantId};
+    }
+    function renderPreview(pane){
+      const section=make(document,'section','');
+      section.append(make(document,'h3','Upcoming local time preview'));
+      if(!preview){
+        section.append(make(document,'p',
+          'Read-only posting-time preview temporarily unavailable. No posts scheduled.'));
+      }else if(preview.status==='not_configured'){
+        section.append(make(document,'p',
+          'Configure posting times to see a preview. No posts scheduled.'));
+      }else if(preview.status==='needs_audience_data'){
+        section.append(make(document,'p',
+          'Smart mode needs verified audience data; no optimal times can be claimed yet.'));
+      }else{
+        section.append(make(document,'p',
+          'Possible next-seven-day local times only. These are not scheduled posts.'));
+        for(const slot of preview.slots){
+          section.append(make(document,'p',
+            slot.localDate+' at '+slot.localTime+' ('+preview.timezone+')'));
+        }
+        if(preview.skippedDst)
+          section.append(make(document,'p',
+            preview.skippedDst+' ambiguous or nonexistent DST times omitted.'));
+        if(preview.truncated)
+          section.append(make(document,'p',
+            'Preview truncated; no posts were queued.'));
+      }
+      pane.append(section);
     }
     function render(){
       if(!active||!data)return;
@@ -51,6 +80,7 @@
         :'Not configured. An owner must select an IANA timezone and save.'));
       if(!canManage){
         pane.append(make(document,'p','Only the business owner can change posting times.'));
+        renderPreview(pane);
         container.replaceChildren(pane);
         return;
       }
@@ -87,6 +117,7 @@
       pane.append(form);
       pane.append(make(document,'p',
         'Only business owners can save. Smart mode does not mean verified optimal times are available.'));
+      renderPreview(pane);
       container.replaceChildren(pane);
     }
     async function refresh(){
@@ -98,7 +129,20 @@
           expectedTenantId:mine.tenantId});
         if(version!==epoch||request!==requestVersion||mine!==active)
           return {stale:true};
-        data=result;render();
+        let proposed=null;
+        try{
+          proposed=await reader.read({kind:'postingPreview',
+            token:mine.token,fetchImpl,origin,
+            expectedTenantId:mine.tenantId});
+        }catch(error){
+          // This is read-only guidance; failure must never imply a booking,
+          // publishing authorization, or session revocation.
+          if(onError&&version===epoch&&mine===active)
+            onError('Posting-time preview unavailable. No posts are scheduled.');
+        }
+        if(version!==epoch||request!==requestVersion||mine!==active)
+          return {stale:true};
+        data=result;preview=proposed;render();
         return {stale:false,tenantId:mine.tenantId};
       }catch(error){
         if(version!==epoch||request!==requestVersion||mine!==active)
