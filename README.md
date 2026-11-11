@@ -629,3 +629,7 @@ The authenticated AI workspace coordinator now rejects older in-flight refreshes
 ## Authenticated AI fact provenance read milestone — 2026-11-10
 
 The account read adapter and HTTPS WSGI component now expose `GET /api/v1/ai-business-facts`, returning only the active business's owner-confirmed fact snapshot, revision and explicit provenance. `ui/ai_facts_contract.js` and the HTTPS client reject mismatched businesses, invalid confirmation claims and enabled-publishing responses. Python and Node tests cover business switching and route validation. This endpoint is read-only; owner fact confirmation is not exposed as an unauthenticated or public browser write, and independent factual verification remains future work.
+
+## AI fact provenance in the authenticated workspace — 2026-11-10
+
+The AI workspace controller can now optionally fetch and render the business's owner-confirmed fact snapshot alongside AI Settings and held drafts. Its read-only fact panel clearly distinguishes unconfigured facts from owner-confirmed facts and explicitly avoids claiming independent verification. Business-switch/logout invalidation, out-of-order refresh rejection and failed-load cleanup also apply to the fact panel. Added safe-DOM and workspace integration tests to CI. The authenticated GUI shell and write-side owner-confirmation interface are still pending.
