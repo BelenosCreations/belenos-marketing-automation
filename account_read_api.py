@@ -258,7 +258,8 @@ class AccountReadAPI:
                 'status':request['status'],
                 'missing_items':[item for item in request['required_items']
                                  if item not in request['provided_items']],
-                'priority':request['priority']
+                'priority':request['priority'],
+                'revision':request['revision']
             } for request in requests],
             'publishing_enabled':False}
 
@@ -310,6 +311,28 @@ class AccountReadAPI:
             raise RuntimeError('Local draft business mismatch')
         return {**staged,'generation_method':'local_template',
                 'openai_requests':0}
+
+    def revise_held_draft(self, *, session_token, server_now,
+                          request_id, target, revised_text, expected_revision):
+        """Revise one unpublished held draft field, never approve or publish."""
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content Requests not configured')
+        updated=service.revise(token=token,
+            tenant_id=session.principal.tenant_id,
+            request_id=request_id,target=target,
+            revised_text=revised_text,
+            expected_revision=expected_revision,now=now)
+        return {'tenant_id':session.principal.tenant_id,
+                'request_id':request_id,'status':updated['status'],
+                'revision':updated['revision'],
+                'publishing_enabled':False}
 
     def create_held_draft(self, *, session_token, server_now,
                           channel, draft_text, suggestion, required_items,

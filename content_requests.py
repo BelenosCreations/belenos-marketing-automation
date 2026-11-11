@@ -26,6 +26,11 @@ class ContentRequests:
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL
         )""")
+        # Preserve existing local SQLite databases when upgrading old drafts.
+        if 'revision' not in {row[1] for row in
+                              db.execute('PRAGMA table_info(content_requests)')}:
+            db.execute("""ALTER TABLE content_requests
+                ADD COLUMN revision INTEGER NOT NULL DEFAULT 1""")
         db.commit()
 
     @staticmethod
@@ -46,7 +51,7 @@ class ContentRequests:
         with self.db:
             self.db.execute("""INSERT INTO content_requests
                 (request_id,tenant_id,channel,draft_text,suggestion,
-                 required_items,provided_items,status,priority,created_at,updated_at)
+                 required_items,provided_items,status,priority,created_at,updated_at,revision)
                  VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                 (request_id,tenant_id,channel,draft_text,suggestion,
                  json.dumps(list(required_items)),'{}','needs_content',priority,now,now))
@@ -63,7 +68,8 @@ class ContentRequests:
         return dict(request_id=row[0],channel=row[1],draft_text=row[2],
                     suggestion=row[3],required_items=json.loads(row[4]),
                     provided_items=json.loads(row[5]),
-                    status=row[6],priority=row[7],created_at=row[8],updated_at=row[9])
+                    status=row[6],priority=row[7],created_at=row[8],
+                    updated_at=row[9],revision=row[10])
 
     def list_for_business(self, *, tenant_id, status=None):
         self._require(tenant_id)
@@ -92,7 +98,7 @@ class ContentRequests:
                 else 'needs_content')
         with self.db:
             self.db.execute("""UPDATE content_requests
-                SET provided_items=?,status=?,updated_at=?
+                SET provided_items=?,status=?,updated_at=?,revision=revision+1
                 WHERE tenant_id=? AND request_id=?""",
                 (json.dumps(provided,sort_keys=True),
                  status,now,tenant_id,request_id))
@@ -107,7 +113,32 @@ class ContentRequests:
         if status=='needs_content' and set(request['provided_items'])==set(request['required_items']):
             raise ValueError('Complete request must remain ready for review')
         with self.db:
-            self.db.execute("""UPDATE content_requests SET status=?,updated_at=?
+            self.db.execute("""UPDATE content_requests SET status=?,updated_at=?,revision=revision+1
                 WHERE tenant_id=? AND request_id=?""",
                 (status,now,tenant_id,request_id))
         return status
+
+    def revise(self, *, tenant_id, request_id, target,
+               revised_text, expected_revision, now):
+        """Optimistic, single-component edit; never changes media or status."""
+        self._require(tenant_id,request_id)
+        if target not in ('draft_text','suggestion'):
+            raise ValueError('Only draft copy or guidance may be revised')
+        if (type(revised_text) is not str or not revised_text.strip()
+                or revised_text!=revised_text.strip()
+                or len(revised_text)>2000
+                or type(expected_revision) is not int
+                or expected_revision<1 or type(now) is not int or now<0):
+            raise ValueError('Invalid draft revision')
+        # Column name comes exclusively from a server-side, fixed allowlist.
+        with self.db:
+            result=self.db.execute(
+                f"""UPDATE content_requests SET {target}=?,
+                       revision=revision+1,updated_at=?
+                     WHERE tenant_id=? AND request_id=? AND revision=?""",
+                (revised_text,now,tenant_id,request_id,expected_revision))
+        if result.rowcount!=1:
+            if self.get(tenant_id=tenant_id,request_id=request_id) is None:
+                raise KeyError('Draft not found in business')
+            raise ValueError('Stale draft revision')
+        return self.get(tenant_id=tenant_id,request_id=request_id)

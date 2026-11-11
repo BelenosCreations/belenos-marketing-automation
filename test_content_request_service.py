@@ -121,6 +121,23 @@ class ContentRequestServiceTests(unittest.TestCase):
             self.service.provide(token=self.tokens['owner'],tenant_id='shop',
                 request_id=rid,item='photo',attachment_id=attachment,now=102)
 
+    def test_creator_can_edit_one_field_but_viewer_cannot(self):
+        rid=self.create()
+        owner=self.service.revise(token=self.tokens['creator'],
+            tenant_id='shop',request_id=rid,target='suggestion',
+            revised_text='Use confirmed photo',expected_revision=1,now=102)
+        self.assertEqual(owner['suggestion'],'Use confirmed photo')
+        self.assertEqual(owner['draft_text'],'Custom work')
+        self.assertEqual(owner['revision'],2)
+        with self.assertRaises(PermissionError):
+            self.service.revise(token=self.tokens['viewer'],
+                tenant_id='shop',request_id=rid,target='draft_text',
+                revised_text='Forbidden',expected_revision=2,now=103)
+        with self.assertRaises(PermissionError):
+            self.service.revise(token=self.tokens['creator'],
+                tenant_id='other',request_id=rid,target='draft_text',
+                revised_text='Cross tenant',expected_revision=2,now=103)
+
     def test_owner_can_postpone(self):
         rid=self.create()
         self.assertEqual(self.service.set_hold(token=self.tokens['owner'],

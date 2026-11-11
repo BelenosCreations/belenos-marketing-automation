@@ -55,6 +55,15 @@ class ContentRequestService:
         return self.requests.provide(tenant_id=tenant_id,request_id=request_id,
             item=item,content_reference='verified-attachment:'+verified,now=now)
 
+    def revise(self, *, token, tenant_id, request_id, target,
+               revised_text, expected_revision, now=None):
+        now=self._now(now)
+        self._authorize(token=token,tenant_id=tenant_id,
+                        action=Action.EDIT_DRAFT,now=now)
+        return self.requests.revise(tenant_id=tenant_id,request_id=request_id,
+            target=target,revised_text=revised_text,
+            expected_revision=expected_revision,now=now)
+
     def set_hold(self, *, token, tenant_id, request_id, status, now=None):
         now=self._now(now)
         self._authorize(token=token,tenant_id=tenant_id,action=Action.EDIT_DRAFT,now=now)

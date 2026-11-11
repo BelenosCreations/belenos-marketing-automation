@@ -287,6 +287,39 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(meta['status'],'401 Unauthorized')
         self.assertNotIn('session_token',body)
 
+    def test_held_draft_copy_edit_requires_fresh_revision(self):
+        token=self.login('shop')
+        meta,created=self.call('/api/v1/content/drafts',method='POST',
+            token=token,body={'channel':'facebook',
+                'draft_text':'Initial text','suggestion':'Initial guidance',
+                'required_items':['photo']})
+        self.assertEqual(meta['status'],'201 Created')
+        rid=created['request_id']
+        _,before=self.call('/api/v1/drafts',token=token)
+        original=next(x for x in before['drafts'] if x['request_id']==rid)
+        self.assertEqual(original['revision'],1)
+        meta,updated=self.call('/api/v1/content/drafts',method='PUT',
+            token=token,body={'request_id':rid,'target':'draft_text',
+                'revised_text':'Corrected copy','expected_revision':1})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(updated['revision'],2)
+        self.assertEqual(updated['status'],'needs_content')
+        self.assertFalse(updated['publishing_enabled'])
+        _,after=self.call('/api/v1/drafts',token=token)
+        item=next(x for x in after['drafts'] if x['request_id']==rid)
+        self.assertEqual(item['draft_text'],'Corrected copy')
+        self.assertEqual(item['suggestion'],'Initial guidance')
+        self.assertEqual(item['revision'],2)
+        self.assertEqual(self.call('/api/v1/content/drafts',
+            method='PUT',token=token,body={'request_id':rid,
+                'target':'suggestion','revised_text':'Stale',
+                'expected_revision':1})[0]['status'],'409 Conflict')
+        another=self.login('other')
+        self.assertNotEqual(self.call('/api/v1/content/drafts',
+            method='PUT',token=another,body={'request_id':rid,
+                'target':'draft_text','revised_text':'Cross business',
+                'expected_revision':2})[0]['status'],'200 OK')
+
     def test_authenticated_held_draft_create_and_hold(self):
         shop=self.login('shop')
         meta,created=self.call('/api/v1/content/drafts',
