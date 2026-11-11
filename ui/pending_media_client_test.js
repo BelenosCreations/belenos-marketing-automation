@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {stage,statuses}=require('./pending_media_client.js');
+const {stage,statuses,discard}=require('./pending_media_client.js');
 const requestId='a'.repeat(32),attachmentId='b'.repeat(32);
 const png=Uint8Array.from([137,80,78,71,13,10,26,10,45]);
 const file={type:'image/png',size:png.length,
@@ -81,6 +81,22 @@ async function main(){
    },isCurrent:()=>current}),/Session changed/);
  assert.equal(switched.length,1);
  assert.ok(switched[0].url.endsWith('/upload-preflight'));
+ const discarded=await discard({...base,fetchImpl:async(url,opts)=>{
+   assert.equal(url,'https://bam.example/api/v1/content/media-pending');
+   assert.equal(opts.method,'DELETE');
+   assert.equal(opts.credentials,'omit');
+   assert.deepEqual(JSON.parse(opts.body),{request_id:requestId,item:'image'});
+   return {ok:true,status:200,json:async()=>({
+     tenant_id:'shop',request_id:requestId,item:'image',removed:1,
+     media_verified:false,publishing_enabled:false})};
+ }});
+ assert.equal(discarded.removed,1);
+ assert.equal(discarded.publishingEnabled,false);
+ await assert.rejects(()=>discard({...base,requestId:'bad',fetchImpl:fakeFetch([])}),TypeError);
+ await assert.rejects(()=>discard({...base,fetchImpl:async()=>({
+   ok:true,status:200,json:async()=>({
+     tenant_id:'another',request_id:requestId,item:'image',removed:1,
+     media_verified:false,publishing_enabled:false})})}),TypeError);
  console.log('BAM pending manual image return client tests passed');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

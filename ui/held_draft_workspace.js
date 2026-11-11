@@ -62,6 +62,7 @@
     }
     function render(){
       if(!model||!active)return;
+      const viewingSession=active,viewingEpoch=epoch;
       const wrap=make(document,'section','');
       wrap.className='bam-held-draft-workspace';
       wrap.append(make(document,'h2','Content Studio'));
@@ -92,7 +93,7 @@
       form.append(submit);
       form.addEventListener('submit',async event=>{
         event.preventDefault();
-        if(busy)return;
+        if(busy||viewingSession!==active||viewingEpoch!==epoch)return;
         const requiredItems=items.value.split(',').map(x=>x.trim());
         const result=await createDraft({
           channel:channel.value,draftText:draftText.value.trim(),
@@ -125,6 +126,24 @@
               }else if(state==='pending_scan'){
                 article.append(make(document,'p',
                   'Image received in private quarantine. Awaiting review; not verified, approved or publishable.'));
+                const remove=make(document,'button','Discard pending image');
+                remove.type='button';remove.className='secondary';
+                remove.disabled=busy;
+                remove.addEventListener('click',()=>{
+                  if(busy||viewingSession!==active||
+                     viewingEpoch!==epoch||!mediaEnabled)return;
+                  remove.disabled=true;
+                  const confirm=make(document,'button',
+                    'Confirm discard of unverified image');
+                  confirm.type='button';confirm.className='secondary';
+                  confirm.addEventListener('click',async()=>{
+                    if(busy||viewingSession!==active||viewingEpoch!==epoch)
+                      return;
+                    await discardImage({requestId:draft.id,item});
+                  });
+                  article.append(confirm);
+                });
+                article.append(remove);
               }else{
               const picker=make(document,'input','');
               picker.type='file';
@@ -135,7 +154,8 @@
               upload.type='button';upload.className='secondary';
               upload.disabled=busy;
               upload.addEventListener('click',async()=>{
-                if(busy||!active)return;
+                if(busy||!active||active!==viewingSession||
+                   epoch!==viewingEpoch)return;
                 const file=picker.files&&picker.files[0];
                 if(!file){
                   if(onError)onError('Choose an image before submitting.');
@@ -158,7 +178,7 @@
               button.type='button';button.className='secondary';
               button.disabled=busy;
               button.addEventListener('click',async()=>{
-                if(busy)return;
+                if(busy||active!==viewingSession||epoch!==viewingEpoch)return;
                 const result=await changeHold({requestId:draft.id,status:target});
                 if(result.error&&onError)onError('Unable to change draft status');
               });
@@ -258,10 +278,34 @@
         if(version===epoch&&mine===active){busy=false;render();}
       }
     }
+    async function discardImage({requestId,item}){
+      if(!active||!canEdit||!mediaEnabled||!mediaStatusReady||
+         mediaStatuses.get(requestId+':'+item)!=='pending_scan'||busy)
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const result=await pendingClient.discard({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,requestId,item});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const latest=await refresh();
+        if(latest.error||latest.stale)return latest;
+        if(onNotice)onNotice(
+          'Unverified pending image discarded. You may submit a replacement.');
+        return result;
+      }catch(error){
+        if(version===epoch&&active===mine&&onError)
+          onError('Pending image could not be discarded; refresh to check its status.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&active===mine){busy=false;render();}
+      }
+    }
     function createDraft(args){return mutate(writeClient.createDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
     return Object.freeze({activate,refresh,clear,createDraft,changeHold,
-      stageImage,setCanEdit,setMediaEnabled});
+      stageImage,discardImage,setCanEdit,setMediaEnabled});
   }
   return Object.freeze({create});
 });

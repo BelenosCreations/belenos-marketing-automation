@@ -119,5 +119,37 @@
    return Object.freeze({tenantId:result.tenant_id,items:Object.freeze(items),
      mediaVerified:false,publishingEnabled:false});
  }
- return Object.freeze({stage,statuses});
+
+ async function discard({origin,fetchImpl,token:bearer,expectedTenantId,
+                         requestId,item}){
+   if(typeof origin!=='string'||
+      !/^https:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?$/.test(origin)||
+      typeof fetchImpl!=='function'||!token.test(bearer)||
+      typeof expectedTenantId!=='string'||!expectedTenantId.trim()||
+      expectedTenantId.length>128||!id.test(requestId)||
+      typeof item!=='string'||!item.trim()||item!==item.trim()||
+      item.length>80)
+     throw new TypeError('Trusted pending image discard required');
+   const response=await fetchImpl(origin+'/api/v1/content/media-pending',{
+     method:'DELETE',mode:'same-origin',credentials:'omit',cache:'no-store',
+     redirect:'error',headers:{Authorization:'Bearer '+bearer,
+       'Content-Type':'application/json',Accept:'application/json'},
+     body:JSON.stringify({request_id:requestId,item})
+   });
+   if(!response||!response.ok||response.status!==200)
+     throw new Error('Pending image discard unavailable');
+   const result=await response.json();
+   if(!record(result)||Object.keys(result).some(k=>![
+       'tenant_id','request_id','item','removed',
+       'media_verified','publishing_enabled'].includes(k))||
+      result.tenant_id!==expectedTenantId||
+      result.request_id!==requestId||result.item!==item||
+      !Number.isSafeInteger(result.removed)||result.removed<0||
+      result.removed>200||result.media_verified!==false||
+      result.publishing_enabled!==false)
+     throw new TypeError('Untrusted image discard result');
+   return Object.freeze({tenantId:result.tenant_id,removed:result.removed,
+     mediaVerified:false,publishingEnabled:false});
+ }
+ return Object.freeze({stage,statuses,discard});
 });

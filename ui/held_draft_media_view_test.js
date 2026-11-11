@@ -25,6 +25,12 @@ const fetchImpl=async(url,opts)=>{
       request_id:draftId,channel:'facebook',draft_text:'Draft',
       suggestion:'Provide approved image',status:'needs_content',
       missing_items:['image'],priority:0}]})};
+  if(url.endsWith('/media-pending')){
+    hasReceipt=false;
+    return {ok:true,status:200,json:async()=>({tenant_id:'shop',
+      request_id:draftId,item:'image',removed:1,
+      media_verified:false,publishing_enabled:false})};
+  }
   if(url.endsWith('/upload-preflight'))
     return {ok:true,status:202,json:async()=>({
       tenant_id:'shop',request_id:draftId,item:'image',
@@ -56,6 +62,19 @@ async function main(){
   const after=container.children[0].children[3].children[1];
   assert.ok(after.children.some(x=>/Awaiting review/.test(x.textContent)));
   assert.equal(after.children.some(x=>x.textContent==='Send image for private review'),false);
+  const remove=after.children.find(x=>x.textContent==='Discard pending image');
+  assert.ok(remove);
+  await remove.listeners.click();
+  const confirm=after.children.find(
+    x=>x.textContent==='Confirm discard of unverified image');
+  assert.ok(confirm);
+  await confirm.listeners.click();
+  assert.equal(calls.filter(x=>x.opts.method==='DELETE').length,1);
+  assert.equal(hasReceipt,false);
+  const restored=container.children[0].children[3].children[1];
+  assert.ok(restored.children.some(
+    x=>x.textContent==='Send image for private review'));
+  assert.match(notices.at(-1),/discarded/);
   assert.match(notices.at(-1),/pending review/);
   assert.equal(errors.length,0);
   app.setMediaEnabled(false);
