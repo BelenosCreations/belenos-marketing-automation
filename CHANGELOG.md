@@ -1,5 +1,11 @@
 # Changelog
 
+## AI workspace refresh ordering — 2026-11-10
+
+### Fixed
+- Older AI workspace refreshes cannot overwrite newer same-business results; regression coverage added for out-of-order responses.
+
+
 ## AI authorization and response hardening — 2026-11-10
 
 ### Fixed
