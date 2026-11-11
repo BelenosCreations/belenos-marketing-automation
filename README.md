@@ -172,6 +172,7 @@ The repository contains a growing set of offline Python modules, strict authenti
 
 ## Development records and verification
 
+- [Development continuity checkpoint](DEVELOPMENT_CONTINUITY.md) records the current verified branch/commit for resuming an interrupted chat.
 - [Detailed implementation milestones](DEVELOPMENT_MILESTONES.md) preserve phase-by-phase notes without turning this product overview into a changelog.
 - [Changelog](CHANGELOG.md) records additions, fixes and known limitations.
 - [Authenticated UI integration](AUTHENTICATED_UI_INTEGRATION.md) documents session lifecycle and browser contracts.
@@ -211,3 +212,9 @@ The authenticated Scheduled drilldown now includes **unassigned held-draft time 
 Saved unpublished draft-calendar proposals now carry an opaque, one-time write-version token. Every proposed-date reassignment or removal requires the exact token last returned for that draft, while first-time creation explicitly requires no previously saved proposal. New writes rotate the token; a concurrent editor, stale browser view or removed-and-recreated proposal cannot be overwritten or deleted by an older request. The SQLite migration adds version tokens to already saved proposals without deleting their draft data. Server-side business permissions and existing draft revision checks still apply; version tokens are conflict controls, not authentication, approval or publish permission.
 
 The HTTPS proposal contract and Content Studio browser client send and verify versions, returning a refresh-required conflict on stale changes. **Verified:** [GitHub Actions run 43080077237](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43080077237), commit `d03753f2`: 859 Python tests, 60 JavaScript scripts and compilation passed. Publishing and scheduled-post execution remain disabled.
+
+## Private editorial readiness checklist (2026-11-11)
+
+The signed-in large-card dashboard now opens a deeper **Editorial preparation checklist** beneath Approvals. The business-private, strictly GET-only `/api/v1/review-readiness` endpoint examines held draft status, missing required items and the trusted attachment registry; it cannot create an approval intent or post, return private storage paths, or call an external AI/social provider. Even when all required materials are independently verified, the result says **editorial materials complete—not approved**. TruthGuard review, explicit owner approval and production social publishing remain separate blockers on every entry. A former business's data is discarded when its session changes, and view-only users cannot initiate approval. Owner and creator permissions are still checked server-side. The endpoint is disabled unless the local offline gateway is explicitly enabled.
+
+**Verified:** [GitHub Actions run 43081725025](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43081725025) at commit `91d0e0cb`: 867 Python tests and 62 JavaScript regression scripts passed, plus compilation. No public hosting, live posting, actual approval, production media scanning or paid generation was enabled.

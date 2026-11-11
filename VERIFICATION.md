@@ -4,10 +4,10 @@
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`  
 **Branch:** `development/phase-3-5-account-directory`  
-**Verified commit:** `d03753f204167ed4eff81abc0d0ebef512322aa0`  
-**CI:** [GitHub Actions run 43080077237](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43080077237)
+**Verified commit:** `91d0e0cbddf7907d456b6beff69f278b25f72436`  
+**CI:** ${link}
 
-**Result:** 859 Python unit/integration tests passed, 60 JavaScript regression scripts passed, Python compilation passed. Added coverage for version-safe calendar proposals (stale concurrent writes and deletes, deleted/recreated proposal conflicts, old SQLite proposal migration), strict new HTTP and browser contracts, and existing private read-only time suggestions. This verifies offline development behavior, not production security readiness or publication permission.
+**Result:** 867 Python tests and 62 JavaScript regression scripts passed and Python compilation passed. The suite includes all existing authenticated and isolated calendar proposals, version-based stale-write safety and 20-slot read-only suggestions, plus new private editorial readiness service, GET-only HTTPS response validation, Approvals UI lifecycle tests and business-isolated end-to-end gateway tests. None of these green tests constitutes a production security review or permission to deploy/publicly publish.
 
 ## Archived original Phase 3.2 package
 

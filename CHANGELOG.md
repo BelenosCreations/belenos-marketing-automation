@@ -444,6 +444,25 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (private editorial preparation workflow)
+
+### Added
+- Read-only `ReviewReadiness` service which checks the active business's unpublished draft states, required content, and registered verified attachments without returning media paths or permissions.
+- Strict authenticated, tenant-derived, GET-only `/api/v1/review-readiness` HTTP adapter; no tenant in query or body, no write methods, no provider network access.
+- Deeper Approvals dashboard checklist with readiness counts and actionable missing/unverified material labels. Explicitly distinguishes complete material from human editorial/owner approval and publishing permission.
+- Fail-closed browser parsing, cross-business tests, interface lifecycle tests, and gateway integration coverage.
+
+### Safeguards
+- Every checklist item remains held and lists TruthGuard review, final owner approval and social publication as unavailable, including for fully verified material.
+- No content approval, scheduling, live social provider interaction, account credential exposure, public hosting or paid AI usage was introduced.
+
+### Test status
+- **Passed:** [GitHub Actions run 43081725025](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43081725025), commit `91d0e0cb`: 867 Python tests, 62 JavaScript scripts and Python compilation.
+
+### Known limitations
+- Attachment verification is based on the existing trusted local registry; actual production scanning/consent workflow, independent TruthGuard publication gate, owner approval interface, production data store and scheduler still need separate development and authorization.
+
+
 ## Phase 3.5 — 2026-11-11 (version-safe draft calendar collaboration)
 
 ### Added
