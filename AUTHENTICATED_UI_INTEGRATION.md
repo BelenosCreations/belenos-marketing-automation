@@ -4,6 +4,12 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Independent held-draft copy and guidance editing
+
+The business-scoped Content Studio GET response now includes a monotonically increasing held-draft revision. Each draft exposes a separate explicit Save for `draft_text` or `suggestion`, sending only `request_id`, `target`, `revised_text` and `expected_revision` via `PUT /api/v1/content/drafts`. The disabled-by-default backend verifies current business and editor permission, checks the expected revision atomically, and returns a version-confirmed result; the browser re-reads tenant content. Stale revisions reject the change rather than silently overriding a coworker's edit, and logout or business switching invalidates pending actions.
+
+A changed draft does not become approved or publishable. Edits to previously reviewed copy invalidate the prior owner review intent. Old local SQLite records are migrated to include the revision without deleting drafts. **Verified:** [GitHub Actions run 43034533473](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43034533473), 807 Python tests and 42 JavaScript scripts.
+
 ## Scheduling and review details inside the large-card dashboard
 
 The Scheduled card loads `GET /api/v1/posting-time-preview` only after explicit drilldown navigation. It displays possible Manual-mode clock slots with the IANA timezone, flags skipped DST hours, and labels Smart timing as awaiting verified audience evidence. It does not show fake scheduled posts or create jobs. The Settings link navigates to the already-connected owner-controlled time editor.

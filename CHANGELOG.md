@@ -1,3 +1,19 @@
+## Version-guarded independent Content Studio editing — 2026-11-11
+
+### Added
+- Existing held Content Requests now carry a server-managed monotonic revision. Old local SQLite databases gain the revision column through a non-destructive migration and retain their existing drafts.
+- A disabled-by-default, HTTPS-only `PUT /api/v1/content/drafts` adapter lets an authenticated business editor change exactly one field: `draft_text` or `suggestion`. The client supplies an expected revision; stale changes receive an explicit conflict rather than overwriting newer work.
+- The authenticated Content Studio now offers separate manual text editors and Save buttons for copy and guidance. It reloads the verified business-scoped record after each save, refuses forged role/tenant/publishing claims and drops late results after a business/session switch.
+- Hold and verified-content changes also increment the same draft revision. A prior owner review intent becomes stale when the draft copy is edited, even if previously verified attachments remain associated with the request.
+- Added WSGI request/privacy, legacy-database migration, service-role, review invalidation, browser client, and signed-in interface regression tests.
+
+### Verification
+- **Passed:** [GitHub Actions run 43034533473](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43034533473), commit `19ac808b`: **807 Python tests and 42 JavaScript UI test scripts**, plus Python compilation.
+
+### Known limitations
+- These are explicit manual text revisions, not an OpenAI generation call or a social platform update. They never verify media, approve a post, set a schedule, or publish.
+- BAM is still a loopback-only offline development service; production authentication, cloud-safe concurrency, real provider connections, human review and live publication remain separate release gates.
+
 ## Actionable scheduling and human-review dashboard details — 2026-11-11
 
 ### Added

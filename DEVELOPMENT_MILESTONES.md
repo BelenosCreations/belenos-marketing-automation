@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Independent, revision-safe held Content Studio draft editing (2026-11-11)
+
+The held content request table now supports a monotonic `revision`, including an in-place local SQLite migration for older databases. The backend can atomically revise exactly one field—`draft_text` or `suggestion`—only after current business membership and edit permission checks, with an expected-revision compare-and-update. Hold transitions and attachment completion also advance revision. `bam_content_revise_wsgi.py` accepts only these bounded revision fields through an explicitly enabled HTTPS-only local gateway and returns `409 Conflict` for stale writes, without allowing tenant, role, publishing or approval claims. The signed-in Content Studio shows separate manual text editors and refreshes the trusted tenant view after each confirmed save. Existing review-intent records become stale if approved copy changes, requiring renewed human review.
+
+**Verified:** [GitHub Actions run 43034533473](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43034533473), commit `19ac808b`, **807 Python tests and 42 JavaScript test scripts**, plus compilation. This milestone does not enable AI regeneration, media verification, scheduling or publication.
+
 ## Detailed Scheduled and Approvals dashboard cards (2026-11-11)
 
 The authenticated large-card overview now has useful drilldowns for scheduling and human-review readiness, in addition to the already verified Content and Connections panels. The Scheduled panel calls the existing `GET /api/v1/posting-time-preview` route only for read-only possible Manual-mode local clock times, respects DST ambiguity notes, and links to business-owner posting preferences. No queued or published items are implied. The Approvals panel lists only business-scoped `ready_for_review` requests from the trusted dashboard, explicitly stating that these are not yet approved; it links to Content Studio without adding an approval or publication action. Both panels guard against stale responses after logout or business switching.
