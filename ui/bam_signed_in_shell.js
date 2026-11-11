@@ -97,6 +97,7 @@
       aiSettingsContainer:byId('bam-ai-settings'),
       aiFactsContainer:byId('bam-ai-facts'),
       aiFactsEditorContainer:byId('bam-ai-facts-editor'),
+      enableLocalTemplates:true,
       aiCostContainer:byId('bam-ai-cost'),
       contentStudioContainer:byId('bam-content-studio'),
       postingPreferencesContainer:byId('bam-posting-preferences'),

@@ -77,6 +77,7 @@ async function main(){
   const opened=[],clipboard=[],requests=[];
   let currentTenant='shop';
   const holds={shop:[],other:[]};
+  const aiByTenant={shop:[],other:[]};
   const window={navigator:{clipboard:{
     writeText:async text=>clipboard.push(text)}},
     open:(...args)=>opened.push(args)};
@@ -117,6 +118,19 @@ async function main(){
         publishing_enabled:false};
       return {ok:true,json:async()=>data['ai-business-facts']};
     }
+    if(kind==='local-product-draft'&&opts.method==='POST'){
+      const payload=JSON.parse(opts.body);
+      const newDraft={tenant_id:currentTenant,draft_id:'c'.repeat(32),
+        platform:payload.platform,
+        post_text:'Example Shop: Custom tumblers. Contact us for details.',
+        image_prompt:payload.include_image_prompt?'Generic conceptual graphic':null,
+        needs_media:payload.include_image_prompt,media_attached:false,
+        status:payload.include_image_prompt?'needs_media':'draft_pending_verification',
+        revision:1,publishing_enabled:false};
+      aiByTenant[currentTenant].push(newDraft);
+      return {ok:true,json:async()=>({...newDraft,generation_method:'local_template',
+        openai_requests:0})};
+    }
     if(kind==='posting-preferences'&&opts.method==='PUT'){
       const payload=JSON.parse(opts.body);
       data['posting-preferences']={tenant_id:currentTenant,
@@ -130,7 +144,8 @@ async function main(){
     if(Object.prototype.hasOwnProperty.call(data,kind))
       return {ok:true,json:async()=>({
         ...data[kind],tenant_id:currentTenant,
-        ...(kind==='drafts'?{drafts:holds[currentTenant]}:{})})};
+        ...(kind==='drafts'?{drafts:holds[currentTenant]}:{}),
+        ...(kind==='ai-drafts'?{drafts:aiByTenant[currentTenant]}:{})})};
     throw new Error('Unexpected request '+url);
   };
   const shell=mount({document:f.document,window,
@@ -184,6 +199,13 @@ async function main(){
   await factsEditor.children[4].listeners.click();
   assert.equal(data['ai-business-facts'].revision,2);
   assert.equal(data['ai-business-facts'].facts.product,'Custom tumblers');
+  const localAction=e['bam-ai-drafts'].children[1];
+  const localButton=localAction.children.find(x=>x.textContent==='Create cost-free product draft');
+  assert.ok(localButton);
+  await localButton.listeners.click();
+  assert.equal(aiByTenant.shop.length,1);
+  assert.equal(aiByTenant.shop[0].status,'needs_media');
+  assert.equal(e['bam-ai-drafts'].children[0].children.length,3);
   assert.deepEqual(data['posting-preferences'].manual_times,['10:00','18:30']);
   assert.equal(e['overview-panel'].hidden,true);
   e.appearance.listeners.change({target:{value:'light'}});
@@ -194,6 +216,8 @@ async function main(){
   await e['business-switch'].listeners.change();
   assert.equal(e['active-business'].textContent,'Business: other');
   assert.equal(holds.other.length,0);
+  assert.equal(aiByTenant.other.length,0);
+  assert.equal(e['bam-ai-drafts'].children[0].children.length,3);
   assert.equal(e['bam-content-studio'].children[0].children[3].children.length,1);
   assert.equal(e['bam-dashboard'].children.length,1);
   const switching=requests.find(r=>r.url.endsWith('/businesses/activate'));

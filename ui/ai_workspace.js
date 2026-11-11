@@ -8,17 +8,17 @@
     module.exports=factory(require('./dashboard_http_client.js'),
       require('./ai_draft_view.js'),require('./ai_settings_view.js'),
       require('./ai_facts_view.js'),require('./ai_cost_view.js'),
-      require('./ai_facts_editor.js'));
+      require('./ai_facts_editor.js'),require('./local_product_draft_client.js'));
   else root.BAMAIWorkspace=factory(root.BAMReadClient,
     root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView,
-    root.BAMAICostView,root.BAMAIFactsEditor);
+    root.BAMAICostView,root.BAMAIFactsEditor,root.BAMLocalProductDraftClient);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(client,draftView,settingsView,factsView,costView,factsEditor){
+function(client,draftView,settingsView,factsView,costView,factsEditor,localClient){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
                    factsContainer,costContainer,fetchImpl,origin,onError,
                    copyText,openUrl,factsEditorContainer,
-                   canManageFacts=false,onSaveFacts}){
+                   canManageFacts=false,onSaveFacts,enableLocalTemplates=false}){
     if(!document||!draftsContainer||!settingsContainer||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Workspace dependencies required');
@@ -38,11 +38,14 @@ function(client,draftView,settingsView,factsView,costView,factsEditor){
       throw new TypeError('Invalid fact editor dependencies');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Invalid error callback');
-    let active=null,epoch=0,requestVersion=0;
+    if(typeof enableLocalTemplates!=='boolean'||
+       (enableLocalTemplates&&!factsContainer))
+      throw new TypeError('Local templates require fact evidence');
+    let active=null,epoch=0,requestVersion=0,localPending=false;
     function clear(){
       epoch+=1;
       requestVersion+=1;
-      active=null;
+      active=null;localPending=false;
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
       if(factsContainer)factsContainer.replaceChildren();
@@ -81,6 +84,62 @@ function(client,draftView,settingsView,factsView,costView,factsEditor){
               needs_media:d.needsMedia,media_attached:d.mediaAttached,
               status:d.status,revision:d.revision,publishing_enabled:false
             }))},expectedTenantId:mine.tenantId,copyText,openUrl});
+        if(enableLocalTemplates){
+          const action=document.createElement('section');
+          action.className='panel stack';
+          const heading=document.createElement('h3');
+          heading.textContent='No-API-cost product draft';
+          action.append(heading);
+          const ready=facts&&facts.provenance==='owner_confirmed'&&
+            typeof facts.facts.business_name==='string'&&
+            facts.facts.business_name.trim()&&
+            typeof facts.facts.product==='string'&&facts.facts.product.trim();
+          const detail=document.createElement('p');
+          detail.textContent=ready
+            ?'Build a simple factual draft from your owner-confirmed business name and product. Zero OpenAI requests; you must review it before use.'
+            :'First confirm business_name and product in the business facts editor under Settings.';
+          action.append(detail);
+          if(ready){
+            const channel=document.createElement('select');
+            for(const platform of ['facebook','instagram','linkedin',
+                                   'pinterest','tiktok','youtube']){
+              const option=document.createElement('option');
+              option.value=platform;option.textContent=platform;
+              channel.append(option);
+            }
+            channel.value='facebook';
+            action.append(channel);
+            const imageChoice=document.createElement('input');
+            imageChoice.type='checkbox';imageChoice.checked=true;
+            const caption=document.createElement('label');
+            caption.textContent='Include generic ChatGPT image prompt';
+            caption.append(imageChoice);action.append(caption);
+            const button=document.createElement('button');
+            button.type='button';button.className='secondary';
+            button.textContent='Create cost-free product draft';
+            button.disabled=localPending;
+            button.addEventListener('click',async()=>{
+              if(localPending||active!==mine)return;
+              localPending=true;button.disabled=true;
+              try{
+                await localClient.create({origin,fetchImpl,
+                  sessionToken:mine.token,expectedTenantId:mine.tenantId,
+                  platform:channel.value,
+                  includeImagePrompt:imageChoice.checked});
+                if(version===epoch&&active===mine)await refresh();
+              }catch(error){
+                if(version===epoch&&active===mine&&onError)
+                  onError('Local draft unavailable. Confirm the business name and product and check content permissions.');
+              }finally{
+                if(version===epoch&&active===mine){
+                  localPending=false;button.disabled=false;
+                }
+              }
+            });
+            action.append(button);
+          }
+          draftsContainer.append(action);
+        }
         settingsView.render({document,container:settingsContainer,
           payload:{tenant_id:settings.tenantId,provider:'openai',
             mode:settings.mode,own_key_configured:settings.ownKeyConfigured,

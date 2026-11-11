@@ -19,7 +19,8 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
                    aiSettingsContainer,aiFactsContainer,aiCostContainer,
                    fetchImpl,origin,onError,copyText,openUrl,
                    aiFactsEditorContainer,canManageFacts=false,onSaveFacts,
-                   contentStudioContainer,onOpenContentStudio,postingPreferencesContainer}){
+                   contentStudioContainer,onOpenContentStudio,postingPreferencesContainer,
+                   enableLocalTemplates=false}){
     let activeSession=null,epoch=0,active=false;
     const dashboard=dashboardModule.create({
       document,container:dashboardContainer,fetchImpl,origin,onError,
@@ -50,7 +51,8 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
       costContainer:aiCostContainer,fetchImpl,origin,onError,
       copyText,openUrl,factsEditorContainer:aiFactsEditorContainer,
       canManageFacts:canManageFacts||Boolean(aiFactsEditorContainer),
-      onSaveFacts:onSaveFacts||saveConfirmedFacts});
+      onSaveFacts:onSaveFacts||saveConfirmedFacts,
+      enableLocalTemplates});
     const held=contentStudioContainer?heldModule.create({document,
       container:contentStudioContainer,fetchImpl,origin,onError}):null;
     const prefs=postingPreferencesContainer?prefsModule.create({document,
