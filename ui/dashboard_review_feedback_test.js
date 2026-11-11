@@ -111,8 +111,11 @@ async function main(){
  assert.equal(note,'Initial feedback');
  assert.match(errors.at(-1),/Refresh to resolve/);
  blockUpdate=false;
+ for(let i=0;i<3;i++)await tick();
  await app.refreshReviewFeedback();
+ for(let i=0;i<2;i++)await tick();
  const remove=control('Remove private review note');
+ assert.ok(remove,'Expected current version-checked removal control');
  remove.listeners.click();
  const confirm=control('Confirm removal of private note');
  assert.ok(confirm);
