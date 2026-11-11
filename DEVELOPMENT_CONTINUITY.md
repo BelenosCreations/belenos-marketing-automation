@@ -11,6 +11,15 @@ After a rejected draft mutation, Content Studio refreshes the authenticated list
 
 **Unverified security changes since the last successful run:** editorial recheck and intake, the native and legacy approval facades, revision-checked held-draft hold actions, and compare-and-swap verified-media references. New Python and browser regression tests are committed. Confirm full Python, UI and compilation suites before updating this checkpoint.
 
+## Product-direction checkpoint — 2026-11-11 (documentation only)
+
+The owner clarified that BAM is being built to **eliminate the need for Metricool**, not to require an external scheduler. The approved core architecture uses **direct, official provider integrations**, with eligible Facebook business Pages first. BAM will own scheduling, publication history, read-only provider analytics and eventually evidence-based Smart recommendations. Provider OAuth, app permissions, token storage and live publication remain **unimplemented and unauthorized**; existing offline social metadata must not be misrepresented as an active connection.
+
+The README was rewritten as the authoritative **product overview** and `PRODUCT_PLAN.md` now contains the implementation sequence and acceptance gates. It also records same-business employee collaboration, a shared multi-tenant backend, optional manual ChatGPT artwork handoff, OpenAI-only BAM-sponsored generation by default and optional securely stored personal API key. Avoid inventing subscription/seat prices, quotas or a dedicated per-employee server. The detailed historical phase log stays in `DEVELOPMENT_MILESTONES.md`, and actual change history stays in `CHANGELOG.md`.
+
+**Branch discipline:** These are documentation commits on `development/phase-3-5-account-directory`. Keep `main` unchanged until the existing review/merge process. No code or CI verification is claimed for this documentation update, and this does not clear any already pending alpha security tests. Continue from the most recently verified source checkpoint and verify the exact final candidate SHA before any merge/deploy.
+
+
 ## Safe resume procedure
 
 1. Verify the branch head and most recent full green GitHub Actions run. If a chat froze mid-edit, discard unverified assumptions and compare the branch's actual commits, tests and files before making changes.
