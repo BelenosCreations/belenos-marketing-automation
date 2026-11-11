@@ -3,6 +3,12 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Owner-invitation control hardening and CI syntax checks — November 11, 2026
+
+The optional offline owner team workspace lists and cancels previously delivered, still-active private invitations without exposing invitation tokens. `BusinessInvitations.invite` now performs an atomic, business-scoped check against duplicate active invitation email and pre-existing account membership; expired, consumed, revoked and failed attempts have the correct distinct handling. The owner must explicitly use trusted delivery infrastructure outside this UI, and BAM does not send email itself. A new browser regression guards cancellation callbacks after logout. The full test workflow checks syntax of every JavaScript UI file before execution to catch invalid files early.
+
+**Verification:** Syntax fix `2f030b7e` passed Actions 43120107192; invitation deduplication + JavaScript syntax gate at `92d17255` passed Actions 43120560150. This new logout-race regression and documentation checkpoint is committed but awaiting its own complete CI. The gateway remains offline and default-disabled for invitation management without a trusted callback.
+
 ## Offline SQLite snapshot/restore integrity exercise — November 11, 2026
 
 The offline Alpha now has a **temporary-file-only backup/restore regression drill** in `test_offline_sqlite_restore_drill.py`. It uses SQLite's consistent online backup API to snapshot a committed database and restore it into a separately initialized BAM gateway. The test verifies `PRAGMA integrity_check`, independent business draft data, recovery of the original version of a changed draft, hashed session-token storage, and preservation of business-scoped revocations and team audit after restoration. All test databases are removed after each run.

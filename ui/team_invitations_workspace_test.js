@@ -17,6 +17,7 @@ const history={tenant_id:'shop',status:'private_team_activity',
 let pending=[{invitation_id:'a'.repeat(32),email:'guest@example.com',
   role:'viewer',expires_at:700000}];
 let posts=[];
+let pauseCancel=null;
 const fetchImpl=async(url,opts)=>{
   if(url.endsWith('/team-overview'))
     return {ok:true,json:async()=>overview};
@@ -30,6 +31,7 @@ const fetchImpl=async(url,opts)=>{
       publishing_enabled:false})};
   if(url.endsWith('/team/invitations/cancel')){
     const body=JSON.parse(opts.body);posts.push({body,opts});
+    if(pauseCancel)await pauseCancel;
     pending=pending.filter(x=>x.invitation_id!==body.invitation_id);
     return {ok:true,json:async()=>({tenant_id:'shop',
       invitation_id:body.invitation_id,status:'cancelled',
@@ -66,6 +68,25 @@ async function main(){
   assert.equal(find(root,'Cancel invitation'),undefined);
   app.clear();
   assert.equal(root.children.length,0);
+  // Logout while cancellation transport is still outstanding: the former
+  // owner session must never render a success notice into a cleared workspace.
+  const earlierNotices=notices.length;
+  pending=[{invitation_id:'b'.repeat(32),email:'later@example.com',
+    role:'viewer',expires_at:700000}];
+  let releaseCancel;
+  pauseCancel=new Promise(resolve=>{releaseCancel=resolve;});
+  app.activate({token:'a'.repeat(43),tenantId:'shop'});
+  app.setOwner(true);
+  await app.refresh();
+  find(root,'Cancel invitation').listeners.click();
+  find(root,'Confirm invitation cancellation').listeners.click();
+  await Promise.resolve();
+  app.clear();
+  releaseCancel();
+  await settle();
+  pauseCancel=null;
+  assert.equal(root.children.length,0);
+  assert.equal(notices.length,earlierNotices);
   assert.throws(()=>create({document,container:el('main'),fetchImpl,
     origin:'https://bam.example',enableInvitationPreview:true}),TypeError);
   console.log('BAM optional offline invitation cancellation UI tests passed');

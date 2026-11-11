@@ -11,6 +11,8 @@
 **Source-code status:** The previously pending editorial, draft-concurrency, invitation/scheduling and TruthGuard security tests are included in this verified integration. No production features are thereby authorized. This documentation-only follow-up should be independently checked before declaring its own final SHA verified.
 
 
+**Latest confirmed development source:** `92d172552a5e63cf48f8ed9ef99bebb1f5114e88` passed [Actions 43120560150](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120560150), including JavaScript syntax validation, UI regressions, and offline Python tests. [Actions 43120107192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120107192) separately passed the repaired invitation workspace syntax. Follow-up logout-race test/documentation is pending exact-SHA verification. `main` remains distinct and the new checkpoint is not yet merged. No hosting or social publishing was enabled.
+
 ## Product-direction checkpoint — 2026-11-11 (documentation only)
 
 The owner clarified that BAM is being built to **eliminate the need for Metricool**, not to require an external scheduler. The approved core architecture uses **direct, official provider integrations**, with eligible Facebook business Pages first. BAM will own scheduling, publication history, read-only provider analytics and eventually evidence-based Smart recommendations. Provider OAuth, app permissions, token storage and live publication remain **unimplemented and unauthorized**; existing offline social metadata must not be misrepresented as an active connection.

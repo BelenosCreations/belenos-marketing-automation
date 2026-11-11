@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-11 — Owner-private invitation safety and CI syntax gate
+
+- The optional, owner-only **pending invitation list and two-step cancellation** UI is backed by an authenticated tenant-scoped HTTPS adapter. It only becomes available with a separately configured trusted invitation-delivery callback; BAM does **not** send invitations from this UI, expose invite bearer tokens, or activate social posting.
+- Added a single-statement atomic duplicate check so one business cannot accidentally issue multiple simultaneous unexpired active invitations to the same email. Existing memberships, including deactivated members, must be managed through the authorized team-administration path rather than a fresh invitation. Other businesses remain independent.
+- Cover duplicate, cancelled, expired, failed-delivery, existing-member and cross-business scenarios in Python; browser tests cover owner cancellation and the safe state after logout during an outstanding cancellation.
+- GitHub Actions now runs `node --check` on **every** `ui/*.js` file before JavaScript regressions, not only scripts executed by an individual test.
+- **Verification:** [Actions 43120107192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120107192) passed for repaired invitation UI checkpoint `2f030b7e`; [Actions 43120560150](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120560150) passed for duplicate/membership safeguards and syntax gate at `92d17255`. The additional logout-race regression and this documentation commit still require their own exact-SHA CI result.
+- All capabilities remain **offline Alpha**, without real email delivery, hosted multi-user release, external publishing, or paid service activation.
+
 ## 2026-11-11 — Ephemeral offline SQLite snapshot and restore drill
 
 - Added temporary-file, consistent SQLite backup and restore regression tests for business-isolated drafts, pre-snapshot revisions, hashed sessions, scoped revocations, and team audit persistence.
