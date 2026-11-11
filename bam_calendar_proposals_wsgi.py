@@ -62,9 +62,9 @@ class BAMCalendarProposalsWSGI:
             raise ValueError('Incomplete request')
         body=json.loads(raw.decode('utf-8'),object_pairs_hook=_unique)
         keys={'request_id','expected_revision','utc_at'} if method=='POST' else {'request_id'}
-        if type(body) is not dict or set(body)!=keys or
-            type(body['request_id']) is not str or
-            _ID.fullmatch(body['request_id']) is None:
+        if (type(body) is not dict or set(body)!=keys or
+                type(body['request_id']) is not str or
+                _ID.fullmatch(body['request_id']) is None):
             raise ValueError('Invalid proposed content draft')
         if method=='POST' and (
                 type(body['expected_revision']) is not int or
