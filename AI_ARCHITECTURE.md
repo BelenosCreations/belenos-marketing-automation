@@ -76,3 +76,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 ### Usage and cost estimates
 
 `ai_cost_ledger.py` records trusted provider token counts by business/user and estimates micro-USD costs from explicit operator-configured Decimal rates. Configure the Responses executor's `usage_observer` to call this ledger; when enabled, missing or malformed usage fails closed. These estimates must not be presented as actual charges. Production requires reconciliation of failed attempts, provider billing, and per-model prices before enabling paid generation.
+
+### Idempotent generation requests
+
+`ai_generation_idempotency.py` tracks 32-character random request keys and SHA-256 fingerprints by business/user. When supplied to `AIDraftGenerationWorkflow`, repeated requests return a held status without a second provider call or quota reservation. Production HTTP generation endpoints must require idempotency keys and use durable shared storage. In-progress and failed requests must not be automatically retried without reconciliation.
