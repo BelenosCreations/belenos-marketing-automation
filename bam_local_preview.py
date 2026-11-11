@@ -9,6 +9,7 @@ import argparse
 import getpass
 import os
 from pathlib import Path
+from contextlib import closing
 import sqlite3
 import ssl
 import stat
@@ -55,8 +56,13 @@ def provision_preview_owner(db_path,*,email,password,tenant_id,
     if type(timestamp) is not int or timestamp<0:
         raise ValueError('Invalid local setup time')
     path.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
+    if path.exists():
+        raise PermissionError('Preview database already exists; do not overwrite credentials')
+    # Create with private permissions BEFORE SQLite writes any credentials.
+    descriptor=os.open(path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+    os.close(descriptor)
     # Local-only database. Never fall back to shared, in-source production data.
-    with sqlite3.connect(path) as db:
+    with closing(sqlite3.connect(path)) as db:
         db.execute('PRAGMA foreign_keys=ON')
         gateway=BAMOfflineGateway(db)
         for table in ('bam_identities','members','business_profiles'):
