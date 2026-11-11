@@ -1,5 +1,16 @@
 # Changelog
 
+## Disabled-by-default HTTPS transport and offline AI integration — 2026-11-10
+
+### Added
+- Server-injected OpenAI HTTPS transport that refuses requests until explicitly enabled, with model/token limits, bounded payloads and sanitized errors.
+- Offline end-to-end test from owner-confirmed facts through quota and structured provider response to a held, unpublished draft.
+- Transport tests for disabled mode, secret isolation and unsafe request rejection.
+
+### Not enabled
+- Live OpenAI requests, actual charges, customer API key provisioning, social publishing or production deployment.
+
+
 ## Keyless OpenAI Responses adapter — 2026-11-10
 
 ### Added
