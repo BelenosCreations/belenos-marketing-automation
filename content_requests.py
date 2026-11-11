@@ -60,7 +60,7 @@ class ContentRequests:
     def get(self, *, tenant_id, request_id):
         self._require(tenant_id,request_id)
         row=self.db.execute("""SELECT request_id,channel,draft_text,suggestion,
-                required_items,provided_items,status,priority,created_at,updated_at
+                required_items,provided_items,status,priority,created_at,updated_at,revision
                 FROM content_requests WHERE tenant_id=? AND request_id=?""",
                 (tenant_id,request_id)).fetchone()
         if row is None:
