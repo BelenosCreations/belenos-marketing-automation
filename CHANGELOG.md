@@ -1,5 +1,12 @@
 # Changelog
 
+## Offline AI HTTP replay integration regression — 2026-11-10
+
+### Added
+- End-to-end Python regression test for authenticated HTTPS generation, fake OpenAI response, quota/idempotency and held draft persistence.
+- Duplicate request must not cause a second provider invocation or draft.
+
+
 ## Explicit-action authenticated AI write client — 2026-11-10
 
 ### Added
