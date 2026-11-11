@@ -621,3 +621,7 @@ AI preference writes (mode switching, saved-memory edits and key-reference remov
 ## AI workspace refresh ordering safeguard — 2026-11-10
 
 The authenticated AI workspace coordinator now rejects older in-flight refreshes even within the same signed-in business, preventing delayed API responses from overwriting more recent content. The workspace race-condition tests now cover both business-switch/logout invalidation and out-of-order same-session reads.
+
+## Owner-confirmed AI business facts milestone — 2026-11-10
+
+`ai_business_facts.py` adds an owner-confirmed, business-isolated fact registry with revision checks and provenance labels. Content creators can use these confirmed facts but cannot edit them. `AIContentPlan.create_from_confirmed_facts` creates a structured, unpublished OpenAI draft request only when the active business has an owner-confirmed fact snapshot, recording its revision. This reduces reliance on arbitrary client-supplied claims; **owner confirmation is not independent external fact verification** and drafts still require TruthGuard/factual review before approval. `test_ai_business_facts.py` covers access control, business isolation and stale updates.
