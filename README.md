@@ -24,7 +24,7 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **Backend card contract:** `dashboard_cards.py` supplies permission-aware content counts and explicitly unavailable scheduling values for eventual live UI integration.
 - **AI draft backend:** owner-confirmed business fact registry, OpenAI-only structured draft planning, sponsored quota reservations, optional idempotency protection, held drafts, verified-image references and targeted revisions. Drafts are not approved or published.
 - **AI provider boundary:** disabled-by-default OpenAI HTTPS transport and a strict structured Responses adapter, with operator-configured token cost estimates. No real provider connection or billing is enabled.
-- **Authenticated AI workspace components:** read-only drafts, AI settings, owner-confirmed fact provenance and estimated usage panels; integration into the complete sign-in shell is pending.
+- **Authenticated AI workspace components:** read-only drafts, AI settings, owner-confirmed fact provenance, an optional explicit owner fact editor, and estimated usage panels; integration into the complete sign-in shell is pending.
 
 **Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. Full current-branch CI/Python verification remains pending.
 
