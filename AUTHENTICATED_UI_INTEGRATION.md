@@ -74,3 +74,7 @@ The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_fa
 ### Owner-confirmed fact updates
 
 `bam_ai_facts_write_wsgi.py` provides a disabled-by-default owner-authorized `PUT /api/v1/ai-business-facts` endpoint. The client supplies `facts` and `expected_revision` only. Tenant identity and owner permission are determined from the bearer session. Conflicting revisions require refreshing the fact snapshot before resubmission. This is not mounted in the current app.
+
+### Explicit-action browser writes
+
+`ui/ai_write_client.js` supplies `generate` and `confirmFacts` calls for the future authenticated UI. Both require a bearer session, strict HTTPS origin and injected fetch. Generation requires a 32-character random idempotency key from the authenticated shell; no automatic retries or publishing are allowed. The browser does not choose business, model, quota or API key. These calls are not wired to the sample-data GUI.
