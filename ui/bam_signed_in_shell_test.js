@@ -20,7 +20,7 @@ function fixture(){
     'business-switch','business-switch-label',
     'overview-panel','drafts-panel','content-panel','settings-panel',
     'email','password','business','appearance',
-    'bam-content-studio','bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
+    'bam-posting-preferences','bam-content-studio','bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
   const elements=Object.fromEntries(ids.map(id=>[id,node()]));
   const nav=['overview','drafts','content','settings'].map(panel=>{
     const button=node('button');button.dataset.bamPanel=panel;return button});
@@ -45,6 +45,8 @@ const data={
     schedule:{availability:'not_connected',posts:null},
     publishing_enabled:false},
   drafts:{tenant_id:'shop',publishing_enabled:false,drafts:[]},
+  'posting-preferences':{tenant_id:'shop',mode:'smart',timezone:null,
+    manual_times:[],configured:false,publishing_enabled:false},
   'ai-drafts':{tenant_id:'shop',drafts:[],publishing_enabled:false},
   'ai-settings':{tenant_id:'shop',provider:'openai',mode:'bam_sponsored',
     own_key_configured:false,memory:{},key_exposed:false,
@@ -107,6 +109,14 @@ async function main(){
         request_id:item.request_id,status:item.status,
         publishing_enabled:false})};
     }
+    if(kind==='posting-preferences'&&opts.method==='PUT'){
+      const payload=JSON.parse(opts.body);
+      data['posting-preferences']={tenant_id:currentTenant,
+        mode:payload.mode,timezone:payload.timezone,
+        manual_times:payload.manual_times,configured:true,
+        publishing_enabled:false};
+      return {ok:true,json:async()=>data['posting-preferences']};
+    }
     if(kind==='logout')return {ok:true,json:async()=>({
       signed_out:true,publishing_enabled:false})};
     if(Object.prototype.hasOwnProperty.call(data,kind))
@@ -128,6 +138,7 @@ async function main(){
   assert.equal(e['workspace-view'].hidden,false);
   assert.equal(e['bam-dashboard'].children.length,1);
   assert.equal(e['bam-content-studio'].children.length,1);
+  assert.equal(e['bam-posting-preferences'].children.length,1);
   assert.equal(e['bam-dashboard'].children[0].children[1].children.length,4);
   assert.equal(e['active-business'].textContent,'Business: shop');
   // The Content Studio is an explicit, unpublished, tenant-scoped write UI.
@@ -148,6 +159,13 @@ async function main(){
   assert.equal(requests[0].opts.credentials,'omit');
   f.nav[3].listeners.click();
   assert.equal(e['settings-panel'].hidden,false);
+  const prefForm=e['bam-posting-preferences'].children[0].children[3];
+  prefForm.children[0].children[1].value='manual';
+  prefForm.children[1].children[1].value='America/New_York';
+  prefForm.children[2].children[1].value='10:00, 18:30';
+  await prefForm.listeners.submit({preventDefault(){}});
+  assert.equal(data['posting-preferences'].mode,'manual');
+  assert.deepEqual(data['posting-preferences'].manual_times,['10:00','18:30']);
   assert.equal(e['overview-panel'].hidden,true);
   e.appearance.listeners.change({target:{value:'light'}});
   assert.equal(f.document.documentElement.dataset.theme,'light');

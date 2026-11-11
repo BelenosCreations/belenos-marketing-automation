@@ -6,17 +6,19 @@
   'use strict';
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./live_dashboard_cards.js'),
-      require('./ai_workspace.js'),require('./held_draft_workspace.js'));
+      require('./ai_workspace.js'),require('./held_draft_workspace.js'),
+      require('./posting_preferences_workspace.js'));
   else root.BAMAuthenticatedWorkspace=factory(
-    root.BAMLiveDashboard,root.BAMAIWorkspace,root.BAMHeldDraftWorkspace);
+    root.BAMLiveDashboard,root.BAMAIWorkspace,root.BAMHeldDraftWorkspace,
+    root.BAMPostingPreferencesWorkspace);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(dashboardModule,aiModule,heldModule){
+function(dashboardModule,aiModule,heldModule,prefsModule){
   'use strict';
   function create({document,dashboardContainer,aiDraftsContainer,
                    aiSettingsContainer,aiFactsContainer,aiCostContainer,
                    fetchImpl,origin,onError,copyText,openUrl,
                    aiFactsEditorContainer,canManageFacts=false,onSaveFacts,
-                   contentStudioContainer,onOpenContentStudio}){
+                   contentStudioContainer,onOpenContentStudio,postingPreferencesContainer}){
     const dashboard=dashboardModule.create({
       document,container:dashboardContainer,fetchImpl,origin,onError,
       onOpenContentStudio});
@@ -27,15 +29,18 @@ function(dashboardModule,aiModule,heldModule){
       canManageFacts,onSaveFacts});
     const held=contentStudioContainer?heldModule.create({document,
       container:contentStudioContainer,fetchImpl,origin,onError}):null;
+    const prefs=postingPreferencesContainer?prefsModule.create({document,
+      container:postingPreferencesContainer,fetchImpl,origin,onError}):null;
     let active=false,epoch=0;
     function clear(){
-      epoch++;active=false;dashboard.clear();ai.clear();if(held)held.clear();
+      epoch++;active=false;dashboard.clear();ai.clear();if(held)held.clear();if(prefs)prefs.clear();
     }
     function activate({token,tenantId}){
       clear();
       dashboard.activate({token,tenantId});
       ai.activate({token,tenantId});
       if(held)held.activate({token,tenantId});
+      if(prefs)prefs.activate({token,tenantId});
       active=true;
     }
     async function refresh(){
@@ -61,6 +66,12 @@ function(dashboardModule,aiModule,heldModule){
         if(version!==epoch)return {stale:true};
         if(content.error){clear();return {stale:false,error:true};}
         if(content.stale)return {stale:true};
+      }
+      if(prefs){
+        const preference=await prefs.refresh();
+        if(version!==epoch)return {stale:true};
+        if(preference.error){clear();return {stale:false,error:true};}
+        if(preference.stale)return {stale:true};
       }
       return {stale:false,tenantId:overview.tenantId,
         draftCount:details.draftCount,businesses:overview.businesses};
