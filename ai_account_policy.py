@@ -103,6 +103,44 @@ class AIPolicyStore:
                 (now,principal.tenant_id,principal.subject_id))
         return self.get_mode(token=token,now=now)
 
+    @staticmethod
+    def _encode_memory(memory):
+        if (type(memory) is not dict or len(memory)>40 or any(
+                type(key) is not str or not key.strip() or
+                len(key)>80 or type(value) is not str or
+                not value.strip() or len(value)>2000
+                for key,value in memory.items())):
+            raise ValueError('Memory must be a bounded string dictionary')
+        encoded=json.dumps(memory,ensure_ascii=False,sort_keys=True)
+        if len(encoded.encode('utf-8'))>MEMORY_MAX_BYTES:
+            raise ValueError('AI memory exceeds size limit')
+        return encoded
+
+    def replace_memory_checked(self, *, token, now, memory,
+                               expected_memory):
+        """Atomically compare-and-update only the current user's memory.
+
+        The complete previously read map is the optimistic compare token.
+        Concurrent changes cannot be overwritten. A newly initialized empty
+        preference row is harmless and never receives another tenant's data.
+        """
+        principal=self._editor(token,now)
+        updated=self._encode_memory(memory)
+        previous=self._encode_memory(expected_memory)
+        with self.db:
+            self.db.execute("""INSERT OR IGNORE INTO bam_ai_memories
+                (tenant_id,subject_id,memory_json,updated_at)
+                VALUES(?,?,?,0)""",
+                (principal.tenant_id,principal.subject_id,'{}'))
+            changed=self.db.execute("""UPDATE bam_ai_memories
+                SET memory_json=?,updated_at=?
+                WHERE tenant_id=? AND subject_id=? AND memory_json=?""",
+                (updated,now,principal.tenant_id,principal.subject_id,
+                 previous))
+            if changed.rowcount!=1:
+                raise ValueError('AI memory changed; refresh before saving')
+        return self.get_memory(token=token,now=now)
+
     def get_memory(self, *, token, now):
         principal=self._principal(token,now)
         row=self.db.execute("""SELECT memory_json FROM bam_ai_memories

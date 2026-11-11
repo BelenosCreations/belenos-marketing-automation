@@ -65,6 +65,43 @@ class AIPolicyTests(unittest.TestCase):
             self.store.forget_personal_key_reference(
                 token=self.viewer,now=101)
 
+    def test_memory_compare_and_swap_is_user_business_scoped(self):
+        initial=self.store.replace_memory_checked(
+            token=self.owner,now=101,
+            expected_memory={},memory={'tone':'short Facebook posts'})
+        self.assertEqual(initial['memory'],{'tone':'short Facebook posts'})
+        with self.assertRaises(ValueError):
+            self.store.replace_memory_checked(
+                token=self.owner,now=102,
+                expected_memory={},memory={'tone':'stale override'})
+        latest=self.store.replace_memory_checked(
+            token=self.owner,now=102,
+            expected_memory={'tone':'short Facebook posts'},
+            memory={'tone':'short Facebook posts','length':'brief'})
+        self.assertEqual(latest['memory']['length'],'brief')
+        self.assertEqual(self.store.get_memory(
+            token=self.friend,now=103)['memory'],{})
+        self.assertEqual(self.store.get_memory(
+            token=self.other,now=103)['memory'],{})
+        with self.assertRaises(PermissionError):
+            self.store.replace_memory_checked(
+                token=self.viewer,now=103,
+                expected_memory={},memory={'tone':'private'})
+        self.assertEqual(self.store.get_memory(
+            token=self.owner,now=104)['memory']['tone'],
+            'short Facebook posts')
+
+    def test_memory_compare_and_swap_rejects_oversized_or_malformed(self):
+        for bad in ({'huge':'x'*2001},
+                    {'key':123},{'bad name':' '},
+                    {str(i):'ok' for i in range(41)}):
+            with self.assertRaises(ValueError):
+                self.store.replace_memory_checked(
+                    token=self.owner,now=101,
+                    expected_memory={},memory=bad)
+        self.assertEqual(self.store.get_memory(
+            token=self.owner,now=101)['memory'],{})
+
     def test_raw_key_rejected(self):
         with self.assertRaises(ValueError):
             self.store.set_mode(token=self.owner,now=101,

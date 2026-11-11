@@ -105,6 +105,18 @@ class AccountReadAPI:
                 'memory':memory['memory'],
                 'key_exposed':False,'publishing_enabled':False}
 
+    def edit_ai_memory(self, *, session_token, server_now,
+                       memory, expected_memory):
+        """Edit this person's own business-scoped AI preferences only."""
+        if self.ai_policy is None:
+            raise RuntimeError('AI policy not configured')
+        updated=self.ai_policy.replace_memory_checked(
+            token=self._token(session_token),now=self._now(server_now),
+            memory=memory,expected_memory=expected_memory)
+        return {'tenant_id':updated['tenant_id'],
+                'memory':updated['memory'],
+                'publishing_enabled':False}
+
     def edit_ai_draft_component(self, *, session_token, server_now,
                                 draft_id, target, revised_text,
                                 expected_revision):

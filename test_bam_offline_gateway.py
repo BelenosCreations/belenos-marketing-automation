@@ -720,6 +720,35 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         bad,_=self.call('/api/v1/posting-time-preview')
         self.assertEqual(bad['status'],'401 Unauthorized')
 
+    def test_edit_private_ai_memory_requires_current_expectation(self):
+        owner=self.login('shop')
+        meta,updated=self.call('/api/v1/ai-memory',method='PUT',
+            token=owner,body={'memory':{'tone':'Short local posts'},
+                              'expected_memory':{}})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(updated['tenant_id'],'shop')
+        self.assertEqual(updated['memory'],{'tone':'Short local posts'})
+        self.assertFalse(updated['publishing_enabled'])
+        self.assertEqual(self.call('/api/v1/ai-memory',
+            method='PUT',token=owner,
+            body={'memory':{'tone':'Stale'},
+                  'expected_memory':{}})[0]['status'],'409 Conflict')
+        _,settings=self.call('/api/v1/ai-settings',token=owner)
+        self.assertEqual(settings['memory'],{'tone':'Short local posts'})
+        another=self.login('other')
+        _,other_settings=self.call('/api/v1/ai-settings',token=another)
+        self.assertEqual(other_settings['memory'],{})
+        self.assertEqual(self.call('/api/v1/ai-memory',
+            method='PUT',token=another,
+            body={'memory':{'tone':'Own preference'},
+                  'expected_memory':{}})[0]['status'],'200 OK')
+        _,settings=self.call('/api/v1/ai-settings',token=owner)
+        self.assertEqual(settings['memory'],{'tone':'Short local posts'})
+        self.assertEqual(self.call('/api/v1/ai-memory',
+            method='PUT',token=owner,
+            body={'tenant_id':'other','memory':{},
+                  'expected_memory':{}})[0]['status'],'400 Bad Request')
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')
