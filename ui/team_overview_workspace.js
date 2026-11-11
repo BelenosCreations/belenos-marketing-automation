@@ -3,10 +3,11 @@
  'use strict';
  if(typeof module==='object'&&module.exports)
    module.exports=factory(require('./dashboard_http_client.js'),
-     require('./team_members_client.js'));
+     require('./team_members_client.js'),
+     require('./team_invitations_client.js'));
  else root.BAMTeamOverviewWorkspace=factory(root.BAMReadClient,
-     root.BAMTeamMembersClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(reader,membersClient){
+     root.BAMTeamMembersClient,root.BAMTeamInvitationsClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(reader,membersClient,invitesClient){
  'use strict';
  const labels=[['owner','Owners'],['marketing_manager','Marketing managers'],
    ['content_creator','Content creators'],['employee','Employees'],
@@ -15,19 +16,25 @@
    const item=doc.createElement(tag);item.textContent=text;return item;
  }
  function create({document,container,fetchImpl,origin,onError,onNotice,
-                  enableMemberManagement=false}){
+                  enableMemberManagement=false,
+                  enableInvitationPreview=false}){
    if(!document||!container||typeof container.replaceChildren!=='function'||
       typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Team workspace requires DOM and authenticated transport');
-   if(typeof enableMemberManagement!=='boolean')
-     throw new TypeError('Explicit member management preview switch required');
+   if(typeof enableMemberManagement!=='boolean'||
+      typeof enableInvitationPreview!=='boolean')
+     throw new TypeError('Explicit team preview switches required');
+   if(enableInvitationPreview&&!enableMemberManagement)
+     throw new TypeError('Pending invitations require owner team controls');
    let active=null,epoch=0,requestVersion=0,owner=false,summary=null,failed=false;
    let memberData=null,memberError=false,memberPending=false,confirming=null;
    let auditData=null,auditError=false;
+   let inviteData=null,inviteError=false,invitePending=false,confirmingInvite=null;
    function clear(){
      epoch++;requestVersion++;active=null;owner=false;summary=null;failed=false;
      memberData=null;memberError=false;memberPending=false;confirming=null;
      auditData=null;auditError=false;
+     inviteData=null;inviteError=false;invitePending=false;confirmingInvite=null;
      container.replaceChildren();
    }
    function activate({token,tenantId}){
@@ -43,6 +50,7 @@
        requestVersion++;summary=null;failed=false;
        memberData=null;memberError=false;memberPending=false;confirming=null;
        auditData=null;auditError=false;
+       inviteData=null;inviteError=false;invitePending=false;confirmingInvite=null;
      }
      render();
    }
@@ -101,6 +109,59 @@
            }else if(auditData){
              section.append(element(document,'p',
                'No recorded team access changes.'));
+           }
+           if(enableInvitationPreview){
+             section.append(element(document,'h3','Pending business invitations'));
+             if(inviteError){
+               section.append(element(document,'p',
+                 'Invitation preview is not configured or is unavailable. No invitation was sent from this page.'));
+             }else if(!inviteData){
+               section.append(element(document,'p',
+                 'Pending invitation details have not loaded.'));
+             }else if(!inviteData.items.length){
+               section.append(element(document,'p',
+                 'No active delivered-callback invitations recorded.'));
+             }else{
+               const shown=inviteData;
+               for(const pending of shown.items){
+                 const article=element(document,'article','');
+                 article.append(element(document,'strong',pending.email));
+                 article.append(element(document,'p',
+                   'Requested role: '+pending.role.replace(/_/g,' ')));
+                 article.append(element(document,'p',
+                   'Expires: '+new Date(pending.expiresAt*1000).toLocaleString()));
+                 const cancel=element(document,'button','Cancel invitation');
+                 cancel.type='button';cancel.className='secondary';
+                 cancel.disabled=invitePending;
+                 cancel.addEventListener('click',()=>{
+                   if(!owner||active!==mine||epoch!==version||invitePending||
+                      inviteData!==shown)return;
+                   confirmingInvite=pending;
+                   render();
+                 });
+                 article.append(cancel);
+                 if(confirmingInvite===pending){
+                   article.append(element(document,'p',
+                     'Confirm cancellation. The existing invitation link will no longer be accepted. No email is sent.'));
+                   const yes=element(document,'button','Confirm invitation cancellation');
+                   yes.type='button';yes.className='primary';
+                   yes.disabled=invitePending;
+                   yes.addEventListener('click',()=>{
+                     if(owner&&active===mine&&epoch===version&&
+                        confirmingInvite===pending&&inviteData===shown&&!invitePending)
+                       void cancelInvite(pending);
+                   });
+                   const no=element(document,'button','Keep invitation');
+                   no.type='button';no.className='secondary';
+                   no.addEventListener('click',()=>{
+                     if(owner&&active===mine&&epoch===version&&
+                        confirmingInvite===pending){confirmingInvite=null;render();}
+                   });
+                   article.append(yes,no);
+                 }
+                 section.append(article);
+               }
+             }
            }
            for(const record of roster.members){
              const article=element(document,'article','');
@@ -200,6 +261,21 @@
            if(epoch!==version||active!==mine||request!==requestVersion||!owner)
              return {stale:true};
            memberData=roster;memberError=false;
+           if(enableInvitationPreview){
+             try{
+               const pending=await invitesClient.list({
+                 token:mine.token,origin,fetchImpl,
+                 expectedTenantId:mine.tenantId});
+               if(epoch!==version||active!==mine||request!==requestVersion||!owner)
+                 return {stale:true};
+               inviteData=pending;inviteError=false;
+             }catch(error){
+               if(epoch!==version||active!==mine||request!==requestVersion||!owner)
+                 return {stale:true};
+               inviteData=null;inviteError=true;confirmingInvite=null;
+               if(onError)onError('Private invitation preview unavailable');
+             }
+           }
            try{
              const activity=await membersClient.activity({
                token:mine.token,origin,fetchImpl,
@@ -218,6 +294,7 @@
              return {stale:true};
            memberData=null;memberError=true;confirming=null;
            auditData=null;auditError=false;
+           inviteData=null;inviteError=false;confirmingInvite=null;
            if(onError)onError('Private team member details unavailable');
          }
        }
@@ -228,7 +305,8 @@
        if(epoch!==version||active!==mine||request!==requestVersion||!owner)
          return {stale:true};
        summary=null;failed=true;memberData=null;memberError=false;
-       confirming=null;auditData=null;auditError=false;render();
+       confirming=null;auditData=null;auditError=false;
+       inviteData=null;inviteError=false;confirmingInvite=null;render();
        if(onError)onError('Private team access counts unavailable');
        return {error:true};
      }
@@ -264,6 +342,32 @@
        return {error:true};
      }finally{
        if(active===mine&&epoch===version){memberPending=false;render();}
+     }
+   }
+   async function cancelInvite(pending){
+     if(!owner||!active||!inviteData||inviteError||invitePending||
+        confirmingInvite!==pending||!inviteData.items.includes(pending))
+       return {restricted:true};
+     const mine=active,version=epoch;
+     invitePending=true;confirmingInvite=null;render();
+     try{
+       const cancelled=await invitesClient.cancel({
+         origin,fetchImpl,token:mine.token,
+         expectedTenantId:mine.tenantId,invitationId:pending.id});
+       if(active!==mine||epoch!==version)return {stale:true};
+       const latest=await refresh();
+       if(active!==mine||epoch!==version)return {stale:true};
+       if(latest.error||latest.stale||inviteError)return {error:true};
+       if(onNotice)onNotice('Pending invitation cancelled; no email was sent.');
+       return cancelled;
+     }catch(error){
+       if(active!==mine||epoch!==version)return {stale:true};
+       try{await refresh();}catch(readError){inviteData=null;inviteError=true;}
+       if(active!==mine||epoch!==version)return {stale:true};
+       if(onError)onError('Cancellation not confirmed. Invitations were reloaded.');
+       return {error:true};
+     }finally{
+       if(active===mine&&epoch===version){invitePending=false;render();}
      }
    }
    return Object.freeze({activate,setOwner,clear,refresh});
