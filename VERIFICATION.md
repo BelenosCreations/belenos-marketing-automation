@@ -4,10 +4,10 @@
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`  
 **Branch:** `development/phase-3-5-account-directory`  
-**Verified commit:** `f553f4b08ddc59e17031c2191a15dcb4a81d7e23`  
+**Verified commit:** `5c53c7363341ab21cee8d2d16aa89453ddea537b`  
 **CI:** ${link}
 
-**Result:** 882 Python tests, 70 JavaScript UI scripts, and Python compilation passed. New tests cover transactional reviewer-note history, rollback if audit insert fails, persistence after note deletion, 50-event output bounds, role and business isolation, GET-only strict response contracts and the redacted Approvals activity panel. Earlier private feedback, local filtering, non-executable calendar selection, and authentication tests remain green. Production approval and publication have not been authorized.
+**Result:** 882 Python tests, 72 JavaScript `ui/*_test.js` scripts, and Python compilation passed. New coverage validates explicit draft queue priority, authenticated form field handling, business-local high-priority content counts, pending-review summaries, local priority filters and session/business reset. Prior permission boundaries, nonpublishing calendar proposals, private reviewer notes and their metadata audit remain covered. This is offline test verification only and not authorization to activate posting or production hosting.
 
 ## Archived original Phase 3.2 package
 

@@ -14,6 +14,13 @@ A dedicated `CalendarProposals` table stores at most one current proposed date p
 
 
 
+
+## Priority-aware Content Studio queue pulse (2026-11-11)
+
+An editor may assign Later/Low/Normal/High/Urgent priority while **creating** a held draft using the existing strict, owner/business-scoped draft-write API. Priority remains review-queue metadata, not an executable job priority. Content Studio displays the per-draft value and adds a calculated local queue pulse reporting incomplete and human-review-ready drafts, paused/unavailable content, urgent content needs, and outstanding checklist counts. Business-local priority/status/channel/search filters and quick actions are entirely DOM state, never network query fields or mutation commands. Stale buttons from a prior business session cannot change the new account's view. Tests cover valid creation, rejected priority input, accurate derived counts, filter reset on business switch, and existing mobile signed-in shell integration.
+
+**Verified:** [GitHub Actions run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513), `5c53c736`: 882 Python tests / 72 JavaScript UI scripts passed, plus compilation.
+
 ## Transactional reviewer-note change history (2026-11-11)
 
 `ReviewFeedback` now persists an append-only metadata event in `bam_review_feedback_events` for each successful create/update/delete. Notes and corresponding events commit or roll back together; the event never contains full note text. The actor ID is private database metadata, while the `GET /api/v1/review-feedback-history` response exposes only safe event ID, business-scoped draft ID, action, draft revision and timestamp. Access requires a current business owner or marketing-manager session; no browser-chosen tenant ID, sensitive note content, private media reference or approval flag is accepted. History is capped at 50 entries and marks truncation; the Approvals card shows the latest 10 with clear nonapproval wording. Tests exercise atomic write rollback through a simulated database trigger failure, event retention after removal, role and tenant separation, stale-session revocation, strict network response validation, and dashboard clearing on business switch.

@@ -3,8 +3,8 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified code commit:** `f553f4b08ddc59e17031c2191a15dcb4a81d7e23`.
-**Verification:** [GitHub Actions run 43090679750](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43090679750): 882 Python tests, 70 JavaScript scripts, compilation **passed**.
+**Most recent verified code commit:** `5c53c7363341ab21cee8d2d16aa89453ddea537b`.
+**Verification:** [GitHub Actions run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513): 882 Python tests, 72 JavaScript `ui/*_test.js` scripts and compilation **passed**.
 **Document-only checkpoint:** This file and companion README/CHANGELOG/milestone updates are committed after the verified code commit; confirm their own CI result before treating the new documentation commit as a verified head.
 
 ## Safe resume procedure
@@ -23,6 +23,7 @@
 - Private, GET-only `/api/v1/review-readiness` with content/material verification flags, a deeper Approvals checklist and tests for isolation and fail-closed nonapproval.
 - Private, version-checked `GET/PUT/DELETE /api/v1/review-feedback` for owner/manager notes; same notes read-only in Content Studio, stale draft feedback warnings, explicit removal confirmation and business-local filters.
 - Transactional private metadata audit for note changes, owner/manager-only history with strict response validation, and redacted Approvals activity details. Past events before installation are not backfilled.
+- Content Studio supports explicit held-draft priority at creation, local priority/status/channel/text filtering, and grounded private queue pulse with quick filters. No automatic reprioritization or posting.
 - Scheduled dashboard requires an explicit two-step confirmation to save a non-executable proposed date from a suggested slot; stale/conflicting entries fail closed.
 
 ## Non-negotiable active limits

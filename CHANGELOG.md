@@ -444,6 +444,25 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (priority-aware unpublished content queue)
+
+### Added
+- Explicit draft queue-priority choice at creation, with Normal as the default and server-side existing priority bounds enforced.
+- Content Studio summary of current-business incomplete/review-ready/paused drafts, high-priority content needs and outstanding required checklist items.
+- Priority selection filter and high-priority/review-ready/full-queue quick filters; all views are derived locally from previously authenticated data.
+
+### Changed
+- Draft cards display review queue priority without implying publishing order.
+- Signed-in shell regression tests locate draft form inputs by stable field labels, protecting against new optional controls.
+
+### Safety and verification
+- No post is approved, scheduled, published or promoted merely by its priority; no new permission or provider call was added.
+- **Passed:** [GitHub Actions run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513), commit `5c53c736`: 882 Python tests, 72 JavaScript regression scripts and Python compilation.
+
+### Known limitations
+- Queue priority is currently chosen on draft creation. Reprioritizing an existing draft needs separate versioned business-authorized editing design; this release does not silently modify existing drafts.
+
+
 ## Phase 3.5 — 2026-11-11 (auditable reviewer note changes)
 
 ### Added
