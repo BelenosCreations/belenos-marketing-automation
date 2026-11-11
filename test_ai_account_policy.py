@@ -31,7 +31,11 @@ class AIPolicyTests(unittest.TestCase):
                          'bam_sponsored')
         restored=self.store.set_mode(token=self.owner,now=104,
                                     mode='bam_sponsored')
-        self.assertFalse(restored['own_key_configured'])
+        self.assertTrue(restored['own_key_configured'])
+        again=self.store.set_mode(token=self.owner,now=105,
+                                  mode='own_openai_key')
+        self.assertTrue(again['own_key_configured'])
+        self.assertNotIn('vault:',str(again))
 
     def test_raw_key_rejected(self):
         with self.assertRaises(ValueError):
