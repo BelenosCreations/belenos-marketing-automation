@@ -51,7 +51,7 @@ function(client,draftView,settingsView){
             drafts:drafts.drafts.map(d=>({
               tenant_id:drafts.tenantId,draft_id:d.id,platform:d.platform,
               post_text:d.postText,image_prompt:d.imagePrompt,
-              needs_media:d.needsMedia,media_attached:false,
+              needs_media:d.needsMedia,media_attached:d.mediaAttached,
               status:d.status,revision:d.revision,publishing_enabled:false
             }))},expectedTenantId:mine.tenantId});
         settingsView.render({document,container:settingsContainer,
