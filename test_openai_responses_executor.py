@@ -10,6 +10,7 @@ def response(text='{"post_text":"Custom tumblers","image_prompt":"A tumbler"}'):
 def request():
     return {'provider':'openai','mode':'bam_sponsored',
         'output_type':'unpublished_draft','publishing_enabled':False,
+        'tenant_id':'shop','subject_id':'owner',
         'instructions':'Use only verified business facts.',
         'input_json':'{"topic":"Tumblers","verified_facts":{"name":"Shop"}}'}
 
@@ -66,6 +67,22 @@ class OpenAIResponsesExecutorTests(unittest.TestCase):
         refusal['output'][0]['content']=[{'type':'refusal','refusal':'No'}]
         with self.assertRaises(ValueError):
             OpenAIResponsesExecutor._extract(refusal)
+
+    def test_usage_observer_receives_scoped_provider_counts(self):
+        observed=[]
+        raw=response()
+        raw['usage']={'input_tokens':300,'output_tokens':100}
+        executor=OpenAIResponsesExecutor(
+            transport=lambda payload:raw,
+            usage_observer=lambda **kwargs:observed.append(kwargs))
+        executor(request=request(),max_output_tokens=500)
+        self.assertEqual(observed[0]['tenant_id'],'shop')
+        self.assertEqual(observed[0]['input_tokens'],300)
+        self.assertEqual(observed[0]['output_tokens'],100)
+        del raw['usage']
+        with self.assertRaises(ValueError):
+            executor(request=request(),max_output_tokens=500)
+        self.assertEqual(len(observed),1)
 
     def test_model_allowlist(self):
         with self.assertRaises(ValueError):
