@@ -51,7 +51,7 @@ class ContentRequests:
         with self.db:
             self.db.execute("""INSERT INTO content_requests
                 (request_id,tenant_id,channel,draft_text,suggestion,
-                 required_items,provided_items,status,priority,created_at,updated_at,revision)
+                 required_items,provided_items,status,priority,created_at,updated_at)
                  VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                 (request_id,tenant_id,channel,draft_text,suggestion,
                  json.dumps(list(required_items)),'{}','needs_content',priority,now,now))
