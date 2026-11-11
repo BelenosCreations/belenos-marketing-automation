@@ -3,13 +3,13 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified branch commit:** `74e55d5393a38fbee663b6ec82e72c4ada01c2ec` (Actions run 43092809091 successful).
-**Verification:** [GitHub Actions run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) completed successfully. Earlier [run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513) reported 882 Python tests, 72 JavaScript UI test scripts and compilation passed. New code after `74e55d53` remains unverified while runners are queued.
-**Latest unverified code checkpoint:** `94e894da3777d14fc3c129c0c7f4685d32e595c2`. GitHub Actions jobs remain queued; do not assert a green code result or merge/deploy on that basis.
+**Most recent verified merged code commit:** `f774564d7348e47f34ae0ee9da6279cf14a93677` on `main` and the synchronized development branch.
+**Verification:** Full GitHub Actions [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) completed successfully on the exact merged commit. Integration candidate `748c3a1a` also passed [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217).
+**Merge:** [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) reconciled `main` with development; a two-parent integration history preserved both sets of changes. Development was fast-forwarded to main once the merged commit passed.
+**Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`. These are not off-site backups or enforced protection.
 
-After a rejected draft mutation, Content Studio refreshes the authenticated list; the browser test simulates a 409 stale hold and verifies no optimistic success. This is unverified until CI executes.
+**Source-code status:** The previously pending editorial, draft-concurrency, invitation/scheduling and TruthGuard security tests are included in this verified integration. No production features are thereby authorized. This documentation-only follow-up should be independently checked before declaring its own final SHA verified.
 
-**Unverified security changes since the last successful run:** editorial recheck and intake, the native and legacy approval facades, revision-checked held-draft hold actions, and compare-and-swap verified-media references. New Python and browser regression tests are committed. Confirm full Python, UI and compilation suites before updating this checkpoint.
 
 ## Product-direction checkpoint — 2026-11-11 (documentation only)
 
@@ -17,7 +17,7 @@ The owner clarified that BAM is being built to **eliminate the need for Metricoo
 
 The README was rewritten as the authoritative **product overview** and `PRODUCT_PLAN.md` now contains the implementation sequence and acceptance gates. It also records same-business employee collaboration, a shared multi-tenant backend, optional manual ChatGPT artwork handoff, OpenAI-only BAM-sponsored generation by default and optional securely stored personal API key. Avoid inventing subscription/seat prices, quotas or a dedicated per-employee server. The detailed historical phase log stays in `DEVELOPMENT_MILESTONES.md`, and actual change history stays in `CHANGELOG.md`.
 
-**Branch discipline:** These are documentation commits on `development/phase-3-5-account-directory`. Keep `main` unchanged until the existing review/merge process. No code or CI verification is claimed for this documentation update, and this does not clear any already pending alpha security tests. Continue from the most recently verified source checkpoint and verify the exact final candidate SHA before any merge/deploy.
+**Branch discipline (current):** develop on the active development branch, merge meaningful green milestones by reviewed PR into `main`, then fast-forward development. Preserve recovery references, avoid force pushes, and stop further divergence before roughly 50 commits. No CI success authorizes deployment, paid AI, direct social publication, or real media verification.
 
 
 ## Main-branch reconciliation candidate — 2026-11-11
@@ -70,6 +70,8 @@ This offline alpha batch strengthens the places that evaluate or change private 
 A follow-up authorization audit found three more offline service boundaries that consulted the current directory role but did not require the issued session role to match. **Invitation creation/revocation, per-business scheduling settings and owner-only TruthGuard business-fact administration** now use `SessionStore.resolve_current` before evaluating tenant/role permissions. Tests verify that promoting a person to owner never lets an existing viewer/manager token silently acquire those owner powers; a separately issued current-role session is necessary. The change does not send invitations, schedule posts, publish, or approve any external AI call.
 
 **Checkpoint:** code commit `4fc1a6481309318b2c4a34453ccafaaef11a0708`. GitHub Actions remained queued with no assigned jobs at documentation time. Do not record it as verified yet.
+
+**Documentation status:** This continuity record supersedes older date-stamped 'pending CI' notes preserved below for historical context. The code merged on November 11 is fully green at `f774564d`; future additions require their own verification.
 
 ## Candidate next work (no authorization required)
 

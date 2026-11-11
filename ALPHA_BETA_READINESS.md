@@ -46,6 +46,9 @@ Before opening a hosted private beta, independently verify:
 
 The latest successful Actions run known at this milestone was [43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091), at commit `74e55d5393a38fbee663b6ec82e72c4ada01c2ec`. The browser now attempts a tenant-authenticated refresh after a rejected edit so stale content is not reused. This is still awaiting GitHub Actions verification. The subsequent current-role / optimistic-concurrency code batch (through `94e894da3777d14fc3c129c0c7f4685d32e595c2`) is committed but GitHub Actions has not begun executing test jobs. **Do not treat that batch as verified until its exact SHA has a green run.** Resume using [DEVELOPMENT_CONTINUITY.md](DEVELOPMENT_CONTINUITY.md).
 
-## Repository integration safety checkpoint
+## Repository sync completed (November 11, 2026)
 
-A frozen development snapshot (`f66522a4`) and an older successful checkpoint (`74e55d53`) are retained as independent GitHub branches. The merge candidate combines the existing `main` branding milestone and the current Alpha development tree; no merge should proceed without successful CI on the exact integration SHA, no unresolved PR checks and confirmation that neither branch moved unexpectedly.
+The offline Alpha source tree and original `main` branding history were merged through [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2). Merged source commit `f774564d` passed [full GitHub Actions run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231); the development branch was then fast-forwarded to the same SHA. Recovery references preserve green and pre-merge snapshots. This removes source-control divergence **but does not satisfy private-beta hosting, identity, media-scanning, AI-cost, social publishing, or live integration gates**.
+
+Earlier 'CI pending' statements elsewhere in this document record historical preparation status; the merged code checkpoint is now verified. The documentation updates themselves require a new exact-SHA verification.
+
