@@ -138,6 +138,56 @@ class CalendarProposals:
                 'utc_at':utc_at,'status':'proposal_only',
                 'posts_scheduled':0,'publishing_enabled':False}
 
+    def suggest_unassigned(self, *, token, now):
+        """Read-only, draft-only options; never persist or schedule a post.
+
+        Assign each unassigned held draft a distinct, currently valid Manual
+        preference slot in stable priority order. Even stale saved proposals
+        reserve their own slots until a permitted editor explicitly removes
+        them, so a preview cannot silently overwrite another editor's work.
+        """
+        principal = self._authorize(token=token, now=now,
+                                    action=Action.READ_DRAFTS)
+        tenant = principal.tenant_id
+        drafts = self.content_service.list_for_business(
+            token=token, tenant_id=tenant, now=now)
+        if len(drafts)>5000:
+            raise ValueError('Too many held drafts for safe calendar preview')
+        assigned = self.db.execute(
+            "SELECT request_id,utc_at FROM bam_calendar_proposals "
+            "WHERE tenant_id=? ORDER BY utc_at LIMIT 201",
+            (tenant,)).fetchall()
+        if len(assigned)>200:
+            raise ValueError('Too many saved proposals')
+        assigned_ids = {row[0] for row in assigned}
+        occupied = {row[1] for row in assigned}
+        unassigned = sorted(
+            (item for item in drafts
+             if item['status'] in ('needs_content','ready_for_review')
+             and item['request_id'] not in assigned_ids),
+            key=lambda item: (-item['priority'], item['created_at'],
+                              item['request_id']))
+        preview = self._preview(token=token, tenant=tenant, now=now)
+        slots = ([slot for slot in preview['slots']
+                  if slot['utc_at'] not in occupied]
+                 if preview['status']=='manual_preview' else [])
+        items = [{
+            'request_id':draft['request_id'],
+            'draft_revision':draft['revision'],
+            'utc_at':slot['utc_at'],
+            'local_date':slot['local_date'],
+            'local_time':slot['local_time'],
+            'timezone':preview['timezone'],
+            'publishing_enabled':False
+        } for draft,slot in zip(unassigned[:20],slots[:20])]
+        return {
+            'tenant_id':tenant,'status':'suggestion_preview_only',
+            'preference_status':preview['status'],
+            'unassigned_held_count':len(unassigned),
+            'available_slot_count':len(slots),
+            'items':items,'posts_scheduled':0,'publishing_enabled':False
+        }
+
     def discard(self,*,token,now,request_id):
         principal=self._authorize(token=token,now=now,
                                    action=Action.EDIT_DRAFT)

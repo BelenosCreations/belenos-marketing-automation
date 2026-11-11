@@ -156,5 +156,55 @@ class CalendarProposalTests(unittest.TestCase):
         self.assertIsNotNone(self.requests.get(
             tenant_id='shop',request_id=self.draft))
 
+    def test_suggest_unassigned_is_read_only_and_collision_free(self):
+        second=self.service.create(
+            token=self.owner,tenant_id='shop',channel='instagram',
+            draft_text='Second product preview',suggestion='Need image',
+            required_items=['image'],priority=5,now=NOW-1)
+        preview=self.calendar.suggest_unassigned(
+            token=self.owner,now=NOW)
+        self.assertEqual(preview['status'],'suggestion_preview_only')
+        self.assertEqual(preview['preference_status'],'manual_preview')
+        self.assertEqual(preview['unassigned_held_count'],2)
+        self.assertEqual(preview['items'][0]['request_id'],second)
+        self.assertEqual(preview['items'][0]['utc_at'],FIRST)
+        self.assertEqual(preview['items'][1]['request_id'],self.draft)
+        self.assertEqual(preview['items'][1]['utc_at'],SECOND)
+        self.assertFalse(preview['publishing_enabled'])
+        self.assertEqual(preview['posts_scheduled'],0)
+        self.assertEqual(self.db.execute(
+            'SELECT count(*) FROM bam_calendar_proposals').fetchone()[0],0)
+        self.propose()
+        after=self.calendar.suggest_unassigned(
+            token=self.creator,now=NOW)
+        self.assertEqual(after['unassigned_held_count'],1)
+        self.assertEqual(len(after['items']),1)
+        self.assertEqual(after['items'][0]['request_id'],second)
+        self.assertEqual(after['items'][0]['utc_at'],SECOND)
+        self.assertEqual(len(self.calendar.suggest_unassigned(
+            token=self.viewer,now=NOW)['items']),1)
+        self.assertEqual(self.calendar.suggest_unassigned(
+            token=self.other,now=NOW)['items'],[])
+        self.assertEqual(self.db.execute(
+            'SELECT count(*) FROM bam_calendar_proposals').fetchone()[0],1)
+
+    def test_suggestions_exclude_postponed_and_are_not_smart_claims(self):
+        self.requests.set_hold(tenant_id='shop',request_id=self.draft,
+                               status='postponed',now=NOW)
+        first=self.calendar.suggest_unassigned(token=self.owner,now=NOW)
+        self.assertEqual(first['unassigned_held_count'],0)
+        self.assertEqual(first['items'],[])
+        self.prefs.set(token=self.owner,tenant_id='shop',
+            mode='smart',timezone='America/New_York',
+            manual_times=[],now=NOW+1)
+        smart=self.calendar.suggest_unassigned(
+            token=self.owner,now=NOW+2)
+        self.assertEqual(smart['preference_status'],'needs_audience_data')
+        self.assertEqual(smart['items'],[])
+        self.assertEqual(smart['available_slot_count'],0)
+        with self.assertRaises(PermissionError):
+            self.calendar.suggest_unassigned(token='fake',now=NOW)
+
+
 if __name__=='__main__':
     unittest.main()
