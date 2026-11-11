@@ -2,11 +2,13 @@
 
 Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory`.
 
-See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.\n\n## Current verified design boundaries
+See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
+
+## Current verified design boundaries
 
 - BAM is a multi-business application, not limited to Belenos Creations or Busy B Cleaning.
 - Email/password and Google sign-in are approved, but production login and Google token validation infrastructure are not deployed.
-- The sample-data HTML prototype is a design demonstration. It is **not** the authenticated app.
+- The sample-data HTML prototype is a design demonstration. The separate `ui/bam_signed_in_shell.html` is a read-only authenticated-shell integration artifact; neither is deployed.
 - `AccountReadAPI` derives tenant and role from a server session. Never trust browser-supplied tenant IDs or roles.
 - `dashboard_view.py` returns only safe, authorized presentation data.
 - `bam_read_wsgi.py` exposes GET-only dashboard, held drafts, AI draft components, OpenAI settings and posting preference routes.
@@ -19,7 +21,11 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 
 ## Disabled-by-default sign-in boundary
 
-`bam_auth_wsgi.py` now has three strict HTTPS-only POST routes: `/api/v1/auth/password`, `/api/v1/auth/google-challenge`, and `/api/v1/auth/google`. Authentication requires `enabled=True` plus a trusted `AuthLoginAPI` with a throttle, a real server-side Google signature/issuer/audience/nonce verifier, and business membership checks. The existing localhost HTTP developer server does not mount these routes. `ui/auth_login_client.js` uses same-origin JSON POST, no cookies or retries, and gives the eventual authenticated shell a validated token and tenant context held in memory. It does not implement Google OAuth browser redirects, production enrollment, or server-side sign-out. A complete authentication service must still provide TLS, rate limits by IP, monitoring, account recovery, secure session revocation, and real-browser testing.
+`bam_auth_wsgi.py` now has five strict HTTPS-only POST routes: `/api/v1/auth/password`, `/api/v1/auth/google-challenge`, `/api/v1/auth/google`, `/api/v1/auth/logout`, and `/api/v1/auth/logout-everywhere`. Authentication requires `enabled=True` plus a trusted `AuthLoginAPI` with a throttle, a real server-side Google signature/issuer/audience/nonce verifier, and business membership checks. The existing localhost HTTP developer server does not mount these routes. `ui/auth_login_client.js` uses same-origin JSON POST, no cookies or retries, and gives the eventual authenticated shell a validated token and tenant context held in memory. Explicit logout calls are implemented via an injected trusted read/logout service, with the authenticated client clearing its private DOM before network completion. It does not implement Google OAuth browser redirects or production enrollment. A complete authentication service must still provide TLS, rate limits by IP, monitoring, account recovery, secure session revocation, and real-browser testing.
+
+## Read-only authenticated shell checkpoint
+
+The [signed-in shell](ui/bam_signed_in_shell.html) composes an HTTPS-only password form with the authenticated workspace controller. A four-card Overview leads to deeper, read-only AI Drafts and Settings; no analytics are fabricated, no media are uploaded and no posts publish. The sample-data [prototype](ui/bam_dashboard_prototype.html) remains separate. The DOM integration test validates password field clearing, sign-in views, navigation, appearance, refresh and logout. **Verified in [GitHub Actions run 42952514922](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42952514922): 693 Python and 25 JavaScript tests passed**. The shell is not a deployed website or Android app; a trusted HTTPS hosting/service composition is still required.
 
 ## Remaining steps before real authenticated GUI
 
