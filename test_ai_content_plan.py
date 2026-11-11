@@ -99,6 +99,21 @@ class AIContentPlanTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.plan.batch_requests(topics=[{'bad':'topic'}],**args)
 
+    def test_duplicate_model_json_keys_fail_closed(self):
+        for raw in (
+            '{"post_text":"Safe","post_text":"Override","image_prompt":null}',
+            '{"post_text":"Safe","image_prompt":null,"image_prompt":"Photo"}',
+            '{"post_text":"Safe","image_prompt":null,"nested":{"a":1,"a":2}}'
+        ):
+            with self.subTest(raw=raw),self.assertRaises(ValueError):
+                self.plan.parse_response(raw,include_image_prompt=True)
+        for raw in (
+            '{"revised_text":"Safe","revised_text":"Override"}',
+            '{"revised_text":"Safe","approved":true,"approved":false}'
+        ):
+            with self.subTest(raw=raw),self.assertRaises(ValueError):
+                self.plan.parse_revision_response(raw,target='post_text')
+
     def test_malformed_generation_is_not_approved(self):
         with self.assertRaises(ValueError):
             self.plan.parse_response({'post_text':'Hello',

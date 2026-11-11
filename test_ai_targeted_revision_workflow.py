@@ -177,6 +177,18 @@ class TargetedRevisionTests(unittest.TestCase):
         self.assertEqual(self.drafts.get(token=self.token,now=103,
             draft_id=self.draft['draft_id'])['revision'],1)
 
+    def test_ambiguous_provider_json_fails_and_does_not_update(self):
+        self.workflow.executor=lambda **kwargs: (
+            '{"revised_text":"One","revised_text":"Two"}')
+        with self.assertRaises(ValueError):
+            self.revise()
+        unchanged=self.drafts.get(token=self.token,now=103,
+                                  draft_id=self.draft['draft_id'])
+        self.assertEqual(unchanged['post_text'],'First post')
+        self.assertEqual(unchanged['revision'],1)
+        self.assertEqual(self.dedup.status(
+            token=self.token,now=103,request_key='a'*32)['status'],'failed')
+
     def test_quota_denied_no_executor_and_key_held(self):
         zero=SponsorshipPlan('owner',monthly_requests=0,
                              max_output_tokens=100)

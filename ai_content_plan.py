@@ -5,6 +5,16 @@ prompt. User-provided ChatGPT images are uploaded separately through a future
 verified-media workflow. No image generation, OpenAI call, or publishing here.
 """
 import json
+
+def _unique_response_fields(pairs):
+    """Reject duplicate keys at any nesting depth in provider JSON."""
+    object_value={}
+    for key,value in pairs:
+        if key in object_value:
+            raise ValueError('Duplicate model response field')
+        object_value[key]=value
+    return object_value
+
 from ai_draft_request import AIDraftRequestBuilder
 
 class AIContentPlan:
@@ -57,7 +67,7 @@ class AIContentPlan:
             if len(raw)>15000:
                 raise ValueError('Response too large')
             try:
-                value=json.loads(raw)
+                value=json.loads(raw,object_pairs_hook=_unique_response_fields)
             except json.JSONDecodeError as exc:
                 raise ValueError('Invalid structured response') from exc
         else:
@@ -121,7 +131,7 @@ class AIContentPlan:
             if len(raw)>5000:
                 raise ValueError('Revision response too large')
             try:
-                value=json.loads(raw)
+                value=json.loads(raw,object_pairs_hook=_unique_response_fields)
             except json.JSONDecodeError as exc:
                 raise ValueError('Invalid revision response') from exc
         else:
