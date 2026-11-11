@@ -3,7 +3,7 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified main code:** `d671af418be906b8350a717390233c9d9af1c47c`. **Most recent verified development source:** `d6a79329d2ed2ed5f7d37114aad557be60d464ab` ([Actions 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364)). This newer source has not yet been merged into main.
+**Most recent verified main code:** `d671af418be906b8350a717390233c9d9af1c47c`. **Most recent verified development source:** `17c5b470ba4891714953e993c499e1892a712d66` ([Actions 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364)). This newer source has not yet been merged into main.
 **Verification:** Full GitHub Actions [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) completed successfully on the exact merged commit. Integration candidate `748c3a1a` also passed [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217).
 **Merge:** [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) reconciled `main` with development; a two-parent integration history preserved both sets of changes. Development was fast-forwarded to main once the merged commit passed.
 **Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`. These are not off-site backups or enforced protection.
@@ -86,6 +86,15 @@ Backend: `team_membership_admin.py`, `bam_team_membership_wsgi.py`, migration-sa
 Owners can now inspect a **read-only, latest-30 access-change history** in Settings → Team. Events are persisted with the trusted actor/member identifiers, before-and-after roles, action, revision and server time. The backend derives the current business only from the owner session and applies tenant-scoped SQL filters *before* reading recent events. The HTTPS adapter and JavaScript contract verify exact response fields, descending event IDs, owner-only permissions and `publishing_enabled:false`. No invitation token, password, private media or email is included in activity history; the UI may label a member with their already-authorized roster email.
 
 **Verified source:** `d6a79329d2ed2ed5f7d37114aad557be60d464ab`, [Actions 43107012958](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43107012958) — 924 Python tests, browser regression suite and Python compilation **passed**. Offline Alpha only: no external account or publishing side effects. Release synchronization to `main` will use a reviewed CI-gated PR.
+
+
+## Durable two-client collaboration simulation — 2026-11-11
+
+The Alpha regression suite now uses **two independently initialized BAM offline gateways and separate SQLite connections to the same file-backed database** to simulate two logged-in people working in one business, alongside a second isolated business. This validates end-to-end authentication, shared held-draft visibility, editor revision conflicts and correct retries. Owner role changes invalidate affected business sessions across both instances but preserve valid access to another business. After a simulated app restart, member roles, access revocation and draft contents remain intact.
+
+This is a **local durability and isolation test**, not hosted multi-device collaboration, a tested production relational database migration or an actual deployed backend. No network communication, social publication or paid calls are performed.
+
+**Verified source:** `17c5b470ba4891714953e993c499e1892a712d66` at [GitHub Actions 43107825592](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43107825592): Python compilation, browser UI suite and **926 Python tests passed**. This documentation checkpoint remains pending its own full CI.
 
 
 ## Candidate next work (no authorization required)

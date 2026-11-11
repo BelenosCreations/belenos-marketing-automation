@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 — Separate-client persistence and collaboration verification
+
+- Added file-backed SQLite end-to-end tests with two independently initialized BAM gateways, separate owner/editor sessions and distinct business memberships.
+- Verified shared draft persistence, stale editor HTTP 409 conflict, successful refreshed edits, business isolation, role-change session revocation and state after simulated app restart.
+- [GitHub Actions 43107825592](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43107825592) passed `17c5b470ba4891714953e993c499e1892a712d66`: **926 Python tests**, JS UI regressions and Python compilation.
+- Remains offline Alpha. No hosted user collaboration, production database, publishing or paid service activation.
+
 ## 2026-11-11 — Private owner-only access-change history
 
 - Added a tenant-scoped read-only recent member-change audit, owner-only `GET /api/v1/team/activity`, strict response validation and a deeper Settings history view.
