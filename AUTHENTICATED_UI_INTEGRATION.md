@@ -19,6 +19,14 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Explicit no-API-request product draft
+
+The authenticated AI Drafts panel offers a **manual** zero-API-cost product spotlight creation action only when the active business has owner-confirmed `business_name` and `product` facts. `ui/local_product_draft_client.js` sends just the social platform and optional image prompt choice to `POST /api/v1/ai/local-product-draft`. The backend resolves current business and facts, uses a zero-API-request local template, then stages an unpublished user/business-isolated AI draft. The user can use the optional image prompt separately in their own ChatGPT account; BAM does not generate, upload, inspect or approve that image.
+
+The route is mounted in `bam_offline_gateway.py` and is disabled by default except direct-call test composition. A browser or user cannot claim verified facts, choose a model/API key, set a publish state or infer real billing from the zero generation-call marker. On tenant switch or logout, pending UI results are discarded.
+
+**Verified in [GitHub Actions run 42960676199](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42960676199): 750 Python tests and 31 UI script tests.**
+
 ## Explicit owner business facts editor
 
 The `bam_offline_gateway.py` direct-call integration fixture now routes `PUT /api/v1/ai-business-facts` to the existing owner-authorized fact confirmation adapter. The signed-in Settings page mounts the prebuilt `ui/ai_facts_editor.js`, with a save callback capturing only the active in-memory BAM business session. The backend independently checks actual owner permission, validates the expected revision and stores confirmed facts scoped to the current business. On a successful save the AI panels reload. A logout/business switch invalidates pending callbacks. Nonowners cannot save even if a control appears in the integration-stage shell.

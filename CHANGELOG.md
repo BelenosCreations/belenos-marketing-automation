@@ -1,3 +1,20 @@
+## Zero-OpenAI-request local product drafts — 2026-11-10
+
+### Added
+- Added an explicitly invoked local product spotlight path using business-owner-confirmed `business_name` and `product` facts. The post text is assembled locally without guessing prices, hours, availability, promotions or other customer-facing claims.
+- Extended `ai_local_templates.py` to optionally assemble a generic conceptual image-generation prompt for the user's **own ChatGPT session**. It must not be presented as an actual photograph or approved product representation. BAM makes **zero OpenAI API requests** for this path.
+- Introduced `POST /api/v1/ai/local-product-draft`, a disabled-by-default, authenticated HTTPS adapter, and business-scoped `AccountReadAPI.create_local_product_draft` that saves the resulting post/prompt as a pending AI draft.
+- Connected an explicit “Create cost-free product draft” action in the authenticated AI Drafts section. The option appears only when the current business has owner-confirmed required facts. Business switch and sign-out invalidate stale UI results.
+- Added browser/transport and end-to-end tests for unsupported client claims, zero OpenAI requests, pending-media holds, cross-business isolation, safe image-prompt content and fact prerequisites.
+
+### Verified tests
+- **Passed:** [GitHub Actions run 42960676199](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42960676199), commit `7aa04a03`: Python compilation, **750 Python tests and 31 JavaScript UI test scripts**.
+
+### Known limitations
+- The template covers a literal product spotlight, not generative AI creativity or automatic factual verification. It is available only after explicit owner fact confirmation.
+- The optional image brief does not create, upload or validate an actual image; ChatGPT user-account usage limits are separate from BAM API costs.
+- No paid AI, social connection, scheduling, approval, publication, real image upload, production HTTPS server or Android app is enabled.
+
 ## Signed-in owner-confirmed AI business facts — 2026-11-10
 
 ### Added

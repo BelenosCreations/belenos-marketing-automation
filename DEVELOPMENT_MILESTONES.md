@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Zero-OpenAI-call owner-confirmed product drafts (2026-11-10)
+
+BAM now stages a product spotlight draft from only the current tenant's owner-confirmed `business_name` and `product`. The disabled-by-default `bam_local_draft_wsgi.py` route checks the active BAM session, rejects client-supplied facts/tenant/model/publish claims, and delegates literal assembly to `LocalDraftTemplates`. The result is staged in the user's private AI draft component store as `draft_pending_verification` or `needs_media`; it is never published. The optional local conceptual image prompt is clearly distinguished from an actual product photograph, carries no invented details, and is intended for user-operated ChatGPT creation and review.
+
+The signed-in AI Drafts view exposes an explicit no-API-request product action only after the current business has required confirmed facts. Logout and business rotation clear the UI before late network responses can return. This milestone does not execute OpenAI requests, incur BAM model-generation expense, upload media or bypass verification.
+
+**Verified [GitHub Actions run 42960676199](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42960676199): 750 Python tests and 31 JS test scripts, plus compilation.**
+
 ## Authenticated owner-confirmed business fact editing (2026-11-10)
 
 The existing owner-only `bam_ai_facts_write_wsgi.py` is now mounted in the disabled-by-default offline BAM gateway for HTTPS direct-call tests. The signed-in nested Settings section mounts `ui/ai_facts_editor.js` with a scoped `ui/ai_write_client.js` callback. Only the user's current business session may confirm an explicit dictionary of facts; a server role check rejects nonowners and revision checks prevent stale overwrites. Successful saves reread the owner-confirmed snapshot and refresh the AI panel. Confirmation is provenance, not a guarantee of truth and not permission to schedule or publish.
