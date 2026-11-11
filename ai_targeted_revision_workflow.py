@@ -107,7 +107,8 @@ class AITargetedRevisionWorkflow:
                     token=token,now=now,draft_id=draft_id,target=target,
                     revised_text=revised_text,
                     expected_revision=expected_revision)
-                result={'revised':True,'draft':updated,
+                result={'revised':True,'tenant_id':current['tenant_id'],
+                        'draft':updated,
                         'fact_revision':snapshot['revision'],
                         'remaining_sponsored_requests':reservation['remaining'],
                         'publishing_enabled':False}
