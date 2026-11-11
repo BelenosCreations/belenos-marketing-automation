@@ -34,6 +34,7 @@ async function main(){
     onSaveFacts:payload=>saved.push(payload),
     fetchImpl,origin:'https://bam.example'});
   workspace.activate({token:'valid',tenantId:'shop'});
+  workspace.setCapabilities({manageFacts:true,createDrafts:true});
   assert.equal((await workspace.refresh()).draftCount,0);
   assert.match(facts.children[0].children[1].textContent,/Owner-confirmed/);
   assert.equal(facts.children[0].children[2].textContent,
@@ -63,6 +64,7 @@ async function main(){
     fetchImpl:(...args)=>failNext?Promise.resolve({ok:false}):fetchImpl(...args),
     origin:'https://bam.example'});
   flaky.activate({token:'valid',tenantId:'shop'});
+  flaky.setCapabilities({manageFacts:true,createDrafts:true});
   assert.equal((await flaky.refresh()).error,undefined);
   assert.equal(editor.children.length,1);
   failNext=true;
