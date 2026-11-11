@@ -5,6 +5,7 @@ from accounts import AccountDirectory
 from sessions import SessionStore
 from ai_account_policy import AIPolicyStore
 from ai_content_drafts import AIContentDraftStore
+from content_attachments import AttachmentRegistry
 
 class AIContentDraftStoreTests(unittest.TestCase):
     def setUp(self):
@@ -73,6 +74,47 @@ class AIContentDraftStoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.stage(response={'post_text':'Text','image_prompt':'Image'},
                        include_image_prompt=False)
+
+    def test_verified_chatgpt_image_moves_draft_to_review_only(self):
+        draft=self.stage()
+        attachments=AttachmentRegistry(self.db)
+        attachment=attachments.register_pending(
+            tenant_id='shop',request_id=draft['draft_id'],item='image',
+            media_type='image/png',sha256='a'*64,storage_key='private/image',
+            now=102)
+        with self.assertRaises(PermissionError):
+            self.store.attach_verified_media(token=self.owner,now=103,
+                draft_id=draft['draft_id'],attachment_id=attachment,
+                attachments=attachments)
+        attachments.validate_trusted(tenant_id='shop',
+            attachment_id=attachment,approved=True)
+        with self.assertRaises(LookupError):
+            self.store.attach_verified_media(token=self.other,now=104,
+                draft_id=draft['draft_id'],attachment_id=attachment,
+                attachments=attachments)
+        updated=self.store.attach_verified_media(token=self.owner,now=104,
+            draft_id=draft['draft_id'],attachment_id=attachment,
+            attachments=attachments)
+        self.assertTrue(updated['media_attached'])
+        self.assertEqual(updated['status'],'draft_pending_verification')
+        self.assertFalse(updated['publishing_enabled'])
+        self.assertNotIn('private/image',str(updated))
+        self.assertNotIn(attachment,str(updated))
+
+    def test_verified_image_must_match_exact_draft(self):
+        draft=self.stage()
+        other=self.stage()
+        attachments=AttachmentRegistry(self.db)
+        attachment=attachments.register_pending(
+            tenant_id='shop',request_id=other['draft_id'],item='image',
+            media_type='image/png',sha256='b'*64,storage_key='private/image2',
+            now=102)
+        attachments.validate_trusted(tenant_id='shop',
+            attachment_id=attachment,approved=True)
+        with self.assertRaises(PermissionError):
+            self.store.attach_verified_media(token=self.owner,now=103,
+                draft_id=draft['draft_id'],attachment_id=attachment,
+                attachments=attachments)
 
     def test_persists_across_service_instances(self):
         draft=self.stage()
