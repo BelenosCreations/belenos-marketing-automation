@@ -22,7 +22,7 @@
     .panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:clamp(1.15rem,3vw,2rem)}
     .stack{display:grid;gap:1rem}.field{display:grid;gap:.35rem}.field label{font-weight:700}.field input,.field select{width:100%;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
     .primary,.secondary{border-radius:12px;padding:.75rem 1.1rem;font-weight:700}.primary{background:var(--gold);color:#09151a;border:1px solid var(--gold)}.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
-    .toolbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}.nav{display:flex;gap:.4rem;border-bottom:1px solid var(--line);margin:0 0 1.4rem;padding-bottom:.8rem;flex-wrap:wrap}
+    .toolbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}.toolbar select{max-width:220px;padding:.5rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}.nav{display:flex;gap:.4rem;border-bottom:1px solid var(--line);margin:0 0 1.4rem;padding-bottom:.8rem;flex-wrap:wrap}
     .nav button[aria-current="page"]{background:var(--surface2);border-color:var(--teal)}.section-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
     .section-header h1{font-size:clamp(1.4rem,3vw,2rem);margin:.2rem 0}.content-stack{display:grid;gap:1rem}.content-stack article{padding:1rem;border:1px solid var(--line);border-radius:12px}
     #notice{min-height:1.5rem;max-width:1120px;margin:0 auto;padding:0 1rem}.footer{padding:1rem;color:var(--subtle);text-align:center;font-size:.82rem}
@@ -37,6 +37,8 @@
       <div><div class="brand-name">BAM</div><div class="brand-sub">Belenos Automatic Marketing</div></div>
     </div>
     <div class="toolbar">
+      <label for="business-switch" class="tiny" id="business-switch-label" hidden>Business</label>
+      <select id="business-switch" aria-label="Current BAM business" hidden></select>
       <span id="active-business" class="muted tiny" hidden></span>
       <button id="logout" class="secondary" type="button" hidden>Sign out</button>
     </div>
@@ -117,6 +119,7 @@
   <script src="ai_workspace.js"></script>
   <script src="authenticated_workspace_controller.js"></script>
   <script src="auth_login_client.js"></script>
+  <script src="business_switch_client.js"></script>
   <script src="authenticated_session_controller.js"></script>
   <script src="bam_signed_in_shell.js"></script>
 </body>
