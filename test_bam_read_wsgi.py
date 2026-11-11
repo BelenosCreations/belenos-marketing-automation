@@ -179,8 +179,9 @@ class BAMReadWSGIIntegrationTests(unittest.TestCase):
             code,other=get(switched['session_token'])
             self.assertEqual(code,'200 OK')
             self.assertEqual(other['tenant_id'],'other')
-            self.assertIsNone(other['cards'][3]['value'])
-            self.assertEqual(other['cards'][3]['availability'],'restricted')
+            # Viewer analytics access permits a verified empty connection count.
+            self.assertEqual(other['cards'][3]['value'],0)
+            self.assertEqual(other['cards'][3]['availability'],'available')
             self.assertNotIn('shop_page',str(other))
             self.assertFalse(other['publishing_enabled'])
         finally:
