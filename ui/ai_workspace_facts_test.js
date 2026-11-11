@@ -42,6 +42,8 @@ async function main(){
   editor.children[0].children[4].listeners.click();
   assert.equal(saved.length,1);
   assert.equal(saved[0].expectedTenantId,'shop');
+  workspace.clear();
+  assert.equal(editor.children.length,0);
   const broken=create({document,draftsContainer:drafts,
     settingsContainer:settings,factsContainer:facts,costContainer:costs,
     fetchImpl:async()=>({ok:false}),origin:'https://bam.example'});
