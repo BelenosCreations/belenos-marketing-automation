@@ -11,12 +11,13 @@ from dashboard_view import build_dashboard_view
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
                  ai_content_drafts=None,ai_policy=None,
-                 ai_business_facts=None):
+                 ai_business_facts=None,ai_cost_ledger=None):
         self.dashboard=dashboard
         self.posting_preferences=posting_preferences
         self.ai_content_drafts=ai_content_drafts
         self.ai_policy=ai_policy
         self.ai_business_facts=ai_business_facts
+        self.ai_cost_ledger=ai_cost_ledger
 
     @staticmethod
     def _token(value):
@@ -56,6 +57,17 @@ class AccountReadAPI:
             target_tenant_id=target_tenant_id,now=self._now(server_now))
         result['overview']['dashboard_cards']=build_dashboard_cards(result['overview'])['cards']
         return result
+
+    def get_ai_cost_summary(self, *, session_token, server_now):
+        """Read only this user's estimated AI costs for the active business."""
+        if self.ai_cost_ledger is None or self.ai_policy is None:
+            raise RuntimeError('AI cost reporting not configured')
+        principal=self.ai_policy._principal(
+            self._token(session_token),self._now(server_now))
+        summary=self.ai_cost_ledger.summary_trusted(
+            tenant_id=principal.tenant_id,subject_id=principal.subject_id)
+        return {'tenant_id':principal.tenant_id,**summary,
+                'publishing_enabled':False}
 
     def get_ai_business_facts(self, *, session_token, server_now):
         """Return only owner-confirmed facts for the active business."""
