@@ -54,6 +54,11 @@ class IdempotentGenerationTests(unittest.TestCase):
         args.update(kwargs)
         return self.workflow.generate_sponsored(**args)
 
+    def test_missing_request_key_denied_before_quota(self):
+        with self.assertRaises(ValueError):
+            self.run_generation(request_key=None)
+        self.assertEqual(self.calls,[])
+
     def test_replay_does_not_repeat_call_or_quota(self):
         first=self.run_generation()
         second=self.run_generation()
