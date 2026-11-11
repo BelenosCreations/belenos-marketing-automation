@@ -409,21 +409,30 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         draft_id=created['request_id']
         meta,held=self.call('/api/v1/content/hold',
             method='POST',token=shop,
-            body={'request_id':draft_id,'status':'postponed'})
+            body={'request_id':draft_id,'status':'postponed','expected_revision':1})
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(held['status'],'postponed')
+        # Another editor using the prior revision cannot undo this hold.
+        meta,stale=self.call('/api/v1/content/hold',
+            method='POST',token=shop,
+            body={'request_id':draft_id,'status':'needs_content',
+                  'expected_revision':1})
+        self.assertEqual(meta['status'],'409 Conflict')
+        self.assertNotIn('tenant_id',stale)
         _,remaining=self.call('/api/v1/dashboard',token=shop)
         self.assertEqual(len(remaining['drafts']),1)
         other=self.login('other')
         meta,_=self.call('/api/v1/content/hold',
             method='POST',token=other,
-            body={'request_id':draft_id,'status':'needs_content'})
+            body={'request_id':draft_id,'status':'needs_content',
+                  'expected_revision':2})
         self.assertIn(meta['status'],('401 Unauthorized','404 Not Found'))
         _,other_data=self.call('/api/v1/drafts',token=other)
         self.assertNotIn('Original product introduction',str(other_data))
         meta,reopened=self.call('/api/v1/content/hold',
             method='POST',token=shop,
-            body={'request_id':draft_id,'status':'needs_content'})
+            body={'request_id':draft_id,'status':'needs_content',
+                  'expected_revision':2})
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(reopened['status'],'needs_content')
 
