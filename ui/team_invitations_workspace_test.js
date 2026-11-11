@@ -25,6 +25,12 @@ const fetchImpl=async(url,opts)=>{
     return {ok:true,json:async()=>roster};
   if(url.endsWith('/team/activity'))
     return {ok:true,json:async()=>history};
+  if(url.endsWith('/team/invitations/activity'))
+    return {ok:true,json:async()=>({tenant_id:'shop',
+      status:'private_invitation_activity',
+      events:[{invitation_id:'a'.repeat(32),
+               action:'delivered',occurred_at:102}],
+      publishing_enabled:false})};
   if(url.endsWith('/team/invitations'))
     return {ok:true,json:async()=>({tenant_id:'shop',
       status:'private_pending_invitations',items:[...pending],
@@ -52,6 +58,8 @@ async function main(){
   app.setOwner(true);
   assert.equal((await app.refresh()).activeMembers,1);
   assert.ok(find(root,'guest@example.com'));
+  assert.ok(flatten(root).some(x=>
+    x.textContent.includes('Invitation handed to trusted delivery')));
   assert.ok(find(root,'Cancel invitation'));
   find(root,'Cancel invitation').listeners.click();
   assert.equal(posts.length,0);

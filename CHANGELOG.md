@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-11 — Tenant-private invitation activity trail (offline Alpha)
+
+- Implemented append-only server metadata for delivered, failed-delivery, cancelled and accepted business invitations. The audit is written transactionally with state changes, is scoped to the current business and never stores/returns a bearer invitation token or recipient email in the audit record.
+- Added owner-only `GET /api/v1/team/invitations/activity`, disabled unless the separately trusted delivery callback is configured. The HTTPS adapter validates exact, bounded, descending activity records and refuses additional sensitive fields.
+- Added strict browser response validation, an optional deeper Team Settings activity view and lifecycle guards against showing old-business activity after logout.
+- Added Python service, HTTP boundary, end-to-end gateway, and JavaScript client/UI regressions. Historical invitation actions before installation are **not backfilled**.
+- **Test status:** [GitHub Actions 43122286878](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43122286878) **passed** on full code/documentation checkpoint `538bb79d874821e406b2521384d3feaad0297c33`: Python compilation, JavaScript syntax and UI tests, plus all offline Python regressions. This follow-up status-only commit must be independently verified.
+- No external email delivery, hosted rollout, paid AI, OAuth or social posting was activated.
+
 ## 2026-11-11 — Owner-private invitation safety and CI syntax gate
 
 - The optional, owner-only **pending invitation list and two-step cancellation** UI is backed by an authenticated tenant-scoped HTTPS adapter. It only becomes available with a separately configured trusted invitation-delivery callback; BAM does **not** send invitations from this UI, expose invite bearer tokens, or activate social posting.

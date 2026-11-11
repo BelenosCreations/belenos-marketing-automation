@@ -52,6 +52,17 @@ class BusinessInvitations:
         db.execute("""CREATE UNIQUE INDEX IF NOT EXISTS
             bam_business_invitation_public_id
             ON bam_business_invitations(invitation_id)""")
+        # New append-only trusted server metadata. Prior historical actions
+        # cannot be reconstructed; do not backfill invented audit entries.
+        db.execute("""CREATE TABLE IF NOT EXISTS bam_business_invitation_events (
+            event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tenant_id TEXT NOT NULL,
+            invitation_id TEXT NOT NULL,
+            action TEXT NOT NULL CHECK(action IN
+                ('delivered','delivery_failed','cancelled','accepted')),
+            actor_id TEXT NOT NULL,
+            occurred_at INTEGER NOT NULL
+        )""")
         db.commit()
 
     @staticmethod
@@ -86,6 +97,27 @@ class BusinessInvitations:
                           'role':r[2],'expires_at':r[3]} for r in rows],
                 'publishing_enabled':False}
 
+    def history_current(self,*,owner_session,now=None,limit=30):
+        """Owner-only append-only event preview without token/email data.
+
+        Events before installation are not fabricated or backfilled. No
+        invitation bearer secret, digest, or recipient address is returned.
+        """
+        timestamp=int(time.time()) if now is None else now
+        principal=self._owner(owner_session,timestamp)
+        if type(limit) is not int or not 1<=limit<=30:
+            raise ValueError('Bounded invitation activity requested')
+        rows=self.db.execute("""SELECT invitation_id,action,occurred_at
+            FROM bam_business_invitation_events
+            WHERE tenant_id=? ORDER BY event_id DESC LIMIT ?""",
+            (principal.tenant_id,limit)).fetchall()
+        return {'tenant_id':principal.tenant_id,
+                'status':'private_invitation_activity',
+                'events':[{'invitation_id':row[0],
+                           'action':row[1],'occurred_at':row[2]}
+                          for row in rows],
+                'publishing_enabled':False}
+
     def cancel_current(self,*,owner_session,invitation_id,now=None):
         """Cancel a one-business unconsumed invitation without token exposure."""
         timestamp=int(time.time()) if now is None else now
@@ -101,6 +133,11 @@ class BusinessInvitations:
                 (timestamp,invitation_id,principal.tenant_id,timestamp))
             if updated.rowcount!=1:
                 raise KeyError('Active invitation not found')
+            self.db.execute("""INSERT INTO bam_business_invitation_events
+                (tenant_id,invitation_id,action,actor_id,occurred_at)
+                VALUES (?,?,'cancelled',?,?)""",
+                (principal.tenant_id,invitation_id,
+                 principal.subject_id,timestamp))
         return {'tenant_id':principal.tenant_id,
                 'invitation_id':invitation_id,
                 'status':'cancelled','publishing_enabled':False}
@@ -147,10 +184,15 @@ class BusinessInvitations:
             self.deliver(email,tenant_id,token)
         except Exception as exc:
             with self.db:
-                self.db.execute("""UPDATE bam_business_invitations
+                changed=self.db.execute("""UPDATE bam_business_invitations
                     SET delivery_state='failed',revoked_at=?
                     WHERE token_hash=? AND delivery_state='pending'""",
                     (timestamp,digest))
+                if changed.rowcount==1:
+                    self.db.execute("""INSERT INTO bam_business_invitation_events
+                        (tenant_id,invitation_id,action,actor_id,occurred_at)
+                        VALUES (?,?,'delivery_failed',?,?)""",
+                        (tenant_id,invitation_id,principal.subject_id,timestamp))
             raise RuntimeError('Trusted invitation delivery unavailable') from exc
         with self.db:
             changed=self.db.execute("""UPDATE bam_business_invitations
@@ -159,6 +201,10 @@ class BusinessInvitations:
                 AND revoked_at IS NULL""",(digest,))
             if changed.rowcount!=1:
                 raise RuntimeError('Invitation could not be finalized')
+            self.db.execute("""INSERT INTO bam_business_invitation_events
+                (tenant_id,invitation_id,action,actor_id,occurred_at)
+                VALUES (?,?,'delivered',?,?)""",
+                (tenant_id,invitation_id,principal.subject_id,timestamp))
         return {'invitation_created':True,'expires_at':timestamp+604800,
                 'invitation_id':invitation_id,'publishing_enabled':False}
 
@@ -198,5 +244,14 @@ class BusinessInvitations:
                 raise PermissionError('Invitation already used')
             self.db.execute("""INSERT INTO members(tenant_id,subject_id,role,active)
                 VALUES (?,?,?,1)""",(row[0],verified_subject_id,row[2]))
+            identifier=self.db.execute("""SELECT invitation_id
+                FROM bam_business_invitations WHERE token_hash=?""",
+                (self._digest(token),)).fetchone()
+            if identifier is None or identifier[0] is None:
+                raise RuntimeError('Invitation identifier missing')
+            self.db.execute("""INSERT INTO bam_business_invitation_events
+                (tenant_id,invitation_id,action,actor_id,occurred_at)
+                VALUES (?,?,'accepted',?,?)""",
+                (row[0],identifier[0],verified_subject_id,timestamp))
         return {'tenant_id':row[0],'role':row[2],
                 'membership_created':True,'publishing_enabled':False}

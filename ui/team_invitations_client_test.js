@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {list,cancel}=require('./team_invitations_client.js');
+const {list,cancel,history}=require('./team_invitations_client.js');
 const ctx={origin:'https://bam.example',token:'x'.repeat(43),
   expectedTenantId:'shop'};
 const record={invitation_id:'a'.repeat(32),
@@ -12,6 +12,11 @@ async function main(){
     return {ok:true,json:async()=>url.endsWith('/cancel')
       ?{tenant_id:'shop',invitation_id:record.invitation_id,
         status:'cancelled',publishing_enabled:false}
+      :url.endsWith('/activity')
+      ?{tenant_id:'shop',status:'private_invitation_activity',
+        events:[{invitation_id:record.invitation_id,
+                 action:'cancelled',occurred_at:101}],
+        publishing_enabled:false}
       :{tenant_id:'shop',status:'private_pending_invitations',
         items:[record],publishing_enabled:false}};
   };
@@ -26,6 +31,25 @@ async function main(){
   assert.equal(calls[1].opts.method,'POST');
   assert.deepEqual(JSON.parse(calls[1].opts.body),
     {invitation_id:record.invitation_id});
+  const audit=await history({...ctx,fetchImpl});
+  assert.equal(audit.events[0].action,'cancelled');
+  assert.equal(audit.events[0].invitationId,record.invitation_id);
+  assert.ok(Object.isFrozen(audit.events));
+  assert.equal(calls[2].opts.method,'GET');
+  assert.equal(calls[2].opts.credentials,'omit');
+  const event={invitation_id:record.invitation_id,
+    action:'delivered',occurred_at:99};
+  for(const unsafe of [
+    {tenant_id:'shop',status:'private_invitation_activity',
+      events:[{...event,email:'guest@example.com'}],publishing_enabled:false},
+    {tenant_id:'shop',status:'private_invitation_activity',
+      events:[event,{...event}],publishing_enabled:false},
+    {tenant_id:'other',status:'private_invitation_activity',
+      events:[event],publishing_enabled:false},
+    {tenant_id:'shop',status:'private_invitation_activity',
+      events:[{...event,action:'published'}],publishing_enabled:false}
+  ])await assert.rejects(()=>history({...ctx,
+    fetchImpl:async()=>({ok:true,json:async()=>unsafe})}),TypeError);
   const count=calls.length;
   await assert.rejects(()=>cancel({...ctx,fetchImpl,
     invitationId:'bad'}),TypeError);

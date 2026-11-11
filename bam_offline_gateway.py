@@ -236,6 +236,7 @@ class BAMOfflineGateway:
         if path in _AUTH_PATHS:
             return self.auth_wsgi(environ, start_response)
         if path in ('/api/v1/team/invitations',
+                    '/api/v1/team/invitations/activity',
                     '/api/v1/team/invitations/cancel'):
             return self.invitation_wsgi(environ,start_response)
         if path in ('/api/v1/team/members','/api/v1/team/membership',

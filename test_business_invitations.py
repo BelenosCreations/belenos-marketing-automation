@@ -33,6 +33,70 @@ class InvitationTests(unittest.TestCase):
         params.update(overrides)
         return self.invites.invite(**params)
 
+    def test_invitation_audit_tracks_accepted_link_without_secrets(self):
+        created=self.invite()
+        link=self.outbox[-1][2]
+        before=self.invites.history_current(
+            owner_session=self.owner_token,now=103)
+        self.assertEqual(before['status'],'private_invitation_activity')
+        self.assertEqual([e['action'] for e in before['events']],
+                         ['delivered'])
+        self.assertEqual(before['events'][0]['invitation_id'],
+                         created['invitation_id'])
+        self.invites.accept_trusted(
+            verified_subject_id=self.guest,token=link,now=104)
+        after=self.invites.history_current(
+            owner_session=self.owner_token,now=105)
+        self.assertEqual([e['action'] for e in after['events']],
+                         ['accepted','delivered'])
+        self.assertNotIn(link,str(after))
+        self.assertNotIn('guest@example.com',str(after))
+        self.assertNotIn('token_hash',str(after))
+        # Globally incrementing SQLite event IDs must not leak another
+        # business's event volume through this tenant-scoped API.
+        self.assertNotIn('event_id',str(after))
+        # Reopen offline storage without generating fictional history.
+        another=BusinessInvitations(db=self.db,sessions=self.sessions,
+            directory=self.directory,auth=self.auth,
+            deliver=lambda *args:None)
+        self.assertEqual(another.history_current(
+            owner_session=self.owner_token,now=105),after)
+
+    def test_invitation_cancel_and_delivery_failure_are_audited(self):
+        created=self.invite()
+        self.invites.cancel_current(
+            owner_session=self.owner_token,
+            invitation_id=created['invitation_id'],now=103)
+        def fail(*args):
+            raise OSError('offline simulated delivery failure')
+        self.invites.deliver=fail
+        with self.assertRaises(RuntimeError):
+            self.invite(now=104)
+        history=self.invites.history_current(
+            owner_session=self.owner_token,now=105)
+        self.assertEqual([e['action'] for e in history['events']],
+                         ['delivery_failed','cancelled','delivered'])
+        self.assertTrue(all(e['occurred_at'] in (102,103,104)
+                            for e in history['events']))
+
+    def test_invitation_audit_owner_scoped_and_limited(self):
+        self.invite()
+        other=self.sessions.issue(
+            Principal('another_owner','other',Role.OWNER),now=100)
+        self.assertEqual(self.invites.history_current(
+            owner_session=other,now=103)['events'],[])
+        viewer=self.sessions.issue(
+            Principal('viewer','shop',Role.VIEWER),now=100)
+        with self.assertRaises(PermissionError):
+            self.invites.history_current(owner_session=viewer,now=103)
+        for limit in (0,31,True,'10'):
+            with self.assertRaises(ValueError):
+                self.invites.history_current(owner_session=self.owner_token,
+                    now=103,limit=limit)
+        owner=self.invites.history_current(
+            owner_session=self.owner_token,now=103,limit=1)
+        self.assertEqual(len(owner['events']),1)
+
     def test_invite_and_accept(self):
         self.invite()
         token=self.outbox[-1][2]
