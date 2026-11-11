@@ -6,10 +6,11 @@
   'use strict';
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./dashboard_http_client.js'),
-      require('./held_draft_write_client.js'));
+      require('./held_draft_write_client.js'),
+      require('./pending_media_client.js'));
   else root.BAMHeldDraftWorkspace=factory(
-    root.BAMReadClient,root.BAMHeldDraftWriteClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient){
+    root.BAMReadClient,root.BAMHeldDraftWriteClient,root.BAMPendingMediaClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient){
   'use strict';
   const channelNames=['facebook','instagram','linkedin','pinterest','tiktok','youtube'];
   const holdNames=['needs_content','ready_for_review','postponed','unavailable'];
@@ -24,10 +25,12 @@
     wrap.append(caption,control);form.append(wrap);
     return control;
   }
-  function create({document,container,fetchImpl,origin,onError}){
+  function create({document,container,fetchImpl,origin,onError,onNotice,hashBytes}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string'||
-       (onError!==undefined&&typeof onError!=='function'))
+       (onError!==undefined&&typeof onError!=='function')||
+       (onNotice!==undefined&&typeof onNotice!=='function')||
+       (hashBytes!==undefined&&typeof hashBytes!=='function'))
       throw new TypeError('Content Studio dependencies required');
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
     let canEdit=false,mediaEnabled=false;
@@ -43,6 +46,7 @@
     }
     function clear(){
       epoch++;requestVersion++;active=null;model=null;busy=false;canEdit=false;
+      mediaEnabled=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
