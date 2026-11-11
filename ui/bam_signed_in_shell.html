@@ -12,15 +12,15 @@
     :root[data-theme="light"]{color-scheme:light;--bg:#f4f7f7;--surface:#fff;--surface2:#e7eff1;--line:#bccdd3;--text:#142d39;--subtle:#465b66;--gold:#8d6400;--teal:#087e72}
     @media(prefers-color-scheme:light){:root[data-theme="auto"]{color-scheme:light;--bg:#f4f7f7;--surface:#fff;--surface2:#e7eff1;--line:#bccdd3;--text:#142d39;--subtle:#465b66;--gold:#8d6400;--teal:#087e72}}
     *{box-sizing:border-box}html{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}body{margin:0;background:var(--bg);color:var(--text);line-height:1.55}
-    [hidden]{display:none!important}button,input,select{font:inherit}button{cursor:pointer}
-    button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+    [hidden]{display:none!important}button,input,select,textarea{font:inherit}button{cursor:pointer}
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
     a{color:var(--teal)}p{margin:.5rem 0 1rem}.muted{color:var(--subtle)}.tiny{font-size:.85rem}
     .app-header{background:var(--surface);border-bottom:1px solid var(--line);padding:1rem clamp(1rem,4vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
     .wordmark{display:flex;align-items:center;gap:.7rem}.mark{display:block;width:46px;height:46px;border-radius:14px;border:1px solid var(--gold);object-fit:cover}
     .brand-name{font-weight:900;font-size:1.4rem;letter-spacing:.04em}.brand-sub{font-size:.75rem;color:var(--subtle)}
     .app-main{width:min(1120px,100%);margin:0 auto;padding:clamp(1rem,3vw,2rem)}.sign-in{max-width:480px;margin:3vh auto}
     .panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:clamp(1.15rem,3vw,2rem)}
-    .stack{display:grid;gap:1rem}.field{display:grid;gap:.35rem}.field label{font-weight:700}.field input,.field select{width:100%;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+    .stack{display:grid;gap:1rem}.field{display:grid;gap:.35rem}.field label{font-weight:700}.field input,.field select,.field textarea{width:100%;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
     .primary,.secondary{border-radius:12px;padding:.75rem 1.1rem;font-weight:700}.primary{background:var(--gold);color:#09151a;border:1px solid var(--gold)}.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
     .toolbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}.toolbar select{max-width:220px;padding:.5rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}.nav{display:flex;gap:.4rem;border-bottom:1px solid var(--line);margin:0 0 1.4rem;padding-bottom:.8rem;flex-wrap:wrap}
     .nav button[aria-current="page"]{background:var(--surface2);border-color:var(--teal)}.section-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
@@ -72,6 +72,7 @@
       <nav class="nav" aria-label="BAM sections">
         <button class="secondary" data-bam-panel="overview" aria-current="page" type="button">Overview</button>
         <button class="secondary" data-bam-panel="drafts" type="button">AI drafts</button>
+        <button class="secondary" data-bam-panel="content" type="button">Content Studio</button>
         <button class="secondary" data-bam-panel="settings" type="button">Settings</button>
       </nav>
       <section id="overview-panel" aria-labelledby="overview-title">
@@ -83,6 +84,9 @@
       </section>
       <section id="drafts-panel" aria-label="AI drafts" hidden>
         <div id="bam-ai-drafts" class="content-stack"></div>
+      </section>
+      <section id="content-panel" aria-label="Content Studio" hidden>
+        <div id="bam-content-studio" class="content-stack"></div>
       </section>
       <section id="settings-panel" aria-label="BAM settings" hidden>
         <h1>Settings</h1>
@@ -117,6 +121,8 @@
   <script src="ai_cost_view.js"></script>
   <script src="ai_facts_editor.js"></script>
   <script src="ai_workspace.js"></script>
+  <script src="held_draft_write_client.js"></script>
+  <script src="held_draft_workspace.js"></script>
   <script src="authenticated_workspace_controller.js"></script>
   <script src="auth_login_client.js"></script>
   <script src="business_switch_client.js"></script>

@@ -38,6 +38,7 @@
     const panels={
       overview:byId('overview-panel'),
       drafts:byId('drafts-panel'),
+      content:byId('content-panel'),
       settings:byId('settings-panel')
     };
     function message(text){notice.textContent=text;}
@@ -96,6 +97,7 @@
       aiSettingsContainer:byId('bam-ai-settings'),
       aiFactsContainer:byId('bam-ai-facts'),
       aiCostContainer:byId('bam-ai-cost'),
+      contentStudioContainer:byId('bam-content-studio'),
       fetchImpl,origin,onError:message,
       copyText:text=>{
         if(!window.navigator||!window.navigator.clipboard)

@@ -18,11 +18,11 @@ function fixture(){
   const ids=['sign-in-view','workspace-view','notice','login-form',
     'sign-in-button','logout','refresh','active-business',
     'business-switch','business-switch-label',
-    'overview-panel','drafts-panel','settings-panel',
+    'overview-panel','drafts-panel','content-panel','settings-panel',
     'email','password','business','appearance',
-    'bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
+    'bam-content-studio','bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
   const elements=Object.fromEntries(ids.map(id=>[id,node()]));
-  const nav=['overview','drafts','settings'].map(panel=>{
+  const nav=['overview','drafts','content','settings'].map(panel=>{
     const button=node('button');button.dataset.bamPanel=panel;return button});
   const document={
     documentElement:{dataset:{}},createElement:node,
@@ -44,6 +44,7 @@ const data={
     drafts:[],analytics:{availability:'not_connected',series:null},
     schedule:{availability:'not_connected',posts:null},
     publishing_enabled:false},
+  drafts:{tenant_id:'shop',publishing_enabled:false,drafts:[]},
   'ai-drafts':{tenant_id:'shop',drafts:[],publishing_enabled:false},
   'ai-settings':{tenant_id:'shop',provider:'openai',mode:'bam_sponsored',
     own_key_configured:false,memory:{},key_exposed:false,
@@ -105,12 +106,13 @@ async function main(){
   assert.equal(e['sign-in-view'].hidden,true);
   assert.equal(e['workspace-view'].hidden,false);
   assert.equal(e['bam-dashboard'].children.length,1);
+  assert.equal(e['bam-content-studio'].children.length,1);
   assert.equal(e['bam-dashboard'].children[0].children[1].children.length,4);
   assert.equal(e['active-business'].textContent,'Business: shop');
   assert.equal(e['business-switch'].children.length,2);
   assert.equal(e['business-switch'].hidden,false);
   assert.equal(requests[0].opts.credentials,'omit');
-  f.nav[2].listeners.click();
+  f.nav[3].listeners.click();
   assert.equal(e['settings-panel'].hidden,false);
   assert.equal(e['overview-panel'].hidden,true);
   e.appearance.listeners.change({target:{value:'light'}});
