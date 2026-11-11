@@ -51,7 +51,7 @@ async function main(){
     await assert.rejects(()=>changeHold({...ctx,requestId:id,status,
       expectedRevision:1}),TypeError);
   await assert.rejects(()=>changeHold({...ctx,requestId:id,
-    status:'postponed',expectedRevision:1}),TypeError);
+    status:'postponed'}),TypeError);
   await assert.rejects(()=>changeHold({...ctx,requestId:id,
     status:'postponed',expectedRevision:true}),TypeError);
   await assert.rejects(()=>changeHold({...ctx,requestId:'not-an-id',
