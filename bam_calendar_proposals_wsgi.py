@@ -61,7 +61,9 @@ class BAMCalendarProposalsWSGI:
         if type(raw) is not bytes or len(raw)!=int(length):
             raise ValueError('Incomplete request')
         body=json.loads(raw.decode('utf-8'),object_pairs_hook=_unique)
-        keys={'request_id','expected_revision','utc_at'} if method=='POST' else {'request_id'}
+        keys=({'request_id','expected_revision','utc_at',
+              'expected_proposal_token'} if method=='POST'
+              else {'request_id','expected_proposal_token'})
         if (type(body) is not dict or set(body)!=keys or
                 type(body['request_id']) is not str or
                 _ID.fullmatch(body['request_id']) is None):
@@ -72,6 +74,11 @@ class BAMCalendarProposalsWSGI:
                 type(body['utc_at']) is not str or
                 _UTC.fullmatch(body['utc_at']) is None):
             raise ValueError('Invalid proposed time')
+        version=body['expected_proposal_token']
+        if ((version is None and method!='POST') or
+            (version is not None and
+                (type(version) is not str or _ID.fullmatch(version) is None))):
+            raise ValueError('Current proposal version required')
         return body
 
     @staticmethod
@@ -96,7 +103,8 @@ class BAMCalendarProposalsWSGI:
                 if (type(item) is not dict or set(item)!={
                     'request_id','draft_revision','current_revision',
                     'utc_at','local_date','local_time','timezone',
-                    'content_changed','slot_current','publishing_enabled'}
+                    'proposal_token','content_changed','slot_current',
+                    'publishing_enabled'}
                     or type(item['request_id']) is not str
                     or _ID.fullmatch(item['request_id']) is None
                     or type(item['draft_revision']) is not int
@@ -113,6 +121,8 @@ class BAMCalendarProposalsWSGI:
                     or type(item['timezone']) is not str
                     or not item['timezone'].strip()
                     or len(item['timezone'])>80
+                    or type(item['proposal_token']) is not str
+                    or _ID.fullmatch(item['proposal_token']) is None
                     or type(item['content_changed']) is not bool
                     or type(item['slot_current']) is not bool
                     or item['publishing_enabled'] is not False
@@ -167,17 +177,19 @@ class BAMCalendarProposalsWSGI:
                 seen_times.add(item['utc_at'])
         elif method=='POST':
             if (set(result)!={'tenant_id','request_id','utc_at',
-                              'status','posts_scheduled',
+                              'proposal_token','status','posts_scheduled',
                               'publishing_enabled'} or
                     result['request_id']!=body['request_id'] or
-                    result['utc_at']!=body['utc_at']):
+                    result['utc_at']!=body['utc_at'] or
+                    type(result['proposal_token']) is not str or
+                    _ID.fullmatch(result['proposal_token']) is None):
                 raise RuntimeError('Invalid saved proposal')
         elif method=='DELETE':
             if (set(result)!={'tenant_id','request_id','removed','status',
                               'posts_scheduled','publishing_enabled'} or
                     result['request_id']!=body['request_id'] or
                     type(result['removed']) is not int or
-                    result['removed'] not in (0,1)):
+                    result['removed']!=1):
                 raise RuntimeError('Invalid deleted proposal')
         return result
 
@@ -228,7 +240,9 @@ class BAMCalendarProposalsWSGI:
             return reply('404 Not Found',{'error':'Draft unavailable'})
         except ValueError as error:
             if str(error) in ('Draft changed; refresh before proposing',
-                             'Proposed time already used by this business'):
+                             'Proposed time already used by this business',
+                             'Proposal changed; refresh before changing date',
+                             'Proposal changed; refresh before removing date'):
                 return reply('409 Conflict',
                              {'error':'Calendar changed; refresh required'})
             return reply('400 Bad Request',{'error':'Invalid calendar request'})

@@ -5,6 +5,7 @@ import unittest
 from bam_calendar_proposals_wsgi import BAMCalendarProposalsWSGI
 
 RID='a'*32
+VERSION='b'*32
 UTC='2026-11-11T15:00:00+00:00'
 
 class FakeService:
@@ -21,6 +22,7 @@ class FakeService:
                     'current_revision':1,'utc_at':UTC,
                     'local_date':'2026-11-11','local_time':'10:00',
                     'timezone':'America/New_York',
+                    'proposal_token':VERSION,
                     'content_changed':False,'slot_current':True,
                     'publishing_enabled':False}],
                 'posts_scheduled':1 if self.unsafe else 0,
@@ -44,7 +46,8 @@ class FakeService:
         if self.denied:
             raise PermissionError('private account')
         return {'tenant_id':'shop','request_id':kwargs['request_id'],
-                'utc_at':kwargs['utc_at'],'status':'proposal_only',
+                'utc_at':kwargs['utc_at'],'proposal_token':VERSION,
+                'status':'proposal_only',
                 'posts_scheduled':1 if self.unsafe else 0,
                 'publishing_enabled':False}
     def discard(self,**kwargs):
@@ -64,8 +67,10 @@ class CalendarProposalTransportTests(unittest.TestCase):
     def call(self,*,app=None,method='GET',body=None,raw=None,**changes):
         if raw is None:
             if body is None:
-                body=({'request_id':RID,'expected_revision':1,'utc_at':UTC}
-                      if method=='POST' else {'request_id':RID})
+                body=({'request_id':RID,'expected_revision':1,
+                       'utc_at':UTC,'expected_proposal_token':None}
+                      if method=='POST' else
+                      {'request_id':RID,'expected_proposal_token':VERSION})
             raw=json.dumps(body).encode()
         env={'wsgi.url_scheme':'https','PATH_INFO':'/api/v1/calendar-proposals',
              'REQUEST_METHOD':method,'CONTENT_TYPE':'application/json',
@@ -88,13 +93,15 @@ class CalendarProposalTransportTests(unittest.TestCase):
         self.assertEqual(created['posts_scheduled'],0)
         self.assertEqual(self.service.calls[-1][1],{
             'token':'t'*43,'now':101,'request_id':RID,
-            'expected_revision':1,'utc_at':UTC})
+            'expected_revision':1,'utc_at':UTC,
+            'expected_proposal_token':None})
         meta,deleted=self.call(method='DELETE')
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(deleted['removed'],1)
         self.assertFalse(deleted['publishing_enabled'])
         self.assertEqual(self.service.calls[-1][1],{
-            'token':'t'*43,'now':101,'request_id':RID})
+            'token':'t'*43,'now':101,'request_id':RID,
+            'expected_proposal_token':VERSION})
 
     def test_suggestion_preview_is_separate_and_read_only(self):
         path='/api/v1/calendar-suggestions'
@@ -135,13 +142,21 @@ class CalendarProposalTransportTests(unittest.TestCase):
                       'schedule_job_id','api_key'):
             self.assertEqual(self.call(method='POST',body={
                 'request_id':RID,'expected_revision':1,
-                'utc_at':UTC,extra:'forged'})[0]['status'],
+                'utc_at':UTC,'expected_proposal_token':None,
+                extra:'forged'})[0]['status'],
                 '400 Bad Request')
         for bad in (
-            {'request_id':'bad','expected_revision':1,'utc_at':UTC},
-            {'request_id':RID,'expected_revision':True,'utc_at':UTC},
-            {'request_id':RID,'expected_revision':0,'utc_at':UTC},
-            {'request_id':RID,'expected_revision':1,'utc_at':UTC.replace('+00:00','Z')},
+            {'request_id':'bad','expected_revision':1,'utc_at':UTC,
+             'expected_proposal_token':None},
+            {'request_id':RID,'expected_revision':True,'utc_at':UTC,
+             'expected_proposal_token':None},
+            {'request_id':RID,'expected_revision':0,'utc_at':UTC,
+             'expected_proposal_token':None},
+            {'request_id':RID,'expected_revision':1,
+             'utc_at':UTC.replace('+00:00','Z'),
+             'expected_proposal_token':None},
+            {'request_id':RID,'expected_revision':1,'utc_at':UTC,
+             'expected_proposal_token':'not-a-version'},
         ):
             self.assertEqual(self.call(method='POST',body=bad)[0]
                              ['status'],'400 Bad Request')

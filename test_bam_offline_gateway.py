@@ -737,7 +737,7 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         selected=previews['slots'][0]['utc_at']
         meta,proposal=self.call('/api/v1/calendar-proposals',method='POST',
             token=owner,body={'request_id':rid,'expected_revision':1,
-                              'utc_at':selected})
+                              'utc_at':selected,'expected_proposal_token':None})
         self.assertEqual(meta['status'],'201 Created')
         self.assertEqual(proposal['status'],'proposal_only')
         self.assertEqual(proposal['posts_scheduled'],0)
@@ -754,20 +754,26 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(separate['items'],[])
         self.assertEqual(self.call('/api/v1/calendar-proposals',method='POST',
             token=another,body={'request_id':rid,'expected_revision':1,
-                                'utc_at':selected})[0]['status'],
+                                'utc_at':selected,'expected_proposal_token':None})[0]['status'],
             '404 Not Found')
         self.assertEqual(self.call('/api/v1/calendar-proposals',method='POST',
             token=owner,body={'request_id':rid,'expected_revision':1,
-                                'utc_at':selected,'publish_now':True})[0]['status'],
+                                'utc_at':selected,'expected_proposal_token':None,
+                                'publish_now':True})[0]['status'],
             '400 Bad Request')
         self.assertEqual(self.call('/api/v1/calendar-proposals',
             token=owner,extra={'QUERY_STRING':'tenant_id=other'})[0]['status'],
             '400 Bad Request')
         meta,removed=self.call('/api/v1/calendar-proposals',method='DELETE',
-            token=owner,body={'request_id':rid})
+            token=owner,body={'request_id':rid,
+              'expected_proposal_token':calendar['items'][0]['proposal_token']})
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(removed['removed'],1)
         self.assertEqual(removed['posts_scheduled'],0)
+        self.assertEqual(self.call('/api/v1/calendar-proposals',
+            method='DELETE',token=owner,body={'request_id':rid,
+              'expected_proposal_token':calendar['items'][0]['proposal_token']})[0]['status'],
+            '409 Conflict')
         _,after=self.call('/api/v1/calendar-proposals',token=owner)
         self.assertEqual(after['items'],[])
         _,drafts=self.call('/api/v1/drafts',token=owner)
