@@ -79,9 +79,14 @@ class AIContentPlan:
         base=self.create_request(token=token,now=now,
             verified_facts=verified_facts,topic=topic,platform=platform,
             include_image_prompt=(target=='image_prompt'))
-        base['instructions']+=(
-            ' Revise only the selected component. Return one JSON object '
-            'with key revised_text. Do not modify or regenerate the other component.'
+        base['instructions']=(
+            self.builder.build(token=token,now=now,
+                verified_facts=verified_facts,topic=topic,
+                platform=platform)['instructions']+
+            ' Revise only the selected component. Return exactly one JSON '
+            'object with a single revised_text string field. Do not modify '
+            'or regenerate the other component. The revised component is '
+            'still an unpublished draft pending factual verification.'
         )
         payload=json.loads(base['input_json'])
         payload.update({'revision_target':target,
