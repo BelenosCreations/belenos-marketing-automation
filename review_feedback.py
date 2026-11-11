@@ -27,6 +27,19 @@ class ReviewFeedback:
             updated_at INTEGER NOT NULL,
             updated_by TEXT NOT NULL,
             PRIMARY KEY(tenant_id,request_id))""")
+        db.execute("""CREATE TABLE IF NOT EXISTS bam_review_feedback_events(
+            event_id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            request_id TEXT NOT NULL,
+            action TEXT NOT NULL CHECK(action IN
+                ('created','updated','removed')),
+            draft_revision INTEGER NOT NULL,
+            occurred_at INTEGER NOT NULL,
+            actor_id TEXT NOT NULL)""")
+        db.execute("""CREATE INDEX IF NOT EXISTS
+            bam_review_feedback_events_business_time
+            ON bam_review_feedback_events
+            (tenant_id,occurred_at DESC,event_id DESC)""")
         db.commit()
 
     def _current(self, *, token, now, editing=False):
@@ -73,6 +86,23 @@ class ReviewFeedback:
                 'items':items,'approval_granted':False,
                 'publishing_enabled':False}
 
+    def history_current_business(self, *, token, now):
+        """Recent event metadata only; no previous/current note text."""
+        actor=self._current(token=token,now=now,editing=True)
+        rows=self.db.execute("""SELECT event_id,request_id,action,
+            draft_revision,occurred_at FROM bam_review_feedback_events
+            WHERE tenant_id=? ORDER BY occurred_at DESC,event_id DESC
+            LIMIT 51""",(actor.tenant_id,)).fetchall()
+        return {'tenant_id':actor.tenant_id,
+                'status':'feedback_history_only',
+                'events':[{'event_id':event_id,'request_id':rid,
+                     'action':action,'draft_revision':revision,
+                     'occurred_at':at}
+                     for event_id,rid,action,revision,at in rows[:50]],
+                'truncated':len(rows)>50,
+                'approval_granted':False,
+                'publishing_enabled':False}
+
     def save(self, *, token, now, request_id, expected_revision,
              expected_feedback_token, note):
         actor=self._current(token=token,now=now,editing=True)
@@ -115,6 +145,12 @@ class ReviewFeedback:
                          expected_feedback_token))
                     if changed.rowcount!=1:
                         raise ValueError('Feedback changed; refresh required')
+                self.db.execute("""INSERT INTO bam_review_feedback_events
+                    (event_id,tenant_id,request_id,action,draft_revision,
+                     occurred_at,actor_id) VALUES (?,?,?,?,?,?,?)""",
+                    (uuid.uuid4().hex,actor.tenant_id,request_id,
+                     'created' if expected_feedback_token is None else 'updated',
+                     expected_revision,now,actor.subject_id))
         except sqlite3.IntegrityError as error:
             raise ValueError('Feedback changed; refresh required') from error
         return {'tenant_id':actor.tenant_id,'request_id':request_id,
@@ -128,11 +164,23 @@ class ReviewFeedback:
             not self._valid_id(expected_feedback_token)):
             raise ValueError('Current feedback version required')
         with self.db:
+            existing=self.db.execute("""SELECT draft_revision
+                FROM bam_review_feedback WHERE tenant_id=? AND request_id=?
+                AND feedback_token=?""",
+                (actor.tenant_id,request_id,
+                 expected_feedback_token)).fetchone()
+            if existing is None:
+                raise ValueError('Feedback changed; refresh required')
             changed=self.db.execute("""DELETE FROM bam_review_feedback
                 WHERE tenant_id=? AND request_id=? AND feedback_token=?""",
                 (actor.tenant_id,request_id,expected_feedback_token))
             if changed.rowcount!=1:
                 raise ValueError('Feedback changed; refresh required')
+            self.db.execute("""INSERT INTO bam_review_feedback_events
+                (event_id,tenant_id,request_id,action,draft_revision,
+                 occurred_at,actor_id) VALUES (?,?,?,?,?,?,?)""",
+                (uuid.uuid4().hex,actor.tenant_id,request_id,
+                 'removed',existing[0],now,actor.subject_id))
         return {'tenant_id':actor.tenant_id,'request_id':request_id,
                 'removed':1,'status':'feedback_only',
                 'approval_granted':False,'publishing_enabled':False}
