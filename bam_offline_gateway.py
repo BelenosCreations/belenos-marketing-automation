@@ -20,6 +20,7 @@ from bam_auth_wsgi import BAMAuthWSGI
 from bam_business_switch_wsgi import BAMBusinessSwitchWSGI
 from bam_content_write_wsgi import BAMContentWriteWSGI
 from bam_content_revise_wsgi import BAMContentReviseWSGI
+from bam_content_priority_wsgi import BAMContentPriorityWSGI
 from bam_content_risk_wsgi import BAMContentRiskWSGI
 from bam_posting_preferences_wsgi import BAMPostingPreferencesWSGI
 from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
@@ -155,6 +156,8 @@ class BAMOfflineGateway:
             self.read_api, enabled=enabled, clock=self.clock)
         self.content_revise_wsgi=BAMContentReviseWSGI(
             self.read_api,enabled=enabled,clock=self.clock)
+        self.content_priority_wsgi=BAMContentPriorityWSGI(
+            self.read_api,enabled=enabled,clock=self.clock)
         self.content_risk_wsgi=BAMContentRiskWSGI(
             self.read_api,enabled=enabled,clock=self.clock)
         self.preference_write_wsgi = BAMPostingPreferencesWSGI(
@@ -234,6 +237,8 @@ class BAMOfflineGateway:
             return self.read_wsgi(environ, start_response)
         if path == '/api/v1/businesses/activate':
             return self.switch_wsgi(environ, start_response)
+        if path == '/api/v1/content/priority':
+            return self.content_priority_wsgi(environ,start_response)
         if path == '/api/v1/content/risk-preview':
             return self.content_risk_wsgi(environ,start_response)
         if path == '/api/v1/content/drafts' and environ.get('REQUEST_METHOD')=='PUT':
