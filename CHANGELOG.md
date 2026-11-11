@@ -1,5 +1,15 @@
 # Changelog
 
+## Keyless OpenAI Responses adapter — 2026-11-10
+
+### Added
+- Strict, injected-transport Responses payload adapter with structured post/image-prompt schema, explicit token cap, disabled storage/tools and model allowlist.
+- Tests for malformed provider responses, unexpected tool calls, unpublished-only requests and no API-key exposure.
+
+### Limitations
+- Production HTTPS transport, secret management, real API calls and billing remain unimplemented.
+
+
 ## Generation-time fact revision guard — 2026-11-10
 
 ### Fixed
