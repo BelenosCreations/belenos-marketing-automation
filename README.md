@@ -127,3 +127,7 @@ Two independent local gateway instances now pass a file-backed SQLite integratio
 ### Offline data recovery evidence
 
 The local Alpha test suite now exercises a **consistent SQLite snapshot and restore in temporary directories**. It confirms that business-isolated drafts, session revocation and member audit records survive restoration, while edits made after the snapshot are not mistakenly included. This is test evidence only: **production backups, encryption, off-site storage and restore operations are not configured**. See `test_offline_sqlite_restore_drill.py` and [Alpha/Beta readiness](ALPHA_BETA_READINESS.md).
+
+### Owner-private invitation controls (offline Alpha)
+
+When an administrator separately supplies a trusted invitation delivery callback to the offline gateway, the owner-only team workspace can **view active pending invitations and cancel one through a two-step confirmation**. The invitation token itself never appears in the browser or cancellation response. The offline invitation service rejects duplicate active invitations to the same email for a business and refuses to invite an identity that is already a member (including an inactive member). A cancellation or expiration permits a new invitation, and separate businesses stay isolated. BAM does **not** currently provide outbound invitation email delivery, public registration from an invite link, hosted collaboration, or real posting permissions. Every JavaScript UI source now receives a syntax check in CI before execution tests.

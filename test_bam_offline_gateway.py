@@ -192,6 +192,42 @@ class BAMOfflineGatewayTests(unittest.TestCase):
             if x['member_id']==person)['active'])
         self.assertFalse(updated['publishing_enabled'])
 
+    def test_explicit_trusted_invitation_adapter_lists_and_cancels(self):
+        token=self.login('shop')
+        self.assertEqual(self.call('/api/v1/team/invitations',
+            token=token)[0]['status'],'503 Service Unavailable')
+        outbox=[]
+        configured=BAMOfflineGateway(self.db,enabled=True,clock=lambda:101,
+            trusted_invitation_delivery=lambda email,tenant,secret:
+                outbox.append((email,tenant,secret)))
+        invited=configured.business_invitations.invite(
+            owner_session=token,tenant_id='shop',
+            email='invitee@example.com',role=Role.VIEWER,now=101)
+        self.assertEqual(len(outbox),1)
+        meta={}
+        env={'PATH_INFO':'/api/v1/team/invitations','REQUEST_METHOD':'GET',
+             'wsgi.url_scheme':'https','HTTP_AUTHORIZATION':'Bearer '+token}
+        listed=json.loads(b''.join(configured(
+            env,lambda status,headers:meta.update(status=status,
+                                               headers=dict(headers)))))
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(listed['items'][0]['invitation_id'],
+                         invited['invitation_id'])
+        self.assertNotIn(outbox[0][2],str(listed))
+        payload=json.dumps({'invitation_id':invited['invitation_id']}).encode()
+        env.update({'PATH_INFO':'/api/v1/team/invitations/cancel',
+            'REQUEST_METHOD':'POST','CONTENT_TYPE':'application/json',
+            'CONTENT_LENGTH':str(len(payload)),
+            'wsgi.input':io.BytesIO(payload)})
+        meta={}
+        cancelled=json.loads(b''.join(configured(
+            env,lambda status,headers:meta.update(status=status,
+                                                  headers=dict(headers)))))
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(cancelled['status'],'cancelled')
+        self.assertEqual(configured.business_invitations.pending_current(
+            owner_session=token,now=101)['items'],[])
+
     def test_team_overview_owner_only_aggregate_without_ids(self):
         owner=self.login('shop')
         meta,overview=self.call('/api/v1/team-overview',token=owner)

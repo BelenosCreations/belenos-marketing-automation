@@ -23,6 +23,7 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
                    contentStudioContainer,onOpenContentStudio,onOpenPostingSettings,
                    postingPreferencesContainer,teamOverviewContainer,
                    enableTeamManagement=false,
+                   enableTeamInvitations=false,
                    enableLocalTemplates=false,enableBatchPreviews=false,
                    enableCalendarProposals=false,
                    enableCalendarSuggestions=false,
@@ -73,7 +74,8 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
       container:postingPreferencesContainer,fetchImpl,origin,onError}):null;
     const team=teamOverviewContainer?teamModule.create({document,
       container:teamOverviewContainer,fetchImpl,origin,onError,onNotice,
-      enableMemberManagement:enableTeamManagement}):null;
+      enableMemberManagement:enableTeamManagement,
+      enableInvitationPreview:enableTeamInvitations}):null;
     function clear(){
       epoch++;active=false;activeSession=null;
       dashboard.clear();ai.clear();if(held)held.clear();if(prefs)prefs.clear();
