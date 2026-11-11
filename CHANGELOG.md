@@ -1,5 +1,13 @@
 # Changelog
 
+## Authenticated AI fact provenance read — 2026-11-10
+
+### Added
+- `GET /api/v1/ai-business-facts` authenticated, read-only owner-confirmed fact snapshot.
+- Strict browser contract and HTTPS client support for fact provenance and revision.
+- Cross-business API and WSGI/Node regression tests.
+
+
 ## Owner-confirmed AI fact registry — 2026-11-10
 
 ### Added
