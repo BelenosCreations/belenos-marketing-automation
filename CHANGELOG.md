@@ -1,3 +1,15 @@
+## Verified local HTTPS image lifecycle smoke test — 2026-11-11
+
+### Added
+- Extended the real localhost TLS network smoke test to exercise the complete opted-in private media path: authenticated preflight with SHA-256, binary PNG receipt, status transition from `awaiting_file` to `pending_scan`, unchanged draft hold, explicit pending discard, private-file removal and tenant-scoped status isolation after switching businesses.
+- The test also confirms that neither the receipt nor the status response confers media verification or publishing. It is a loopback-only fixture using disposable accounts and generated files.
+
+### Verification
+- **Passed:** [GitHub Actions run 43021239317](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43021239317) on commit `c5501af8`: **789 Python tests, 37 JavaScript test scripts**, Python compilation, and local TLS socket integration.
+
+### Known limitations
+- This is a network-level test using Python's TLS client, not real browser automation or a production security review. Public hosting, actual image scanning, rights/consent verification, third-party OAuth and social publishing remain disabled.
+
 ## Explicit discard and replacement of unverified images — 2026-11-11
 
 ### Added

@@ -75,7 +75,7 @@ Stop the preview in its terminal when finished. Do not open firewall rules or ex
 
 ## Safety limits
 
-The preview uses a single-process WSGI server and local SQLite with a trusted, self-supplied TLS certificate. The full loopback TLS network flow (page, assets, password login, dashboard, held draft and logout) has passed a separate Python-client smoke test in CI, along with unit and WSGI gateway tests. This does not replace real-browser/Android testing or constitute a production security assessment. Provider OAuth, real Google/email setup, password recovery, audited security events, public hosting, concurrent data migrations, trusted media storage/scanning and final publication permissions are outstanding.
+The preview uses a single-process WSGI server and local SQLite with a trusted, self-supplied TLS certificate. The full loopback TLS network flow (page, assets, password login, dashboard, held draft, private image receipt, pending media status, explicit discard, business switching and logout) has passed a separate Python-client smoke test in CI, along with unit and WSGI gateway tests. This does not replace real-browser/Android testing or constitute a production security assessment. Provider OAuth, real Google/email setup, password recovery, audited security events, public hosting, concurrent data migrations, trusted media storage/scanning and final publication permissions are outstanding.
 
 If you need a preview from a different device or a publicly accessible test website, design and review an independently secured staging deployment instead of weakening the loopback guard.
 

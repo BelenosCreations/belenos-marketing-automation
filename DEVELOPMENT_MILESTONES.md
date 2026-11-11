@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Full local TLS image receipt-to-discard smoke (2026-11-11)
+
+The existing single-process ephemeral HTTPS socket integration test now exercises real request bytes through BAM's loopback gateway: password login, creation of a held draft needing an image, private upload-preflight registration, image-byte receipt, persistent `awaiting_file` / `pending_scan` status reads, unchanged draft hold, explicit pending deletion, and separate-business isolation after a session switch. The disposable file is constructed in the test and remains unverified throughout. No public network, real customer data, scanner, social provider or paid model API is contacted.
+
+**Verified [GitHub Actions run 43021239317](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43021239317): 789 Python tests and 37 JavaScript test scripts passed with Python compilation, commit `c5501af8`.**
+
 ## Discarding and replacing private pending images (2026-11-11)
 
 The optional local-only image receipt workflow now supports explicit discard of the **unverified** image for an individual tenant-scoped request and required item. `BAMPendingMediaStore.discard` checks the authenticated current edit role, restricts file names to registry-issued opaque identifiers, unlinks only private pending files without following symlinks, and removes pending metadata. It does not touch verified/approved files or change draft readiness. The disabled-by-default `bam_pending_media_discard_wsgi.py` enforces strict JSON and HTTPS request boundaries. A two-step confirmation in Content Studio initiates the deletion, refreshes trusted receipt status, and exposes the replacement file picker only after removal is confirmed. Stale business controls are ignored.

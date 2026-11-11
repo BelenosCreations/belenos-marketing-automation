@@ -4,10 +4,10 @@
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`  
 **Branch:** `development/phase-3-5-account-directory`  
-**Verified commit:** `4baf55281869d14ae9aeaa66a149cc2aa96c0d4c`  
-**CI:** [GitHub Actions run 43020735001](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43020735001)
+**Verified commit:** `c5501af88732156ad81eefdcc0bbdad363b83d00`  
+**CI:** [GitHub Actions run 43021239317](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43021239317)
 
-**Result:** 789 Python unit/integration tests passed, 37 JavaScript UI regression scripts passed, and Python compilation passed. Tests include localhost-only ephemeral HTTPS socket integration, tenant/account/session isolation, and pending-only image receipt. This is test execution, not production security assessment or approval to launch.
+**Result:** 789 Python unit/integration tests passed, 37 JavaScript UI regression scripts passed, and Python compilation passed. Tests include localhost-only ephemeral HTTPS socket integration, tenant/account/session isolation, actual private image byte receipt, receipt-status reads, and explicit pending file discard. This is test execution, not production security assessment or approval to launch.
 
 ## Archived original Phase 3.2 package
 
