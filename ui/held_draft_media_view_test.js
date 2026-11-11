@@ -26,11 +26,11 @@ const fetchImpl=async(url,opts)=>{
       suggestion:'Provide approved image',status:'needs_content',
       missing_items:['image'],priority:0}]})};
   if(url.endsWith('/upload-preflight'))
-    hasReceipt=true;
-  return {ok:true,status:202,json:async()=>({
+    return {ok:true,status:202,json:async()=>({
       tenant_id:'shop',request_id:draftId,item:'image',
       attachment_id:attachmentId,status:'pending',
       max_bytes:20*1024*1024,upload_url:null,publishing_enabled:false})};
+  hasReceipt=true;
   return {ok:true,status:202,json:async()=>({
     tenant_id:'shop',attachment_id:attachmentId,status:'pending_scan',
     bytes_received:data.length,media_verified:false,publishing_enabled:false})};
