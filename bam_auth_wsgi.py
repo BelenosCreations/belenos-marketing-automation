@@ -14,6 +14,8 @@ _PATHS = {
     '/api/v1/auth/password': frozenset({'email', 'password', 'tenant_id'}),
     '/api/v1/auth/google-challenge': frozenset(),
     '/api/v1/auth/google': frozenset({'challenge_id', 'id_token', 'tenant_id'}),
+    '/api/v1/auth/logout': frozenset(),
+    '/api/v1/auth/logout-everywhere': frozenset(),
 }
 _SESSION_PATTERN = re.compile(r'[A-Za-z0-9_-]{32,2048}\Z')
 
@@ -41,12 +43,13 @@ class BAMAuthWSGI:
     Never expose this alongside the loopback-only HTTP development server.
     """
 
-    def __init__(self, api, *, enabled=False, clock=None):
+    def __init__(self, api, *, enabled=False, clock=None, logout_api=None):
         if type(enabled) is not bool:
             raise ValueError('Boolean enable flag required')
         if enabled and getattr(api, 'throttle', None) is None:
             raise ValueError('Enabled password login requires a trusted throttle')
         self.api = api
+        self.logout_api = logout_api
         self.enabled = enabled
         self.clock = clock if clock is not None else time.time
 
@@ -116,6 +119,34 @@ class BAMAuthWSGI:
             now = int(self.clock())
             if now < 0:
                 raise RuntimeError('Invalid server time')
+            if path in ('/api/v1/auth/logout',
+                        '/api/v1/auth/logout-everywhere'):
+                if self.logout_api is None:
+                    raise RuntimeError('Logout service not mounted')
+                authorization = environ.get('HTTP_AUTHORIZATION')
+                if (type(authorization) is not str
+                        or not authorization.startswith('Bearer ')
+                        or _SESSION_PATTERN.fullmatch(
+                            authorization[7:]) is None):
+                    raise PermissionError('BAM session required')
+                token = authorization[7:]
+                if path == '/api/v1/auth/logout-everywhere':
+                    result = self.logout_api.logout_everywhere(
+                        session_token=token, server_now=now)
+                else:
+                    result = self.logout_api.logout(
+                        session_token=token, server_now=now)
+                if (type(result) is not dict
+                        or result.get('signed_out') is not True
+                        or result.get('publishing_enabled') is not False):
+                    raise RuntimeError('Invalid logout result')
+                response = {'signed_out': True, 'publishing_enabled': False}
+                if path == '/api/v1/auth/logout-everywhere':
+                    count = result.get('sessions_revoked')
+                    if type(count) is not int or count < 0:
+                        raise RuntimeError('Invalid identity logout count')
+                    response['sessions_revoked'] = count
+                return reply('200 OK', response)
             if path == '/api/v1/auth/password':
                 if (not _validate_text(document['email'], maximum=254)
                         or not _validate_text(
