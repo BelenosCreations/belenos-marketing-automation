@@ -19,6 +19,14 @@ const fetchImpl=async(url,opts)=>{
       request_id:'b'.repeat(32),status:JSON.parse(opts.body).status,
       publishing_enabled:false})};
   }
+  if(url.includes('/risk-preview?')){
+    return {ok:true,json:async()=>({
+      tenant_id:'shop',request_id:'b'.repeat(32),revision,
+      signals:[{category:'price_or_discount',
+        start:0,end:3,text:'$18'}],
+      signal_count:1,truncated:false,review_required:true,
+      extraction_complete:false,status:'held',publishing_enabled:false})};
+  }
   if(opts.method==='PUT'){
     const body=JSON.parse(opts.body);
     assert.equal(body.expected_revision,revision);
@@ -61,6 +69,13 @@ async function main(){
   const changed=await app.changeHold({
     requestId:'b'.repeat(32),status:'postponed'});
   assert.equal(changed.status,'postponed');
+  const scanned=await app.inspectRisk({
+    requestId:'b'.repeat(32),revision:3});
+  assert.equal(scanned.signalCount,1);
+  const view=container.children[0].children[3].children[1];
+  assert.ok(view.children.some(x=>/Potential marketing claim flags/.test(x.textContent)));
+  assert.ok(view.children.some(x=>/not factual verification/.test(x.textContent))===false);
+  assert.ok(view.children.some(x=>/Human factual and media review/.test(x.textContent)));
   assert.equal(calls.filter(x=>x.opts.method==='POST').length,2);
   // Failed server response cannot be displayed as success.
   const blocked=create({document,container:node('main'),origin:'https://bam.example',

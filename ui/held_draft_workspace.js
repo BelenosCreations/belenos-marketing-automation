@@ -7,10 +7,12 @@
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./dashboard_http_client.js'),
       require('./held_draft_write_client.js'),
-      require('./pending_media_client.js'));
+      require('./pending_media_client.js'),
+      require('./content_risk_client.js'));
   else root.BAMHeldDraftWorkspace=factory(
-    root.BAMReadClient,root.BAMHeldDraftWriteClient,root.BAMPendingMediaClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient){
+    root.BAMReadClient,root.BAMHeldDraftWriteClient,root.BAMPendingMediaClient,
+    root.BAMContentRiskClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient){
   'use strict';
   const channelNames=['facebook','instagram','linkedin','pinterest','tiktok','youtube'];
   const holdNames=['needs_content','ready_for_review','postponed','unavailable'];
@@ -34,7 +36,7 @@
       throw new TypeError('Content Studio dependencies required');
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
     let canEdit=false,mediaEnabled=false,mediaStatusReady=false;
-    let mediaStatuses=new Map();
+    let mediaStatuses=new Map(),riskReports=new Map(),riskPending=new Set();
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
       mediaEnabled=allowed&&canEdit;
@@ -52,6 +54,7 @@
     function clear(){
       epoch++;requestVersion++;active=null;model=null;busy=false;canEdit=false;
       mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
+      riskReports=new Map();riskPending=new Set();
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -115,6 +118,33 @@
           if(draft.missing.length)
             article.append(make(document,'p',
               'Still needed: '+draft.missing.join(', ')));
+          if(Number.isSafeInteger(draft.revision)&&draft.revision>=1){
+            const found=riskReports.get(draft.id);
+            if(found&&found.revision===draft.revision){
+              article.append(make(document,'p',
+                found.signalCount
+                  ?'Potential marketing claim flags: '+found.signalCount
+                  :'No heuristic flags found. This is not factual verification.'));
+              for(const signal of found.signals){
+                article.append(make(document,'p',
+                  signal.category.replaceAll('_',' ')+': '+signal.text));
+              }
+              if(found.truncated)
+                article.append(make(document,'p',
+                  'Additional risk flags omitted from this short preview.'));
+              article.append(make(document,'p',
+                'Heuristic screening is incomplete. Human factual and media review is still required.'));
+            }
+            const riskButton=make(document,'button',
+              'Check marketing claim risks');
+            riskButton.type='button';riskButton.className='secondary';
+            riskButton.disabled=riskPending.has(draft.id);
+            riskButton.addEventListener('click',()=>{
+              if(active!==viewingSession||epoch!==viewingEpoch)return;
+              void inspectRisk({requestId:draft.id,revision:draft.revision});
+            });
+            article.append(riskButton);
+          }
           if(canEdit&&Number.isSafeInteger(draft.revision)&&draft.revision>=1){
             for(const [target,label,initial] of [
               ['draft_text','Save revised post copy',draft.text],
@@ -215,6 +245,31 @@
       }
       container.replaceChildren(wrap);
     }
+    async function inspectRisk({requestId,revision}){
+      if(!active||riskPending.has(requestId))return {error:true};
+      const mine=active,version=epoch;
+      riskPending.add(requestId);
+      render();
+      try{
+        const report=await riskClient.preview({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,
+          requestId,expectedRevision:revision});
+        if(version!==epoch||active!==mine)return {stale:true};
+        const current=model&&model.drafts.find(x=>x.id===requestId);
+        if(!current||current.revision!==revision)return {stale:true};
+        riskReports.set(requestId,report);render();
+        return {stale:false,signalCount:report.signalCount};
+      }catch(error){
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(onError)onError(
+          'Marketing claim preview unavailable. No draft has been approved.');
+        return {error:true};
+      }finally{
+        riskPending.delete(requestId);
+        if(version===epoch&&active===mine)render();
+      }
+    }
     async function refresh(){
       if(!active)throw new TypeError('BAM sign-in required');
       const mine=active,version=epoch,request=++requestVersion;
@@ -241,6 +296,11 @@
           }
         }else{
           mediaStatuses=new Map();mediaStatusReady=false;
+        }
+        for(const [id,report] of riskReports){
+          const draft=data.drafts.find(x=>x.id===id);
+          if(!draft||draft.revision!==report.revision)
+            riskReports.delete(id);
         }
         model=data;render();
         return {stale:false,tenantId:mine.tenantId,
@@ -331,7 +391,8 @@
     function createDraft(args){return mutate(writeClient.createDraft,args);}
     function reviseDraft(args){return mutate(writeClient.reviseDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
-    return Object.freeze({activate,refresh,clear,createDraft,changeHold,
+    return Object.freeze({activate,refresh,clear,inspectRisk,
+      createDraft,changeHold,
       reviseDraft,
       stageImage,discardImage,setCanEdit,setMediaEnabled});
   }
