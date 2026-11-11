@@ -4,14 +4,15 @@
  */
 (function(root,factory){
   'use strict';
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./dashboard_data_contract.js'),require('./content_studio_contract.js'),require('./posting_preferences_contract.js'));
-  else root.BAMReadClient=factory(root.BAMDashboardData,root.BAMContentStudioData,root.BAMPostingPreferencesData);
-})(typeof globalThis!=='undefined'?globalThis:this,function(contract,studioContract,postingContract){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./dashboard_data_contract.js'),require('./content_studio_contract.js'),require('./posting_preferences_contract.js'),require('./ai_draft_contract.js'));
+  else root.BAMReadClient=factory(root.BAMDashboardData,root.BAMContentStudioData,root.BAMPostingPreferencesData,root.BAMAIDraftData);
+})(typeof globalThis!=='undefined'?globalThis:this,function(contract,studioContract,postingContract,aiDraftContract){
   'use strict';
   const routes=Object.freeze({
     dashboard:'/api/v1/dashboard',
     drafts:'/api/v1/drafts',
-    preferences:'/api/v1/posting-preferences'
+    preferences:'/api/v1/posting-preferences',
+    aiDrafts:'/api/v1/ai-drafts'
   });
   async function read({kind,token,fetchImpl,origin,expectedTenantId}){
     if(!Object.prototype.hasOwnProperty.call(routes,kind))
@@ -40,6 +41,7 @@
     if(kind==='dashboard')return contract.normalize(body);
     if(kind==='drafts')return studioContract.normalize(body);
     if(kind==='preferences')return postingContract.normalize(body);
+    if(kind==='aiDrafts')return aiDraftContract.normalize(body);
     if(!body||typeof body!=='object'||body.publishing_enabled!==false)
       throw new TypeError('Invalid read-only response');
     return body;
