@@ -84,5 +84,12 @@ class BAMAIWriteWSGITests(unittest.TestCase):
             (status,_),_=self.call(**change)
             self.assertEqual(status,expected)
 
+    def test_duplicate_json_fields_rejected(self):
+        raw=b'{"topic":"Tumblers","topic":"Hidden","platform":"facebook","needs_media":true,"include_image_prompt":true}'
+        (status,_),_=self.call(**{
+            'CONTENT_LENGTH':str(len(raw)),
+            'wsgi.input':io.BytesIO(raw)})
+        self.assertEqual(status,'400 Bad Request')
+
 if __name__=='__main__':
     unittest.main()
