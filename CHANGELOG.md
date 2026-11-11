@@ -1,5 +1,16 @@
 # Changelog
 
+## Authenticated large-card live dashboard foundation — 2026-11-10
+
+### Added
+- Mobile-first four-card dashboard controller and stylesheet for real authenticated read-only data.
+- Safe held-content drilldown, explicit disconnected scheduling state, and business-switch/logout stale-response isolation.
+- JavaScript regression test included in CI; isolated harness run passed.
+
+### Limitations
+- Component is not yet mounted into a production authenticated shell; existing HTML preview remains sample-only.
+
+
 ## Offline AI HTTP replay integration regression — 2026-11-10
 
 ### Added
