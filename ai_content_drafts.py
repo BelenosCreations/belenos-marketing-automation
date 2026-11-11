@@ -107,6 +107,11 @@ class AIContentDraftStore:
                  expected_revision))
             if result.rowcount!=1:
                 raise ValueError('Draft changed; refresh before revising')
+            if target=='image_prompt':
+                # A changed image brief invalidates the previous image match.
+                self.db.execute('''DELETE FROM bam_ai_draft_verified_media
+                    WHERE tenant_id=? AND subject_id=? AND draft_id=?''',
+                    (principal.tenant_id,principal.subject_id,draft_id))
         return self.get(token=token,now=now,draft_id=draft_id)
 
     def attach_verified_media(self, *, token, now, draft_id, attachment_id,
