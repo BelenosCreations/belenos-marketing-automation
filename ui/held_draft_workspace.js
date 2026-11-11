@@ -10,12 +10,13 @@
       require('./pending_media_client.js'),
       require('./content_risk_client.js'),
       require('./held_draft_csv_import.js'),
-      require('./calendar_proposals_client.js'));
+      require('./calendar_proposals_client.js'),
+      require('./review_feedback_client.js'));
   else root.BAMHeldDraftWorkspace=factory(
     root.BAMReadClient,root.BAMHeldDraftWriteClient,root.BAMPendingMediaClient,
     root.BAMContentRiskClient,root.BAMHeldDraftCSVImport,
-    root.BAMCalendarProposalsClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient,csvImport,calendarClient){
+    root.BAMCalendarProposalsClient,root.BAMReviewFeedbackClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient,csvImport,calendarClient,feedbackClient){
   'use strict';
   const channelNames=['facebook','instagram','linkedin','pinterest','tiktok','youtube'];
   const holdNames=['needs_content','ready_for_review','postponed','unavailable'];
@@ -31,13 +32,16 @@
     return control;
   }
   function create({document,container,fetchImpl,origin,onError,onNotice,
-                   hashBytes,enableCalendarProposals=false}){
+                   hashBytes,enableCalendarProposals=false,
+                   enableReviewFeedback=false}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string'||
        (onError!==undefined&&typeof onError!=='function')||
        (onNotice!==undefined&&typeof onNotice!=='function')||
        (hashBytes!==undefined&&typeof hashBytes!=='function'))
       throw new TypeError('Content Studio dependencies required');
+    if(typeof enableReviewFeedback!=='boolean')
+      throw new TypeError('Explicit private feedback preview switch required');
     if(typeof enableCalendarProposals!=='boolean')
       throw new TypeError('Explicit calendar proposal feature switch required');
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
@@ -48,6 +52,7 @@
     // Filter state is purely local to the active business and never changes
     // held content, approval, analytics, or backend query permissions.
     let filterChannel='all',filterStatus='all',filterQuery='';
+    let reviewNotes=null,reviewNotesError=false;
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
       mediaEnabled=allowed&&canEdit;
@@ -68,6 +73,7 @@
       riskReports=new Map();riskPending=new Set();plannedImport=null;
       calendarData=null;calendarSlots=null;calendarError=false;
       filterChannel='all';filterStatus='all';filterQuery='';
+      reviewNotes=null;reviewNotesError=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -191,6 +197,25 @@
           article.append(make(document,'h4',draft.channel));
           article.append(make(document,'p',draft.text));
           article.append(make(document,'p',draft.suggestion));
+          if(enableReviewFeedback){
+            if(reviewNotesError||!reviewNotes){
+              article.append(make(document,'p',
+                'Private editorial comments are unavailable; refresh before review.'));
+            }else{
+              const feedback=reviewNotes.items.find(x=>x.requestId===draft.id);
+              if(feedback){
+                const note=make(document,'section','');
+                note.className='bam-editorial-feedback';
+                note.append(make(document,'h5',
+                  'Private editorial feedback (not approval)'));
+                note.append(make(document,'p',feedback.note));
+                if(feedback.stale||feedback.draftRevision!==draft.revision)
+                  note.append(make(document,'p',
+                    'This comment refers to an earlier draft revision; request a fresh review.'));
+                article.append(note);
+              }
+            }
+          }
           if(draft.missing.length)
             article.append(make(document,'p',
               'Still needed: '+draft.missing.join(', ')));
@@ -616,6 +641,22 @@
             calendarData=null;calendarSlots=null;calendarError=true;
             if(onError)onError(
               'Private draft calendar unavailable. Date changes are disabled.');
+          }
+        }
+        if(enableReviewFeedback){
+          try{
+            reviewNotes=await feedbackClient.list({
+              origin,fetchImpl,token:mine.token,
+              expectedTenantId:mine.tenantId});
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            reviewNotesError=false;
+          }catch(error){
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            reviewNotes=null;reviewNotesError=true;
+            if(onError)onError(
+              'Editorial feedback could not be loaded. Drafts remain unpublished.');
           }
         }
         for(const [id,report] of riskReports){
