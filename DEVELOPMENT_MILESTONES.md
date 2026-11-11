@@ -562,3 +562,7 @@ Both newly created drafts and idempotent/non-entitled generation holds now carry
 ## AI request reconciliation and strict JSON hardening — 2026-11-10
 
 The idempotency ledger now supports a private read-only status lookup for the same authenticated user and business, returning completed/failed/in-progress state without triggering a retry or exposing another user's draft. Both AI write endpoints now reject duplicate JSON keys, including nested owner-confirmed facts, to prevent ambiguous request interpretation. Regression tests cover request status isolation, failed request holds and duplicate-key rejection. No retry, external billing reconciliation or provider calls were enabled.
+
+## Optional manual ChatGPT image handoff — 2026-11-10
+
+`ui/ai_manual_image_handoff.js` and the AI draft view now offer explicit, separate Copy Prompt and Open ChatGPT actions only for media-held drafts with an image brief, when trusted browser callbacks are provided. Neither action runs automatically. The user creates and revises the image in their own ChatGPT account and returns to BAM for later verified upload. No API key is required for this optional manual flow; ChatGPT account usage limits remain separate. The selected JavaScript tests passed in an isolated harness and were added to CI.
