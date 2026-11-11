@@ -1,5 +1,16 @@
 # Changelog
 
+## Explicit-action authenticated AI write client — 2026-11-10
+
+### Added
+- Browser client for idempotent held-draft generation and owner-confirmed fact updates over HTTPS.
+- Input validation, no cookies/automatic retries, restricted origin/token characters and safe unpublished response contracts.
+- Node regression tests for request integrity and exclusion of client-controlled tenant/publishing/model claims.
+
+### Verification
+- Selected JavaScript tests passed in isolated harness; full CI still pending.
+
+
 ## Owner-confirmed AI facts write boundary — 2026-11-10
 
 ### Added
