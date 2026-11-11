@@ -7,6 +7,7 @@ function node(tag){return {tag,textContent:'',children:[],listeners:{},value:'',
 const document={createElement:node},container=node('main');
 const base={tenant_id:'shop',publishing_enabled:false,drafts:[]};
 let draftCount=0,readWait=null,releaseRead=null;
+let failHoldOnce=false;
 let copy='New launch',guidance='Wait for photo',revision=1;
 const calls=[];
 const fetchImpl=async(url,opts)=>{
@@ -15,6 +16,7 @@ const fetchImpl=async(url,opts)=>{
     if(url.endsWith('/drafts')){draftCount++;return {ok:true,json:async()=>({
       tenant_id:'shop',request_id:'b'.repeat(32),status:'needs_content',
       publishing_enabled:false})};}
+    if(failHoldOnce){failHoldOnce=false;revision++;return {ok:false,status:409};}
     return {ok:true,json:async()=>({tenant_id:'shop',
       request_id:'b'.repeat(32),status:JSON.parse(opts.body).status,
       publishing_enabled:false})};
@@ -77,6 +79,16 @@ async function main(){
   assert.ok(view.children.some(x=>/not factual verification/.test(x.textContent))===false);
   assert.ok(view.children.some(x=>/Human factual and media review/.test(x.textContent)));
   assert.equal(calls.filter(x=>x.opts.method==='POST').length,2);
+  // Another editor changed the draft: stale hold is refused and the
+  // browser reads a new revision before allowing another edit.
+  failHoldOnce=true;
+  const conflicted=await app.changeHold({
+    requestId:'b'.repeat(32),status:'unavailable',expectedRevision:3});
+  assert.equal(conflicted.error,true);
+  assert.equal(conflicted.refreshed,true);
+  assert.equal(revision,4);
+  assert.ok(calls.some(x=>x.url.endsWith('/content/hold')&&
+    JSON.parse(x.opts.body).expected_revision===3));
   // Failed server response cannot be displayed as success.
   const blocked=create({document,container:node('main'),origin:'https://bam.example',
     fetchImpl:async(url,opts)=>opts.method==='GET'

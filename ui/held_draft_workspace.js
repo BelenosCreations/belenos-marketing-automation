@@ -769,10 +769,19 @@
           publishingEnabled:false};
       }catch(error){
         if(version!==epoch||active!==mine)return {stale:true};
-        // Retain authenticated read-only data but report failed mutation.
-        if(onError)onError('Content mutation was not confirmed');
+        // Reconcile an edit conflict or rejected response with current
+        // trusted draft data; never leave stale editor controls in place.
+        let refreshed=false;
+        try{
+          const latest=await refresh();
+          refreshed=Boolean(latest&&!latest.stale&&!latest.error);
+        }catch(readError){/* fail closed; no optimistic success */}
+        if(version!==epoch||active!==mine)return {stale:true};
+        if(onError)onError(refreshed
+          ?'Content change was not confirmed. Current drafts were reloaded.'
+          :'Content change was not confirmed. Reload Content Studio before editing.');
         render();
-        return {error:true};
+        return {error:true,refreshed};
       }finally{
         if(version===epoch&&active===mine){
           busy=false;render();
