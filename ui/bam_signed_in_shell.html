@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>BAM — Belenos Automatic Marketing</title>
+  <link rel="stylesheet" href="live_dashboard_cards.css">
+  <style>
+    :root{color-scheme:dark;--bg:#071722;--surface:#122737;--surface2:#1c3545;--line:#375262;--text:#eef5f7;--subtle:#b8c8d0;--gold:#e7c36b;--teal:#5dccbb}
+    :root[data-theme="light"]{color-scheme:light;--bg:#f4f7f7;--surface:#fff;--surface2:#e7eff1;--line:#bccdd3;--text:#142d39;--subtle:#465b66;--gold:#8d6400;--teal:#087e72}
+    @media(prefers-color-scheme:light){:root[data-theme="auto"]{color-scheme:light;--bg:#f4f7f7;--surface:#fff;--surface2:#e7eff1;--line:#bccdd3;--text:#142d39;--subtle:#465b66;--gold:#8d6400;--teal:#087e72}}
+    *{box-sizing:border-box}html{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}body{margin:0;background:var(--bg);color:var(--text);line-height:1.55}
+    [hidden]{display:none!important}button,input,select{font:inherit}button{cursor:pointer}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+    a{color:var(--teal)}p{margin:.5rem 0 1rem}.muted{color:var(--subtle)}.tiny{font-size:.85rem}
+    .app-header{background:var(--surface);border-bottom:1px solid var(--line);padding:1rem clamp(1rem,4vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+    .wordmark{display:flex;align-items:center;gap:.7rem}.mark{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;border:2px solid var(--gold);font-size:1.1rem;color:var(--gold);font-weight:900;letter-spacing:-.08em}
+    .brand-name{font-weight:900;font-size:1.4rem;letter-spacing:.04em}.brand-sub{font-size:.75rem;color:var(--subtle)}
+    .app-main{width:min(1120px,100%);margin:0 auto;padding:clamp(1rem,3vw,2rem)}.sign-in{max-width:480px;margin:3vh auto}
+    .panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:clamp(1.15rem,3vw,2rem)}
+    .stack{display:grid;gap:1rem}.field{display:grid;gap:.35rem}.field label{font-weight:700}.field input,.field select{width:100%;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+    .primary,.secondary{border-radius:12px;padding:.75rem 1.1rem;font-weight:700}.primary{background:var(--gold);color:#09151a;border:1px solid var(--gold)}.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
+    .toolbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}.nav{display:flex;gap:.4rem;border-bottom:1px solid var(--line);margin:0 0 1.4rem;padding-bottom:.8rem;flex-wrap:wrap}
+    .nav button[aria-current="page"]{background:var(--surface2);border-color:var(--teal)}.section-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+    .section-header h1{font-size:clamp(1.4rem,3vw,2rem);margin:.2rem 0}.content-stack{display:grid;gap:1rem}.content-stack article{padding:1rem;border:1px solid var(--line);border-radius:12px}
+    #notice{min-height:1.5rem;max-width:1120px;margin:0 auto;padding:0 1rem}.footer{padding:1rem;color:var(--subtle);text-align:center;font-size:.82rem}
+    .settings-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}h2,h3{line-height:1.2}
+    @media(max-width:600px){.app-header{align-items:flex-start}.toolbar{width:100%;justify-content:space-between}.nav button{flex:1}.app-main{padding:1rem}.panel{border-radius:18px}}
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="wordmark">
+      <span class="mark" aria-hidden="true">B</span>
+      <div><div class="brand-name">BAM</div><div class="brand-sub">Belenos Automatic Marketing</div></div>
+    </div>
+    <div class="toolbar">
+      <span id="active-business" class="muted tiny" hidden></span>
+      <button id="logout" class="secondary" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <main class="app-main">
+    <section id="sign-in-view" class="sign-in panel" aria-labelledby="sign-in-title">
+      <h1 id="sign-in-title">Sign in to BAM</h1>
+      <p class="muted">Use your BAM account, separate from your social media accounts.</p>
+      <form id="login-form" class="stack">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="username" maxlength="254" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" minlength="12" maxlength="1024" required>
+        </div>
+        <div class="field">
+          <label for="business">Business ID</label>
+          <input id="business" type="text" autocomplete="off" maxlength="128" required>
+          <p class="muted tiny">Your BAM business identifier. Membership is checked by the server.</p>
+        </div>
+        <button id="sign-in-button" class="primary" type="submit">Sign in</button>
+      </form>
+      <p class="muted tiny">Google sign-in requires a verified provider configuration and is not available in this shell yet.</p>
+      <p class="muted tiny">This is an integration-stage interface. No public account registration or live publishing is enabled.</p>
+    </section>
+
+    <div id="workspace-view" hidden>
+      <nav class="nav" aria-label="BAM sections">
+        <button class="secondary" data-bam-panel="overview" aria-current="page" type="button">Overview</button>
+        <button class="secondary" data-bam-panel="drafts" type="button">AI drafts</button>
+        <button class="secondary" data-bam-panel="settings" type="button">Settings</button>
+      </nav>
+      <section id="overview-panel" aria-labelledby="overview-title">
+        <div class="section-header"><div>
+          <h1 id="overview-title">Your marketing overview</h1>
+          <p class="muted">Select a large card to open the details.</p>
+        </div><button id="refresh" class="secondary" type="button">Refresh</button></div>
+        <div id="bam-dashboard"></div>
+      </section>
+      <section id="drafts-panel" aria-label="AI drafts" hidden>
+        <div id="bam-ai-drafts" class="content-stack"></div>
+      </section>
+      <section id="settings-panel" aria-label="BAM settings" hidden>
+        <h1>Settings</h1>
+        <div class="panel field">
+          <label for="appearance">Appearance</label>
+          <select id="appearance"><option value="auto">Auto</option><option value="light">Light</option><option value="dark">Dark</option></select>
+          <p class="muted tiny">Appearance is kept only for this open page.</p>
+        </div>
+        <div class="settings-grid" style="margin-top:1rem">
+          <div class="panel" id="bam-ai-settings"></div>
+          <div class="panel" id="bam-ai-cost"></div>
+          <div class="panel" id="bam-ai-facts"></div>
+        </div>
+        <p class="muted tiny">Detailed controls and owner-only fact changes require their authenticated backend endpoints. Publishing stays disabled.</p>
+      </section>
+    </div>
+  </main>
+  <footer class="footer">BAM development interface · No social posting or paid AI calls are activated here.</footer>
+  <script src="dashboard_data_contract.js"></script>
+  <script src="content_studio_contract.js"></script>
+  <script src="posting_preferences_contract.js"></script>
+  <script src="ai_draft_contract.js"></script>
+  <script src="ai_settings_contract.js"></script>
+  <script src="ai_facts_contract.js"></script>
+  <script src="ai_cost_contract.js"></script>
+  <script src="dashboard_http_client.js"></script>
+  <script src="live_dashboard_cards.js"></script>
+  <script src="ai_manual_image_handoff.js"></script>
+  <script src="ai_draft_view.js"></script>
+  <script src="ai_settings_view.js"></script>
+  <script src="ai_facts_view.js"></script>
+  <script src="ai_cost_view.js"></script>
+  <script src="ai_facts_editor.js"></script>
+  <script src="ai_workspace.js"></script>
+  <script src="authenticated_workspace_controller.js"></script>
+  <script src="auth_login_client.js"></script>
+  <script src="authenticated_session_controller.js"></script>
+  <script src="bam_signed_in_shell.js"></script>
+</body>
+</html>
