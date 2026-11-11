@@ -13,10 +13,13 @@ class AIPolicyTests(unittest.TestCase):
         self.directory.bootstrap_owner('other','other')
         self.directory.set_member(Principal('owner','shop',Role.OWNER),
                                   'friend',Role.CONTENT_CREATOR)
+        self.directory.set_member(Principal('owner','shop',Role.OWNER),
+                                  'viewer',Role.VIEWER)
         self.sessions=SessionStore(self.db)
         self.owner=self.sessions.issue(Principal('owner','shop',Role.OWNER),now=100)
         self.friend=self.sessions.issue(Principal('friend','shop',Role.CONTENT_CREATOR),now=100)
         self.other=self.sessions.issue(Principal('other','other',Role.OWNER),now=100)
+        self.viewer=self.sessions.issue(Principal('viewer','shop',Role.VIEWER),now=100)
         self.store=AIPolicyStore(db=self.db,sessions=self.sessions,
                                 directory=self.directory)
 
@@ -47,6 +50,20 @@ class AIPolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.set_mode(token=self.owner,now=103,
                                 mode='own_openai_key')
+
+    def test_viewer_cannot_mutate_ai_preferences_or_key(self):
+        self.assertEqual(self.store.get_memory(token=self.viewer,now=101)['memory'],{})
+        self.assertEqual(self.store.get_mode(token=self.viewer,now=101)['mode'],
+                         'bam_sponsored')
+        with self.assertRaises(PermissionError):
+            self.store.replace_memory(token=self.viewer,now=101,
+                                      memory={'tone':'fake'})
+        with self.assertRaises(PermissionError):
+            self.store.set_mode(token=self.viewer,now=101,
+                mode='own_openai_key',credential_ref='vault:abcdefghijklmnop')
+        with self.assertRaises(PermissionError):
+            self.store.forget_personal_key_reference(
+                token=self.viewer,now=101)
 
     def test_raw_key_rejected(self):
         with self.assertRaises(ValueError):
