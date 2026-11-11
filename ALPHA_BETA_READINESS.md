@@ -18,7 +18,7 @@
 
 ## B. Requirements for a useful private beta (not yet complete)
 
-The private beta should support the full human-supervised workflow for at least two isolated user/business accounts across different devices: sign in, choose the correct business, compose/plan content, review facts and media, edit with conflict detection, preserve the draft, and see accurate publishability state. It must **not** imply that merely having a calendar proposal or complete media automatically approves or posts anything.
+The private beta should support the full human-supervised workflow for at least two isolated user/business accounts **and multiple team members collaborating within one business** across different devices: sign in, choose the correct business, compose/plan content, review facts and media, edit with conflict detection, preserve the draft, enforce role-specific permissions, and see accurate publishability state. It must **not** imply that merely having a calendar proposal or complete media automatically approves or posts anything.
 
 Before opening a hosted private beta, independently verify:
 
@@ -26,7 +26,7 @@ Before opening a hosted private beta, independently verify:
 2. **Business isolation:** two live accounts cannot enumerate or mutate each other's drafts, metadata, contacts, AI memories, media or connections; role changes take effect without old-token privilege leakage.
 3. **Real media safety:** private object storage; trusted malware/media scanning; explicit consent and rights checks; no URL or asset may be treated as verified based solely on client claims.
 4. **AI operating policy:** explicit provider/key choice, cost and usage caps approved by the owner, no fallback to an unauthorized paid API, grounded fact checks and user-editable content.
-5. **Social providers and publication:** scoped OAuth connections and revocation, provider permission verification, owner approval receipt and an *explicitly separately authorized* publish/schedule switch; idempotency/retry and audit controls, including an emergency disable.
+5. **Direct social providers and publication:** official Meta OAuth/Page integration first (without Metricool dependency), current provider permission verification and revocation, owner approval receipt and an *explicitly separately authorized* publish/schedule switch; idempotency/retry and audit controls, including an emergency disable. Smart analytics must use available, provenance-labeled first-party data and never pretend offline sample metrics are live.
 6. **Usability and reliability:** real Android-size testing, keyboard and screen-reader checks, offline/error copy, stale-editor recovery, session expiry, backup restore and deployment rollback exercise.
 
 **Additional unverified session hardening:** invitations, scheduling-settings and TruthGuard facts now require matching current-role sessions, with role-promotion regression tests at code commit `4fc1a648`; GitHub Actions remained queued when recorded.
@@ -39,6 +39,7 @@ Before opening a hosted private beta, independently verify:
 - A stored or manually supplied API key is **not** permission to use it for paid traffic.
 - A social connection's existence is **not** permission to post.
 - Cross-business requests, stale auth/role sessions, and outdated draft revisions must fail closed.
+- Each business must remain usable without Metricool; core direct API publishing may only use capabilities approved by the destination platform.
 - Beta and public release dates remain **undecided**. No readiness percentages or invented live analytics should be reported.
 
 ## D. Current verification continuity
