@@ -17,6 +17,12 @@ const article=container.children[0].children[2];
 assert.equal(article.children[1].textContent,'<script>alert(1)</script>');
 assert.equal(article.children[3].textContent,'Neutral background');
 assert.match(article.children[4].textContent,/on hold/);
+const attached=JSON.parse(JSON.stringify(payload));
+attached.drafts[0].media_attached=true;
+attached.drafts[0].status='draft_pending_verification';
+render({document,container,payload:attached,expectedTenantId:'shop'});
+assert.match(container.children[0].children[2].children[4].textContent,
+             /awaiting factual verification/);
 const previous=container.children[0];
 assert.throws(()=>render({document,container,payload,
   expectedTenantId:'other'}),TypeError);
