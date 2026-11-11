@@ -82,3 +82,7 @@ The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_fa
 ### Authenticated large-card dashboard
 
 `ui/live_dashboard_cards.js` reads `GET /api/v1/dashboard` using the existing strict data contract and renders large overview cards plus read-only drilldowns. Add `ui/live_dashboard_cards.css` to the authenticated shell. Call `activate({token,tenantId})` after sign-in/business switch and `clear()` before logout or token disposal. This controller deliberately does not invent analytics or allow publishing. It is distinct from the sample-data HTML prototype.
+
+### Combined signed-in workspace
+
+`ui/authenticated_workspace_controller.js` coordinates the live dashboard and AI workspace with a single `activate({token,tenantId})`, `refresh()`, and `clear()` lifecycle. Call `clear()` before logout or business change, then `activate` with the newly issued business-specific session. A failed refresh clears all private panels; no token is stored persistently. It is a browser controller awaiting production sign-in integration.
