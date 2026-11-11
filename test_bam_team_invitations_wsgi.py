@@ -8,6 +8,7 @@ class Stub:
         self.calls=[]
         self.denied=False
         self.extra=False
+        self.history_extra=False
     def pending_current(self,**kwargs):
         self.calls.append(('list',kwargs))
         if self.denied: raise PermissionError('Not owner')
@@ -17,6 +18,15 @@ class Stub:
             'publishing_enabled':False}
         if self.extra: result['token_hash']='secret'
         return result
+    def history_current(self,**kwargs):
+        self.calls.append(('history',kwargs))
+        if self.denied: raise PermissionError('Not owner')
+        item={'event_id':2,'invitation_id':'a'*32,
+              'action':'cancelled','occurred_at':99}
+        if self.history_extra:item['token_hash']='secret'
+        return {'tenant_id':'shop','status':'private_invitation_activity',
+                'events':[item],'publishing_enabled':False}
+
     def cancel_current(self,**kwargs):
         self.calls.append(('cancel',kwargs))
         if self.denied: raise PermissionError('Not owner')
@@ -53,6 +63,31 @@ class InviteWSGITests(unittest.TestCase):
             method='POST',body={'invitation_id':'a'*32})
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(done['status'],'cancelled')
+
+    def test_owner_only_private_audit_metadata_and_strict_shape(self):
+        meta,body=self.call(path='/api/v1/team/invitations/activity')
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(meta['headers']['Cache-Control'],'no-store, private')
+        self.assertEqual(body['events'][0]['action'],'cancelled')
+        self.assertEqual(body['events'][0]['invitation_id'],'a'*32)
+        self.assertNotIn('token',str(body))
+        self.assertNotIn('email',str(body))
+        self.assertEqual(self.svc.calls[-1],
+                         ('history',{'owner_session':'a'*43,'now':101}))
+        self.svc.history_extra=True
+        self.assertEqual(self.call(path='/api/v1/team/invitations/activity')
+                         [0]['status'],'503 Service Unavailable')
+        self.svc.history_extra=False
+        self.svc.denied=True
+        self.assertEqual(self.call(path='/api/v1/team/invitations/activity')
+                         [0]['status'],'401 Unauthorized')
+        self.svc.denied=False
+        self.assertEqual(self.call(path='/api/v1/team/invitations/activity',
+                                  method='POST',body={})[0]['status'],
+                         '405 Method Not Allowed')
+        self.assertEqual(self.call(path='/api/v1/team/invitations/activity',
+                                  QUERY_STRING='tenant_id=other')[0]['status'],
+                         '400 Bad Request')
 
     def test_no_new_invite_or_owner_grant(self):
         for bad in (

@@ -87,6 +87,34 @@ class BAMTeamInvitationsWSGI:
         return obj
 
     @staticmethod
+    def safe_history(obj):
+        """Strict metadata-only invitation activity, never addresses/tokens."""
+        if (type(obj) is not dict or set(obj)!={
+                'tenant_id','status','events','publishing_enabled'}
+            or type(obj['tenant_id']) is not str
+            or not obj['tenant_id'].strip() or len(obj['tenant_id'])>128
+            or obj['status']!='private_invitation_activity'
+            or type(obj['events']) is not list or len(obj['events'])>30
+            or obj['publishing_enabled'] is not False):
+            raise RuntimeError('Unsafe invitation activity')
+        previous=None
+        for event in obj['events']:
+            if (type(event) is not dict or set(event)!={
+                    'event_id','invitation_id','action','occurred_at'}
+                or type(event['event_id']) is not int
+                or event['event_id']<1
+                or (previous is not None and event['event_id']>=previous)
+                or type(event['invitation_id']) is not str
+                or IDENT.fullmatch(event['invitation_id']) is None
+                or event['action'] not in
+                   ('delivered','delivery_failed','cancelled','accepted')
+                or type(event['occurred_at']) is not int
+                or event['occurred_at']<0):
+                raise RuntimeError('Unsafe invitation history item')
+            previous=event['event_id']
+        return obj
+
+    @staticmethod
     def safe_cancel(obj,request):
         if (type(obj) is not dict or set(obj)!={
                 'tenant_id','invitation_id','status','publishing_enabled'}
@@ -104,10 +132,12 @@ class BAMTeamInvitationsWSGI:
             return reply('403 Forbidden',{'error':'HTTPS required'})
         path=environ.get('PATH_INFO')
         if path not in ('/api/v1/team/invitations',
+                        '/api/v1/team/invitations/activity',
                         '/api/v1/team/invitations/cancel'):
             return reply('404 Not Found',{'error':'Not found'})
         method=environ.get('REQUEST_METHOD')
-        if ((path=='/api/v1/team/invitations' and method!='GET') or
+        if ((path in ('/api/v1/team/invitations',
+                      '/api/v1/team/invitations/activity') and method!='GET') or
             (path=='/api/v1/team/invitations/cancel' and method!='POST')):
             return reply('405 Method Not Allowed',{'error':'Method not allowed'})
         if not self.enabled or self.service is None:
@@ -121,6 +151,10 @@ class BAMTeamInvitationsWSGI:
                 raise ValueError('No client tenant fields')
             now=int(self.clock())
             if now<0: raise RuntimeError('Invalid clock')
+            if path=='/api/v1/team/invitations/activity':
+                return reply('200 OK',self.safe_history(
+                    self.service.history_current(
+                        owner_session=header[7:],now=now)))
             if method=='GET':
                 return reply('200 OK',self.safe_list(
                     self.service.pending_current(
