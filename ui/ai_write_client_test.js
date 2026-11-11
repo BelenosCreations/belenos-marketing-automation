@@ -42,6 +42,17 @@ async function main(){
   await assert.rejects(()=>generate({...base,expectedTenantId:'other',
     requestKey:key,topic:'Tumblers',platform:'facebook',needsMedia:true,
     includeImagePrompt:true}),TypeError);
+  const held=await generate({...base,
+    fetchImpl:async()=>({ok:true,json:async()=>({created:false,
+      tenant_id:'shop',reason:'already_completed',publishing_enabled:false})}),
+    requestKey:key,topic:'Tumblers',platform:'facebook',needsMedia:true,
+    includeImagePrompt:true});
+  assert.equal(held.reason,'already_completed');
+  await assert.rejects(()=>generate({...base,
+    fetchImpl:async()=>({ok:true,json:async()=>({created:false,
+      tenant_id:'other',reason:'already_completed',publishing_enabled:false})}),
+    requestKey:key,topic:'Tumblers',platform:'facebook',needsMedia:true,
+    includeImagePrompt:true}),TypeError);
   assert.equal(calls.length,3);
   console.log('BAM AI explicit write client tests passed');
 }
