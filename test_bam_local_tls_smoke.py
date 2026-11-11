@@ -134,7 +134,7 @@ class HTTPSPreviewSmokeTests(unittest.TestCase):
                         code,_,raw=get('/api/v1/drafts',token=token)
                         self.assertEqual(len(json.loads(raw)['drafts']),1)
                         # A real loopback HTTPS byte transfer remains private.
-                        png=b'\\x89PNG\\r\\n\\x1a\\n'+b'local-fixture-not-a-real-image'
+                        png=bytes.fromhex('89504e470d0a1a0a')+b'local-fixture-not-a-real-image'
                         digest=hashlib.sha256(png).hexdigest()
                         code,_,raw=get('/api/v1/content/upload-preflight',
                             method='POST',token=token,body={
