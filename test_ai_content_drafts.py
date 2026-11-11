@@ -100,9 +100,13 @@ class AIContentDraftStoreTests(unittest.TestCase):
         self.assertFalse(updated['publishing_enabled'])
         self.assertNotIn('private/image',str(updated))
         self.assertNotIn(attachment,str(updated))
-        revised=self.store.revise(token=self.owner,now=105,
+        copy_revised=self.store.revise(token=self.owner,now=105,
+            draft_id=draft['draft_id'],target='post_text',
+            revised_text='Updated product copy',expected_revision=1)
+        self.assertTrue(copy_revised['media_attached'])
+        revised=self.store.revise(token=self.owner,now=106,
             draft_id=draft['draft_id'],target='image_prompt',
-            revised_text='Different product photo',expected_revision=1)
+            revised_text='Different product photo',expected_revision=2)
         self.assertFalse(revised['media_attached'])
         self.assertEqual(revised['status'],'needs_media')
         self.assertFalse(revised['publishing_enabled'])
