@@ -15,8 +15,13 @@ class AccountDirectory:
             subject_id TEXT NOT NULL,
             role TEXT NOT NULL,
             active INTEGER NOT NULL DEFAULT 1,
+            revision INTEGER NOT NULL DEFAULT 1,
             PRIMARY KEY (tenant_id, subject_id)
         )""")
+        if 'revision' not in {row[1] for row in
+                self.db.execute('PRAGMA table_info(members)')}:
+            self.db.execute("""ALTER TABLE members
+                ADD COLUMN revision INTEGER NOT NULL DEFAULT 1""")
         self.db.commit()
 
     def bootstrap_owner(self, tenant_id: str, subject_id: str) -> None:
@@ -53,14 +58,18 @@ class AccountDirectory:
         if not subject_id:
             raise ValueError("Subject required")
         role = Role(role)
-        existing = self.resolve(actor.tenant_id, subject_id)
+        stored=self.db.execute(
+            "SELECT role FROM members WHERE tenant_id=? AND subject_id=?",
+            (actor.tenant_id,subject_id)).fetchone()
         if subject_id == actor.subject_id:
             raise PermissionError("Cannot change your own membership")
-        if existing is not None and existing.role == Role.OWNER:
+        if stored is not None and stored[0] == Role.OWNER.value:
             raise PermissionError("Cannot modify another owner using this operation")
         self.db.execute(
             """INSERT INTO members(tenant_id,subject_id,role,active) VALUES(?,?,?,?)
-               ON CONFLICT(tenant_id,subject_id) DO UPDATE SET role=excluded.role,active=excluded.active""",
+               ON CONFLICT(tenant_id,subject_id) DO UPDATE SET
+               role=excluded.role,active=excluded.active,
+               revision=members.revision+1""",
             (actor.tenant_id, subject_id, role.value, int(active)),
         )
         self.db.commit()
