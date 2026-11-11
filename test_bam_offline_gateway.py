@@ -720,6 +720,59 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         bad,_=self.call('/api/v1/posting-time-preview')
         self.assertEqual(bad['status'],'401 Unauthorized')
 
+    def test_durable_calendar_proposal_is_not_a_scheduled_post(self):
+        owner=self.login('shop')
+        self.app.preferences.set(token=owner,tenant_id='shop',
+            mode='manual',timezone='America/New_York',
+            manual_times=['10:00','18:30'],now=101)
+        meta,created=self.call('/api/v1/content/drafts',method='POST',
+            token=owner,body={'channel':'facebook',
+              'draft_text':'New custom tumbler',
+              'suggestion':'Collect product photograph',
+              'required_items':['image']})
+        self.assertEqual(meta['status'],'201 Created')
+        rid=created['request_id']
+        _,previews=self.call('/api/v1/posting-time-preview',token=owner)
+        self.assertEqual(previews['status'],'manual_preview')
+        selected=previews['slots'][0]['utc_at']
+        meta,proposal=self.call('/api/v1/calendar-proposals',method='POST',
+            token=owner,body={'request_id':rid,'expected_revision':1,
+                              'utc_at':selected})
+        self.assertEqual(meta['status'],'201 Created')
+        self.assertEqual(proposal['status'],'proposal_only')
+        self.assertEqual(proposal['posts_scheduled'],0)
+        self.assertFalse(proposal['publishing_enabled'])
+        meta,calendar=self.call('/api/v1/calendar-proposals',token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(len(calendar['items']),1)
+        self.assertEqual(calendar['items'][0]['request_id'],rid)
+        self.assertTrue(calendar['items'][0]['slot_current'])
+        self.assertFalse(calendar['items'][0]['content_changed'])
+        self.assertFalse(calendar['publishing_enabled'])
+        another=self.login('other')
+        _,separate=self.call('/api/v1/calendar-proposals',token=another)
+        self.assertEqual(separate['items'],[])
+        self.assertEqual(self.call('/api/v1/calendar-proposals',method='POST',
+            token=another,body={'request_id':rid,'expected_revision':1,
+                                'utc_at':selected})[0]['status'],
+            '404 Not Found')
+        self.assertEqual(self.call('/api/v1/calendar-proposals',method='POST',
+            token=owner,body={'request_id':rid,'expected_revision':1,
+                                'utc_at':selected,'publish_now':True})[0]['status'],
+            '400 Bad Request')
+        self.assertEqual(self.call('/api/v1/calendar-proposals',
+            token=owner,extra={'QUERY_STRING':'tenant_id=other'})[0]['status'],
+            '400 Bad Request')
+        meta,removed=self.call('/api/v1/calendar-proposals',method='DELETE',
+            token=owner,body={'request_id':rid})
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(removed['removed'],1)
+        self.assertEqual(removed['posts_scheduled'],0)
+        _,after=self.call('/api/v1/calendar-proposals',token=owner)
+        self.assertEqual(after['items'],[])
+        _,drafts=self.call('/api/v1/drafts',token=owner)
+        self.assertTrue(any(d['request_id']==rid for d in drafts['drafts']))
+
     def test_advance_ai_batch_preview_is_cost_free_and_scoped(self):
         owner=self.login('shop')
         self.app.ai_business_facts.confirm(token=owner,now=101,
