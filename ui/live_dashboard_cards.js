@@ -5,9 +5,11 @@
 (function(root,factory){
   'use strict';
   if(typeof module==='object'&&module.exports)
-    module.exports=factory(require('./dashboard_http_client.js'));
-  else root.BAMLiveDashboard=factory(root.BAMReadClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(client){
+    module.exports=factory(require('./dashboard_http_client.js'),
+      require('./calendar_proposals_client.js'));
+  else root.BAMLiveDashboard=factory(root.BAMReadClient,
+    root.BAMCalendarProposalsClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(client,calendarClient){
   'use strict';
   const order=['scheduled','approvals','content','connections'];
   function element(doc,tag,text){
@@ -16,7 +18,8 @@
     return item;
   }
   function create({document,container,fetchImpl,origin,onError,
-                   onOpenContentStudio,onOpenPostingSettings}){
+                   onOpenContentStudio,onOpenPostingSettings,
+                   enableCalendarProposals=false}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Dashboard dependencies required');
@@ -26,16 +29,19 @@
       throw new TypeError('Content Studio navigation callback required');
     if(onOpenPostingSettings!==undefined&&typeof onOpenPostingSettings!=='function')
       throw new TypeError('Posting settings navigation callback required');
+    if(typeof enableCalendarProposals!=='boolean')
+      throw new TypeError('Explicit calendar preview feature switch required');
     let active=null,epoch=0,requestVersion=0,current=null,view='home';
     let connectionData=null,connectionPending=false,connectionError=false;
     let connectionRequest=0;
     let postingPreview=null,previewPending=false,previewError=false;
-    let previewRequest=0;
+    let previewRequest=0,calendarData=null,calendarError=false;
     function clear(){
       epoch++;requestVersion++;connectionRequest++;previewRequest++;
       active=null;current=null;view='home';
       connectionData=null;connectionPending=false;connectionError=false;
       postingPreview=null;previewPending=false;previewError=false;
+      calendarData=null;calendarError=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -79,12 +85,32 @@
       previewPending=true;previewError=false;
       if(view==='scheduled')show('scheduled');
       try{
-        const data=await client.read({kind:'postingPreview',token:mine.token,
-          fetchImpl,origin,expectedTenantId:mine.tenantId});
+        const [data,proposals]=await Promise.allSettled([
+          client.read({kind:'postingPreview',token:mine.token,
+            fetchImpl,origin,expectedTenantId:mine.tenantId}),
+          enableCalendarProposals?calendarClient.list({
+            origin,fetchImpl,token:mine.token,
+            expectedTenantId:mine.tenantId}):Promise.resolve(null)
+        ]);
         if(epoch!==version||active!==mine||request!==previewRequest)
           return {stale:true};
-        postingPreview=data;
-        return {stale:false,status:data.status};
+        if(data.status==='fulfilled'){
+          postingPreview=data.value;previewError=false;
+        }else{
+          postingPreview=null;previewError=true;
+          if(onError)onError('Posting-time preview could not be loaded');
+        }
+        if(enableCalendarProposals){
+          if(proposals.status==='fulfilled'){
+            calendarData=proposals.value;calendarError=false;
+          }else{
+            calendarData=null;calendarError=true;
+            if(onError)onError('Private draft calendar could not be loaded');
+          }
+        }
+        return data.status==='fulfilled'
+          ?{stale:false,status:data.value.status}
+          :{error:true};
       }catch(error){
         if(epoch!==version||active!==mine||request!==previewRequest)
           return {stale:true};
@@ -211,6 +237,44 @@
             preview.append(settings);
           }
           wrap.append(preview);
+          if(enableCalendarProposals){
+            const calendar=element(document,'section','');
+            calendar.append(element(document,'h3',
+              'Proposed draft calendar — not scheduled posts'));
+            if(previewPending){
+              calendar.append(element(document,'p','Checking private content proposals...'));
+            }else if(calendarError||!calendarData){
+              calendar.append(element(document,'p',
+                'Proposed times unavailable. This does not mean there are no drafts.'));
+            }else if(!calendarData.items.length){
+              calendar.append(element(document,'p',
+                'No proposed draft dates saved for this business.'));
+            }else{
+              for(const entry of calendarData.items){
+                const item=element(document,'article','');
+                item.append(element(document,'p',
+                  entry.localDate+' at '+entry.localTime+' ('+entry.timezone+')'));
+                if(entry.contentChanged)
+                  item.append(element(document,'p',
+                    'Draft changed since this proposal; choose a new time or refresh it.'));
+                if(!entry.slotCurrent)
+                  item.append(element(document,'p',
+                    'This time no longer matches current posting preferences.'));
+                item.append(element(document,'p',
+                  'Draft proposal only — no approval, scheduled job or social publication.'));
+                calendar.append(item);
+              }
+            }
+            if(onOpenContentStudio){
+              const edit=element(document,'button','Manage proposed draft times');
+              edit.type='button';edit.className='secondary';
+              edit.addEventListener('click',()=>{
+                if(active===scope&&epoch===scopeEpoch)onOpenContentStudio();
+              });
+              calendar.append(edit);
+            }
+            wrap.append(calendar);
+          }
         }else if(section==='approvals'){
           wrap.append(element(document,'p',
             'Ready-for-review requests are not approved or scheduled posts.'));
@@ -294,6 +358,7 @@
         connectionRequest++;previewRequest++;
         connectionData=null;connectionPending=false;connectionError=false;
         postingPreview=null;previewPending=false;previewError=false;
+        calendarData=null;calendarError=false;
         current=data;show(view);
         if(view==='connections'&&
            data.cards.connections.availability==='available')
