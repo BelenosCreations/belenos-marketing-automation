@@ -4,18 +4,24 @@
 (function(root,factory){
   'use strict';
   if(typeof module==='object'&&module.exports)
-    module.exports=factory(require('./ai_draft_contract.js'));
-  else root.BAMAIDraftView=factory(root.BAMAIDraftData);
-})(typeof globalThis!=='undefined'?globalThis:this,function(contract){
+    module.exports=factory(require('./ai_draft_contract.js'),
+      require('./ai_manual_image_handoff.js'));
+  else root.BAMAIDraftView=factory(root.BAMAIDraftData,
+    root.BAMManualImageHandoff);
+})(typeof globalThis!=='undefined'?globalThis:this,function(contract,handoff){
   'use strict';
   function el(document,tag,text){
     const node=document.createElement(tag);
     node.textContent=text;
     return node;
   }
-  function render({document,container,payload,expectedTenantId}){
+  function render({document,container,payload,expectedTenantId,
+                   copyText,openUrl}){
     if(!document||!container||typeof container.replaceChildren!=='function')
       throw new TypeError('Valid AI draft mount required');
+    if((copyText!==undefined||openUrl!==undefined)&&
+       (typeof copyText!=='function'||typeof openUrl!=='function'))
+      throw new TypeError('Manual image handoff actions required');
     const model=contract.normalize(payload);
     if(expectedTenantId!==undefined&&model.tenantId!==expectedTenantId)
       throw new TypeError('Unexpected business response');
@@ -32,6 +38,12 @@
       if(draft.imagePrompt!==null){
         item.append(el(document,'h4','Image prompt — copy to ChatGPT if desired'));
         item.append(el(document,'p',draft.imagePrompt));
+        if(draft.needsMedia&&!draft.mediaAttached&&copyText&&openUrl){
+          const mount=el(document,'div','');
+          handoff.render({document,container:mount,
+            imagePrompt:draft.imagePrompt,copyText,openUrl,needsMedia:true});
+          item.append(mount);
+        }
       }
       item.append(el(document,'p',draft.needsMedia&&!draft.mediaAttached
         ?'Media needed — this draft is on hold'
