@@ -174,10 +174,33 @@
         }
       }
     }
+    async function stageImage({requestId,item,file}){
+      if(!active||!canEdit||!mediaEnabled||busy||!hashBytes)
+        return {error:true};
+      const mine=active,version=epoch;
+      busy=true;
+      try{
+        const received=await pendingClient.stage({
+          origin,fetchImpl,token:mine.token,expectedTenantId:mine.tenantId,
+          requestId,item,file,hashBytes});
+        if(version!==epoch||mine!==active)return {stale:true};
+        const updated=await refresh();
+        if(updated.stale||updated.error)return updated;
+        if(onNotice)onNotice(
+          'Image received into private pending review. It is not verified, approved or ready to publish.');
+        return received;
+      }catch(error){
+        if(version===epoch&&mine===active&&onError)
+          onError('Image receipt unavailable. Check the selected file and private media configuration.');
+        return {error:true};
+      }finally{
+        if(version===epoch&&mine===active){busy=false;render();}
+      }
+    }
     function createDraft(args){return mutate(writeClient.createDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
     return Object.freeze({activate,refresh,clear,createDraft,changeHold,
-      setCanEdit,setMediaEnabled});
+      stageImage,setCanEdit,setMediaEnabled});
   }
   return Object.freeze({create});
 });
