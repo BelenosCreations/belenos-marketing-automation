@@ -20,7 +20,7 @@ function fixture(){
     'business-switch','business-switch-label',
     'overview-panel','drafts-panel','content-panel','settings-panel',
     'email','password','business','appearance',
-    'bam-posting-preferences','bam-content-studio','bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
+    'bam-ai-facts-editor','bam-posting-preferences','bam-content-studio','bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
   const elements=Object.fromEntries(ids.map(id=>[id,node()]));
   const nav=['overview','drafts','content','settings'].map(panel=>{
     const button=node('button');button.dataset.bamPanel=panel;return button});
@@ -109,6 +109,14 @@ async function main(){
         request_id:item.request_id,status:item.status,
         publishing_enabled:false})};
     }
+    if(kind==='ai-business-facts'&&opts.method==='PUT'){
+      const payload=JSON.parse(opts.body);
+      data['ai-business-facts']={tenant_id:currentTenant,
+        facts:payload.facts,revision:payload.expected_revision+1,
+        provenance:'owner_confirmed',confirmed_at:101,
+        publishing_enabled:false};
+      return {ok:true,json:async()=>data['ai-business-facts']};
+    }
     if(kind==='posting-preferences'&&opts.method==='PUT'){
       const payload=JSON.parse(opts.body);
       data['posting-preferences']={tenant_id:currentTenant,
@@ -139,6 +147,7 @@ async function main(){
   assert.equal(e['bam-dashboard'].children.length,1);
   assert.equal(e['bam-content-studio'].children.length,1);
   assert.equal(e['bam-posting-preferences'].children.length,1);
+  assert.equal(e['bam-ai-facts-editor'].children.length,1);
   assert.equal(e['bam-dashboard'].children[0].children[1].children.length,4);
   assert.equal(e['active-business'].textContent,'Business: shop');
   // The Content Studio is an explicit, unpublished, tenant-scoped write UI.
@@ -165,6 +174,16 @@ async function main(){
   prefForm.children[2].children[1].value='10:00, 18:30';
   await prefForm.listeners.submit({preventDefault(){}});
   assert.equal(data['posting-preferences'].mode,'manual');
+  const factsEditor=e['bam-ai-facts-editor'].children[0];
+  const factRows=factsEditor.children[2];
+  factRows.children[0].children[0].value='business_name';
+  factRows.children[0].children[1].value='Example Shop';
+  factsEditor.children[3].listeners.click();
+  factRows.children[1].children[0].value='product';
+  factRows.children[1].children[1].value='Custom tumblers';
+  await factsEditor.children[4].listeners.click();
+  assert.equal(data['ai-business-facts'].revision,2);
+  assert.equal(data['ai-business-facts'].facts.product,'Custom tumblers');
   assert.deepEqual(data['posting-preferences'].manual_times,['10:00','18:30']);
   assert.equal(e['overview-panel'].hidden,true);
   e.appearance.listeners.change({target:{value:'light'}});

@@ -7,36 +7,61 @@
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./live_dashboard_cards.js'),
       require('./ai_workspace.js'),require('./held_draft_workspace.js'),
-      require('./posting_preferences_workspace.js'));
+      require('./posting_preferences_workspace.js'),
+      require('./ai_write_client.js'));
   else root.BAMAuthenticatedWorkspace=factory(
     root.BAMLiveDashboard,root.BAMAIWorkspace,root.BAMHeldDraftWorkspace,
-    root.BAMPostingPreferencesWorkspace);
+    root.BAMPostingPreferencesWorkspace,root.BAMAIWriteClient);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(dashboardModule,aiModule,heldModule,prefsModule){
+function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
   'use strict';
   function create({document,dashboardContainer,aiDraftsContainer,
                    aiSettingsContainer,aiFactsContainer,aiCostContainer,
                    fetchImpl,origin,onError,copyText,openUrl,
                    aiFactsEditorContainer,canManageFacts=false,onSaveFacts,
                    contentStudioContainer,onOpenContentStudio,postingPreferencesContainer}){
+    let activeSession=null,epoch=0,active=false;
     const dashboard=dashboardModule.create({
       document,container:dashboardContainer,fetchImpl,origin,onError,
       onOpenContentStudio});
+    async function saveConfirmedFacts({facts,expectedRevision,expectedTenantId}){
+      const mine=activeSession,version=epoch;
+      if(!mine||expectedTenantId!==mine.tenantId){
+        if(onError)onError('Sign in to the correct business to save facts');
+        return {error:true};
+      }
+      try{
+        const saved=await aiWriter.confirmFacts({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId,facts,expectedRevision});
+        if(version!==epoch||activeSession!==mine)return {stale:true};
+        const latest=await ai.refresh();
+        if(version!==epoch||activeSession!==mine)return {stale:true};
+        if(latest.error){clear();return {error:true};}
+        return saved;
+      }catch(error){
+        if(version===epoch&&activeSession===mine&&onError)
+          onError('Business facts could not be saved. Owner access, current revision and confirmed details are required.');
+        return {error:true};
+      }
+    }
     const ai=aiModule.create({document,draftsContainer:aiDraftsContainer,
       settingsContainer:aiSettingsContainer,factsContainer:aiFactsContainer,
       costContainer:aiCostContainer,fetchImpl,origin,onError,
       copyText,openUrl,factsEditorContainer:aiFactsEditorContainer,
-      canManageFacts,onSaveFacts});
+      canManageFacts:canManageFacts||Boolean(aiFactsEditorContainer),
+      onSaveFacts:onSaveFacts||saveConfirmedFacts});
     const held=contentStudioContainer?heldModule.create({document,
       container:contentStudioContainer,fetchImpl,origin,onError}):null;
     const prefs=postingPreferencesContainer?prefsModule.create({document,
       container:postingPreferencesContainer,fetchImpl,origin,onError}):null;
-    let active=false,epoch=0;
     function clear(){
-      epoch++;active=false;dashboard.clear();ai.clear();if(held)held.clear();if(prefs)prefs.clear();
+      epoch++;active=false;activeSession=null;
+      dashboard.clear();ai.clear();if(held)held.clear();if(prefs)prefs.clear();
     }
     function activate({token,tenantId}){
       clear();
+      activeSession={token,tenantId};
       dashboard.activate({token,tenantId});
       ai.activate({token,tenantId});
       if(held)held.activate({token,tenantId});
