@@ -27,6 +27,13 @@ class FakeReadAPI:
         if session_token!='valid':
             raise PermissionError('denied')
         return {'tenant_id':'shop','drafts':[],'publishing_enabled':False}
+    def get_ai_business_facts(self,*,session_token,server_now):
+        self.calls.append(('ai_facts',session_token,server_now))
+        if session_token!='valid':
+            raise PermissionError('denied')
+        return {'tenant_id':'shop','facts':{},'revision':0,
+                'provenance':'not_configured','confirmed_at':None,
+                'publishing_enabled':False}
     def get_ai_settings(self,*,session_token,server_now):
         self.calls.append(('ai_settings',session_token,server_now))
         if session_token!='valid':
@@ -79,7 +86,8 @@ class BAMReadWSGITests(unittest.TestCase):
         for path,key in [('/api/v1/drafts','drafts'),
                          ('/api/v1/posting-preferences','mode'),
                          ('/api/v1/ai-drafts','drafts'),
-                         ('/api/v1/ai-settings','mode')]:
+                         ('/api/v1/ai-settings','mode'),
+                         ('/api/v1/ai-business-facts','facts')]:
             _,body=self.request(path)
             self.assertIn(key,body)
 
