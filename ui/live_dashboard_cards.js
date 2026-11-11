@@ -97,7 +97,8 @@
         if(version!==epoch||request!==requestVersion||mine!==active)
           return {stale:true};
         current=data;show(view);
-        return {stale:false,tenantId:data.tenantId};
+        return {stale:false,tenantId:data.tenantId,
+          businesses:data.businesses.map(b=>({tenantId:b.tenant_id,name:b.name}))};
       }catch(error){
         if(version!==epoch||request!==requestVersion||mine!==active)
           return {stale:true};
