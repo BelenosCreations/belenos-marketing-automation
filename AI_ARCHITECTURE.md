@@ -84,3 +84,7 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 ### Request status and ambiguous JSON
 
 `AIGenerationIdempotency.status` returns the authenticated caller's own request state without initiating any provider request. In-progress and failed requests remain held for explicit operational reconciliation. AI generation and owner-fact WSGI adapters reject duplicate JSON keys rather than silently accepting the last value.
+
+### Offline targeted revision HTTPS integration
+
+`bam_ai_revision_wsgi.py` now provides a separately disabled-by-default authenticated POST boundary for targeted draft edits. Server-side policy controls month, quota, token limit and credentials; user input cannot specify a business, entitlement, model or publication state. The offline composition root keeps provider transport disabled. End-to-end tests inject a fake executor and verify draft revision and media-hold behavior. Production OpenAI execution and billing remain unconnected.

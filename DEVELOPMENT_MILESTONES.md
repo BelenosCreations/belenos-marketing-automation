@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Strict targeted AI revision HTTP integration (2026-11-11)
+
+`bam_ai_revision_wsgi.py` exposes a separately disabled HTTPS endpoint for an authenticated targeted AI draft revision. Its strict request shape permits only draft ID, expected revision, component, instruction, topic and idempotency key. The server selects sponsorship policy and UTC month. The offline AI composition factory shares the existing per-user, per-business facts, draft store, sponsored quota and idempotency, and keeps OpenAI transport disabled. Injected-executor WSGI/E2E tests confirm single-component changes, stale/replayed request rejection, cross-tenant isolation and invalidation of earlier media matches on image-prompt edits. An API metadata mismatch was discovered and corrected before successful CI verification.
+
+**Verified:** [GitHub Actions run 43053763455](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43053763455), commit `1187b467`: 830 Python and 47 JavaScript test scripts, plus compilation. No live provider billing, scheduling or publication is authorized.
+
 ## Structured targeted AI revision executor (offline only) (2026-11-11)
 
 `AITargetedRevisionWorkflow` now assembles an existing user's structured draft, current owner-confirmed business facts and a single requested component into the already approved targeted OpenAI request shape. The injected trusted executor receives only a bounded token cap from a server-configured sponsored quota. An idempotency request key is claimed before quota use. Before applying the one-component result, the workflow checks that fact provenance/revision remains unchanged and that the exact draft revision is current. Success increments revision, preserves the other component verbatim and invalidates old verified image attachment associations when the image prompt changes. Provider responses with duplicate JSON keys fail closed. Failed or ambiguous keys are held for explicit reconciliation, not automatically retried. No external OpenAI call, provider key, billing or social publication is enabled.

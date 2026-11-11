@@ -1,3 +1,17 @@
+## Disabled-by-default targeted AI revision HTTPS boundary — 2026-11-11
+
+### Added
+- `POST /api/v1/ai/targeted-revision` is a separately disabled, strict HTTPS route for changing one existing AI draft component at a time using a trusted executor. Request fields are limited to draft ID, expected revision, selected component, instruction and topic; a unique idempotency key is mandatory.
+- The server—not the client—selects business/user scope, UTC billing month, sponsorship plan and output token limits. Successful responses reveal only scoped draft ID, revision and held status, never provider payload or secrets.
+- The disabled AI composition factory includes the revision path with the existing facts, quota, idempotency and draft services and credential-disabled transport.
+- Full in-memory WSGI-to-draft integration tests verify copy-only/prompt-only changes, stale requests, cross-business isolation, plan-claim rejection, media hold invalidation and ambiguous model output. A strict transport-result metadata mismatch was discovered and fixed.
+
+### Verification
+- **Passed:** [GitHub Actions run 43053763455](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43053763455), commit `1187b467`: **830 Python tests, 47 JavaScript scripts**, and Python compilation.
+
+### Known limitations
+- This is zero-network offline integration, not live OpenAI generation. Production requires encrypted key vaulting, billing reconciliation, atomic distributed quota/spend controls, rate limiting, real hosting and safety reviews. AI regeneration, provider connection and live publication remain disabled in the user-facing app.
+
 ## Offline targeted AI draft revisions and strict response validation — 2026-11-11
 
 ### Added
