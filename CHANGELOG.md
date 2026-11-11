@@ -1,5 +1,12 @@
 # Changelog
 
+## Business-bound AI generation hold responses — 2026-11-10
+
+### Fixed
+- Include authenticated tenant scope on all non-created AI generation results.
+- Reject held browser responses from another business and cover with regression tests.
+
+
 ## Coordinated authenticated workspace lifecycle — 2026-11-10
 
 ### Added
