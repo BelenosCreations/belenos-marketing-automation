@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | Responsive signed-in overview with large cards and deeper details | **Implemented in offline alpha**, not production validated | Mobile browser checks at common Android sizes, focus/keyboard accessibility smoke tests, signed-in shell regression |
 | Password sign-in, business switching, logout, and role restrictions | **Offline scaffolding and tests** | Correct session expiry, revocation, role-change and current-tenant isolation under an actual hosted trusted identity service |
+| Existing-member team management | **Implemented offline, not hosted** | Owner-only roster, revision-checked role/deactivation, scoped session revocation and auditable changes; verify behavior with real accounts and devices before Beta |
 | Held draft creation and copy revisions | **Implemented offline** | Create/edit/resume/review with two simultaneous editors and stale-revision conflict |
 | Draft priority and read-only calendar proposals | **Implemented offline** | No duplicate slots, cross-business separation, timezone/DST correction and no accidental scheduling |
 | Private review-feedback notes, change history, readiness summaries | **Implemented offline** | Audit metadata consistency, note permissions and unapproved status after every change |
