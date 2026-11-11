@@ -1,5 +1,20 @@
 # Changelog
 
+## Disabled-by-default HTTPS sign-in transport — 2026-11-10
+
+### Added
+- Added `bam_auth_wsgi.py` with strict HTTPS-only, bounded JSON routes for email/password login, one-time Google sign-in challenges, and server-verified Google login; refuses activation unless the trusted login API includes a throttle.
+- Added `ui/auth_login_client.js`, a same-origin, no-cookie, no-storage browser client that supplies tenant context for verified membership checks and rejects unexpected sign-in responses.
+- Added 13 Python gateway regression tests, including live offline IdentityAuth/membership verification, and one JavaScript client regression script.
+
+### Test status
+- **Passed:** [GitHub Actions run 42951600141](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42951600141), commit `9ef6e73eaa48f74e25ef4c235841b76fc4ddc739`: **689 Python tests, 23 JavaScript scripts and Python compilation**.
+
+### Known limitations
+- Authentication adapter is not mounted, deployed or permitted for production exposure. Separate TLS, IP/global throttles, external Google verifier configuration, secure hosting and a completed sign-in screen remain required.
+- No business enrollment, social provider token exchange, OpenAI paid calls or publishing were enabled.
+
+
 ## CI recovery, scheduling reliability and private UI cleanup — 2026-11-10
 
 ### Fixed
