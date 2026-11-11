@@ -95,7 +95,7 @@ class BAMContentWriteWSGITests(unittest.TestCase):
 
     def test_duplicate_json_fields_and_malformed_json(self):
         for raw in (b'{"channel":"facebook","channel":"instagram"}',
-                    b'{','[]',b'null'):
+                    b'{',b'[]',b'null'):
             with self.subTest(raw=raw):
                 meta,_=self.call(raw=raw)
                 self.assertEqual(meta['status'],'400 Bad Request')
