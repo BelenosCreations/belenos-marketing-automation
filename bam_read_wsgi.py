@@ -38,7 +38,7 @@ class BAMReadWSGI:
                         '/api/v1/posting-preferences','/api/v1/ai-drafts',
                         '/api/v1/ai-settings','/api/v1/ai-business-facts',
                         '/api/v1/ai-cost-summary','/api/v1/posting-time-preview',
-                        '/api/v1/connections'):
+                        '/api/v1/connections','/api/v1/team-overview'):
             return self._response(start_response,'404 Not Found',
                 {'error':'Not found'})
         auth=environ.get('HTTP_AUTHORIZATION','')
@@ -52,7 +52,8 @@ class BAMReadWSGI:
                 {'error':'Authentication required'})
         try:
             now=int(self.clock())
-            if path in ('/api/v1/posting-time-preview','/api/v1/connections') and environ.get('QUERY_STRING'):
+            if path in ('/api/v1/posting-time-preview','/api/v1/connections',
+                        '/api/v1/team-overview') and environ.get('QUERY_STRING'):
                 return self._response(start_response,'400 Bad Request',
                     {'error':'Unexpected query parameters'})
             if path=='/api/v1/dashboard':
@@ -60,6 +61,9 @@ class BAMReadWSGI:
                     session_token=token,server_now=now)
             elif path=='/api/v1/drafts':
                 body=self.api.list_held_drafts(
+                    session_token=token,server_now=now)
+            elif path=='/api/v1/team-overview':
+                body=self.api.get_team_overview(
                     session_token=token,server_now=now)
             elif path=='/api/v1/connections':
                 body=self.api.get_social_connections(

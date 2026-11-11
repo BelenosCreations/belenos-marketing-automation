@@ -11,6 +11,7 @@ from content_upload_preflight import ContentUploadPreflight
 from ai_local_templates import LocalDraftTemplates
 from ai_draft_request import AIDraftRequestBuilder
 from posting_time_preview import build_posting_time_preview
+from access_policy import Action, Resource, require_permission
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
@@ -123,6 +124,41 @@ class AccountReadAPI:
             raise RuntimeError('AI Content Studio not configured')
         return self.ai_content_drafts.list_mine(
             token=self._token(session_token),now=self._now(server_now))
+
+    def get_team_overview(self, *, session_token, server_now):
+        """Owner-only counts for current business; no member IDs or email leaks."""
+        token=self._token(session_token)
+        now=self._now(server_now)
+        dashboard=self.dashboard
+        session=dashboard.sessions.resolve_current(
+            token,directory=dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('BAM session required')
+        tenant=session.principal.tenant_id
+        actual=dashboard.directory.resolve(
+            tenant,session.principal.subject_id)
+        require_permission(actual,Action.MANAGE_TEAM,Resource(tenant))
+        roles={'owner':0,'marketing_manager':0,'content_creator':0,
+               'employee':0,'viewer':0}
+        rows=dashboard.directory.db.execute(
+            """SELECT role,active,COUNT(*) FROM members WHERE tenant_id=?
+               GROUP BY role,active""",(tenant,)).fetchall()
+        inactive=0
+        for role,active,count in rows:
+            if (role not in roles or type(count) is not int or count<0
+                    or active not in (0,1)):
+                raise RuntimeError('Invalid stored team membership')
+            if active==1:
+                roles[role]+=count
+            else:
+                inactive+=count
+        if roles['owner']<1:
+            raise RuntimeError('Owner membership missing')
+        return {'tenant_id':tenant,'roles':roles,
+                'active_members':sum(roles.values()),
+                'inactive_members':inactive,
+                'invitation_status':'not_connected',
+                'publishing_enabled':False}
 
     def get_social_connections(self, *, session_token, server_now):
         """Read current-business connection status metadata, never provider secrets.

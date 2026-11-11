@@ -27,6 +27,15 @@ class FakeReadAPI:
         if session_token!='valid':
             raise PermissionError('denied')
         return {'tenant_id':'shop','drafts':[],'publishing_enabled':False}
+    def get_team_overview(self,*,session_token,server_now):
+        self.calls.append(('team',session_token,server_now))
+        if session_token!='valid':
+            raise PermissionError('denied')
+        return {'tenant_id':'shop','roles':{'owner':1,
+             'marketing_manager':0,'content_creator':0,'employee':0,'viewer':0},
+             'active_members':1,'inactive_members':0,
+             'invitation_status':'not_connected','publishing_enabled':False}
+
     def get_social_connections(self,*,session_token,server_now):
         self.calls.append(('connections',session_token,server_now))
         if session_token!='valid':
@@ -105,9 +114,19 @@ class BAMReadWSGITests(unittest.TestCase):
                          ('/api/v1/ai-settings','mode'),
                          ('/api/v1/ai-business-facts','facts'),
                          ('/api/v1/ai-cost-summary','events'),
-                         ('/api/v1/connections','connections')]:
+                         ('/api/v1/connections','connections'),
+                         ('/api/v1/team-overview','roles')]:
             _,body=self.request(path)
             self.assertIn(key,body)
+
+    def test_team_overview_is_read_only(self):
+        meta,value=self.request('/api/v1/team-overview')
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(value['active_members'],1)
+        self.assertFalse(value['publishing_enabled'])
+        self.assertEqual(self.request('/api/v1/team-overview',
+                         method='POST')[0]['status'],
+                         '405 Method Not Allowed')
 
     def test_connections_read_only_no_untrusted_query(self):
         meta,data=self.request('/api/v1/connections')

@@ -129,6 +129,42 @@ class BAMOfflineGatewayTests(unittest.TestCase):
                 self.assertIn(expected,value)
                 self.assertFalse(value['publishing_enabled'])
 
+    def test_team_overview_owner_only_aggregate_without_ids(self):
+        owner=self.login('shop')
+        meta,overview=self.call('/api/v1/team-overview',token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(overview['tenant_id'],'shop')
+        self.assertEqual(overview['roles']['owner'],1)
+        self.assertEqual(overview['active_members'],1)
+        self.assertEqual(overview['inactive_members'],0)
+        self.assertEqual(overview['invitation_status'],'not_connected')
+        self.assertFalse(overview['publishing_enabled'])
+        self.assertNotIn(self.subject,str(overview))
+        self.assertNotIn('owner@example.com',str(overview))
+        creator=self.login('other')
+        self.assertEqual(self.call('/api/v1/team-overview',token=creator)[0]
+                         ['status'],'401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/team-overview',token=owner,
+            method='POST',body={'role':'owner'})[0]['status'],
+            '405 Method Not Allowed')
+        self.assertEqual(self.call('/api/v1/team-overview',token=owner,
+            extra={'QUERY_STRING':'tenant_id=other'})[0]['status'],
+            '400 Bad Request')
+        self.assertEqual(self.call('/api/v1/team-overview')[0]['status'],
+            '401 Unauthorized')
+        self.app.directory.set_member(
+            Principal(self.subject,'shop',Role.OWNER),
+            'worker',Role.VIEWER)
+        _,added=self.call('/api/v1/team-overview',token=owner)
+        self.assertEqual(added['roles']['viewer'],1)
+        self.assertEqual(added['active_members'],2)
+        self.app.directory.set_member(
+            Principal(self.subject,'shop',Role.OWNER),
+            'worker',Role.VIEWER,active=False)
+        _,inactive=self.call('/api/v1/team-overview',token=owner)
+        self.assertEqual(inactive['roles']['viewer'],0)
+        self.assertEqual(inactive['inactive_members'],1)
+
     def test_connection_details_are_private_read_only_and_tenant_scoped(self):
         token=self.login('shop')
         self.app.connections.register_trusted(
