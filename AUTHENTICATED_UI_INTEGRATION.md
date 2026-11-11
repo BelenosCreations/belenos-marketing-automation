@@ -81,6 +81,14 @@ The `bam_offline_gateway.py` direct-call integration fixture now routes `PUT /ap
 
 The browser never transmits tenant/role/approval claims and never enables actual publishing. Confirmed owner statements must still pass factual content review before any future publication.
 
+## Quarantined image status and explicit removal
+
+With the local-only pending media store opted in, `GET /api/v1/content/media-status` returns the authenticated current tenant's `awaiting_file` or `pending_scan` statuses for required checklist items. It returns no file bytes, storage locations, attachment IDs or media-verified claims. Content Studio hides repeated transfers when a pending file was already received.
+
+An editor can explicitly confirm `DELETE /api/v1/content/media-pending` with only a request ID and required item name. The backend resolves current business and edit permission from the BAM session, removes matching pending-only quarantine records and their private files, and never affects verified media or publication. The browser then reloads status before allowing a replacement. This local test workflow is not a production scanner, media gallery or content approval flow.
+
+**Verified [GitHub Actions run 43020735001](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43020735001): 789 Python tests and 37 JavaScript test scripts.**
+
 ## Pending media metadata — not an upload
 
 `POST /api/v1/content/upload-preflight` is deliberately disabled by default and exposed only through the offline gateway. It accepts metadata for an existing required content item in the session's current business. Authorization is server-side and no uploaded bytes, storage keys, presigned URLs or permissions are returned. The response contains an unverified `pending` attachment ID and `publishing_enabled:false`. An attachment remains unusable until a separately trusted storage, inspection, malware/consent verification and acceptance pipeline is implemented. Do not add an Upload button that implies a file has been transferred merely because metadata preflight succeeded.

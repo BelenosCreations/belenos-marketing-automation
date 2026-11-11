@@ -1,3 +1,17 @@
+## Explicit discard and replacement of unverified images — 2026-11-11
+
+### Added
+- An authenticated, disabled-by-default `DELETE /api/v1/content/media-pending` route removes pending-only media records and private quarantine bytes for **one server-authorized business/request/checklist item**, without accepting arbitrary file paths, attachment IDs, tenant or role claims.
+- Content Studio now provides a two-step, explicit “Discard pending image” action when an image is in private quarantine. After server-confirmed deletion, the signed-in panel refreshes and allows a replacement image; no verified attachment or published content is affected.
+- Session/tenant checks guard the removal endpoint; stale browser controls cannot trigger an old business's removal after logout or business switching. The browser rejects unexpected response fields or any implied verification/publishing permission.
+- Added Python and JavaScript tests covering cross-tenant denial, symlink-safe unlink, duplicate/unreceived metadata, explicit confirmation, replacement picker restoration and fail-closed transport.
+
+### Verification
+- **Passed:** [GitHub Actions run 43020735001](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43020735001), commit `4baf5528`: **789 Python tests and 37 JavaScript test scripts** plus Python compilation.
+
+### Known limitations
+- This is a local-only pending receipt privacy workflow. It does not delete any verified media, run a scanner, establish content rights, or activate approval/publishing. Storage concurrency and retention policies need production-grade implementation before external deployment.
+
 ## Persistent, isolated pending-media receipt status — 2026-11-11
 
 ### Added

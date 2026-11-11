@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Discarding and replacing private pending images (2026-11-11)
+
+The optional local-only image receipt workflow now supports explicit discard of the **unverified** image for an individual tenant-scoped request and required item. `BAMPendingMediaStore.discard` checks the authenticated current edit role, restricts file names to registry-issued opaque identifiers, unlinks only private pending files without following symlinks, and removes pending metadata. It does not touch verified/approved files or change draft readiness. The disabled-by-default `bam_pending_media_discard_wsgi.py` enforces strict JSON and HTTPS request boundaries. A two-step confirmation in Content Studio initiates the deletion, refreshes trusted receipt status, and exposes the replacement file picker only after removal is confirmed. Stale business controls are ignored.
+
+**Verified [GitHub Actions run 43020735001](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43020735001): 789 Python tests and 37 JavaScript test scripts, plus compilation, commit `4baf5528`.**
+
 ## Persistent pending-media visibility and session-safe transfer (2026-11-11)
 
 The optional local media receipt path now has a strict read-only `GET /api/v1/content/media-status` route and tenant-scoped store summarization. Valid media metadata appears as `awaiting_file`; a private, regular, owner-readable quarantine file with the expected server-generated name appears as `pending_scan`. Results exclude raw media, hashes, attachment IDs and storage paths. Missing checklist items remain missing and are not approved. The UI refreshes these statuses as part of Content Studio reads; it hides the picker when a file is already awaiting review and fails closed when status cannot be confirmed. An upload client session validity callback prevents late bytes being sent after a logout or business switch between asynchronous request stages. This is not a media scanner or trusted approval pathway.
