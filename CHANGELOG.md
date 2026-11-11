@@ -1,3 +1,19 @@
+## Owner-controlled Smart/Manual posting times — 2026-11-10
+
+### Added
+- Implemented a separate disabled-by-default `PUT /api/v1/posting-preferences` HTTPS WSGI write adapter. Session-derived tenant and current owner role are enforced server-side. Only `mode`, IANA `timezone` and validated `manual_times` are accepted.
+- Connected a nested Posting Times editor to the signed-in Settings view. Owners can explicitly select Smart timing or enter validated 24-hour manual local times; the UI reloads confirmed server state after saving, clears on logout or tenant change and rejects forged tenant/publishing responses.
+- Added Python boundary tests, owner-only end-to-end WSGI tests and JavaScript contract/workspace tests; the signed-in HTML shell smoke test exercises saving manual times.
+- Maintained the approved overview-first dashboard and Content Studio drilldown; successful integration and browser tests are documented below.
+
+### Verified tests
+- **Passed:** [GitHub Actions run 42959720838](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959720838), commit `9967b893`: Python compilation, **735 Python tests and 30 JavaScript UI test scripts**.
+- The Content Studio navigation and browser form test additions were separately verified by [run 42959453544](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959453544) on commit `0730b8fd`.
+
+### Known limitations
+- Preferences are not scheduled posts, live optimum-time recommendations, or execution authorization. Smart timing still requires measured audience evidence and an approved scheduler.
+- The unified gateway and signed-in HTML remain an offline/direct-call integration fixture. Production account enrollment, Google browser sign-in, media upload, social OAuth, hosted security and live publishing remain unavailable.
+
 ## Authenticated Content Studio and secure held-draft editing — 2026-11-10
 
 ### Added

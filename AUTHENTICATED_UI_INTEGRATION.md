@@ -19,6 +19,14 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Owner-only Smart/Manual posting preferences
+
+`bam_posting_preferences_wsgi.py` exposes a disabled-by-default `PUT /api/v1/posting-preferences` route through the offline BAM gateway, parallel to its existing authenticated GET endpoint. The only accepted client fields are `mode` (Smart/Manual), a valid server-checked IANA timezone and up to 24 unique 24-hour local posting times. Manual requires times; Smart must not include them. The trusted account read API checks current tenant membership and the business owner role before any update.
+
+`ui/posting_preferences_workspace.js` mounts a nested Settings editor, with explicit Save, verified server-refresh, and stale-business clearing. The browser write client rejects mismatched tenants, fabricated published state and unexpected response fields. A saved preference never activates scheduling or publishing. The approved smart-time algorithm must later use actual audience evidence and explicit owner/business controls.
+
+Verified together with the Content Studio in [GitHub Actions run 42959720838](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959720838): 735 Python tests, 30 JavaScript scripts and Python compilation.
+
 ## Signed-in Content Studio (held drafts only)
 
 The signed-in HTML shell includes a separate `Content Studio` tab, wired by `ui/held_draft_workspace.js` to the existing read-only `GET /api/v1/drafts` and held-only WSGI write routes `POST /api/v1/content/drafts` and `POST /api/v1/content/hold`. No browser field can claim a tenant, user role, schedule or publish permission. Every write response must match the expected signed-in tenant and `publishing_enabled:false`; every successful write is followed by an authenticated list refresh. Server-side authorization checks the current session and role.

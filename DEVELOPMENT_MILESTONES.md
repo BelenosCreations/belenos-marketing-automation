@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Owner-only Smart/Manual posting time Settings (2026-11-10)
+
+The signed-in Settings panel now includes `ui/posting_preferences_workspace.js`, an explicit owner-editable interface for Smart or Manual posting time preferences and an IANA timezone. Only a current business owner can save these through the disabled-by-default `bam_posting_preferences_wsgi.py` PUT endpoint, wired into the offline BAM composition root. The server derives the business from its authorized session and rejects any client-supplied role, tenant, schedule or publication claim. The browser validates strict response structure and confirms writes with a fresh tenant-scoped GET. User interface state is invalidated on sign-out and business switch. These preferences never schedule or publish content.
+
+**Verified in [GitHub Actions run 42959720838](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42959720838): 735 Python tests and 30 JavaScript UI test scripts, plus Python compilation.** The prior Content Studio navigation smoke additions separately passed in run 42959453544.
+
 ## Authenticated held-draft Content Studio (2026-11-10)
 
 The signed-in workspace now mounts `ui/held_draft_workspace.js` in a dedicated Content Studio tab beside the approved overview-first large-card navigation. Its strict `ui/held_draft_write_client.js` sends only permitted fields to the existing unpublished-content WSGI API and rejects tenant mismatches, forged publishing states, extra response fields and dangerous operations. A successful mutation reloads server-authorized tenant content; a failed or stale response never displays an optimistic success. Logout and business changes immediately clear the Content Studio along with the other private panels.
