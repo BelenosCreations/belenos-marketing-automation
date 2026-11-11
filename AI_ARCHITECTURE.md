@@ -48,7 +48,8 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 - `ai_account_policy.py`: server-session-scoped AI mode and isolated user/business memory preferences; mode switching supports a **trusted vault reference only**, never raw API key handling.
 - `ai_sponsorship.py`: explicit owner/invited/public plan descriptors and SQLite conditional sponsored-request quota reservation.
 - `ai_draft_request.py` and `ai_content_plan.py`: verified-facts-only OpenAI request construction, combined post/optional image prompt output, independent component revisions and bounded batch planning.
-- `ai_local_templates.py`: authenticated, literal-fact, zero-API-cost draft fallback. **Not a payment gateway, complete cost ledger or distributed production rate limiter.**
+- `ai_local_templates.py`: authenticated, literal-fact, zero-API-cost draft fallback.
+- `ai_content_drafts.py`: versioned, tenant/user-scoped structured draft persistence, held-media status and targeted revisions; no publishing. **Not a payment gateway, complete cost ledger or distributed production rate limiter.**
 - `test_ai_account_policy.py` and `test_ai_sponsorship.py`: offline regression coverage for separation, mode changes, invalid credentials and quotas.
 
 **Not implemented:** actual OpenAI API calls, prompt orchestration, encryption vault, billing/Google Play subscriptions, real user onboarding, direct Facebook OAuth/Page publishing, live scheduling or production multi-worker enforcement. Existing BAM work is preserved and publishing remains disabled.
