@@ -21,6 +21,8 @@ from bam_business_switch_wsgi import BAMBusinessSwitchWSGI
 from bam_content_write_wsgi import BAMContentWriteWSGI
 from bam_posting_preferences_wsgi import BAMPostingPreferencesWSGI
 from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
+from bam_pending_media_store import BAMPendingMediaStore
+from bam_pending_media_wsgi import BAMPendingMediaWSGI
 from bam_ai_facts_write_wsgi import BAMAIFactsWriteWSGI
 from bam_local_draft_wsgi import BAMLocalProductDraftWSGI
 from bam_signed_in_assets_wsgi import BAMSignedInAssetsWSGI
@@ -63,11 +65,14 @@ class BAMOfflineGateway:
     """
 
     def __init__(self, db, *, enabled=False, clock=None, google_verifier=None,
-                 serve_browser_assets=False):
+                 serve_browser_assets=False,pending_media_dir=None):
         if type(enabled) is not bool:
             raise ValueError('Boolean integration switch required')
         if type(serve_browser_assets) is not bool:
             raise ValueError('Boolean browser-assets switch required')
+        if pending_media_dir is not None and (type(pending_media_dir) is not str or
+                                            not pending_media_dir.strip()):
+            raise ValueError('Private pending media directory required')
         self.enabled = enabled
         self.serve_browser_assets = serve_browser_assets
         self.clock = time.time if clock is None else clock
@@ -122,6 +127,14 @@ class BAMOfflineGateway:
             self.read_api, enabled=enabled, clock=self.clock)
         self.upload_preflight_wsgi = BAMUploadPreflightWSGI(
             self.read_api, enabled=enabled, clock=self.clock)
+        self.pending_media_store=(BAMPendingMediaStore(
+            service=self.dashboard.content_service,
+            storage_dir=pending_media_dir)
+            if enabled and pending_media_dir is not None else None)
+        self.pending_media_wsgi=BAMPendingMediaWSGI(
+            self.pending_media_store,
+            enabled=enabled and pending_media_dir is not None,
+            clock=self.clock)
         self.facts_write_wsgi = BAMAIFactsWriteWSGI(
             registry=self.ai_business_facts,enabled=enabled,clock=self.clock)
         self.local_draft_wsgi = BAMLocalProductDraftWSGI(
@@ -169,6 +182,8 @@ class BAMOfflineGateway:
             return self.local_draft_wsgi(environ, start_response)
         if path == '/api/v1/ai/local-service-draft':
             return self.local_service_wsgi(environ, start_response)
+        if path == '/api/v1/content/media-bytes':
+            return self.pending_media_wsgi(environ,start_response)
         if path == '/api/v1/content/upload-preflight':
             return self.upload_preflight_wsgi(environ, start_response)
         return self._unavailable(

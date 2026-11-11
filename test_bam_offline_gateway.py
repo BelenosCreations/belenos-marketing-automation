@@ -497,6 +497,12 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         _,separate=self.call('/api/v1/ai-drafts',token=other)
         self.assertEqual(separate['drafts'],[])
 
+    def test_media_bytes_route_unavailable_without_external_private_storage(self):
+        token=self.login()
+        meta,_=self.call('/api/v1/content/media-bytes',
+            method='PUT',token=token,body={})
+        self.assertEqual(meta['status'],'503 Service Unavailable')
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')
