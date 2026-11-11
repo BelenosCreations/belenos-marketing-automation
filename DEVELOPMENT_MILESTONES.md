@@ -3,6 +3,12 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Tenant-private invitation activity trail — November 11, 2026
+
+An append-only `bam_business_invitation_events` SQLite table now records trusted delivery success/failure, cancellation and accepted invitations transactionally with their status changes. A read-only owner-scoped service, strict `GET /api/v1/team/invitations/activity` WSGI route, validated browser client and optional Team Settings activity panel expose **metadata only**, never invitation tokens or recipient emails. Activity is strictly isolated to the signed-in business and cleared on logout/business switching. Missing historical events are never fabricated. This work is offline-only and requires an explicit trusted delivery callback even for a private preview.
+
+**Verification:** current code through `13fd9ff2` and this documentation must pass exact-SHA Actions; the previous merged main checkpoint `7662dd29` passed [Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700). Do not infer a hosted invitation service or publishing capability.
+
 ## Owner-invitation control hardening and CI syntax checks — November 11, 2026
 
 The optional offline owner team workspace lists and cancels previously delivered, still-active private invitations without exposing invitation tokens. `BusinessInvitations.invite` now performs an atomic, business-scoped check against duplicate active invitation email and pre-existing account membership; expired, consumed, revoked and failed attempts have the correct distinct handling. The owner must explicitly use trusted delivery infrastructure outside this UI, and BAM does not send email itself. A new browser regression guards cancellation callbacks after logout. The full test workflow checks syntax of every JavaScript UI file before execution to catch invalid files early.

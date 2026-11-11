@@ -3,7 +3,7 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified main code:** `d671af418be906b8350a717390233c9d9af1c47c`. **Most recent verified development source:** `1444094af143eaa40c43402d995319f7921f2407` ([Actions 43105750364](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43105750364)). This newer source has not yet been merged into main.
+**Most recent verified main code:** `7662dd2976e6420b73cf6ec825eb7aba1dbdb9ac` ([Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700)). Earlier checkpoints below are historical.
 **Verification:** Full GitHub Actions [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) completed successfully on the exact merged commit. Integration candidate `748c3a1a` also passed [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217).
 **Merge:** [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) reconciled `main` with development; a two-parent integration history preserved both sets of changes. Development was fast-forwarded to main once the merged commit passed.
 **Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`. These are not off-site backups or enforced protection.
@@ -12,6 +12,8 @@
 
 
 **Latest confirmed development source:** `92d172552a5e63cf48f8ed9ef99bebb1f5114e88` passed [Actions 43120560150](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120560150), including JavaScript syntax validation, UI regressions, and offline Python tests. [Actions 43120107192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120107192) separately passed the repaired invitation workspace syntax. Follow-up logout-race test/documentation is pending exact-SHA verification. `main` remains distinct and the new checkpoint is not yet merged. No hosting or social publishing was enabled.
+
+**Latest verified main checkpoint:** `7662dd2976e6420b73cf6ec825eb7aba1dbdb9ac`, [GitHub Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700) **passed**. This is the merged, verified team-invitation control and JavaScript syntax-gate milestone. **Current development candidate:** invitation activity code through `13fd9ff23cd62dfcc7910d5e4b27659631673568`, plus this documentation, **not yet verified**. The new development head remains separate from main until exact-SHA tests and a reviewed merge.
 
 ## Product-direction checkpoint — 2026-11-11 (documentation only)
 
