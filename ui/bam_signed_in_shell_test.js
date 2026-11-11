@@ -157,8 +157,13 @@ async function main(){
     }
     if(kind==='logout')return {ok:true,json:async()=>({
       signed_out:true,publishing_enabled:false})};
+    if(kind==='posting-preferences'&&opts.method==='GET'&&currentTenant==='other')
+      return {ok:true,json:async()=>({tenant_id:'other',mode:'smart',
+        timezone:null,manual_times:[],configured:false,
+        publishing_enabled:false})};
     if(kind==='posting-time-preview'){
-      const config=data['posting-preferences'];
+      const config=currentTenant==='shop'?data['posting-preferences']:{
+        mode:'smart',timezone:null,configured:false};
       const manual=config.configured&&config.mode==='manual';
       return {ok:true,json:async()=>({
         tenant_id:currentTenant,mode:config.mode,
@@ -270,7 +275,7 @@ async function main(){
   assert.equal(e['bam-ai-facts-editor'].children[0].children.length,3);
   assert.equal(e['bam-posting-preferences'].children[0].children.length,5);
   assert.match(e['bam-posting-preferences'].children[0].children.at(-1)
-    .children[1].textContent,/no optimal times/);
+    .children[1].textContent,/Configure posting times/);
   assert.equal(e['bam-content-studio'].children[0].children[2].tag,'p');
   assert.equal(aiByTenant.other.length,0);
   assert.equal(e['bam-ai-drafts'].children[0].children.length,3);
