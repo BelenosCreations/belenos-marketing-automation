@@ -1,3 +1,16 @@
+## Verified end-to-end local HTTPS browser-shell/API socket flow — 2026-11-11
+
+### Added
+- A loopback-only TLS integration regression opens the actual signed-in BAM page, browser JavaScript and canonical brand icon over an ephemeral HTTPS socket with a temporary test certificate.
+- The same test signs in with a local password, reads the authenticated owner dashboard, creates an unpublished content request, lists drafts, rejects unknown/private source routes, signs out and verifies the old session is rejected.
+- All traffic remains on `127.0.0.1`; the test performs no real social API, OpenAI call, production enrollment, upload, or external HTTPS request.
+
+### Verification
+- **Passed:** [GitHub Actions run 43014624796](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43014624796), commit `4a6a3d50`: Python compilation, **769 Python tests and 35 JavaScript tests**.
+
+### Known limitations
+- This verifies Python HTTPS transport, not an automated browser session or Android UI. Browser certificate trust, accessibility, production database/concurrency and public service security remain separate release gates.
+
 ## Explicit loopback HTTPS preview and private local test-owner setup — 2026-11-11
 
 ### Added
@@ -12,7 +25,7 @@
 
 ### Known limitations
 - The local preview must not be exposed through port forwarding, a tunnel, public network, reverse proxy or production deployment. It uses a development-only bootstrap, single-process WSGI server and local SQLite; enterprise/production session security, Google authentication and live account verification are not implemented.
-- The runner has not yet been validated by a real browser against a TLS socket; the milestone tests exercise its trusted composition and guard functions. No live social publishing, media transfer or paid AI calls are enabled.
+- The runner has been validated through a Python HTTPS loopback client using a temporary self-signed certificate, **not** a real web browser or production security assessment. No live social publishing, media transfer or paid AI calls are enabled.
 
 ## Opt-in same-origin browser delivery for the authenticated BAM shell — 2026-11-11
 

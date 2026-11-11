@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Actual HTTPS socket end-to-end integration (2026-11-11)
+
+A new `test_bam_local_tls_smoke.py` starts the development gateway behind an ephemeral localhost-only TLS socket with a short-lived self-signed test certificate, not an external HTTP service. It retrieves the signed-in HTML, actual browser JS and branded icon, signs in through the real WSGI password endpoint, reads the authenticated dashboard, saves and retrieves a held unpublished content request, verifies inaccessible project-source and non-existent publication routes, and confirms logout immediately invalidates the token. No actual external network or paid AI is used.
+
+**Verified [GitHub Actions run 43014624796](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43014624796): 769 Python tests and 35 JS tests, plus compilation.** This is network-level TLS/WGSI smoke testing, not real-browser end-to-end automation or production sign-off.
+
 ## Loopback-only HTTPS preview runner and local test-owner bootstrap (2026-11-11)
 
 `bam_local_preview.py` now provides an explicitly opted-in, local-only WSGI TLS server for the authenticated BAM shell and gateway. It binds only `127.0.0.1`, requires an external TLS certificate/private key and a local-only acknowledgement, restricts browser Host values to exact localhost/loopback hosts with a matching port, and ignores externally supplied forwarded-protocol claims. No public route can create, verify or assign BAM identities. The separate `bootstrap` command prompts locally for a password, creates a private `0600` SQLite file outside the source repository, and establishes exactly one **test** owner. Marking email verified is a deliberate local demonstration shortcut, not a production verification implementation.
