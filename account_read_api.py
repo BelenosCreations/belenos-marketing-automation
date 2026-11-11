@@ -8,6 +8,8 @@ from account_dashboard import AccountDashboard
 from dashboard_cards import build_dashboard_cards
 from dashboard_view import build_dashboard_view
 from content_upload_preflight import ContentUploadPreflight
+from ai_local_templates import LocalDraftTemplates
+from ai_draft_request import AIDraftRequestBuilder
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
@@ -177,6 +179,37 @@ class AccountReadAPI:
                 'priority':request['priority']
             } for request in requests],
             'publishing_enabled':False}
+
+    def create_local_product_draft(self, *, session_token, server_now,
+                                   platform, include_image_prompt):
+        """Explicit zero-OpenAI-call product draft from confirmed owner facts.
+
+        No client-supplied facts, tenant, model or publication claims.
+        """
+        token=self._token(session_token)
+        now=self._now(server_now)
+        if self.ai_business_facts is None or self.ai_content_drafts is None or self.ai_policy is None:
+            raise RuntimeError('Local draft services unavailable')
+        snapshot=self.ai_business_facts.snapshot(token=token,now=now)
+        if snapshot['provenance']!='owner_confirmed':
+            raise ValueError('Owner-confirmed business facts required')
+        template=LocalDraftTemplates(
+            request_builder=AIDraftRequestBuilder(policy_store=self.ai_policy))
+        local=template.product_spotlight(
+            token=token,now=now,verified_facts=snapshot['facts'],
+            platform=platform,include_image_prompt=include_image_prompt)
+        if local['tenant_id']!=snapshot['tenant_id'] or local['openai_requests']!=0:
+            raise RuntimeError('Unsafe local draft provenance')
+        staged=self.ai_content_drafts.stage(
+            token=token,now=now,platform=platform,
+            response={'post_text':local['post_text'],
+                      'image_prompt':local['image_prompt']},
+            include_image_prompt=include_image_prompt,
+            needs_media=include_image_prompt)
+        if staged['tenant_id']!=snapshot['tenant_id']:
+            raise RuntimeError('Local draft business mismatch')
+        return {**staged,'generation_method':'local_template',
+                'openai_requests':0}
 
     def create_held_draft(self, *, session_token, server_now,
                           channel, draft_text, suggestion, required_items,

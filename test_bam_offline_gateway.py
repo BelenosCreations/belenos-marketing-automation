@@ -392,6 +392,37 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         _,again=self.call('/api/v1/ai-business-facts',token=shop)
         self.assertEqual(again['facts']['product'],'Custom tumblers')
 
+    def test_local_product_draft_requires_confirmed_facts_and_costs_zero(self):
+        shop=self.login('shop')
+        bad,_=self.call('/api/v1/ai/local-product-draft',
+            method='POST',token=shop,
+            body={'platform':'facebook','include_image_prompt':True})
+        self.assertEqual(bad['status'],'400 Bad Request')
+        self.app.ai_business_facts.confirm(token=shop,now=101,
+            facts={'business_name':'Example Shop','product':'Custom tumblers'})
+        meta,created=self.call('/api/v1/ai/local-product-draft',
+            method='POST',token=shop,
+            body={'platform':'facebook','include_image_prompt':True})
+        self.assertEqual(meta['status'],'201 Created')
+        self.assertEqual(created['status'],'needs_media')
+        self.assertEqual(created['openai_requests'],0)
+        self.assertFalse(created['publishing_enabled'])
+        self.assertFalse(created['media_attached'])
+        self.assertIn('generic marketing illustration',created['image_prompt'])
+        _,drafts=self.call('/api/v1/ai-drafts',token=shop)
+        self.assertEqual(len(drafts['drafts']),1)
+        self.assertEqual(drafts['drafts'][0]['draft_id'],created['draft_id'])
+        other=self.login('other')
+        _,separate=self.call('/api/v1/ai-drafts',token=other)
+        self.assertEqual(separate['drafts'],[])
+        bad,_=self.call('/api/v1/ai/local-product-draft',
+            method='POST',token=other,
+            body={'platform':'facebook','include_image_prompt':False})
+        self.assertEqual(bad['status'],'400 Bad Request')
+        _,costs=self.call('/api/v1/ai-cost-summary',token=shop)
+        self.assertEqual(costs['events'],0)
+        self.assertEqual(costs['estimated_micro_usd'],0)
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')

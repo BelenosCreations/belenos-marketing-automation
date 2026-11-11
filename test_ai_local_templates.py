@@ -30,6 +30,18 @@ class LocalTemplateTests(unittest.TestCase):
         self.assertFalse(draft['publishing_enabled'])
         self.assertNotIn('discount',draft['post_text'].lower())
 
+    def test_optional_generic_image_prompt_has_no_paid_calls(self):
+        draft=self.templates.product_spotlight(token=self.token,now=101,
+            verified_facts={'business_name':'Example Shop',
+                            'product':'Custom tumblers'},
+            platform='facebook',include_image_prompt=True)
+        self.assertEqual(draft['generation_method'],'local_template')
+        self.assertEqual(draft['openai_requests'],0)
+        self.assertIn('generic marketing illustration',draft['image_prompt'])
+        self.assertEqual(draft['status'],'needs_media')
+        self.assertNotIn('20 oz',draft['image_prompt'])
+        self.assertFalse(draft['publishing_enabled'])
+
     def test_missing_fact_rejected(self):
         with self.assertRaises(ValueError):
             self.templates.product_spotlight(token=self.token,now=101,

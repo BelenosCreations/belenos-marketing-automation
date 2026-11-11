@@ -22,6 +22,7 @@ from bam_content_write_wsgi import BAMContentWriteWSGI
 from bam_posting_preferences_wsgi import BAMPostingPreferencesWSGI
 from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
 from bam_ai_facts_write_wsgi import BAMAIFactsWriteWSGI
+from bam_local_draft_wsgi import BAMLocalProductDraftWSGI
 from bam_read_wsgi import BAMReadWSGI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
@@ -116,6 +117,8 @@ class BAMOfflineGateway:
             self.read_api, enabled=enabled, clock=self.clock)
         self.facts_write_wsgi = BAMAIFactsWriteWSGI(
             registry=self.ai_business_facts,enabled=enabled,clock=self.clock)
+        self.local_draft_wsgi = BAMLocalProductDraftWSGI(
+            self.read_api,enabled=enabled,clock=self.clock)
 
     @staticmethod
     def _unavailable(start_response, status, message):
@@ -145,6 +148,8 @@ class BAMOfflineGateway:
             return self.switch_wsgi(environ, start_response)
         if path in ('/api/v1/content/drafts','/api/v1/content/hold'):
             return self.content_write_wsgi(environ, start_response)
+        if path == '/api/v1/ai/local-product-draft':
+            return self.local_draft_wsgi(environ, start_response)
         if path == '/api/v1/content/upload-preflight':
             return self.upload_preflight_wsgi(environ, start_response)
         return self._unavailable(
