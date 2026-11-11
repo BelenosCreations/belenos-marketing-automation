@@ -497,6 +497,58 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         _,separate=self.call('/api/v1/ai-drafts',token=other)
         self.assertEqual(separate['drafts'],[])
 
+    def test_manual_image_bytes_are_staged_but_never_verified(self):
+        import hashlib
+        import tempfile
+        from pathlib import Path
+        png=b'\\x89PNG\\r\\n\\x1a\\n'+b'a-test-artwork'
+        with tempfile.TemporaryDirectory() as folder:
+            self.app=BAMOfflineGateway(self.db,enabled=True,
+                clock=lambda:101,pending_media_dir=str(Path(folder)/'pending'))
+            token=self.login()
+            meta,created=self.call('/api/v1/content/drafts',
+                method='POST',token=token,body={
+                    'channel':'facebook','draft_text':'Test artwork',
+                    'suggestion':'Provide an image',
+                    'required_items':['image']})
+            self.assertEqual(meta['status'],'201 Created')
+            rid=created['request_id']
+            meta,intent=self.call('/api/v1/content/upload-preflight',
+                method='POST',token=token,body={
+                    'request_id':rid,'item':'image',
+                    'media_type':'image/png',
+                    'sha256':hashlib.sha256(png).hexdigest(),
+                    'byte_count':len(png)})
+            self.assertEqual(meta['status'],'202 Accepted')
+            aid=intent['attachment_id']
+            headers={
+                'CONTENT_TYPE':'image/png',
+                'CONTENT_LENGTH':str(len(png)),
+                'HTTP_X_BAM_ATTACHMENT_ID':aid,
+                'wsgi.input':io.BytesIO(png)}
+            meta,received=self.call('/api/v1/content/media-bytes',
+                method='PUT',token=token,extra=headers)
+            self.assertEqual(meta['status'],'202 Accepted')
+            self.assertEqual(received['status'],'pending_scan')
+            self.assertFalse(received['publishing_enabled'])
+            self.assertFalse(received['media_verified'])
+            self.assertNotIn('storage_key',str(received))
+            self.assertEqual(
+                (Path(folder)/'pending'/(aid+'.pending')).read_bytes(),png)
+            self.assertIsNone(self.app.attachments.resolve_verified(
+                tenant_id='shop',request_id=rid,item='image',attachment_id=aid))
+            self.assertEqual(self.app.requests.get(
+                tenant_id='shop',request_id=rid)['status'],'needs_content')
+            other=self.login('other')
+            meta,_=self.call('/api/v1/content/media-bytes',
+                method='PUT',token=other,
+                extra={**headers,'wsgi.input':io.BytesIO(png)})
+            self.assertIn(meta['status'],('404 Not Found','401 Unauthorized'))
+            meta,_=self.call('/api/v1/content/media-bytes',
+                method='PUT',token=token,
+                extra={**headers,'wsgi.input':io.BytesIO(png)})
+            self.assertEqual(meta['status'],'409 Conflict')
+
     def test_media_bytes_route_unavailable_without_external_private_storage(self):
         token=self.login()
         meta,_=self.call('/api/v1/content/media-bytes',

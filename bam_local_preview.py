@@ -164,7 +164,7 @@ class _QuietHandler(WSGIRequestHandler):
         pass
 
 def run_loopback_preview(db_path,*,cert_path,key_path,port=8443,
-                         explicit_opt_in=False):
+                         explicit_opt_in=False,pending_media_dir=None):
     if explicit_opt_in is not True:
         raise PermissionError('Explicit local-only preview acknowledgement required')
     if type(port) is not int or not 1024<=port<=65535:
@@ -172,6 +172,8 @@ def run_loopback_preview(db_path,*,cert_path,key_path,port=8443,
     dbpath=_path(db_path,must_exist=True)
     certificate=_path(cert_path,must_exist=True)
     key=_path(key_path,must_exist=True)
+    media_path=(_path(pending_media_dir)
+                if pending_media_dir is not None else None)
     if os.name=='posix' and stat.S_IMODE(key.stat().st_mode)&0o077:
         raise PermissionError('TLS private key must be accessible to owner only (chmod 600)')
     context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -182,7 +184,8 @@ def run_loopback_preview(db_path,*,cert_path,key_path,port=8443,
         db.execute('PRAGMA foreign_keys=ON')
         db.execute('PRAGMA busy_timeout=5000')
         gateway=BAMOfflineGateway(
-            db,enabled=True,serve_browser_assets=True)
+            db,enabled=True,serve_browser_assets=True,
+            pending_media_dir=(str(media_path) if media_path else None))
         count=db.execute('''SELECT COUNT(*) FROM bam_identities i
             JOIN members m ON i.subject_id=m.subject_id
             WHERE i.active=1 AND i.email_verified=1 AND m.active=1''').fetchone()[0]
@@ -220,6 +223,7 @@ def main(argv=None):
     serve.add_argument('--cert',required=True)
     serve.add_argument('--key',required=True)
     serve.add_argument('--port',type=int,default=8443)
+    serve.add_argument('--pending-media-dir',help='Private local image holding area, off by default')
     serve.add_argument('--i-understand-local-only',action='store_true')
     args=parser.parse_args(argv)
     if args.command in ('bootstrap','add-business'):
@@ -244,7 +248,8 @@ def main(argv=None):
     else:
         run_loopback_preview(args.db,cert_path=args.cert,key_path=args.key,
             port=args.port,
-            explicit_opt_in=args.i_understand_local_only)
+            explicit_opt_in=args.i_understand_local_only,
+            pending_media_dir=args.pending_media_dir)
 
 if __name__=='__main__':
     main()
