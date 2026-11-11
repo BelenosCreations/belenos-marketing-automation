@@ -4,6 +4,12 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Read-only marketing claim-risk preview
+
+From each versioned Content Studio draft, **Check marketing claim risks** makes an authenticated GET to `/api/v1/content/risk-preview?request_id=<opaque-id>`. The backend resolves the current tenant and reads the stored draft; the browser accepts only bounded, version-matched, nonpublishing heuristic risk signals, displays them as safe text, and clears them when the draft revision changes or the session is invalidated. The analysis can flag pricing, scarcity, warranties, hours and testimonials but neither the presence nor absence of flags grants factual verification or publishing authorization.
+
+**Verified:** [run 43037661505](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43037661505), 813 Python and 45 JavaScript tests.
+
 ## Confirmed sign-out on all devices
 
 The signed-in shell exposes the existing `POST /api/v1/auth/logout-everywhere` session revocation via a separate warning, Confirm and Cancel UI. On confirmation the in-memory session is cleared before network delivery. Success is reported only when the server confirms the revoked-session count; otherwise the user is told that other devices may still have valid sessions. This is not social OAuth token revocation or a device enrollment manager. **Verified:** [run 43036158603](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43036158603).

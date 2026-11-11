@@ -4,10 +4,10 @@
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`  
 **Branch:** `development/phase-3-5-account-directory`  
-**Verified commit:** `c13fb91e30295c9bcb7375dd2d6fc03fc2a27020`  
-**CI:** [GitHub Actions run 43036158603](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43036158603)
+**Verified commit:** `4b92f5c3af12b8091ff7b27ddbb984cb0f19e6de`  
+**CI:** [GitHub Actions run 43037661505](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43037661505)
 
-**Result:** 809 Python unit/integration tests passed, 44 JavaScript UI regression scripts passed, and Python compilation passed. Tests include localhost-only ephemeral HTTPS socket integration, tenant/account/session isolation, actual private image byte receipt, receipt-status reads, explicit pending file discard, and a read-only DST-safe posting-time preview with browser contract tests, plus business-authorized social connection detail reads and actionable read-only Scheduled/Approvals dashboard drilldowns, plus version-checked held draft copy/guidance editing, legacy SQLite migration, tenant isolation and invalidation of prior review after content changes, plus anonymized owner-only Team Access counts and the two-step global BAM sign-out UI. This is test execution, not production security assessment or approval to launch.
+**Result:** 813 Python unit/integration tests passed, 45 JavaScript UI regression scripts passed, and Python compilation passed. Tests include localhost-only ephemeral HTTPS socket integration, tenant/account/session isolation, actual private image byte receipt, receipt-status reads, explicit pending file discard, and a read-only DST-safe posting-time preview with browser contract tests, plus business-authorized social connection detail reads and actionable read-only Scheduled/Approvals dashboard drilldowns, plus version-checked held draft copy/guidance editing, legacy SQLite migration, tenant isolation and invalidation of prior review after content changes, plus anonymized owner-only Team Access counts and the two-step global BAM sign-out UI, and tenant-scoped heuristic marketing risk previews tied to draft revisions. This is test execution, not production security assessment or approval to launch.
 
 ## Archived original Phase 3.2 package
 

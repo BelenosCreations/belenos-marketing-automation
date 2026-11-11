@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Read-only marketing claim-risk hints in Content Studio (2026-11-11)
+
+`BAMContentRiskWSGI` now serves a bounded GET review for a specific existing held draft; `AccountReadAPI.get_content_risk_preview` derives the tenant from the authenticated session and scans stored copy with `truthguard_risk_signals.py`. The response discloses only flagged text snippets/categories and the draft revision, and explicitly asserts that claim extraction is incomplete, review is required and publishing is disabled. A dedicated browser client validates this contract and Content Studio displays warnings only after user action. Revision mismatches, business switches and sign-out invalidate previous risk reports. A clean heuristic preview does not verify content.
+
+**Verified:** [run 43037661505](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43037661505), commit `4b92f5c3`, 813 Python tests and 45 JavaScript UI tests, plus compilation.
+
 ## Explicit global BAM session sign-out (2026-11-11)
 
 The signed-in Settings page now offers a separate warning, Confirm and Cancel for signing out on all BAM devices. Confirmation clears the browser's private workspace and token before requesting the already-tested backend session revocation route; only a trusted server response can confirm the number of sessions revoked. An unavailable response must never imply that other sessions were revoked. This does not touch provider OAuth or publishing rights.

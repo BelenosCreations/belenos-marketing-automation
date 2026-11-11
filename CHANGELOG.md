@@ -1,3 +1,17 @@
+## Private read-only marketing claim-risk preview — 2026-11-11
+
+### Added
+- A disabled-by-default authenticated `GET /api/v1/content/risk-preview?request_id=...` endpoint scans only an accessible, existing draft in the current business for bounded, deterministic risk signals: price/discount, guarantee, urgency/availability, business hours, and testimonial language.
+- Content Studio offers an explicit **Check marketing claim risks** button. Results display flagged excerpts using safe text rendering, remain tied to the reviewed draft revision and are invalidated when the copy changes or the user switches businesses.
+- The server never accepts tenant/approval override parameters, and the client rejects forged verification or publishing claims. Zero flags is explicitly **not** proof that a statement is accurate or eligible to publish.
+- Added Python WSGI/business isolation tests and browser response-validation/lifecycle tests for bounded risk signals and safe failure.
+
+### Verification
+- **Passed:** [GitHub Actions run 43037661505](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43037661505), commit `4b92f5c3`: **813 Python tests, 45 JavaScript UI test scripts**, and Python compilation.
+
+### Known limitations
+- Heuristic scanning is not comprehensive fact extraction or truth verification. Manual owner review, trusted business evidence, media inspection, final approval and live publishing remain separately gated and inactive.
+
 ## Explicit sign-out from all BAM devices — 2026-11-11
 
 ### Added
