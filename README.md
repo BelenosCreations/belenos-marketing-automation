@@ -698,3 +698,7 @@ When an idempotency ledger is configured, sponsored generation now **requires** 
 ## Coordinated signed-in dashboard and AI workspace lifecycle — 2026-11-10
 
 `ui/authenticated_workspace_controller.js` coordinates the large-card live dashboard with AI drafts, Settings, confirmed business facts and usage estimates under a single active business/session. It clears both views on logout or business switch, invalidates stale responses and clears all private panels if either part of a refresh fails. This controller does not persist bearer tokens or publish anything. Its integration regression test passed in an isolated JavaScript harness and was added to CI. The real authentication and deployment shell must still supply and revoke sessions; the existing HTML demo is not replaced.
+
+## AI generation hold response business binding — 2026-11-10
+
+Both newly created drafts and idempotent/non-entitled generation holds now carry the authenticated business identifier. The browser rejects responses for a different active business, including successful-looking held results. This closes a cross-business display ambiguity during account switches. Regression coverage was extended for the offline HTTP integration and browser write client; the selected JavaScript test passed in the isolated harness.
