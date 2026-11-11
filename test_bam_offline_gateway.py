@@ -129,6 +129,37 @@ class BAMOfflineGatewayTests(unittest.TestCase):
                 self.assertIn(expected,value)
                 self.assertFalse(value['publishing_enabled'])
 
+    def test_connection_details_are_private_read_only_and_tenant_scoped(self):
+        token=self.login('shop')
+        self.app.connections.register_trusted(
+            tenant_id='shop',platform='facebook',account_id='shop-page',
+            vault_reference='vault/private/oauth-access-token',
+            scope='read_insights',state='connected',expires_at=999,
+            now=100)
+        meta,body=self.call('/api/v1/connections',token=token)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(body['tenant_id'],'shop')
+        self.assertEqual(body['visibility'],'authorized')
+        self.assertEqual(body['connections'],[{
+            'platform':'facebook','account_id':'shop-page',
+            'status':'connected','scope':'read_insights',
+            'updated_at':100,'expires_at':999,'publishing_enabled':False}])
+        self.assertNotIn('vault/',str(body))
+        self.assertNotIn('oauth-access-token',str(body))
+        self.assertFalse(body['publishing_enabled'])
+        self.assertEqual(meta['headers']['Cache-Control'],'no-store, private')
+        self.assertEqual(self.call('/api/v1/connections',token=token,
+            extra={'QUERY_STRING':'tenant_id=other'})[0]['status'],
+            '400 Bad Request')
+        self.assertEqual(self.call('/api/v1/connections',
+            token=token,method='POST',body={'role':'owner'})[0]['status'],
+            '405 Method Not Allowed')
+        other=self.login('other')
+        self.assertEqual(self.call('/api/v1/connections',
+            token=other)[0]['status'],'401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/connections')[0]['status'],
+            '401 Unauthorized')
+
     def test_two_businesses_same_user_isolated(self):
         one=self.login('shop')
         two=self.login('other')

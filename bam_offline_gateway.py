@@ -51,7 +51,8 @@ _READ_PATHS = frozenset((
     '/api/v1/dashboard', '/api/v1/drafts',
     '/api/v1/posting-preferences', '/api/v1/ai-drafts',
     '/api/v1/ai-settings', '/api/v1/ai-business-facts',
-    '/api/v1/ai-cost-summary','/api/v1/posting-time-preview'))
+    '/api/v1/ai-cost-summary','/api/v1/posting-time-preview',
+    '/api/v1/connections'))
 
 
 class _DisabledGoogleVerifier:

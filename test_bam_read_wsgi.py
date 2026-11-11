@@ -27,6 +27,13 @@ class FakeReadAPI:
         if session_token!='valid':
             raise PermissionError('denied')
         return {'tenant_id':'shop','drafts':[],'publishing_enabled':False}
+    def get_social_connections(self,*,session_token,server_now):
+        self.calls.append(('connections',session_token,server_now))
+        if session_token!='valid':
+            raise PermissionError('denied')
+        return {'tenant_id':'shop','visibility':'authorized',
+                'connections':[],'publishing_enabled':False}
+
     def get_ai_cost_summary(self,*,session_token,server_now):
         self.calls.append(('ai_cost',session_token,server_now))
         if session_token!='valid':
@@ -97,9 +104,19 @@ class BAMReadWSGITests(unittest.TestCase):
                          ('/api/v1/ai-drafts','drafts'),
                          ('/api/v1/ai-settings','mode'),
                          ('/api/v1/ai-business-facts','facts'),
-                         ('/api/v1/ai-cost-summary','events')]:
+                         ('/api/v1/ai-cost-summary','events'),
+                         ('/api/v1/connections','connections')]:
             _,body=self.request(path)
             self.assertIn(key,body)
+
+    def test_connections_read_only_no_untrusted_query(self):
+        meta,data=self.request('/api/v1/connections')
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(data['visibility'],'authorized')
+        self.assertEqual(data['connections'],[])
+        self.assertFalse(data['publishing_enabled'])
+        self.assertEqual(self.request('/api/v1/connections',
+                         method='POST')[0]['status'],'405 Method Not Allowed')
 
     def test_reject_insecure_transport_before_auth(self):
         meta,body=self.request(scheme='http')

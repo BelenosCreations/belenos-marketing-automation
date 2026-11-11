@@ -124,6 +124,60 @@ class AccountReadAPI:
         return self.ai_content_drafts.list_mine(
             token=self._token(session_token),now=self._now(server_now))
 
+    def get_social_connections(self, *, session_token, server_now):
+        """Read current-business connection status metadata, never provider secrets.
+
+        The underlying connection directory independently requires READ_ANALYTICS.
+        This is not an OAuth exchange or a publishing eligibility check.
+        """
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        tenant=session.principal.tenant_id
+        response=self.dashboard.social_connections.list_connections(
+            token=token,tenant_id=tenant,now=now)
+        if (type(response) is not dict or response.get('tenant_id')!=tenant
+                or response.get('publishing_enabled') is not False
+                or type(response.get('connections')) is not list
+                or len(response['connections'])>250):
+            raise RuntimeError('Invalid social connection directory')
+        allowed_states={'pending','connected','refresh_required','revoked','expired'}
+        results=[]
+        seen=set()
+        for row in response['connections']:
+            if (type(row) is not dict
+                    or set(row)!={'platform','account_id','status','scope',
+                                   'updated_at','expires_at','publishing_enabled'}
+                    or any(type(row[key]) is not str or not row[key].strip()
+                           or len(row[key])>128
+                           for key in ('platform','account_id','scope'))
+                    or 'write' in row['scope'].lower()
+                    or 'publish' in row['scope'].lower()
+                    or row['status'] not in allowed_states
+                    or type(row['updated_at']) is not int or row['updated_at']<0
+                    or (row['expires_at'] is not None
+                        and (type(row['expires_at']) is not int
+                             or row['expires_at']<0))
+                    or row['publishing_enabled'] is not False):
+                raise RuntimeError('Invalid social account metadata')
+            key=(row['platform'],row['account_id'])
+            if key in seen:
+                raise RuntimeError('Duplicate social account metadata')
+            seen.add(key)
+            results.append({
+                'platform':row['platform'],
+                'account_id':row['account_id'],
+                'status':row['status'],
+                'scope':row['scope'],
+                'updated_at':row['updated_at'],
+                'expires_at':row['expires_at'],
+                'publishing_enabled':False})
+        return {'tenant_id':tenant,'visibility':'authorized',
+                'connections':results,'publishing_enabled':False}
+
     def get_posting_preferences(self, *, session_token, server_now):
         token=self._token(session_token)
         now=self._now(server_now)
