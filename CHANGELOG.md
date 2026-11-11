@@ -1,5 +1,16 @@
 # Changelog
 
+## Disabled-by-default AI service composition — 2026-11-10
+
+### Added
+- Complete offline AI service bundle wiring confirmed facts, quotas, idempotency, drafts, cost ledger and both write adapters.
+- Default-deny OpenAI transport and WSGI endpoints with no credentials or network access.
+- Regression test verifying the bundle cannot generate, edit facts or record charges.
+
+### Limitations
+- Production credential provisioning and endpoint activation are deliberately excluded.
+
+
 ## Optional manual ChatGPT image handoff — 2026-11-10
 
 ### Added
