@@ -1,5 +1,11 @@
 # Changelog
 
+## AI business-switch integration regression — 2026-11-10
+
+### Added
+- Account API integration test covering per-business AI memory, stored AI drafts and cross-business switch isolation.
+
+
 ## Targeted AI revision schema correction — 2026-11-10
 
 ### Fixed
