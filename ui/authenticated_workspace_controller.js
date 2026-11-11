@@ -19,12 +19,13 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
                    aiSettingsContainer,aiFactsContainer,aiCostContainer,
                    fetchImpl,origin,onError,copyText,openUrl,
                    aiFactsEditorContainer,canManageFacts=false,onSaveFacts,
-                   contentStudioContainer,onOpenContentStudio,postingPreferencesContainer,
+                   contentStudioContainer,onOpenContentStudio,onOpenPostingSettings,
+                   postingPreferencesContainer,
                    enableLocalTemplates=false,hashMediaBytes,onNotice}){
     let activeSession=null,epoch=0,active=false;
     const dashboard=dashboardModule.create({
       document,container:dashboardContainer,fetchImpl,origin,onError,
-      onOpenContentStudio});
+      onOpenContentStudio,onOpenPostingSettings});
     async function saveConfirmedFacts({facts,expectedRevision,expectedTenantId}){
       const mine=activeSession,version=epoch;
       if(!mine||expectedTenantId!==mine.tenantId){

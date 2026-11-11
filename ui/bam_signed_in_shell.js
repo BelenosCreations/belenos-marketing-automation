@@ -112,6 +112,7 @@
           value=>value.toString(16).padStart(2,'0')).join('');
       },
       onOpenContentStudio:()=>showPanel('content'),
+      onOpenPostingSettings:()=>showPanel('settings'),
       fetchImpl,origin,onError:message,
       copyText:text=>{
         if(!window.navigator||!window.navigator.clipboard)

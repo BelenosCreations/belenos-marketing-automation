@@ -28,10 +28,10 @@ function payload(tenant='shop'){
 async function main(){
   let responder=()=>payload(),pending=null,errors=[];
   const fetchImpl=async()=>({ok:true,json:async()=>responder()});
-  let opened=0;
+  let opened=0,settingsOpened=0;
   const app=create({document,container,fetchImpl,
     origin:'https://bam.example',onError:e=>errors.push(e),
-    onOpenContentStudio:()=>opened++});
+    onOpenContentStudio:()=>opened++,onOpenPostingSettings:()=>settingsOpened++});
   app.activate({token:'valid',tenantId:'shop'});
   assert.equal((await app.refresh()).stale,false);
   const cards=container.children[0].children[1].children;
@@ -46,7 +46,14 @@ async function main(){
   assert.equal(opened,1);
   app.show('scheduled');
   assert.match(container.children[0].children[2].textContent,
-    /Scheduling is not connected/);
+    /No social scheduler is connected/);
+  assert.match(container.children[0].children[3].children[1].textContent,
+    /Select Refresh time preview/);
+  const settings=container.children[0].children[3].children.find(
+    x=>x.textContent==='Open posting-time settings');
+  assert.ok(settings);
+  settings.listeners.click();
+  assert.equal(settingsOpened,1);
   responder=()=>payload('other');
   assert.equal((await app.refresh()).error,true);
   assert.equal(container.children.length,0);

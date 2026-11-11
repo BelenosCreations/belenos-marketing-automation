@@ -16,7 +16,7 @@
     return item;
   }
   function create({document,container,fetchImpl,origin,onError,
-                   onOpenContentStudio}){
+                   onOpenContentStudio,onOpenPostingSettings}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Dashboard dependencies required');
@@ -24,13 +24,18 @@
       throw new TypeError('Error callback required');
     if(onOpenContentStudio!==undefined&&typeof onOpenContentStudio!=='function')
       throw new TypeError('Content Studio navigation callback required');
+    if(onOpenPostingSettings!==undefined&&typeof onOpenPostingSettings!=='function')
+      throw new TypeError('Posting settings navigation callback required');
     let active=null,epoch=0,requestVersion=0,current=null,view='home';
     let connectionData=null,connectionPending=false,connectionError=false;
     let connectionRequest=0;
+    let postingPreview=null,previewPending=false,previewError=false;
+    let previewRequest=0;
     function clear(){
-      epoch++;requestVersion++;connectionRequest++;
+      epoch++;requestVersion++;connectionRequest++;previewRequest++;
       active=null;current=null;view='home';
       connectionData=null;connectionPending=false;connectionError=false;
+      postingPreview=null;previewPending=false;previewError=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -67,6 +72,32 @@
         }
       }
     }
+    async function refreshPostingPreview(){
+      if(!active||!current)return {stale:true};
+      if(previewPending)return {pending:true};
+      const mine=active,version=epoch,request=++previewRequest;
+      previewPending=true;previewError=false;
+      if(view==='scheduled')show('scheduled');
+      try{
+        const data=await client.read({kind:'postingPreview',token:mine.token,
+          fetchImpl,origin,expectedTenantId:mine.tenantId});
+        if(epoch!==version||active!==mine||request!==previewRequest)
+          return {stale:true};
+        postingPreview=data;
+        return {stale:false,status:data.status};
+      }catch(error){
+        if(epoch!==version||active!==mine||request!==previewRequest)
+          return {stale:true};
+        postingPreview=null;previewError=true;
+        if(onError)onError('Posting-time preview could not be loaded');
+        return {error:true};
+      }finally{
+        if(epoch===version&&active===mine&&request===previewRequest){
+          previewPending=false;
+          if(view==='scheduled')show('scheduled');
+        }
+      }
+    }
     function show(section){
       if(!current)return;
       if(section!=='home'&&!order.includes(section))
@@ -94,6 +125,7 @@
             if(id==='connections'&&
                current.cards.connections.availability==='available')
               void refreshConnections();
+            if(id==='scheduled')void refreshPostingPreview();
           });
           cards.append(button);
         }
@@ -129,10 +161,77 @@
           }
         }else if(section==='scheduled'){
           wrap.append(element(document,'p',
-            'Scheduling is not connected. No scheduled posts are verified.'));
+            'No social scheduler is connected. No posts are scheduled or verified.'));
+          const preview=element(document,'section','');
+          preview.append(element(document,'h3','Possible local posting times'));
+          if(previewPending){
+            preview.append(element(document,'p',
+              'Checking saved posting-time preferences...'));
+          }else if(previewError){
+            preview.append(element(document,'p',
+              'Posting-time preview unavailable. No posts have been scheduled.'));
+          }else if(!postingPreview){
+            preview.append(element(document,'p',
+              'Select Refresh time preview to see possible posting times.'));
+          }else if(postingPreview.status==='not_configured'){
+            preview.append(element(document,'p',
+              'Posting-time preferences are not configured for this business.'));
+          }else if(postingPreview.status==='needs_audience_data'){
+            preview.append(element(document,'p',
+              'Smart mode needs verified audience data. No optimal posting time is available yet.'));
+          }else{
+            preview.append(element(document,'p',
+              'Manual mode: suggested clock times only, not scheduled posts.'));
+            for(const slot of postingPreview.slots.slice(0,10)){
+              preview.append(element(document,'p',
+                slot.localDate+' at '+slot.localTime+' ('+
+                postingPreview.timezone+')'));
+            }
+            if(postingPreview.slots.length>10||postingPreview.truncated)
+              preview.append(element(document,'p',
+                'Additional proposed times omitted from this dashboard preview.'));
+            if(postingPreview.skippedDst)
+              preview.append(element(document,'p',
+                postingPreview.skippedDst+' ambiguous or nonexistent daylight-saving times omitted.'));
+          }
+          const update=element(document,'button','Refresh time preview');
+          update.type='button';update.className='secondary';
+          update.disabled=previewPending;
+          update.addEventListener('click',()=>{
+            if(active===scope&&epoch===scopeEpoch)
+              void refreshPostingPreview();
+          });
+          preview.append(update);
+          if(onOpenPostingSettings){
+            const settings=element(document,'button','Open posting-time settings');
+            settings.type='button';settings.className='secondary';
+            settings.addEventListener('click',()=>{
+              if(active===scope&&epoch===scopeEpoch)onOpenPostingSettings();
+            });
+            preview.append(settings);
+          }
+          wrap.append(preview);
         }else if(section==='approvals'){
           wrap.append(element(document,'p',
-            'Approval count is shown above. Open Content Studio to review details.'));
+            'Ready-for-review requests are not approved or scheduled posts.'));
+          const review=current.drafts.filter(x=>x.status==='ready_for_review');
+          if(!review.length)
+            wrap.append(element(document,'p','No content marked ready for review.'));
+          for(const draft of review){
+            const article=element(document,'article','');
+            article.append(element(document,'h3',draft.channel));
+            article.append(element(document,'p',draft.text));
+            article.append(element(document,'p',draft.suggestion));
+            wrap.append(article);
+          }
+          if(onOpenContentStudio){
+            const open=element(document,'button','Open Content Studio');
+            open.type='button';open.className='secondary';
+            open.addEventListener('click',()=>{
+              if(active===scope&&epoch===scopeEpoch)onOpenContentStudio();
+            });
+            wrap.append(open);
+          }
         }else if(section==='connections'){
           const state=current.cards.connections.availability;
           if(state!=='available'){
@@ -192,12 +291,14 @@
           fetchImpl,origin,expectedTenantId:mine.tenantId});
         if(version!==epoch||request!==requestVersion||mine!==active)
           return {stale:true};
-        connectionRequest++;
+        connectionRequest++;previewRequest++;
         connectionData=null;connectionPending=false;connectionError=false;
+        postingPreview=null;previewPending=false;previewError=false;
         current=data;show(view);
         if(view==='connections'&&
            data.cards.connections.availability==='available')
           void refreshConnections();
+        if(view==='scheduled')void refreshPostingPreview();
         return {stale:false,tenantId:data.tenantId,role:data.role,
           pendingMediaAvailable:data.pendingMediaAvailable,
           businesses:data.businesses.map(b=>({tenantId:b.tenant_id,name:b.name}))};
@@ -209,7 +310,8 @@
         return {stale:false,error:true};
       }
     }
-    return Object.freeze({activate,refresh,clear,show,refreshConnections});
+    return Object.freeze({activate,refresh,clear,show,refreshConnections,
+      refreshPostingPreview});
   }
   return Object.freeze({create});
 });
