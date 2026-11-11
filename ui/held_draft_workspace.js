@@ -487,7 +487,8 @@
               button.disabled=busy;
               button.addEventListener('click',async()=>{
                 if(busy||active!==viewingSession||epoch!==viewingEpoch)return;
-                const result=await changeHold({requestId:draft.id,status:target});
+                const result=await changeHold({requestId:draft.id,status:target,
+                  expectedRevision:draft.revision});
                 if(result.error&&onError)onError('Unable to change draft status');
               });
               article.append(button);

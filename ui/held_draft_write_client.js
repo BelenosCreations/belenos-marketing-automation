@@ -59,10 +59,13 @@
   }
   async function changeHold(options){
     context(options);
-    if(!requestPattern.test(options.requestId)||!holds.has(options.status))
+    if(!requestPattern.test(options.requestId)||!holds.has(options.status)||
+       !Number.isSafeInteger(options.expectedRevision)||
+       options.expectedRevision<1)
       throw new TypeError('Invalid draft hold request');
     return post(options,'/api/v1/content/hold',{
-      request_id:options.requestId,status:options.status},options.status);
+      request_id:options.requestId,status:options.status,
+      expected_revision:options.expectedRevision},options.status);
   }
   async function reviseDraft(options){
     context(options);

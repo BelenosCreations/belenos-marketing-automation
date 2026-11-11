@@ -25,11 +25,12 @@ async function main(){
   assert.equal(requests[0].opts.redirect,'error');
   assert.equal(requests[0].opts.cache,'no-store');
   assert.equal(requests[0].opts.headers.Authorization,'Bearer '+token);
-  const changed=await changeHold({...ctx,requestId:id,status:'postponed'});
+  const changed=await changeHold({...ctx,requestId:id,status:'postponed',
+    expectedRevision:1});
   assert.equal(changed.status,'postponed');
   assert.equal(requests[1].url,'https://bam.example/api/v1/content/hold');
   assert.deepEqual(JSON.parse(requests[1].opts.body),{
-    request_id:id,status:'postponed'});
+    request_id:id,status:'postponed',expected_revision:1});
   const count=requests.length;
   for(const item of [
     {channel:'facebook',draftText:'copy',suggestion:'guide',
@@ -47,7 +48,12 @@ async function main(){
     await assert.rejects(()=>createDraft({...ctx,...item}),TypeError);
   }
   for(const status of ['published','approved','ready_for_review'])
-    await assert.rejects(()=>changeHold({...ctx,requestId:id,status}),TypeError);
+    await assert.rejects(()=>changeHold({...ctx,requestId:id,status,
+      expectedRevision:1}),TypeError);
+  await assert.rejects(()=>changeHold({...ctx,requestId:id,
+    status:'postponed',expectedRevision:1}),TypeError);
+  await assert.rejects(()=>changeHold({...ctx,requestId:id,
+    status:'postponed',expectedRevision:true}),TypeError);
   await assert.rejects(()=>changeHold({...ctx,requestId:'not-an-id',
     status:'postponed'}),TypeError);
   await assert.rejects(()=>createDraft({...ctx,origin:'http://bam.example',
@@ -61,7 +67,7 @@ async function main(){
   await assert.rejects(()=>changeHold({...ctx,fetchImpl:async()=>({
     ok:true,json:async()=>({tenant_id:'shop',request_id:id,
       status:'postponed',publishing_enabled:true})}),
-    requestId:id,status:'postponed'}),TypeError);
+    requestId:id,status:'postponed',expectedRevision:1}),TypeError);
   assert.equal(requests.length,count);
   console.log('BAM held draft write boundary tests passed');
 }

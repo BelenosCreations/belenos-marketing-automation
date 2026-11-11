@@ -68,11 +68,13 @@ class BAMContentWriteWSGITests(unittest.TestCase):
     def test_hold_postponed_and_reopened(self):
         for state in ('postponed','needs_content','unavailable'):
             meta,result=self.call(path='/api/v1/content/hold',
-                body={'request_id':'a'*32,'status':state})
+                body={'request_id':'a'*32,'status':state,'expected_revision':1})
             self.assertEqual(meta['status'],'200 OK')
             self.assertEqual(result['status'],state)
         self.assertEqual([name for name,_ in self.api.calls],
                          ['hold']*3)
+        self.assertTrue(all(args['expected_revision']==1
+                            for name,args in self.api.calls))
 
     def test_client_cannot_claim_tenant_role_or_publish(self):
         sample={'channel':'facebook','draft_text':'Product preview',
@@ -91,6 +93,14 @@ class BAMContentWriteWSGITests(unittest.TestCase):
             with self.subTest(body=body):
                 meta,_=self.call(path='/api/v1/content/hold',body=body)
                 self.assertEqual(meta['status'],'400 Bad Request')
+        for body in (
+            {'request_id':'a'*32,'status':'postponed'},
+            {'request_id':'a'*32,'status':'postponed','expected_revision':True},
+            {'request_id':'a'*32,'status':'postponed','expected_revision':0},
+            {'request_id':'a'*32,'status':'postponed',
+             'expected_revision':1,'publishing_enabled':True}):
+            self.assertEqual(self.call(path='/api/v1/content/hold',
+                body=body)[0]['status'],'400 Bad Request')
         self.assertEqual(self.api.calls,[])
 
     def test_duplicate_json_fields_and_malformed_json(self):
@@ -100,6 +110,16 @@ class BAMContentWriteWSGITests(unittest.TestCase):
                 meta,_=self.call(raw=raw)
                 self.assertEqual(meta['status'],'400 Bad Request')
         self.assertEqual(self.api.calls,[])
+
+    def test_stale_editor_hold_is_conflict_not_mutation(self):
+        def conflict(**kwargs):
+            raise ValueError('Stale draft revision')
+        self.api.update_draft_hold=conflict
+        meta,result=self.call(path='/api/v1/content/hold',
+            body={'request_id':'a'*32,'status':'postponed',
+                  'expected_revision':1})
+        self.assertEqual(meta['status'],'409 Conflict')
+        self.assertNotIn('tenant_id',result)
 
     def test_permission_rejection_and_errors_are_generic(self):
         self.api.blocked=True

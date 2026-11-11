@@ -148,18 +148,37 @@ class ContentRequests:
                  status,now,tenant_id,request_id))
         return status
 
-    def set_hold(self, *, tenant_id, request_id, status, now):
+    def set_hold(self, *, tenant_id, request_id, status, now,
+                 expected_revision=None):
+        """Hold edits cannot overwrite newer draft/content changes.
+
+        Python-only legacy callers may omit expected_revision. Even those
+        callers use the loaded revision as a compare-and-swap guard so
+        overlapping operations cannot silently replace a later update.
+        HTTPS callers must provide the revision they actually reviewed.
+        """
         if status not in ('postponed','unavailable','needs_content'):
             raise ValueError('Invalid hold status')
+        if type(now) is not int or now<0:
+            raise ValueError('Trusted timestamp required')
+        if expected_revision is not None and (
+                type(expected_revision) is not int or expected_revision<1):
+            raise ValueError('Current draft revision required')
         request=self.get(tenant_id=tenant_id,request_id=request_id)
         if request is None:
             raise KeyError('Request not found in business')
+        if (expected_revision is not None and
+                request['revision']!=expected_revision):
+            raise ValueError('Stale draft revision')
         if status=='needs_content' and set(request['provided_items'])==set(request['required_items']):
             raise ValueError('Complete request must remain ready for review')
         with self.db:
-            self.db.execute("""UPDATE content_requests SET status=?,updated_at=?,revision=revision+1
-                WHERE tenant_id=? AND request_id=?""",
-                (status,now,tenant_id,request_id))
+            changed=self.db.execute("""UPDATE content_requests
+                SET status=?,updated_at=?,revision=revision+1
+                WHERE tenant_id=? AND request_id=? AND revision=?""",
+                (status,now,tenant_id,request_id,request['revision']))
+        if changed.rowcount!=1:
+            raise ValueError('Stale draft revision')
         return status
 
     def revise(self, *, tenant_id, request_id, target,

@@ -553,7 +553,8 @@ class AccountReadAPI:
                 'request_id':request_id,'status':status,
                 'publishing_enabled':False}
 
-    def update_draft_hold(self, *, session_token, server_now, request_id, status):
+    def update_draft_hold(self, *, session_token, server_now, request_id, status,
+                          expected_revision=None):
         """Postpone, mark unavailable or reopen an incomplete draft."""
         token=self._token(session_token)
         now=self._now(server_now)
@@ -570,6 +571,7 @@ class AccountReadAPI:
         if status not in ('postponed','unavailable','needs_content'):
             raise ValueError('Invalid hold status')
         result=service.set_hold(token=token,tenant_id=session.principal.tenant_id,
-                                request_id=request_id,status=status,now=now)
+                                request_id=request_id,status=status,
+                                expected_revision=expected_revision,now=now)
         return {'tenant_id':session.principal.tenant_id,'request_id':request_id,
                 'status':result,'publishing_enabled':False}

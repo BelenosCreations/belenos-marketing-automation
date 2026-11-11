@@ -117,23 +117,30 @@ class BAMContentWriteWSGI:
                     priority=body.get('priority',0))
                 return reply('201 Created',
                              self._safe_result(result,status='needs_content'))
-            if set(body)!={'request_id','status'}:
+            if set(body)!={'request_id','status','expected_revision'}:
                 raise ValueError('Unexpected hold fields')
             if type(body['request_id']) is not str or (
                     _ID.fullmatch(body['request_id']) is None):
                 raise ValueError('Invalid request ID')
             if body['status'] not in ('needs_content','postponed','unavailable'):
                 raise ValueError('Invalid hold state')
+            if type(body['expected_revision']) is not int or body['expected_revision']<1:
+                raise ValueError('Current draft revision required')
             result=self.api.update_draft_hold(
                 session_token=token,server_now=now,
-                request_id=body['request_id'],status=body['status'])
+                request_id=body['request_id'],status=body['status'],
+                expected_revision=body['expected_revision'])
             return reply('200 OK',
                          self._safe_result(result,status=body['status']))
         except PermissionError:
             return reply('401 Unauthorized',{'error':'Content access unavailable'})
         except KeyError:
             return reply('404 Not Found',{'error':'Draft unavailable'})
-        except (ValueError,TypeError,UnicodeDecodeError,
+        except ValueError as exc:
+            if str(exc)=='Stale draft revision':
+                return reply('409 Conflict',{'error':'Draft changed; refresh required'})
+            return reply('400 Bad Request',{'error':'Invalid draft request'})
+        except (TypeError,UnicodeDecodeError,
                 json.JSONDecodeError,AttributeError):
             return reply('400 Bad Request',{'error':'Invalid draft request'})
         except Exception:

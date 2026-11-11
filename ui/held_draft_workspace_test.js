@@ -67,7 +67,7 @@ async function main(){
   assert.equal(guidance,'Use a cleared product image');
   assert.equal(calls.filter(x=>x.opts.method==='PUT').length,2);
   const changed=await app.changeHold({
-    requestId:'b'.repeat(32),status:'postponed'});
+    requestId:'b'.repeat(32),status:'postponed',expectedRevision:3});
   assert.equal(changed.status,'postponed');
   const scanned=await app.inspectRisk({
     requestId:'b'.repeat(32),revision:3});

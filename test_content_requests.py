@@ -168,6 +168,26 @@ class ContentRequestsTests(unittest.TestCase):
             self.queue.provide(tenant_id='other',request_id=self.r,
                 item='photo',content_reference='asset:123',now=101)
 
+    def test_hold_revision_conflict_preserves_latest_status(self):
+        original=self.queue.get(tenant_id='shop',request_id=self.r)
+        self.queue.set_hold(tenant_id='shop',request_id=self.r,
+            status='postponed',now=101,
+            expected_revision=original['revision'])
+        with self.assertRaisesRegex(ValueError,'Stale draft revision'):
+            self.queue.set_hold(tenant_id='shop',request_id=self.r,
+                status='needs_content',now=102,
+                expected_revision=original['revision'])
+        item=self.queue.get(tenant_id='shop',request_id=self.r)
+        self.assertEqual(item['status'],'postponed')
+        self.assertEqual(item['revision'],original['revision']+1)
+        with self.assertRaises(ValueError):
+            self.queue.set_hold(tenant_id='shop',request_id=self.r,
+                status='needs_content',now=True,
+                expected_revision=item['revision'])
+        with self.assertRaises(ValueError):
+            self.queue.set_hold(tenant_id='shop',request_id=self.r,
+                status='needs_content',now=104,expected_revision=True)
+
     def test_postpone_and_resume(self):
         self.queue.set_hold(tenant_id='shop',request_id=self.r,status='postponed',now=101)
         with self.assertRaises(ValueError):
