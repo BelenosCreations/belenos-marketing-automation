@@ -686,3 +686,7 @@ When an idempotency ledger is configured, sponsored generation now **requires** 
 ## Explicit-action AI browser write client — 2026-11-10
 
 `ui/ai_write_client.js` provides two narrowly scoped authenticated HTTPS operations for a future UI: owner-confirming a business fact snapshot, and requesting an unpublished AI draft using an externally supplied idempotency key. The browser cannot supply tenant IDs, publishing controls, model choices, quota plans or API secrets; requests use bearer authorization, no cookies, no caching and no automatic retries. The operations are **not** automatically invoked by the dashboard and require explicit user actions once the sign-in shell and disabled-by-default endpoints are safely connected. Its security tests passed in an isolated JavaScript harness and were added to CI.
+
+## End-to-end AI HTTPS request replay regression — 2026-11-10
+
+`test_ai_generation_http_e2e.py` now exercises the complete **offline** generation path: HTTPS WSGI request, authenticated session, server-configured sponsorship, idempotency claim, owner-confirmed business facts, structured OpenAI adapter with a fake provider response, and a held unpublished draft. Repeating the same request key must return an already-completed status without a second provider call or duplicate draft. This test is included in the existing Python unittest discovery workflow; complete CI execution has not yet been independently verified.
