@@ -17,6 +17,7 @@ import time
 from wsgiref.simple_server import WSGIRequestHandler, make_server
 
 from bam_offline_gateway import BAMOfflineGateway
+from access_policy import Role
 from identity_auth import normalize_email
 
 _SOURCE_ROOT=Path(__file__).resolve().parent
@@ -36,6 +37,57 @@ def _path(value,*,must_exist=False):
         raise ValueError('A file path is required')
     return path
 
+def _business_details(tenant_id,display_name,industry,topic):
+    for value,limit in ((tenant_id,128),(display_name,200),
+                        (industry,120),(topic,120)):
+        if (type(value) is not str or not value.strip()
+                or value!=value.strip() or len(value)>limit):
+            raise ValueError('Invalid local preview business details')
+
+def add_preview_business(db_path,*,email,password,existing_tenant_id,
+                         new_tenant_id,display_name,industry,topic,now=None):
+    """Add a second local preview business only after existing owner login.
+
+    This is a trusted local CLI operation, never an HTTP route or a public
+    self-service business enrollment. It cannot grant ownership to strangers.
+    """
+    path=_path(db_path,must_exist=True)
+    normalize_email(email)
+    if type(password) is not str or not 12<=len(password.encode('utf-8'))<=1024:
+        raise ValueError('Valid password required')
+    if type(existing_tenant_id) is not str or not existing_tenant_id.strip():
+        raise ValueError('Existing business ID required')
+    _business_details(new_tenant_id,display_name,industry,topic)
+    timestamp=int(time.time()) if now is None else now
+    if type(timestamp) is not int or timestamp<0:
+        raise ValueError('Invalid local timestamp')
+    if os.name=='posix' and stat.S_IMODE(path.stat().st_mode)&0o077:
+        raise PermissionError('Local preview database must be private (chmod 600)')
+    with closing(sqlite3.connect(path)) as db:
+        db.execute('PRAGMA foreign_keys=ON')
+        gateway=BAMOfflineGateway(db)
+        token=gateway.identities.login_password(
+            email=email,password=password,
+            tenant_id=existing_tenant_id,now=timestamp)
+        try:
+            session=gateway.sessions.resolve_current(
+                token,directory=gateway.directory,now=timestamp)
+            if session is None or session.principal.role!=Role.OWNER:
+                raise PermissionError('Existing local business owner required')
+            if (db.execute('SELECT 1 FROM members WHERE tenant_id=?',
+                (new_tenant_id,)).fetchone() or
+                db.execute('SELECT 1 FROM business_profiles WHERE tenant_id=?',
+                (new_tenant_id,)).fetchone()):
+                raise PermissionError('Target business already exists')
+            gateway.directory.bootstrap_owner(
+                new_tenant_id,session.principal.subject_id)
+            gateway.curation.create_profile(
+                new_tenant_id,display_name,industry,[topic])
+        finally:
+            gateway.sessions.revoke(token,now=timestamp)
+    return {'business_id':new_tenant_id,
+            'preview_only':True,'publishing_enabled':False}
+
 def provision_preview_owner(db_path,*,email,password,tenant_id,
                             display_name,industry,topic,now=None):
     """Local-only test owner enrollment; deliberately bypasses *real* email delivery.
@@ -47,11 +99,7 @@ def provision_preview_owner(db_path,*,email,password,tenant_id,
     normalize_email(email)
     if type(password) is not str or not 12<=len(password.encode('utf-8'))<=1024:
         raise ValueError('Password must be 12–1024 UTF-8 bytes')
-    for value,limit in ((tenant_id,128),(display_name,200),
-                        (industry,120),(topic,120)):
-        if (type(value) is not str or not value.strip()
-                or value!=value.strip() or len(value)>limit):
-            raise ValueError('Invalid local preview business details')
+    _business_details(tenant_id,display_name,industry,topic)
     timestamp=int(time.time()) if now is None else now
     if type(timestamp) is not int or timestamp<0:
         raise ValueError('Invalid local setup time')
@@ -160,6 +208,13 @@ def main(argv=None):
     setup.add_argument('--display-name',required=True)
     setup.add_argument('--industry',required=True)
     setup.add_argument('--topic',required=True)
+    add=sub.add_parser('add-business',help='Create a second preview business for an existing owner')
+    add.add_argument('--db',required=True)
+    add.add_argument('--existing-business-id',required=True)
+    add.add_argument('--new-business-id',required=True)
+    add.add_argument('--display-name',required=True)
+    add.add_argument('--industry',required=True)
+    add.add_argument('--topic',required=True)
     serve=sub.add_parser('serve',help='Run local-only HTTPS preview')
     serve.add_argument('--db',required=True)
     serve.add_argument('--cert',required=True)
@@ -167,17 +222,25 @@ def main(argv=None):
     serve.add_argument('--port',type=int,default=8443)
     serve.add_argument('--i-understand-local-only',action='store_true')
     args=parser.parse_args(argv)
-    if args.command=='bootstrap':
-        email=input('Local BAM test email: ').strip()
+    if args.command in ('bootstrap','add-business'):
+        email=input('Local BAM test owner email: ').strip()
         password=getpass.getpass('Local BAM password (12+ characters): ')
-        confirmed=getpass.getpass('Confirm password: ')
-        if password!=confirmed:
-            parser.error('Passwords did not match')
-        result=provision_preview_owner(args.db,email=email,password=password,
-            tenant_id=args.business_id,display_name=args.display_name,
-            industry=args.industry,topic=args.topic)
-        print('Preview-only owner configured for business ID '+result['business_id'])
-        print('Email ownership was NOT independently verified; never use this bootstrap in production.')
+        if args.command=='bootstrap':
+            confirmed=getpass.getpass('Confirm password: ')
+            if password!=confirmed:
+                parser.error('Passwords did not match')
+            result=provision_preview_owner(args.db,email=email,password=password,
+                tenant_id=args.business_id,display_name=args.display_name,
+                industry=args.industry,topic=args.topic)
+            print('Preview-only owner configured for business ID '+result['business_id'])
+            print('Email ownership was NOT independently verified; never use this bootstrap in production.')
+        else:
+            result=add_preview_business(args.db,email=email,password=password,
+                existing_tenant_id=args.existing_business_id,
+                new_tenant_id=args.new_business_id,
+                display_name=args.display_name,industry=args.industry,
+                topic=args.topic)
+            print('Additional local-only preview business configured: '+result['business_id'])
     else:
         run_loopback_preview(args.db,cert_path=args.cert,key_path=args.key,
             port=args.port,

@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from bam_local_preview import (
-    make_loopback_application,provision_preview_owner,
+    add_preview_business,make_loopback_application,provision_preview_owner,
     run_loopback_preview,_path)
 from bam_offline_gateway import BAMOfflineGateway
 
@@ -75,6 +75,47 @@ class BootstrapTests(unittest.TestCase):
                     topic='cleaning',now=102)
             if os.name=='posix':
                 self.assertEqual(Path(file).stat().st_mode&0o077,0)
+
+    def test_second_business_requires_existing_password_and_owner(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=str(Path(tmp)/'multi-preview.sqlite3')
+            provision_preview_owner(path,email='operator@example.com',
+                password='a strong test password',tenant_id='first',
+                display_name='First Shop',industry='retail',
+                topic='products',now=100)
+            with self.assertRaises(PermissionError):
+                add_preview_business(path,email='operator@example.com',
+                    password='incorrect password',existing_tenant_id='first',
+                    new_tenant_id='second',display_name='Second Services',
+                    industry='services',topic='cleaning',now=102)
+            second=add_preview_business(path,email='operator@example.com',
+                password='a strong test password',existing_tenant_id='first',
+                new_tenant_id='second',display_name='Second Services',
+                industry='services',topic='cleaning',now=103)
+            self.assertEqual(second['business_id'],'second')
+            self.assertFalse(second['publishing_enabled'])
+            with sqlite3.connect(path) as db:
+                gateway=BAMOfflineGateway(db,enabled=True,clock=lambda:105)
+                token=gateway.identities.login_password(
+                    email='operator@example.com',
+                    password='a strong test password',
+                    tenant_id='first',now=104)
+                tenants=gateway.dashboard.switcher.list_businesses(
+                    token=token,now=105)
+                self.assertEqual({t['tenant_id'] for t in tenants},
+                                 {'first','second'})
+                switched=gateway.read_api.activate_business(
+                    session_token=token,target_tenant_id='second',
+                    server_now=105)
+                self.assertEqual(switched['overview']['tenant_id'],'second')
+                self.assertEqual(switched['overview']['role'],'owner')
+                self.assertFalse(switched['publishing_enabled'])
+                self.assertIsNone(gateway.sessions.resolve(token,now=106))
+            with self.assertRaises(PermissionError):
+                add_preview_business(path,email='operator@example.com',
+                    password='a strong test password',existing_tenant_id='first',
+                    new_tenant_id='second',display_name='Already Exists',
+                    industry='services',topic='cleaning',now=107)
 
     def test_invalid_setup_does_not_create_user(self):
         with tempfile.TemporaryDirectory() as tmp:

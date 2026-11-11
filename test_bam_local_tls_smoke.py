@@ -19,7 +19,8 @@ from wsgiref.simple_server import make_server
 
 from bam_offline_gateway import BAMOfflineGateway
 from bam_local_preview import (
-    _QuietHandler,make_loopback_application,provision_preview_owner)
+    _QuietHandler,make_loopback_application,provision_preview_owner,
+    add_preview_business)
 
 @unittest.skipUnless(shutil.which('openssl'),'OpenSSL unavailable')
 class HTTPSPreviewSmokeTests(unittest.TestCase):
@@ -32,6 +33,13 @@ class HTTPSPreviewSmokeTests(unittest.TestCase):
                 password='a unique local test password',
                 tenant_id='example-shop',display_name='Example Shop',
                 industry='retail',topic='custom products',now=100)
+            add_preview_business(str(dbfile),
+                email='test-owner@example.com',
+                password='a unique local test password',
+                existing_tenant_id='example-shop',
+                new_tenant_id='second-business',
+                display_name='Second Service Business',
+                industry='services',topic='facility care',now=101)
             cert=p/'localhost-cert.pem'
             key=p/'localhost-key.pem'
             subprocess.run([
@@ -121,11 +129,28 @@ class HTTPSPreviewSmokeTests(unittest.TestCase):
                         with self.assertRaises(urllib.error.HTTPError) as denied:
                             get('/api/v1/publish',method='POST',body={})
                         self.assertEqual(denied.exception.code,404)
+                        # Rotate sessions across owner-managed business tenants.
+                        code,_,switched=get('/api/v1/businesses/activate',
+                            method='POST',token=token,
+                            body={'target_tenant_id':'second-business'})
+                        self.assertEqual(code,200)
+                        switched=json.loads(switched)
+                        self.assertEqual(switched['tenant_id'],'second-business')
+                        new_token=switched['session_token']
+                        self.assertNotEqual(new_token,token)
+                        with self.assertRaises(urllib.error.HTTPError) as old:
+                            get('/api/v1/dashboard',token=token)
+                        self.assertEqual(old.exception.code,401)
+                        code,_,raw=get('/api/v1/dashboard',token=new_token)
+                        self.assertEqual(json.loads(raw)['role'],'owner')
+                        self.assertEqual(json.loads(raw)['tenant_id'],'second-business')
+                        code,_,raw=get('/api/v1/drafts',token=new_token)
+                        self.assertEqual(json.loads(raw)['drafts'],[])
                         code,_,raw=get('/api/v1/auth/logout',method='POST',
-                            token=token,body={})
+                            token=new_token,body={})
                         self.assertTrue(json.loads(raw)['signed_out'])
                         with self.assertRaises(urllib.error.HTTPError) as denied:
-                            get('/api/v1/dashboard',token=token)
+                            get('/api/v1/dashboard',token=new_token)
                         self.assertEqual(denied.exception.code,401)
                     finally:
                         server.shutdown()
