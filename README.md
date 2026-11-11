@@ -617,3 +617,7 @@ AI drafts that require an image can now be associated with a previously register
 ## AI permission and structured-output hardening — 2026-11-10
 
 AI preference writes (mode switching, saved-memory edits and key-reference removal) now require an active business role authorized to create drafts; read-only Viewer access cannot mutate those settings. `AIContentPlan.parse_revision_response` rejects malformed or extra-field AI revision responses, including attempted approval/publishing claims. Regression tests cover viewer denial and strict one-component revision output. No new live AI or publishing capability was enabled.
+
+## AI workspace refresh ordering safeguard — 2026-11-10
+
+The authenticated AI workspace coordinator now rejects older in-flight refreshes even within the same signed-in business, preventing delayed API responses from overwriting more recent content. The workspace race-condition tests now cover both business-switch/logout invalidation and out-of-order same-session reads.
