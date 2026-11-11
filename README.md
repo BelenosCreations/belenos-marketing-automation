@@ -256,3 +256,15 @@ All filtering and queue counts happen in the browser over already authorized, se
 The trusted-attestation editorial source recheck now resolves the **current** membership/session and rejects attempts to recheck a different business using a token from another business—even when the same person belongs to both. A downgraded or deactivated member's previously issued token cannot retain editorial review permissions. New regression tests cover both cross-business membership and stale-role scenarios. This is a safety-only change: it does not approve posts, grant publication, or trigger paid services.
 
 **Verification pending:** GitHub Actions [run 43095601077](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43095601077) for code commit `e957aeadd75f07457bf0d987c71d9c5f94275973`. Do not treat this change as verified until the run passes.
+
+## Alpha safety: current-role review sessions and stale-editor protection — 2026-11-11
+
+This offline alpha batch strengthens the places that evaluate or change private content:
+
+- Trusted-attestation editorial **source intake** now requires an active, tenant-bound session with an unchanged current membership role, rather than accepting a token merely because the person also belongs to the target business.
+- Native and legacy **approval facades** now similarly reject a stale-role session, including the previously unsafe scenario in which a marketing manager has been promoted to owner but is still using a manager-issued token. These offline approval records are not publication permission.
+- Held draft **postpone/unavailable/reopen** controls require the displayed draft revision through the HTTPS and Content Studio browser paths; a stale editor gets HTTP 409 instead of silently overwriting newer content. SQLite status updates use the persisted revision as a compare-and-swap condition.
+- Verified-media **attachment references** are now saved with revision compare-and-swap, preventing a concurrent image/permission update from unintentionally erasing another update.
+- New Python, browser, HTTPS adapter and integrated offline gateway regressions cover conflicts, stale role grants, business separation and blocked publishing.
+
+**Testing status at documentation time:** latest code commit `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions runs for this batch are **queued** without test jobs; these changes are *committed but not yet verified*. The most recent separately confirmed successful workflow is [run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) at `74e55d53`. Do not merge or deploy while the batch remains unverified. Social publishing, production OAuth and paid AI remain off.

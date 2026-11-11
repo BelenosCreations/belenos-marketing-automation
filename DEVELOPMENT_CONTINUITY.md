@@ -3,11 +3,11 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified code commit:** `5c53c7363341ab21cee8d2d16aa89453ddea537b`.
-**Verification:** [GitHub Actions run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513): 882 Python tests, 72 JavaScript `ui/*_test.js` scripts and compilation **passed**.
-**Document-only checkpoint:** This file and companion README/CHANGELOG/milestone updates are committed after the verified code commit; confirm their own CI result before treating the new documentation commit as a verified head.
+**Most recent verified branch commit:** `74e55d5393a38fbee663b6ec82e72c4ada01c2ec` (Actions run 43092809091 successful).
+**Verification:** [GitHub Actions run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) completed successfully. Earlier [run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513) reported 882 Python tests, 72 JavaScript UI test scripts and compilation passed. New code after `74e55d53` remains unverified while runners are queued.
+**Latest unverified code checkpoint:** `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions jobs remain queued; do not assert a green code result or merge/deploy on that basis.
 
-**Latest unverified security change:** `e957aeadd75f07457bf0d987c71d9c5f94275973` strengthens editorial review current-session tenant and role checks; [GitHub Actions run 43095601077](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43095601077) was queued at documentation time. Confirm CI before updating the verified checkpoint.
+**Unverified security changes since the last successful run:** editorial recheck and intake, the native and legacy approval facades, revision-checked held-draft hold actions, and compare-and-swap verified-media references. New Python and browser regression tests are committed. Confirm full Python, UI and compilation suites before updating this checkpoint.
 
 ## Safe resume procedure
 
@@ -31,6 +31,20 @@
 ## Non-negotiable active limits
 
 No social publishing or true scheduled jobs, public hosting, production OAuth token exchange, external image generation, paid OpenAI traffic, automated approval, or actual verified media-scanning service is authorized or enabled. Existing SQLite composition and WSGI browser test adapter are for isolated local development only. Google sign-in needs real trusted provider verification/configuration before use.
+
+## Current unverified alpha safety batch
+
+## Alpha safety: current-role review sessions and stale-editor protection — 2026-11-11
+
+This offline alpha batch strengthens the places that evaluate or change private content:
+
+- Trusted-attestation editorial **source intake** now requires an active, tenant-bound session with an unchanged current membership role, rather than accepting a token merely because the person also belongs to the target business.
+- Native and legacy **approval facades** now similarly reject a stale-role session, including the previously unsafe scenario in which a marketing manager has been promoted to owner but is still using a manager-issued token. These offline approval records are not publication permission.
+- Held draft **postpone/unavailable/reopen** controls require the displayed draft revision through the HTTPS and Content Studio browser paths; a stale editor gets HTTP 409 instead of silently overwriting newer content. SQLite status updates use the persisted revision as a compare-and-swap condition.
+- Verified-media **attachment references** are now saved with revision compare-and-swap, preventing a concurrent image/permission update from unintentionally erasing another update.
+- New Python, browser, HTTPS adapter and integrated offline gateway regressions cover conflicts, stale role grants, business separation and blocked publishing.
+
+**Testing status at documentation time:** latest code commit `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions runs for this batch are **queued** without test jobs; these changes are *committed but not yet verified*. The most recent separately confirmed successful workflow is [run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) at `74e55d53`. Do not merge or deploy while the batch remains unverified. Social publishing, production OAuth and paid AI remain off.
 
 ## Candidate next work (no authorization required)
 

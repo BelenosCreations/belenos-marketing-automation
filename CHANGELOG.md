@@ -1,3 +1,14 @@
+## Alpha safety — current sessions and edit conflicts (2026-11-11)
+
+### Changed
+- Editorial source intake and both offline approval facades revalidate the business-bound session and unchanged membership role before accessing protected actions.
+- Held-draft hold APIs and Content Studio now submit the current draft revision; an outdated hold cannot overwrite a newer revision and maps to HTTP 409 Conflict.
+- Concurrent verified-media references are written only if the previously read draft revision is still current.
+
+### Tests
+- Additional tenant, role-change, stale hold, concurrent media and authenticated WSGI regression coverage committed.
+- **Pending CI:** workflow runs for code checkpoint `800e3277` and its predecessors are queued; no new successful test claim is made.
+
 ## 2026-11-11 — Editorial recheck session isolation hardening
 
 - Recheck now validates current membership and exact active business rather than only a still-live token and membership in the target business.

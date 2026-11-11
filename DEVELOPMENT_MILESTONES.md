@@ -3,6 +3,18 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Alpha safety: current-role review sessions and stale-editor protection — 2026-11-11
+
+This offline alpha batch strengthens the places that evaluate or change private content:
+
+- Trusted-attestation editorial **source intake** now requires an active, tenant-bound session with an unchanged current membership role, rather than accepting a token merely because the person also belongs to the target business.
+- Native and legacy **approval facades** now similarly reject a stale-role session, including the previously unsafe scenario in which a marketing manager has been promoted to owner but is still using a manager-issued token. These offline approval records are not publication permission.
+- Held draft **postpone/unavailable/reopen** controls require the displayed draft revision through the HTTPS and Content Studio browser paths; a stale editor gets HTTP 409 instead of silently overwriting newer content. SQLite status updates use the persisted revision as a compare-and-swap condition.
+- Verified-media **attachment references** are now saved with revision compare-and-swap, preventing a concurrent image/permission update from unintentionally erasing another update.
+- New Python, browser, HTTPS adapter and integrated offline gateway regressions cover conflicts, stale role grants, business separation and blocked publishing.
+
+**Testing status at documentation time:** latest code commit `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions runs for this batch are **queued** without test jobs; these changes are *committed but not yet verified*. The most recent separately confirmed successful workflow is [run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) at `74e55d53`. Do not merge or deploy while the batch remains unverified. Social publishing, production OAuth and paid AI remain off.
+
 ## Proposed draft calendar, zero scheduled posts (2026-11-11)
 
 A dedicated `CalendarProposals` table stores at most one current proposed date per tenant-scoped held draft, with a unique business/time constraint. Candidates come only from validated owner-configured Manual-mode posting preferences through the existing DST-safe preview; Smart recommendations still require real audience data. Content Studio exposes guarded save/remove controls while the Scheduled drilldown shows a separate read-only preview, never a social publishing queue. Roles, business switching, expiry, versioned draft content, and outdated preferences all remain visible or fail closed. The HTTPS proposal adapter rejects extra client-supplied fields. Tests include cross-tenant isolation, read-only viewer limits, no executable scheduling, browser lifecycle checks, and stale proposals.
