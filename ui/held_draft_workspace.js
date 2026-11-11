@@ -30,8 +30,14 @@
        (onError!==undefined&&typeof onError!=='function'))
       throw new TypeError('Content Studio dependencies required');
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
+    let canEdit=false;
+    function setCanEdit(allowed){
+      if(typeof allowed!=='boolean')throw new TypeError('Trusted draft edit permission required');
+      canEdit=allowed;
+      if(model&&active)render();
+    }
     function clear(){
-      epoch++;requestVersion++;active=null;model=null;busy=false;
+      epoch++;requestVersion++;active=null;model=null;busy=false;canEdit=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -47,6 +53,10 @@
       wrap.append(make(document,'h2','Content Studio'));
       wrap.append(make(document,'p',
         'Create and organize unpublished content requests. Upload, approval, scheduling and publishing remain unavailable.'));
+      if(!canEdit){
+        wrap.append(make(document,'p','You can view held content but cannot create or edit it.'));
+      }
+      if(canEdit){
       const form=make(document,'form','');form.className='panel stack';
       form.append(make(document,'h3','New held draft'));
       const channel=make(document,'select','');
@@ -76,6 +86,7 @@
         if(result.error&&onError)onError('Unable to save held draft');
       });
       wrap.append(form);
+      }
       for(const status of holdNames){
         const list=model.drafts.filter(x=>x.status===status);
         const section=make(document,'section','');
@@ -89,7 +100,7 @@
           if(draft.missing.length)
             article.append(make(document,'p',
               'Still needed: '+draft.missing.join(', ')));
-          if(status!=='ready_for_review'){
+          if(canEdit&&status!=='ready_for_review'){
             const actions=status==='needs_content'
               ?[['postponed','Postpone'],['unavailable','Mark unavailable']]
               :[['needs_content','Reopen as needing content']];
@@ -131,7 +142,7 @@
       }
     }
     async function mutate(op,args){
-      if(!active||busy)throw new TypeError('Content Studio not ready');
+      if(!active||busy||!canEdit)throw new TypeError('Content Studio not editable');
       const mine=active,version=epoch;busy=true;
       try{
         const result=await op({
@@ -156,7 +167,7 @@
     }
     function createDraft(args){return mutate(writeClient.createDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
-    return Object.freeze({activate,refresh,clear,createDraft,changeHold});
+    return Object.freeze({activate,refresh,clear,createDraft,changeHold,setCanEdit});
   }
   return Object.freeze({create});
 });

@@ -24,8 +24,14 @@
        (onError!==undefined&&typeof onError!=='function'))
       throw new TypeError('Posting preference workspace required');
     let active=null,epoch=0,requestVersion=0,busy=false,data=null;
+    let canManage=false;
+    function setCanManage(allowed){
+      if(typeof allowed!=='boolean')throw new TypeError('Trusted owner role required');
+      canManage=allowed;
+      if(active&&data)render();
+    }
     function clear(){
-      epoch++;requestVersion++;active=null;data=null;busy=false;
+      epoch++;requestVersion++;active=null;data=null;busy=false;canManage=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -43,6 +49,11 @@
       pane.append(make(document,'p',data.configured
         ?'Saved mode: '+data.mode+' · '+data.timezone
         :'Not configured. An owner must select an IANA timezone and save.'));
+      if(!canManage){
+        pane.append(make(document,'p','Only the business owner can change posting times.'));
+        container.replaceChildren(pane);
+        return;
+      }
       const form=make(document,'form','');form.className='stack';
       const mode=make(document,'select','');
       for(const [value,label] of [['smart','Smart (recommendations when available)'],
@@ -98,7 +109,8 @@
       }
     }
     async function save({mode,timezone,manualTimes}){
-      if(!active||busy)throw new TypeError('Posting preferences unavailable');
+      if(!active||busy||!canManage)
+        throw new TypeError('Posting preferences are owner-only');
       const mine=active,version=epoch;busy=true;
       try{
         const result=await writer.save({origin,fetchImpl,
@@ -120,7 +132,7 @@
         }
       }
     }
-    return Object.freeze({activate,refresh,clear,save});
+    return Object.freeze({activate,refresh,clear,save,setCanManage});
   }
   return Object.freeze({create});
 });

@@ -27,6 +27,7 @@ const fetchImpl=async(url,opts)=>{
 async function main(){
   const app=create({document,container,fetchImpl,origin:'https://bam.example'});
   app.activate({token:'a'.repeat(43),tenantId:'shop'});
+  app.setCanEdit(true);
   assert.equal((await app.refresh()).heldCount,0);
   const created=await app.createDraft({channel:'facebook',
     draftText:'New launch',suggestion:'Wait for photo',
@@ -46,6 +47,7 @@ async function main(){
         request_id:'b'.repeat(32),status:'needs_content',
         publishing_enabled:false})}});
   blocked.activate({token:'a'.repeat(43),tenantId:'shop'});
+  blocked.setCanEdit(true);
   await blocked.refresh();
   assert.equal((await blocked.createDraft({channel:'facebook',
     draftText:'copy',suggestion:'guide',requiredItems:['image']})).error,true);

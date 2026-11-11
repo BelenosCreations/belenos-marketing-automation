@@ -24,6 +24,7 @@ const fetchImpl=async(url,opts)=>{
 async function main(){
   const app=create({document,container,fetchImpl,origin:'https://bam.example'});
   app.activate({token:'a'.repeat(43),tenantId:'shop'});
+  app.setCanManage(true);
   assert.equal((await app.refresh()).stale,false);
   assert.equal(container.children.length,1);
   const saved=await app.save({mode:'manual',timezone:'America/New_York',

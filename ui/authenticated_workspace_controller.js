@@ -50,7 +50,7 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
       settingsContainer:aiSettingsContainer,factsContainer:aiFactsContainer,
       costContainer:aiCostContainer,fetchImpl,origin,onError,
       copyText,openUrl,factsEditorContainer:aiFactsEditorContainer,
-      canManageFacts:canManageFacts||Boolean(aiFactsEditorContainer),
+      canManageFacts:false,
       onSaveFacts:onSaveFacts||saveConfirmedFacts,
       enableLocalTemplates});
     const held=contentStudioContainer?heldModule.create({document,
@@ -81,6 +81,12 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
         return {stale:false,error:true};
       }
       if(overview.stale)return {stale:true};
+      const canEdit=['owner','marketing_manager','content_creator']
+        .includes(overview.role);
+      ai.setCapabilities({manageFacts:overview.role==='owner',
+        createDrafts:canEdit});
+      if(held)held.setCanEdit(canEdit);
+      if(prefs)prefs.setCanManage(overview.role==='owner');
       const details=await ai.refresh();
       if(version!==epoch)return {stale:true};
       if(details.error){

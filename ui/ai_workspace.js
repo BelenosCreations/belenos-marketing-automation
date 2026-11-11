@@ -42,10 +42,17 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
        (enableLocalTemplates&&!factsContainer))
       throw new TypeError('Local templates require fact evidence');
     let active=null,epoch=0,requestVersion=0,localPending=false;
+    let mayManageFacts=canManageFacts,mayCreateDrafts=true;
+    function setCapabilities({manageFacts,createDrafts}){
+      if(typeof manageFacts!=='boolean'||typeof createDrafts!=='boolean')
+        throw new TypeError('Trusted capability flags required');
+      mayManageFacts=manageFacts;mayCreateDrafts=createDrafts;
+    }
     function clear(){
       epoch+=1;
       requestVersion+=1;
       active=null;localPending=false;
+      mayManageFacts=false;mayCreateDrafts=false;
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
       if(factsContainer)factsContainer.replaceChildren();
@@ -84,7 +91,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
               needs_media:d.needsMedia,media_attached:d.mediaAttached,
               status:d.status,revision:d.revision,publishing_enabled:false
             }))},expectedTenantId:mine.tenantId,copyText,openUrl});
-        if(enableLocalTemplates){
+        if(enableLocalTemplates&&mayCreateDrafts){
           const action=document.createElement('section');
           action.className='panel stack';
           const heading=document.createElement('h3');
@@ -156,7 +163,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
             revision:facts.revision,provenance:facts.provenance,
             confirmed_at:facts.confirmedAt,publishing_enabled:false},
           expectedTenantId:mine.tenantId,
-          canManage:canManageFacts,onSave:onSaveFacts});
+          canManage:mayManageFacts,onSave:onSaveFacts});
         if(costContainer)costView.render({document,container:costContainer,
           payload:{tenant_id:costs.tenantId,events:costs.events,
             input_tokens:costs.inputTokens,output_tokens:costs.outputTokens,
@@ -180,7 +187,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
         return {stale:false,error:true};
       }
     }
-    return Object.freeze({activate,refresh,clear});
+    return Object.freeze({activate,refresh,clear,setCapabilities});
   }
   return Object.freeze({create});
 });

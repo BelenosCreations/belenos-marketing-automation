@@ -144,6 +144,7 @@ async function main(){
     if(Object.prototype.hasOwnProperty.call(data,kind))
       return {ok:true,json:async()=>({
         ...data[kind],tenant_id:currentTenant,
+        ...(kind==='dashboard'?{role:currentTenant==='shop'?'owner':'content_creator'}:{}),
         ...(kind==='drafts'?{drafts:holds[currentTenant]}:{}),
         ...(kind==='ai-drafts'?{drafts:aiByTenant[currentTenant]}:{})})};
     throw new Error('Unexpected request '+url);
@@ -216,6 +217,9 @@ async function main(){
   await e['business-switch'].listeners.change();
   assert.equal(e['active-business'].textContent,'Business: other');
   assert.equal(holds.other.length,0);
+  assert.equal(e['bam-ai-facts-editor'].children[0].children.length,3);
+  assert.equal(e['bam-posting-preferences'].children[0].children.length,4);
+  assert.equal(e['bam-content-studio'].children[0].children[2].tag,'p');
   assert.equal(aiByTenant.other.length,0);
   assert.equal(e['bam-ai-drafts'].children[0].children.length,3);
   assert.equal(e['bam-content-studio'].children[0].children[3].children.length,1);

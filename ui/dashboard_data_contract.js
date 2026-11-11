@@ -9,6 +9,7 @@
   else root.BAMDashboardData=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
+  const roles=new Set(['owner','marketing_manager','content_creator','employee','viewer']);
   const statuses=new Set(['needs_content','ready_for_review']);
   const cards=new Set(['scheduled','approvals','content','connections']);
   const channels=new Set(['facebook','instagram','linkedin','pinterest','tiktok','youtube']);
@@ -18,7 +19,8 @@
     if(!object(payload)||payload.schema_version!==1||
        !nonempty(payload.tenant_id,128)||!Array.isArray(payload.businesses)||
        !Array.isArray(payload.cards)||!Array.isArray(payload.drafts)||
-       payload.publishing_enabled!==false){
+       payload.publishing_enabled!==false||
+       (payload.role!==undefined&&!roles.has(payload.role))){
       throw new TypeError('Invalid authorized dashboard payload');
     }
     if(!payload.businesses.some(b=>object(b)&&b.tenant_id===payload.tenant_id))
@@ -69,6 +71,7 @@
       throw new TypeError('Unexpected unverified metrics');
     return {
       tenantId:payload.tenant_id,businesses,
+      role:payload.role===undefined?'viewer':payload.role,
       cards:normalizedCards,drafts,
       analyticsAvailable:false,scheduleAvailable:false,
       publishingEnabled:false
