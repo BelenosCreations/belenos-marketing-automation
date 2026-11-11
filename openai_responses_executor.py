@@ -5,7 +5,6 @@ requests by itself. A production-only trusted transport supplies credentials,
 TLS verification, timeouts, request IDs, retries and cost accounting.
 """
 import json
-from urllib.parse import urlparse
 
 DEFAULT_MODEL='gpt-4.1-mini'
 _ALLOWED_MODELS=frozenset(('gpt-4.1-mini','gpt-4.1','gpt-5-mini'))
