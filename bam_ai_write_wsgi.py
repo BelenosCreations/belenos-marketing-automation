@@ -54,7 +54,8 @@ class BAMAIWriteWSGI:
             return reply('415 Unsupported Media Type',
                          {'error':'JSON required'})
         length=environ.get('CONTENT_LENGTH','')
-        if type(length) is not str or not length.isdecimal() or (
+        if type(length) is not str or len(length)>4 or
+            not length.isascii() or not length.isdecimal() or (
             not 1<=int(length)<=4096):
             return reply('413 Content Too Large',
                          {'error':'Invalid request size'})
