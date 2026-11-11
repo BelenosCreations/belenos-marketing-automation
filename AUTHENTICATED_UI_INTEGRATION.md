@@ -78,3 +78,7 @@ The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_fa
 ### Explicit-action browser writes
 
 `ui/ai_write_client.js` supplies `generate` and `confirmFacts` calls for the future authenticated UI. Both require a bearer session, strict HTTPS origin and injected fetch. Generation requires a 32-character random idempotency key from the authenticated shell; no automatic retries or publishing are allowed. The browser does not choose business, model, quota or API key. These calls are not wired to the sample-data GUI.
+
+### Authenticated large-card dashboard
+
+`ui/live_dashboard_cards.js` reads `GET /api/v1/dashboard` using the existing strict data contract and renders large overview cards plus read-only drilldowns. Add `ui/live_dashboard_cards.css` to the authenticated shell. Call `activate({token,tenantId})` after sign-in/business switch and `clear()` before logout or token disposal. This controller deliberately does not invent analytics or allow publishing. It is distinct from the sample-data HTML prototype.
