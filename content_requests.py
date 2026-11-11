@@ -141,11 +141,13 @@ class ContentRequests:
         status=('ready_for_review' if set(provided)==set(request['required_items'])
                 else 'needs_content')
         with self.db:
-            self.db.execute("""UPDATE content_requests
+            changed=self.db.execute("""UPDATE content_requests
                 SET provided_items=?,status=?,updated_at=?,revision=revision+1
-                WHERE tenant_id=? AND request_id=?""",
+                WHERE tenant_id=? AND request_id=? AND revision=?""",
                 (json.dumps(provided,sort_keys=True),
-                 status,now,tenant_id,request_id))
+                 status,now,tenant_id,request_id,request['revision']))
+        if changed.rowcount!=1:
+            raise ValueError('Stale draft revision')
         return status
 
     def set_hold(self, *, tenant_id, request_id, status, now,

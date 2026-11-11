@@ -150,6 +150,29 @@ class ContentRequestsTests(unittest.TestCase):
         self.assertEqual(self.queue.provide(tenant_id='shop',request_id=self.r,
             item='photo',content_reference='asset:123',now=101),'needs_content')
 
+    def test_concurrent_media_supply_cannot_lose_previous_attachment(self):
+        # A writer that loaded an older snapshot may not overwrite a
+        # different item's newly supplied content.
+        original=self.queue.get(tenant_id='shop',request_id=self.r)
+        self.queue.provide(tenant_id='shop',request_id=self.r,
+            item='photo',content_reference='asset:first',now=101)
+        current=self.queue.get(tenant_id='shop',request_id=self.r)
+        class StaleReader(ContentRequests):
+            def get(self, *, tenant_id, request_id):
+                if tenant_id=='shop' and request_id==self_id:
+                    return original
+                return super().get(tenant_id=tenant_id,request_id=request_id)
+        self_id=self.r
+        stale=StaleReader(self.db)
+        with self.assertRaisesRegex(ValueError,'Stale draft revision'):
+            stale.provide(tenant_id='shop',request_id=self.r,
+                item='customer_permission',
+                content_reference='asset:other',now=102)
+        saved=self.queue.get(tenant_id='shop',request_id=self.r)
+        self.assertEqual(saved['provided_items'],current['provided_items'])
+        self.assertEqual(saved['revision'],current['revision'])
+        self.assertEqual(saved['status'],'needs_content')
+
     def test_complete_content_requires_review(self):
         self.queue.provide(tenant_id='shop',request_id=self.r,
             item='photo',content_reference='asset:123',now=101)
