@@ -76,6 +76,27 @@ class EditorialIntakeTests(unittest.TestCase):
         self.attest()
         with self.assertRaises(PermissionError):self.consider(tenant_id='other',topic='cleaning')
 
+    def test_same_identity_other_tenant_membership_cannot_cross_session(self):
+        # A real membership in the other business does not convert a
+        # shop-specific token into an other-business authentication.
+        self.directory.set_member(
+            Principal('otherowner','other',Role.OWNER),
+            'owner',Role.MARKETING_MANAGER)
+        with self.assertRaises(PermissionError):
+            self.consider(tenant_id='other',topic='cleaning')
+
+    def test_role_downgrade_invalidates_old_intake_session(self):
+        self.directory.set_member(
+            Principal('owner','shop',Role.OWNER),
+            'manager',Role.VIEWER)
+        with self.assertRaises(PermissionError):
+            self.consider('manager')
+
+    def test_revoked_session_denied(self):
+        self.sessions.revoke(self.tokens['owner'],now=100)
+        with self.assertRaises(PermissionError):
+            self.consider()
+
     def test_client_cannot_override_competitor_clearance(self):
         self.attest(risk='possible')
         with self.assertRaises(TypeError):self.consider(local_competitor_risk='cleared')
