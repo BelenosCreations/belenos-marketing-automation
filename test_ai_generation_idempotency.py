@@ -70,6 +70,23 @@ class IdempotentGenerationTests(unittest.TestCase):
         self.assertEqual(len(self.drafts.list_mine(
             token=self.token,now=103)['drafts']),1)
 
+    def test_request_status_is_private_and_read_only(self):
+        missing=self.dedup.status(token=self.token,now=102,
+            request_key=self.key)
+        self.assertFalse(missing['found'])
+        first=self.run_generation()
+        completed=self.dedup.status(token=self.token,now=103,
+            request_key=self.key)
+        self.assertEqual(completed['status'],'completed')
+        self.assertEqual(completed['draft_id'],first['draft']['draft_id'])
+        other=self.dedup.status(token=self.other,now=103,
+            request_key=self.key)
+        self.assertFalse(other['found'])
+        coworker=self.dedup.status(token=self.coworker,now=103,
+            request_key=self.key)
+        self.assertFalse(coworker['found'])
+        self.assertEqual(len(self.calls),1)
+
     def test_reused_key_different_payload_rejected(self):
         self.run_generation()
         with self.assertRaises(ValueError):
