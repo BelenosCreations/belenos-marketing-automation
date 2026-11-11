@@ -41,10 +41,15 @@ class InvitationTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.service.redeem(token=token,tenant_id='other',verified_subject_id='new',now=102)
 
+    def test_not_expired_one_second_early(self):
+        token=self.invite()  # issued at 101, expires at 86501
+        self.service.redeem(token=token,tenant_id='belenos',verified_subject_id='new',now=86500)
+        self.assertIsNotNone(self.directory.resolve('belenos','new'))
+
     def test_expired_denied(self):
         token=self.invite()
         with self.assertRaises(PermissionError):
-            self.service.redeem(token=token,tenant_id='belenos',verified_subject_id='new',now=86500)
+            self.service.redeem(token=token,tenant_id='belenos',verified_subject_id='new',now=86501)
 
     def test_manager_cannot_invite(self):
         with self.assertRaises(PermissionError):
