@@ -625,3 +625,7 @@ The authenticated AI workspace coordinator now rejects older in-flight refreshes
 ## Owner-confirmed AI business facts milestone — 2026-11-10
 
 `ai_business_facts.py` adds an owner-confirmed, business-isolated fact registry with revision checks and provenance labels. Content creators can use these confirmed facts but cannot edit them. `AIContentPlan.create_from_confirmed_facts` creates a structured, unpublished OpenAI draft request only when the active business has an owner-confirmed fact snapshot, recording its revision. This reduces reliance on arbitrary client-supplied claims; **owner confirmation is not independent external fact verification** and drafts still require TruthGuard/factual review before approval. `test_ai_business_facts.py` covers access control, business isolation and stale updates.
+
+## Authenticated AI fact provenance read milestone — 2026-11-10
+
+The account read adapter and HTTPS WSGI component now expose `GET /api/v1/ai-business-facts`, returning only the active business's owner-confirmed fact snapshot, revision and explicit provenance. `ui/ai_facts_contract.js` and the HTTPS client reject mismatched businesses, invalid confirmation claims and enabled-publishing responses. Python and Node tests cover business switching and route validation. This endpoint is read-only; owner fact confirmation is not exposed as an unauthenticated or public browser write, and independent factual verification remains future work.
