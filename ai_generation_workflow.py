@@ -34,6 +34,8 @@ class AIDraftGenerationWorkflow:
             raise ValueError('Explicit media options required')
         if needs_media and not include_image_prompt:
             raise ValueError('Media-required draft needs an image prompt')
+        if self.idempotency is not None and request_key is None:
+            raise ValueError('Idempotency key required for configured workflow')
         # Fail before consuming quota if facts or permissions are missing.
         request=self.plan.create_from_confirmed_facts(
             token=token,now=now,registry=self.facts,topic=topic,
