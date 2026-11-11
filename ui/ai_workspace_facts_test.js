@@ -55,6 +55,21 @@ async function main(){
   workspace.clear();
   assert.equal(facts.children.length,0);
   assert.equal(costs.children.length,0);
+  // A later failed refresh must also erase the privileged editable form.
+  let failNext=false;
+  const flaky=create({document,draftsContainer:drafts,
+    settingsContainer:settings,factsContainer:facts,costContainer:costs,
+    factsEditorContainer:editor,canManageFacts:true,onSaveFacts:()=>{},
+    fetchImpl:(...args)=>failNext?Promise.resolve({ok:false}):fetchImpl(...args),
+    origin:'https://bam.example'});
+  flaky.activate({token:'valid',tenantId:'shop'});
+  assert.equal((await flaky.refresh()).error,undefined);
+  assert.equal(editor.children.length,1);
+  failNext=true;
+  assert.equal((await flaky.refresh()).error,true);
+  assert.equal(editor.children.length,0);
+  assert.equal(facts.children.length,0);
+  flaky.clear();
   console.log('BAM AI workspace fact provenance tests passed');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
