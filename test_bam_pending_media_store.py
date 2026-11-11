@@ -98,6 +98,49 @@ class PendingMediaStoreTests(unittest.TestCase):
         result=self.store.statuses(token=self.token,now=102)
         self.assertEqual(result['items'][0]['status'],'awaiting_file')
 
+
+    def test_discard_removes_only_private_pending_content(self):
+        attachment=self.pending['attachment_id']
+        self.store.receive(token=self.token,attachment_id=attachment,
+                           content=PNG,now=102)
+        private=self.store.root/(attachment+'.pending')
+        self.assertTrue(private.exists())
+        with self.assertRaises((KeyError,PermissionError)):
+            self.store.discard(token=self.other,request_id=self.rid,
+                               item='image',now=103)
+        self.assertTrue(private.exists())
+        removed=self.store.discard(token=self.token,request_id=self.rid,
+                                   item='image',now=103)
+        self.assertEqual(removed['removed'],1)
+        self.assertFalse(removed['media_verified'])
+        self.assertFalse(removed['publishing_enabled'])
+        self.assertFalse(private.exists())
+        self.assertEqual(self.store.statuses(token=self.token,now=104)['items'],[])
+        self.assertEqual(self.store.discard(token=self.token,
+            request_id=self.rid,item='image',now=105)['removed'],0)
+        self.assertEqual(self.requests.get(tenant_id='shop',
+            request_id=self.rid)['status'],'needs_content')
+        self.assertIsNone(self.attachments.resolve_verified(
+            tenant_id='shop',request_id=self.rid,item='image',
+            attachment_id=attachment))
+        with self.assertRaises(ValueError):
+            self.store.discard(token=self.token,request_id=self.rid,
+                               item='not-required',now=106)
+
+    def test_discard_unreceived_metadata_and_symlink_without_following(self):
+        path=self.store.root/(self.pending['attachment_id']+'.pending')
+        outside=Path(self.tmp.name)/'outside.txt'
+        outside.write_bytes(b'Do not remove this external target')
+        try:
+            path.symlink_to(outside)
+        except OSError:
+            self.skipTest('Symlink unsupported')
+        result=self.store.discard(token=self.token,request_id=self.rid,
+                                  item='image',now=102)
+        self.assertEqual(result['removed'],1)
+        self.assertFalse(path.exists())
+        self.assertEqual(outside.read_bytes(),b'Do not remove this external target')
+
     def test_wrong_user_digest_type_and_closed_request_rejected(self):
         attachment=self.pending['attachment_id']
         with self.assertRaises((PermissionError,KeyError)):

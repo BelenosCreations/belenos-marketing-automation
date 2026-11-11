@@ -24,6 +24,7 @@ from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
 from bam_pending_media_store import BAMPendingMediaStore
 from bam_pending_media_wsgi import BAMPendingMediaWSGI
 from bam_pending_media_status_wsgi import BAMPendingMediaStatusWSGI
+from bam_pending_media_discard_wsgi import BAMPendingMediaDiscardWSGI
 from bam_ai_facts_write_wsgi import BAMAIFactsWriteWSGI
 from bam_local_draft_wsgi import BAMLocalProductDraftWSGI
 from bam_signed_in_assets_wsgi import BAMSignedInAssetsWSGI
@@ -141,6 +142,10 @@ class BAMOfflineGateway:
             self.pending_media_store,
             enabled=enabled and pending_media_dir is not None,
             clock=self.clock)
+        self.pending_discard_wsgi=BAMPendingMediaDiscardWSGI(
+            self.pending_media_store,
+            enabled=enabled and pending_media_dir is not None,
+            clock=self.clock)
         self.facts_write_wsgi = BAMAIFactsWriteWSGI(
             registry=self.ai_business_facts,enabled=enabled,clock=self.clock)
         self.local_draft_wsgi = BAMLocalProductDraftWSGI(
@@ -192,6 +197,8 @@ class BAMOfflineGateway:
             return self.pending_media_wsgi(environ,start_response)
         if path == '/api/v1/content/media-status':
             return self.pending_status_wsgi(environ,start_response)
+        if path == '/api/v1/content/media-pending':
+            return self.pending_discard_wsgi(environ,start_response)
         if path == '/api/v1/content/upload-preflight':
             return self.upload_preflight_wsgi(environ, start_response)
         return self._unavailable(

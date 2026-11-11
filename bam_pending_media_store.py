@@ -110,6 +110,69 @@ class BAMPendingMediaStore:
                      for (rid,item),status in sorted(statuses.items())],
             'media_verified':False,'publishing_enabled':False}
 
+
+    def discard(self,*,token,request_id,item,now):
+        """Explicitly discard pending private images for one required item.
+
+        This never affects verified media, approval, published work or another
+        business. File unlink precedes metadata deletion to avoid declaring
+        private bytes removed when disk removal actually failed.
+        """
+        if (type(request_id) is not str or _ID.fullmatch(request_id) is None
+                or type(item) is not str or not item.strip()
+                or item!=item.strip() or len(item)>80):
+            raise ValueError('Required content item and request ID needed')
+        session=self.service.sessions.resolve_current(
+            token,directory=self.service.directory,now=now)
+        if session is None:
+            raise PermissionError('Current BAM session required')
+        tenant=session.principal.tenant_id
+        self.service._authorize(token=token,tenant_id=tenant,
+                                action=Action.EDIT_DRAFT,now=now)
+        request=self.service.requests.get(
+            tenant_id=tenant,request_id=request_id)
+        if request is None:
+            raise KeyError('Business content request not found')
+        if item not in request['required_items']:
+            raise ValueError('Item is not part of this content request')
+        rows=self.service.attachments.db.execute(
+            """SELECT attachment_id FROM content_attachments
+               WHERE tenant_id=? AND request_id=? AND item=?
+                 AND status='pending' AND
+                 media_type IN ('image/png','image/jpeg','image/webp')
+               ORDER BY attachment_id LIMIT 201""",
+            (tenant,request_id,item)).fetchall()
+        if len(rows)>200:
+            raise ValueError('Too many pending media attachments')
+        paths=[]
+        for (attachment_id,) in rows:
+            if _ID.fullmatch(attachment_id) is None:
+                raise RuntimeError('Unsafe stored attachment ID')
+            path=self.root/(attachment_id+'.pending')
+            try:
+                info=os.lstat(path)
+            except FileNotFoundError:
+                continue
+            if not (stat.S_ISREG(info.st_mode) and info.st_nlink==1 or
+                    stat.S_ISLNK(info.st_mode)):
+                raise PermissionError('Unsafe pending media object')
+            paths.append(path)
+        # Unlink the expected private files, never follow symbolic links.
+        for path in paths:
+            path.unlink(missing_ok=True)
+        if rows:
+            identifiers=[record[0] for record in rows]
+            with self.service.attachments.db:
+                self.service.attachments.db.executemany(
+                    """DELETE FROM content_attachments
+                       WHERE tenant_id=? AND request_id=? AND item=?
+                         AND attachment_id=? AND status='pending'""",
+                    [(tenant,request_id,item,attachment_id)
+                     for attachment_id in identifiers])
+        return {'tenant_id':tenant,'request_id':request_id,
+                'item':item,'removed':len(rows),
+                'media_verified':False,'publishing_enabled':False}
+
     def receive(self,*,token,attachment_id,content,now):
         slot=self.authorize_slot(
             token=token,attachment_id=attachment_id,now=now)
