@@ -20,7 +20,7 @@ function fixture(){
     'business-switch','business-switch-label',
     'overview-panel','drafts-panel','content-panel','settings-panel',
     'email','password','business','appearance',
-    'bam-ai-facts-editor','bam-posting-preferences','bam-content-studio','bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
+    'bam-ai-facts-editor','bam-posting-preferences','bam-team-overview','bam-content-studio','bam-dashboard','bam-ai-drafts','bam-ai-settings','bam-ai-facts','bam-ai-cost'];
   const elements=Object.fromEntries(ids.map(id=>[id,node()]));
   const nav=['overview','drafts','content','settings'].map(panel=>{
     const button=node('button');button.dataset.bamPanel=panel;return button});
@@ -49,6 +49,9 @@ const data={
     manual_times:[],configured:false,publishing_enabled:false},
   connections:{tenant_id:'shop',visibility:'authorized',connections:[],
     publishing_enabled:false},
+  'team-overview':{tenant_id:'shop',roles:{owner:1,marketing_manager:0,
+    content_creator:0,employee:0,viewer:0},active_members:1,
+    inactive_members:0,invitation_status:'not_connected',publishing_enabled:false},
   'posting-time-preview':{tenant_id:'shop',mode:'smart',timezone:null,
     status:'not_configured',slots:[],skipped_dst:0,truncated:false,
     publishing_enabled:false},
@@ -211,6 +214,9 @@ async function main(){
   assert.equal(e['bam-dashboard'].children.length,1);
   assert.equal(e['bam-content-studio'].children.length,1);
   assert.equal(e['bam-posting-preferences'].children.length,1);
+  assert.equal(e['bam-team-overview'].children.length,1);
+  assert.ok(e['bam-team-overview'].children[0].children.some(x=>
+    x.textContent==='Owners: 1'));
   assert.equal(e['bam-ai-facts-editor'].children.length,1);
   assert.equal(e['bam-dashboard'].children[0].children[1].children.length,4);
   assert.equal(e['active-business'].textContent,'Business: shop');
@@ -296,6 +302,8 @@ async function main(){
   await e['business-switch'].listeners.change();
   assert.equal(e['active-business'].textContent,'Business: other');
   assert.equal(holds.other.length,0);
+  assert.match(e['bam-team-overview'].children[0].children[1].textContent,
+    /Only the current business owner/);
   assert.equal(e['bam-ai-facts-editor'].children[0].children.length,3);
   assert.equal(e['bam-posting-preferences'].children[0].children.length,5);
   assert.match(e['bam-posting-preferences'].children[0].children.at(-1)

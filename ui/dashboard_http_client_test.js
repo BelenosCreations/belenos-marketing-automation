@@ -91,6 +91,20 @@ async function main(){
     expectedTenantId:'shop',fetchImpl:async()=>({ok:true,
       json:async()=>({...social,connections:[{...social.connections[0],
         vault_reference:'secret'}]})})}),TypeError);
+  const team={tenant_id:'shop',roles:{owner:1,marketing_manager:0,
+    content_creator:1,employee:0,viewer:0},active_members:2,
+    inactive_members:0,invitation_status:'not_connected',
+    publishing_enabled:false};
+  const membership=await read({...options,kind:'teamOverview',
+    expectedTenantId:'shop',fetchImpl:async(url,opts)=>{
+      assert.equal(url,'https://bam.example/api/v1/team-overview');
+      assert.equal(opts.method,'GET');
+      return {ok:true,json:async()=>team};
+    }});
+  assert.equal(membership.activeMembers,2);
+  await assert.rejects(()=>read({...options,kind:'teamOverview',
+    expectedTenantId:'shop',fetchImpl:async()=>({
+      ok:true,json:async()=>({...team,subject_id:'secret'})})}),TypeError);
   console.log('BAM HTTPS read-only client tests passed');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

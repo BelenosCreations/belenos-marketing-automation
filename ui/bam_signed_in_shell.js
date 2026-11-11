@@ -101,6 +101,7 @@
       aiCostContainer:byId('bam-ai-cost'),
       contentStudioContainer:byId('bam-content-studio'),
       postingPreferencesContainer:byId('bam-posting-preferences'),
+      teamOverviewContainer:byId('bam-team-overview'),
       onNotice:message,
       hashMediaBytes:async buffer=>{
         if(!(buffer instanceof ArrayBuffer)||

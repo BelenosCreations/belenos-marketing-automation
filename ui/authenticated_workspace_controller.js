@@ -8,19 +8,20 @@
     module.exports=factory(require('./live_dashboard_cards.js'),
       require('./ai_workspace.js'),require('./held_draft_workspace.js'),
       require('./posting_preferences_workspace.js'),
-      require('./ai_write_client.js'));
+      require('./ai_write_client.js'),require('./team_overview_workspace.js'));
   else root.BAMAuthenticatedWorkspace=factory(
     root.BAMLiveDashboard,root.BAMAIWorkspace,root.BAMHeldDraftWorkspace,
-    root.BAMPostingPreferencesWorkspace,root.BAMAIWriteClient);
+    root.BAMPostingPreferencesWorkspace,root.BAMAIWriteClient,
+    root.BAMTeamOverviewWorkspace);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
+function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
   'use strict';
   function create({document,dashboardContainer,aiDraftsContainer,
                    aiSettingsContainer,aiFactsContainer,aiCostContainer,
                    fetchImpl,origin,onError,copyText,openUrl,
                    aiFactsEditorContainer,canManageFacts=false,onSaveFacts,
                    contentStudioContainer,onOpenContentStudio,onOpenPostingSettings,
-                   postingPreferencesContainer,
+                   postingPreferencesContainer,teamOverviewContainer,
                    enableLocalTemplates=false,hashMediaBytes,onNotice}){
     let activeSession=null,epoch=0,active=false;
     const dashboard=dashboardModule.create({
@@ -59,9 +60,12 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
       hashBytes:hashMediaBytes,onNotice}):null;
     const prefs=postingPreferencesContainer?prefsModule.create({document,
       container:postingPreferencesContainer,fetchImpl,origin,onError}):null;
+    const team=teamOverviewContainer?teamModule.create({document,
+      container:teamOverviewContainer,fetchImpl,origin,onError}):null;
     function clear(){
       epoch++;active=false;activeSession=null;
       dashboard.clear();ai.clear();if(held)held.clear();if(prefs)prefs.clear();
+      if(team)team.clear();
     }
     function activate({token,tenantId}){
       clear();
@@ -70,6 +74,7 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
       ai.activate({token,tenantId});
       if(held)held.activate({token,tenantId});
       if(prefs)prefs.activate({token,tenantId});
+      if(team)team.activate({token,tenantId});
       active=true;
     }
     async function refresh(){
@@ -92,6 +97,7 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
         held.setMediaEnabled(canEdit&&overview.pendingMediaAvailable);
       }
       if(prefs)prefs.setCanManage(overview.role==='owner');
+      if(team)team.setOwner(overview.role==='owner');
       const details=await ai.refresh();
       if(version!==epoch)return {stale:true};
       if(details.error){
@@ -110,6 +116,13 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter){
         if(version!==epoch)return {stale:true};
         if(preference.error){clear();return {stale:false,error:true};}
         if(preference.stale)return {stale:true};
+      }
+      if(team){
+        const membership=await team.refresh();
+        if(version!==epoch)return {stale:true};
+        if(membership.stale)return {stale:true};
+        // Team count reporting is optional and must not revoke an otherwise
+        // valid BAM session when the owner-only read is unavailable.
       }
       return {stale:false,tenantId:overview.tenantId,
         draftCount:details.draftCount,businesses:overview.businesses};
