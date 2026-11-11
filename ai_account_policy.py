@@ -83,6 +83,20 @@ class AIPolicyStore:
                 (principal.tenant_id,principal.subject_id,mode,credential_ref,now))
         return self.get_mode(token=token,now=now)
 
+    def forget_personal_key_reference(self, *, token, now):
+        """Remove the account's reference; vault secret deletion is separate.
+
+        A trusted vault service must revoke/delete the underlying secret.
+        This method never returns the reference or raw API key.
+        """
+        principal=self._principal(token,now)
+        with self.db:
+            self.db.execute("""UPDATE bam_ai_preferences
+                SET ai_mode='bam_sponsored',credential_ref=NULL,updated_at=?
+                WHERE tenant_id=? AND subject_id=?""",
+                (now,principal.tenant_id,principal.subject_id))
+        return self.get_mode(token=token,now=now)
+
     def get_memory(self, *, token, now):
         principal=self._principal(token,now)
         row=self.db.execute("""SELECT memory_json FROM bam_ai_memories
