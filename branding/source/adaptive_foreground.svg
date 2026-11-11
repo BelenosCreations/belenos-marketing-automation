@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" version="1.1">
+  <!-- Transparent Android adaptive launcher foreground. Mark entirely inside circular mask safe zone. -->
+  <path d="M313 443 A234 234 0 0 1 767 425" fill="none" stroke="#D4AF37" stroke-width="34" stroke-linecap="round"/>
+  <path d="M732 406 L789 438 L762 367" fill="#D4AF37"/>
+  <path d="M335 386 Q510 244 700 353" fill="none" stroke="#00CFC4" stroke-width="23" stroke-linecap="round"/>
+  <text x="540" y="643" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="260" font-weight="bold" letter-spacing="-17" fill="#DCE5EB">BAM</text>
+  <path d="M342 690 Q540 795 740 677" fill="none" stroke="#D4AF37" stroke-width="30" stroke-linecap="round"/>
+  <path d="M723 661 L769 660 L749 713 Z" fill="#D4AF37"/>
+</svg>
