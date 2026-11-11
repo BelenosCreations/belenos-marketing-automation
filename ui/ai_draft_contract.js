@@ -23,15 +23,17 @@
          (d.image_prompt!==null&&
            (typeof d.image_prompt!=='string'||!d.image_prompt.trim()||
             d.image_prompt.length>2000))||
-         typeof d.needs_media!=='boolean'||d.media_attached!==false||
+         typeof d.needs_media!=='boolean'||typeof d.media_attached!=='boolean'||
+         (d.media_attached&&!d.needs_media)||
          d.publishing_enabled!==false||
          !Number.isSafeInteger(d.revision)||d.revision<1||
-         d.status!==(d.needs_media?'needs_media':'draft_pending_verification'))
+         d.status!==(d.needs_media&&!d.media_attached
+           ?'needs_media':'draft_pending_verification'))
         throw new TypeError('Invalid AI draft');
       seen.add(d.draft_id);
       return {id:d.draft_id,platform:d.platform,postText:d.post_text,
         imagePrompt:d.image_prompt,needsMedia:d.needs_media,
-        status:d.status,revision:d.revision};
+        mediaAttached:d.media_attached,status:d.status,revision:d.revision};
     });
     return {tenantId:body.tenant_id,drafts,publishingEnabled:false};
   }
