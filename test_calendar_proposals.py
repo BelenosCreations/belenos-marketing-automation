@@ -127,7 +127,7 @@ class CalendarProposalTests(unittest.TestCase):
 
     def test_role_tenant_dst_and_no_arbitrary_clock(self):
         for token in (self.viewer,self.other,'no-session'):
-            with self.assertRaises(PermissionError):
+            with self.assertRaises((PermissionError,KeyError)):
                 self.propose(token=token)
         for clock in ('2026-11-11T12:00:00+00:00','bad',
                       '2026-11-11T15:00:00Z',

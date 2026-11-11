@@ -94,13 +94,6 @@ class CalendarProposals:
                 or type(utc_at) is not str or _UTC.fullmatch(utc_at) is None):
             raise ValueError('Validated held draft and future slot required')
         tenant=principal.tenant_id
-        preview=self._preview(token=token,tenant=tenant,now=now)
-        if preview['status']!='manual_preview':
-            raise ValueError('Manual owner-configured posting times required')
-        slot=next((value for value in preview['slots']
-                   if value['utc_at']==utc_at),None)
-        if slot is None:
-            raise ValueError('Choose an unambiguous upcoming configured slot')
         draft=self.content_service.get(
             token=token,tenant_id=tenant,request_id=request_id,now=now)
         if draft is None:
@@ -109,6 +102,13 @@ class CalendarProposals:
             raise ValueError('Draft changed; refresh before proposing')
         if draft['status'] not in ('needs_content','ready_for_review'):
             raise ValueError('Held draft is not eligible for a proposed slot')
+        preview=self._preview(token=token,tenant=tenant,now=now)
+        if preview['status']!='manual_preview':
+            raise ValueError('Manual owner-configured posting times required')
+        slot=next((value for value in preview['slots']
+                   if value['utc_at']==utc_at),None)
+        if slot is None:
+            raise ValueError('Choose an unambiguous upcoming configured slot')
         # Record the exact draft revision so later edits invalidate the
         # proposal. SQLite UNIQUE(tenant_id,utc_at) prevents double-booking.
         try:
