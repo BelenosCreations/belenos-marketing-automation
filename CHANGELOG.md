@@ -1,5 +1,15 @@
 # Changelog
 
+## Optional manual ChatGPT image handoff — 2026-11-10
+
+### Added
+- Explicit copy-prompt and open-ChatGPT controls for media-held AI drafts, without automated login, image generation or publishing.
+- Optional authenticated workspace callbacks and regression tests for manual actions and already-attached media.
+
+### Verification
+- Selected JavaScript view/handoff tests passed in an isolated harness; full CI not verified.
+
+
 ## Product README and historical milestone separation — 2026-11-10
 
 ### Changed
