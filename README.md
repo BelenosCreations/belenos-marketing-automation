@@ -1,281 +1,111 @@
 # BAM — Belenos Automatic Marketing
 
-**BAM (Belenos Automatic Marketing) is a general-purpose, multi-tenant marketing management and automation platform for businesses of any industry.** Belenos is the software brand, not a restriction on which businesses can use BAM.
-
-The platform is being designed to support independent organizations, multiple businesses under one owner login, and eventually separate business owners and employee teams. Each business maintains isolated branding, industry topics, creator recommendations, competitor exclusions, campaigns, social accounts, content approvals, schedules, analytics, and access permissions.
+**BAM is an AI-assisted marketing planning, creation, collaboration, scheduling, and analytics platform for businesses.** It is intended to replace the need for a separate marketing scheduler such as Metricool for its core supported workflows. Each business has its own workspace, brand voice, content, social connections, team permissions, and reporting. BAM is the product name; it is **not limited to Belenos Creations or any particular industry**.
 
-**Belenos Creations and Busy B Cleaning Service are initial development and testing examples only.** They are not hard-coded target industries, required tenants, or the intended limits of the product.
+> **Current status — November 11, 2026:** **Private offline alpha, not a deployed commercial service.** A responsive, authenticated local web interface and extensive Python/JavaScript backend foundations exist on the active development branch. Real social-account OAuth, live analytics, executable post scheduling/publishing, paid OpenAI calls, production hosting, and an Android APK are **not yet active**. Publishing remains **disabled** and requires separate, explicit authorization. See [alpha readiness](ALPHA_BETA_READINESS.md) and [development continuity](DEVELOPMENT_CONTINUITY.md).
 
-> **Approved AI direction:** Three usage scenarios (owner-only two posts/day, 5–10 invited users, and potential paid public Google Play release), OpenAI-only generation, default BAM-sponsored AI with optional personal OpenAI API key, and independent per-user AI memories. See [AI architecture and approved requirements](AI_ARCHITECTURE.md). Exact public pricing and quotas are not finalized.
+## Product experience
 
-> **Image return safety:** When local pending-media receipt is explicitly enabled, Content Studio shows whether each image is awaiting transfer or received into private quarantine. These statuses survive browser refreshes without revealing file paths or attachment IDs. They are **not** media verification, approval, or publishing permission.
+BAM is designed to let an owner or authorized team run marketing from one place:
 
-> **Development status:** Offline development prototype with email/password and Google authentication foundations, a responsive sample-data GUI demonstration, and an authenticated large-card HTML shell that can now be served by an **explicitly opted-in, restricted HTTPS WSGI asset adapter** for direct-call integration tests (not yet hosted). Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+1. **Sign in to BAM** using email/password or Google sign-in, select an existing business or create a workspace, and access only businesses to which the account belongs.
+2. **Set up each business:** confirmed products, services, contact and operating facts, voice, audience, marketing goals, media, and permission policies.
+3. **Connect social accounts directly to BAM.** Start with eligible Facebook business Pages through official Meta authorization and APIs; expand platform support only where each provider permits the required actions. No Metricool account, subscription, or API key is required for BAM's planned core functionality.
+4. **Plan and create content:** generate AI-assisted post copy and, when useful, a separate image-creation prompt; use factual zero-API-cost templates where appropriate; bring in original media and permitted third-party references.
+5. **Collaborate and review:** assign access by role, save draft revisions, request photos or approvals, comment on content, and protect one editor's work from being silently overwritten by another.
+6. **Choose when to post:** use owner-configured manual times or, after trustworthy audience data is connected, data-informed Smart recommendations. Schedule only content that passes the applicable review and media checks.
+7. **Publish and learn:** after a separately approved production rollout, BAM's own scheduler should publish directly through authorized social-provider APIs, reconcile platform results, and use available native insights to improve recommendations.
 
-## Current functional capabilities (offline development build)
+The workflow is intended to be **draft → factual/media checks → team review when needed → approval → schedule → direct publication → performance review**. Today, the offline alpha deliberately stops before real scheduling and publication.
 
-BAM now has a runnable **local account and content-workflow demonstration**, built from the same multi-business authorization services intended for later mobile and hosted interfaces. The current capabilities are:
+## Core capabilities and direction
 
-- **Loopback-only HTTPS app preview:** an optional local preview runner can serve the authenticated BAM interface and API over TLS on `127.0.0.1` after an explicit local-only acknowledgement and an externally provided certificate. A separate one-time local bootstrap command creates a private test owner and password hash in an outside-repository SQLite database; an owner-authenticated local-only `add-business` command can provision a second business under the same login, without any HTTP enrollment endpoint. Host and loopback checks protect against remote access or DNS rebinding. A full ephemeral-TLS integration test verifies real HTTPS page/asset delivery, password sign-in, authorized dashboard reads, held-draft creation, explicitly opted-in private image preflight/byte receipt, pending status, removal and token revocation through a loopback socket. It is not production enrollment, verified email delivery, public hosting or an Android APK. See [Local HTTPS preview guide](LOCAL_PREVIEW.md).
-- **Browser shell delivery foundation:** the integration-only gateway can serve the signed-in app's exact HTML/JS/CSS/brand-icon resources on one HTTPS origin, behind a separate opt-in switch. The resource list is restricted to assets actually referenced by the shell, with defensive security headers and a hash-restricted inline stylesheet; source/configuration files stay inaccessible. The test suite also executes the complete browser script graph outside CommonJS to catch dependency-order errors. **This is not an internet-facing server or a deployed application.**
-- **Role-aware account interface:** the signed-in dashboard passes its server-authorized, active-business role to the AI facts, Content Studio and posting-time panels. Only owners see fact-confirmation and posting-time save controls; owners, managers and content creators can edit held content or create local AI drafts; viewers and regular employees receive read-only panels. All write APIs still independently recheck permissions.
-- **Private team access visibility:** business owners can view aggregate counts for active owner, manager, creator, employee and viewer memberships, plus inactive memberships, in Settings. The backend checks the current business and `MANAGE_TEAM` permission. No employee identities, emails, invitation secrets, or membership mutations are exposed; invitations remain unconnected in the offline preview.
-- **Account security across devices:** Settings now includes an explicitly confirmed **Sign out on all devices** action. It clears the current browser's private session immediately, then requests revocation of all that BAM identity's other active sessions from the trusted backend. It distinguishes confirmed revocation from network failure and never disconnects third-party social accounts.
-- **Independent BAM identity sessions:** short-lived, hashed-token sessions, role freshness checks, business-scoped switching, per-session logout, and identity-wide logout. A disabled-by-default HTTPS-only sign-in adapter and in-memory browser login client now cover password and verified-Google pathways, without enabling production enrollment.
-- **Multiple businesses under one identity:** isolated business profiles, current roles, social connection metadata, and content request queues. The authenticated shell lists only accessible businesses and changes business by issuing a replacement server-validated session, revoking the old one and clearing the previous business's private UI.
-- **Social account connection visibility:** the signed-in Connections overview card opens a deeper read-only account-status panel for business members authorized to view analytics. It displays sanitized provider account identifiers and connected, pending, expired, revoked, or reconnect-required status without exposing vault references, OAuth credentials, or publishing permissions. A separate authenticated `GET /api/v1/connections` route derives the current business from its live session; unauthorized roles cannot retrieve account details. The existing OAuth-state/PKCE, analytics import, scheduling preview, and audience-window ranking foundations remain offline. **No live social account is connected by the demo.**
-- **Dashboard scheduling and review drilldowns:** the signed-in large-card interface now shows real current-business requests that are ready for human review and a separate safe manual posting-time preview beneath the Scheduled card. Readiness never means approved, and proposed clock times never represent queued or published posts. Direct links open Content Studio or Posting Time settings for authorized work.
-- **Posting time preferences and read-only preview:** signed-in business owners can explicitly save Smart or Manual mode with an IANA timezone and up to 24 unique local time slots. The Settings editor reads active-business preferences and validates owner-only writes via a disabled-by-default HTTPS gateway. A tenant-scoped, signed-in seven-day preview shows possible upcoming Manual-mode local posting times, skips nonexistent or ambiguous daylight-saving wall times, and explicitly reports that Smart recommendations need verified audience data. Saving or previewing never schedules or publishes a post.
-- **Advance AI topic planning without API cost:** signed-in authorized creators can enter 1–14 distinct future post topics and preview one proposed individual structured-generation request per topic, based on current owner-confirmed business facts and their own AI writing mode. The preview makes **zero OpenAI calls**, reserves no quota, creates no drafts, does not estimate pricing and does not schedule or publish. No bulk discounts or automatic generation are claimed; real batch/advance-generation optimization remains gated.
-- **User-and-business-specific AI writing preferences:** an authorized creator can set their own tone, audience and copywriting guidance in Settings. Preferences are isolated for each identity/business, protected by an optimistic compare-and-update check and rejected if an old browser tab attempts to overwrite a newer version. Sensitive API keys, passwords and tokens are not intended for this preference store. Updates require no OpenAI request and cannot publish.
-- **Targeted AI revisions (offline executor, HTTP and opt-in UI):** `AITargetedRevisionWorkflow` can regenerate just post copy **or** an existing image prompt through one trusted, injected model response. It reserves the server-controlled sponsored quota, deduplicates requests, checks the owner's current facts and the draft revision before applying, and preserves the unmodified component. Editing an image prompt detaches any older verified-media association; outputs remain unpublished. A separately disabled HTTPS-only `POST /api/v1/ai/targeted-revision` adapter accepts only a draft ID, current revision, component, instruction, topic and idempotency key. Server time, tenant, sponsorship plan and token caps are not client-selected. The full API-to-draft flow is tested with a zero-network injected executor. An additional AI Drafts interface allows the user to prepare and explicitly confirm an AI copy-only or prompt-only change, using a cryptographically generated idempotency key and a visible usage-cost warning. **This feature is disabled by default**, and the ordinary signed-in shell does not enable its provider requests; no paid OpenAI traffic or billing is activated.
-- **Explicit batch import without AI costs:** Content Studio's advanced CSV importer validates up to 20 held drafts locally, previews every row, and asks the authorized editor to confirm before saving drafts one by one through the existing tenant-scoped API. It rejects malformed CSV and exact duplicate post copy; a partial network failure stops the batch without claiming a rollback or automatic retry. All imported drafts remain unpublished and require their own supporting media or permissions.
-- **Held marketing content and revision-safe editing:** authorized users can create manual drafts, request photos/permissions or other supporting materials, see what is missing, postpone unavailable content, and reopen incomplete drafts. The signed-in Content Studio supports independent manual edits to draft copy or guidance through a disabled-by-default HTTPS API, with optimistic revisions that reject stale overwrites, business-role checks and fresh tenant-scoped reads after every confirmed change. Legacy local SQLite drafts migrate to a revision counter without losing previous content. Changes to copy invalidate any earlier approval-intent review; previously attached media does not magically become newly verified. All drafts remain unscheduled and unpublished.
-- **Media preflight and optional private pending-byte receipt:** a disabled-by-default authenticated metadata endpoint registers an image intent against a valid business draft using file type, declared size and SHA-256. With a separately configured private storage directory **outside the source repository**, an independent opt-in local endpoint can accept matching PNG/JPEG/WebP bytes into non-public quarantine. Both return only pending states; **no URL, gallery, malware scan, media verification, attachment approval or publish permission is granted**. The authenticated, tenant-scoped read-only media-status endpoint now distinguishes `awaiting_file` from `pending_scan` without exposing file paths, hashes, or attachment IDs. An editor can explicitly discard a quarantined unverified image after a separate confirmation step; BAM removes the matching pending file(s) and metadata for that business request/item and allows a replacement. This never deletes verified media or marks any draft approved. Content Studio reloads these states after sign-in/refresh, blocks repeat transfer while a file is already awaiting review, and refuses to send bytes after a business/session switch. Trusted scanning and consent/ownership checks remain required before a held request can become ready.
-- **Independently editable AI draft components:** after AI content is stored, a permitted creator can manually revise the post copy or the existing image prompt without regenerating the other component, making an OpenAI call, or changing the publication state. Revision numbers prevent stale overwrites; changing an image prompt invalidates any previously verified image association and returns the draft to a media-needed hold.
-- **Zero-API-request local product/service drafts:** after the owner confirms `business_name` and at least one of `product` or `service`, an authenticated content creator can explicitly generate a simple factual product or service spotlight draft from a local template, optionally creating a conceptual ChatGPT image prompt for manual use. This path consumes **zero BAM OpenAI API generation requests**, stores the result in that user's unpublished AI drafts, and holds it for media and factual review. A local template does not generate an actual image or bypass review.
-- **Owner-confirmed AI business facts:** business owners can explicitly confirm and edit fact dictionaries from the authenticated Settings panel, with server-enforced current owner permissions, revision checking and per-business isolation. Fact confirmation is provenance for draft grounding, not independent external verification.
-- **Read-only claim-risk hints:** Content Studio can explicitly scan the current draft's copy for heuristic marketing risks such as prices, discounts, guarantees, scarcity, business hours and testimonials. The backend independently checks the active business session and returns bounded risk spans without exposing another tenant's content. A clean scan does **not** prove truth or grant approval; editing draft copy invalidates any cached risk report until checked again.
-- **Content safeguards:** approved-fact evidence, TruthGuard review receipts, attachment verification metadata, owner approval-intent records, and a scheduling readiness gate that explicitly refuses publishing.
-- **Local developer interface:** `dev_server.py` plus `dev_client.py` inspect business accounts and held drafts over loopback HTTP. Separately, `bam_offline_gateway.py` assembles real SQLite identity, password login, tenant-isolated dashboard/AI reads, explicit sign-out and business rotation behind a disabled-by-default WSGI gateway for direct-call integration tests. Neither starts a hosted service.
-- **Interactive graphical preview:** `ui/bam_dashboard_prototype.html` demonstrates large mobile-first cards, drilldown content screens, sample analytics, business switching, and light/dark appearance, using sample data only.
-- **Backend card contract:** `dashboard_cards.py` supplies permission-aware content counts and explicitly unavailable scheduling values for eventual live UI integration.
-- **AI draft backend:** owner-confirmed business fact registry, OpenAI-only structured draft planning, sponsored quota reservations, optional idempotency protection, held drafts, verified-image references and targeted revisions. Drafts are not approved or published.
-- **AI provider boundary:** disabled-by-default OpenAI HTTPS transport and a strict structured Responses adapter, with operator-configured token cost estimates. No real provider connection or billing is enabled.
-- **Authenticated large-card interface:** `ui/bam_signed_in_shell.html` and its browser controller compose password sign-in, verified-session dashboard reads, a permission-aware business switcher, AI drafts, deeper Settings, light/dark preferences and sign-out. The UI uses the approved BAM app-icon SVG and bundled branding sources. Its pages use server-validated data, not fabricated analytics; Google sign-in awaits a configured provider flow. The interface is not deployed.
+| Area | Intended product capability |
+| --- | --- |
+| Multi-business workspaces | Independent brand identities, facts, topics, campaigns, assets, schedules, social accounts, usage and access rules under a single login |
+| Team collaboration | Individual employee logins, invitations, business-specific owner/manager/creator/employee/viewer roles, shared draft queue, feedback, activity history, and configurable approval policies |
+| Content Studio | Post drafting and editing, revision/conflict detection, media-needed requests, campaign priorities, CSV draft imports, content queues and review checklists |
+| OpenAI-assisted copy | One structured request for post copy plus an optional separately editable image prompt, targeted regeneration of only the changed component, optional advance batches and local templates |
+| Artwork workflow | Upload owned or licensed media; optionally copy an image prompt into the user's own ChatGPT Free/paid account, refine the image there, and return it to BAM; ChatGPT is not a programmatic free image API |
+| Publishing | BAM-managed job queue, retries, idempotency, cancellation, provider-status reconciliation and owner-controlled pause/emergency stop, all **planned and not live** |
+| Analytics | Native platform insights where authorized and available, content performance, audience patterns, posting-time evaluation and transparent limits when providers expose insufficient data |
+| Cost control | Shared hosting, business-level resource accounting, sponsored AI allowances, optional personal OpenAI API keys, usage limits and budget safeguards |
 
-**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **845 passing Python tests and 55 passing JavaScript UI regression scripts** at commit `97f8f2de` on 2026-11-11 (Eastern). This is offline regression verification, not production approval.
+The first business examples are **Belenos Creations** and **Busy B Cleaning Service** in Marion, Ohio. They are examples for testing business separation, not hard-coded target customers.
 
-## Product identity
+## Direct social-platform integrations — no Metricool dependency
 
-- **Official product name:** BAM
-- **Expanded name:** Belenos Automatic Marketing
-- **Tagline (working):** Your marketing. On autopilot.
-- **App display name:** BAM
-- **Brand positioning:** An industry-independent marketing automation platform for multiple businesses and independent owners.
-- **Existing GitHub repository:** `BelenosCreations/belenos-marketing-automation` (retained to preserve links and development history; repository renaming is not part of this documentation change).
-- **Trademark and app-store availability:** Not yet verified; perform checks before public launch.
+**The approved architecture is direct connection to social networks, not a required Metricool integration.** BAM will provide the scheduler, publishing records, review process and analytics views itself.
 
-## Platform-wide design principles
+- **Facebook first:** authorize an eligible business Page via Meta's official login/permission flows; securely store and refresh/revoke authorized credentials; publish to Pages through supported APIs only after review and activation.
+- **Other social platforms later:** implement separate provider adapters only after verifying current API eligibility, supported account types, app-review requirements, publishing capabilities and limits. Access to personal profiles, groups, particular content formats or private insights must never be assumed.
+- **BAM analytics:** use the social platforms' own authorized data when available; never display sample activity scores as live metrics. Smart posting suggestions must declare when usable audience evidence is missing.
+- **Resilience:** local scheduling and audits must not depend on Metricool. Failed/revoked permissions, provider outages, rate limits, duplicate submits and status mismatches require explicit reconciliation, safe retries and visible errors.
 
-- **Industry-agnostic:** Any business can define its own categories, sources, audience, brand voice, marketing goals, and policies; 3D printing and commercial cleaning are only sample configurations.
-- **Multi-tenant isolation:** Data and permissions for one business cannot be reused by another without explicit authorization.
-- **Flexible account structure:** One person can manage several businesses; separate owners can have independent accounts and installations; staff roles remain scoped to their business.
-- **Creator and competitor safety:** A relevant creator for one industry is not automatically relevant for another, and local competitors are excluded or held for review.
-- **Controlled automation:** Business owners control publishing policies; no live publishing is enabled during prototype development.
-- **Future-ready architecture:** Mobile and backend components should avoid assumptions about a particular brand, city, industry, or sole operator.
+BAM does **not** promise unlimited posting or unrestricted analytics; each social network's rules, API approvals and quotas still apply. Metricool is not needed to create a BAM account or to use its planned supported publishing features.
 
-## Project history and examples
+## Accounts, teams and business isolation
 
-The initial pilot businesses are Belenos Creations (custom creations and 3D printing) and Busy B Cleaning Service (commercial cleaning), both in Marion, Ohio. Their existing marketing workflows provide practical test cases for tenant isolation, content relevance, and role-based permissions. Business-specific examples elsewhere in this README are illustrative, not platform requirements.
+Each person has one BAM identity and can have different permissions in different businesses. The current offline policy uses **owner, manager, content creator, employee and viewer** role boundaries. For the finished collaboration experience, owners should be able to invite and remove members, assign/restrict permissions, make approval mandatory for selected posts, and view an audit trail of editing, approval and publication events.
 
-## Platform goals
+The existing offline alpha already has tenant-scoped sessions, role checks, business switching, shared draft data, version-safe editing, private reviewer notes, activity metadata and team-count visibility. **Full invitation delivery, employee administration and real hosted multi-device collaboration are not yet operational.** Business switching must immediately invalidate stale private UI and prevent cross-business data leakage.
 
-- Maintain a consistent, recognizable voice for each business without repetitive or generic posts.
-- Support industry-specific product and service highlights, community questions, educational resources, and relevant creator discoveries.
-- Use each business's audience engagement data to choose posting windows rather than relying on an owner's availability.
-- Protect each business's accuracy: do not invent discounts, prices, special hours, promotions, giveaways, events, or order promises.
-- Keep an auditable distinction between drafts, approvals, scheduled posts, and published posts.
-- Make future operation reliable, recoverable, and maintainable as marketing needs evolve.
+A team's additional members do not require individual application servers. Seats, AI allowances, media quotas and any future subscription policies are distinct configuration decisions; no unlimited free-seat or public-pricing promise is made here.
 
-## Planned content streams
+## AI and image generation
 
-| Stream | Intended behavior | Approval policy |
-| --- | --- | --- |
-| Business-specific products and services | Short, Facebook-first showcases of custom work, 3D prints, tumblers, apparel, and resin-printed artwork | New promotional claims require approval |
-| Community engagement | Local, conversational posts and questions for Marion-area followers | Routine non-promotional content can become auto-eligible after activation |
-| Authorized promotions and events | Use only terms and dates explicitly supplied or confirmed by the owner | Previously authorized exact terms may be reused within their scope and validity |
-| Curated industry-specific content | Mix of impressive prints, creative projects, industry news, and educational tips | Trusted-source, verified link posts may become auto-eligible; unfamiliar, sponsored, or sensitive items require approval |
-| Operational reminders | Store openings, pickup expectations, order deadlines, and closures | Bound to confirmed operational facts and relevant times |
+**OpenAI is the only approved generative-AI provider.** The intended default is BAM-sponsored OpenAI API access so that a user does not need to create a separate OpenAI API account or buy their own key. A user may optionally configure a **personal paid OpenAI API key** for their own API charges, held in an encrypted server-side secret vault after that capability is built. This must not expose the key to employees, the frontend or the repository.
 
-Curated content must credit its creator, distinguish outside work from Belenos work, avoid copying media without permission, and respect the capabilities and restrictions of Facebook and any scheduling provider.
+The generation design uses business-approved facts and isolated per-user/per-business writing preferences. One model request can return structured \`post_text\` and an optional \`image_prompt\`. Users can change either field independently without regenerating both. Local factual templates can avoid API calls; future batch work may reduce generation overhead where supported and useful. Requested images are an optional **manual** workflow in ChatGPT or can be uploaded directly; BAM must not silently publish a post missing required artwork.
 
-## Scheduling philosophy
+A sponsored experience **still costs the BAM operator money** for real API calls. Rate, token and spend caps; safe billing/usage records; abuse controls; and possible future plans remain subject to explicit configuration and validation. Public subscription pricing, user quotas, model choices and payment integrations are not finalized. See [AI architecture](AI_ARCHITECTURE.md).
 
-The system is designed to use engagement data, including Metricool audience-activity recommendations, to rank candidate publishing windows. It should account for content relevance, existing scheduled posts, spacing, deadlines, and America/New_York daylight-saving transitions.
+## Scheduling and content safety
 
-Fixed times remain appropriate when a message is operational (for example, an opening reminder). Audience-activity scores are directional indicators, **not guaranteed engagement forecasts**. Scheduling changes should be tested against actual post performance over time.
+BAM should offer both **Manual** and **Smart** posting modes. Manual mode honors explicitly saved local times and time zones, handling daylight-saving transitions conservatively. Smart mode uses trustworthy first-party audience and performance measurements to recommend times, with no invented engagement forecasts. Posting intervals, campaigns, business hours, deadlines, duplicate protection and platform restrictions constrain both modes.
 
-Historical drafting schedule used during planning:
-- Daily morning marketing drafts around 10:00 AM Eastern.
-- Community engagement drafts Monday, Wednesday, Friday, and Saturday around 6:30 PM Eastern.
-- Store reminders aligned with actual opening hours.
+Content safeguards are fundamental:
 
-These are planning baselines, not promises of active automatic publishing.
+- No invented discounts, prices, giveaways, promotions, inventory guarantees, events, opening hours, or order commitments.
+- Owner-confirmed facts carry provenance; confirmation is not represented as independent verification. Uncertain claims remain held for review.
+- New or changed promotional claims require applicable authorization. Previously approved claims may be reused only within their authorized scope and validity.
+- Missing or unverified media, unclear content rights, sponsored/unfamiliar third-party references and sensitive content remain held. Credit creators and do not copy images without permission.
+- A draft, reviewer note, image receipt, suggested time, or proposed calendar date is **never itself permission to publish**.
+- All publication must require authenticated roles, current content and media state, trusted social permissions, an auditable approval policy, an explicitly authorized production switch, and an emergency stop.
 
-## Android application and account architecture
+## What works today (offline alpha)
 
-The target experience is a native Android application (Kotlin / Jetpack Compose) backed by a separately hosted Python automation service. The server will own identities, permissions, approval decisions, audit logs, and integration credentials; the phone is a client, not the unattended scheduler. The initial owner account is the pilot; the architecture supports multiple independent owners and per-business employee roles. `access_policy.py` is the initial **offline authorization policy**, not a login system or a working Android application. Biometric sign-in is a planned client capability subject to secure server-side session management.
+The active development branch contains these **local development** components, not production integrations:
 
-## Safety and approval model
+- A responsive **large-card, mobile-first HTML workspace** with deeper settings, Content Studio, Approvals, social connection status and posting-time previews. Native Android is a future delivery target.
+- Local password sign-in/session foundations and Google sign-in verification scaffolding, multi-business membership isolation, logout on current/all sessions, role-aware access, switching and invitation policy foundations.
+- Held draft creation, revisions and stale-edit conflict protection; priority/filtering, optional CSV import, missing-media holds, private reviewer feedback and audit metadata, factual-risk hints and review-readiness checklists.
+- Owner-confirmed business-fact editing, independently editable user/business AI writing preferences, local zero-provider-cost templates, structured AI draft records, targeted-revision/test-executor flows, cost ledger/quota foundations and a **zero-OpenAI-call** future-topic preview.
+- Owner-configured Manual/Smart preferences, daylight-saving-safe Manual time previews, proposed dates with conflict tokens, and suggested unpublished slots. **These are not executable scheduled posts.**
+- Read-only social connection metadata and offline OAuth/PKCE foundations. **No real account connection, live platform insight or API publication is enabled.**
+- Optional, explicitly opted-in **private quarantine** for pending image bytes. It does not perform production malware scanning, ownership verification or media approval.
+- A local-only opt-in HTTPS preview/gateway and automated Python/JavaScript tests. The SQLite and WSGI development arrangement is **not** a production deployment.
 
-The intended workflow is **discover → validate → draft → review when required → schedule → reconcile → audit**.
+Past successful CI runs are documented in [development milestones](DEVELOPMENT_MILESTONES.md). The exact latest security-batch commit may not yet have passed GitHub Actions; consult [development continuity](DEVELOPMENT_CONTINUITY.md) before merging or making any claim about a new release.
 
-Key safeguards:
-1. **Publishing disabled by default**; separate explicit authorization is required before activation.
-2. New discounts, pricing, promotions, giveaways, and event claims are never invented by the system.
-3. Previously approved claims are reusable only within their confirmed terms, dates, and scope.
-4. Source credibility and fact verification are distinct from content popularity.
-5. Sponsored, sensitive, unfamiliar, or ambiguous third-party content is held for review.
-6. Media reuse requires appropriate rights; link-and-commentary is the preferred fallback.
-7. Duplicate prevention, cancellation, expiry, and an audit trail are core requirements.
-8. A production integration must authenticate approvers and use least-privilege credentials.
+## Architecture and operating costs
 
-## Technical direction
+The planned production system is a **shared hosted BAM backend** (Python service plus durable relational database, private media/object storage, background workers and monitoring), with strict tenant isolation and a responsive/web and eventual Kotlin/Jetpack Compose Android client. Each user signs in independently; phones do not need to remain open to run approved future jobs. SQLite remains an offline prototype store until production migrations, concurrency controls, backups and recovery are verified.
 
-- **Language:** Python for the current offline prototype.
-- **State:** SQLite in the prototype; production persistence and multi-process safety to be evaluated.
-- **Scheduling:** Timezone-aware ranking using externally supplied activity scores.
-- **Integration target:** Metricool and supported Facebook publishing workflows, subject to verified provider capabilities.
-- **Testing:** Unit tests, followed by integration tests, failure recovery, and dry-run verification before activation.
-- **Source control:** This private GitHub repository is intended to become the primary source of truth.
+Content text, draft states, permissions, audit events and schedules belong in the database; privately stored media belongs in durable object storage. Published content also resides on the destination social network subject to its policies. Secure backups, retention controls, rights handling and deletion are required.
 
-### Phase 3.2 prototype (imported)
+**Cost philosophy:** no mandatory Metricool fee, no server for each employee, and no separate OpenAI signup for BAM-sponsored AI. Ongoing operator costs will come from hosting/database, media and backups, OpenAI usage, observability and upkeep. AI usage and media storage may increase with more businesses; adding a colleague to one workspace should cause little incremental hosting overhead. Exact pricing and customer billing are **not yet set**; no zero-cost or unlimited-use guarantee is implied.
 
-The imported baseline package contains:
-- `engine.py`: basic post staging, authorization records, deduplication, and publishing gate.
-- `workflow.py`: audit log, draft approvals, discovered-event decisions, pause controls, and dry-run preparation.
-- `optimizer.py`: candidate slot ranking, minimum spacing, deadline handling, and conservative third-party curation.
-- `test_engine.py`, `test_workflow.py`, `test_optimizer.py`: **26 passing offline unit tests** at the time of packaging.
-- `README.md`: implementation notes and known limitations.
+## Release path and developer documentation
 
-The prototype **does not** yet implement live discovery, secure approval identity, remote scheduling, real Metricool write integration, or production-grade verification of caller-provided trust flags. A green unit-test run does not imply production readiness.
+The [current product and implementation plan](PRODUCT_PLAN.md) records direct social API delivery, team collaboration, shared hosting/cost design, phased integration gates and measurable acceptance criteria. [Alpha/private beta readiness](ALPHA_BETA_READINESS.md) covers security, hosting, media, provider and publishing evidence needed before release.
 
-## Development roadmap
-
-1. **Import and baseline (completed):** Phase 3.2 source, changelog, and GitHub Actions test workflow committed. Verify the first remote CI run.
-2. **Validation and authorization:** Replace naive text matching and caller-controlled trust indicators with structured, authenticated facts and approval evidence.
-3. **Content discovery:** Implement vetted source feeds, creator whitelisting, deduplication, attribution, and rights-aware rendering.
-4. **Analytics and optimization:** Retrieve Metricool timing and performance data, score windows, and measure outcomes with controlled adjustments.
-5. **Scheduling integration:** Verify provider capabilities, build idempotent scheduling and reconciliation, and test cancellation, retries, and outage recovery.
-6. **Controlled rollout:** Require explicit owner approval before enabling any unattended publishing; start with limited, observable categories.
-
-## Current implementation architecture
-
-The repository contains a growing set of offline Python modules, strict authenticated API boundaries, and JavaScript browser components. The current mobile-first HTML demonstration remains sample-data only.
-
-**Identity and access.** `sessions.py`, `accounts.py`, `business_switcher.py`, and related authentication modules provide hashed server-side sessions, per-business roles, identity-level logout, email/password and Google sign-in foundations, and invitation/account-directory scaffolding. These are development components, not a deployed login service.
-
-**Business configuration and content.** Business curation, Content Requests, attachment validation, owner-approved facts, TruthGuard checks, approval-intent receipts, held drafts, and content-specific revision services enforce separation between unverified material, review, and publication eligibility. Drafts remain unpublished.
-
-**Scheduling and analytics.** Posting preferences support Smart or Manual time choices per business. Audience-window ranking and analytics ingestion boundaries can operate on explicitly supplied data; they are not connected to live social providers. Unavailable scheduling/analytics values must display as unavailable rather than invented.
-
-**AI content generation.** The approved hybrid architecture uses OpenAI-only structured responses containing independent post copy and optional image-generation prompts. It supports targeted component revisions, owner-confirmed business facts, sponsored usage quotas, request idempotency, and optional manual ChatGPT image creation. For a media-held draft, the UI can show an explicit **Copy image prompt** and **Open ChatGPT** handoff, with the finished artwork returned to BAM for verified upload; it never generates, uploads or publishes images automatically. The Responses adapter, HTTPS transport and generation endpoints are disabled by default. `bam_ai_offline_factory.py` assembles these components into a deliberately disabled service graph for integration testing; production enabling requires a separate reviewed composition root. No OpenAI API key is bundled or live billing enabled. See [AI architecture](AI_ARCHITECTURE.md).
-
-**Cost and account privacy.** Token counts and estimated costs use explicit operator-supplied prices and are scoped by user and business. Estimates are not invoices. Credentials and raw provider secrets must remain server-side, never in the browser, logs or repository.
-
-**UI.** The [sample dashboard](ui/bam_dashboard_prototype.html) is an unauthenticated sample-data concept. The distinct [signed-in HTML shell](ui/bam_signed_in_shell.html), `ui/bam_signed_in_shell.js` and `ui/authenticated_session_controller.js` connect the real authenticated workspace with login/logout, verified multi-business switching, large cards, AI draft viewing with explicit no-API-request product/service template creation and manual single-component edits, an explicitly write-capable **unpublished Content Studio**, owner-only Smart/Manual posting-time settings, explicit owner-confirmed AI fact editing and appearance selection. The approved [BAM icon and wordmarks](branding/README.md) are bundled as vector assets, with [Android launcher resource templates](android/branding/README.md). No live server, Google browser credential flow or deployed Android application is supplied. They clear on logout/business switch and do not publish.
-
-**Auth transport.** `bam_auth_wsgi.py` offers disabled-by-default strict JSON HTTPS routes for password login, one-time Google sign-in challenges, and single/all-session sign-out, backed by trusted `AuthLoginAPI`, an explicit logout service and a required sign-in throttle. `ui/auth_login_client.js` validates responses and retains sessions only in the authenticated shell's memory. Real provider verification and production gateway policies still require configuration. Neither component is activated by the existing HTTP demo server.
-
-**API boundaries.** `bam_read_wsgi.py` provides read-only HTTPS endpoints. `bam_business_switch_wsgi.py` handles permission-checked business changes and old-token revocation; `bam_offline_gateway.py` composes these with login for offline integration tests and is disabled by default. The optional `bam_signed_in_assets_wsgi.py` serves only the signed-in frontend's allowlisted same-origin resources over a trusted HTTPS WSGI environment when both explicit gates are enabled; it never starts a listener. `bam_content_write_wsgi.py` separately permits only authorized creation and hold-state changes for unpublished content requests, with no publishing or unverified attachment endpoint. `bam_upload_preflight_wsgi.py` registers only pending, unverified file metadata, with no upload URL. An independently disabled-by-default `bam_pending_media_wsgi.py` can receive vetted-size image bytes for **local private quarantine only** when `pending_media_dir` is configured; it never marks media scanned or verified. `bam_posting_preferences_wsgi.py` handles owner-only preference updates under the same disabled-by-default HTTPS gateway, independently of any posting execution. Separate disabled-by-default `bam_ai_write_wsgi.py` and `bam_ai_facts_write_wsgi.py` constrain generation and owner fact confirmation to authenticated, validated requests. The fact confirmation route is mounted for local direct-call testing only; it remains unavailable in a hosted service. None of these should be considered deployed production APIs.
-
-## Development records and verification
-
-- [Development continuity checkpoint](DEVELOPMENT_CONTINUITY.md) records the current verified branch/commit for resuming an interrupted chat.
-- [Detailed implementation milestones](DEVELOPMENT_MILESTONES.md) preserve phase-by-phase notes without turning this product overview into a changelog.
-- [Changelog](CHANGELOG.md) records additions, fixes and known limitations.
-- [Authenticated UI integration](AUTHENTICATED_UI_INTEGRATION.md) documents session lifecycle and browser contracts.
-- [Local HTTPS preview guide](LOCAL_PREVIEW.md) documents the optional loopback-only test runner and its nonproduction trust boundaries.
-- [AI architecture](AI_ARCHITECTURE.md) records approved generation design and safety requirements.
-- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete **845-test Python suite** and **55 JavaScript UI regression scripts** passed together in [GitHub Actions run 43058003130](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43058003130) on commit `97f8f2de`. The Python suite includes an actual temporary localhost TLS network smoke test; it is not real-browser automation or production approval. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
-
-## Operational boundaries
-
-**No live publishing, post scheduling, or automatic reposting is authorized by this repository or its README.** Development, testing, and deployment are separate from authorization to publish. Business-specific promotional content must remain grounded in confirmed facts.
-
-## Documentation and release discipline
-
-Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/fixed items, test status, and known limitations. Use Git history and tagged releases for reproducible versions. Never commit passwords, access tokens, private keys, or customer information.
-
----
-
-**Pilot businesses:** Belenos Creations and Busy B Cleaning Service · Marion, Ohio (nonexclusive examples)  
-**Project:** BAM (Belenos Automatic Marketing)  
-**Status:** Active development · publishing disabled
-
-
-## Proposed draft calendar — non-executable (2026-11-11)
-
-Content Studio can save or remove a **business-private proposed date/time** for a held draft from an owner's existing Manual posting-time preferences. The Scheduled dashboard drilldown separately shows proposed dates, including whether the draft revision or configured time is now stale. No proposal is an approved post, social publishing job, external calendar event, or future automation command. The HTTPS route `/api/v1/calendar-proposals` uses an active business membership and separate draft read/edit permissions. Duplicate slots within the same business are refused; nonexistent and ambiguous daylight-saving times cannot be selected. Proposals stay read-only for viewers and remain tenant-isolated. Removing a proposal never removes its underlying draft.
-
-All calendar proposal operations are confined to the opt-in local HTTPS development adapter. The workflow performs no paid AI call or external scheduling. Actual scheduling still requires a separate, authorized production integration and owner-approved rollout.
-
-## Read-only automatic suggestions for unpublished draft dates (2026-11-11)
-
-The authenticated Scheduled drilldown now includes **unassigned held-draft time suggestions** alongside—but visually separate from—saved draft proposals and from genuine social scheduling (still unavailable). A business-scoped, read-only `GET /api/v1/calendar-suggestions` route pairs up to 20 current unassigned draft revisions with unused, unambiguous upcoming Manual-mode posting slots. Suggestions are ordered by held-draft priority and creation time, use verified server/session/business scope, respect previously reserved proposal slots (including stale proposals until manually removed), and exclude postponed/unavailable drafts. Smart mode correctly reports that verified audience data is needed rather than inventing recommendations. All suggestions are ephemeral previews: no database insertion, provider call, publishing job, quota charge, or automatic assignment. Creators choose proposed dates manually in Content Studio.
-
-**Verified:** [GitHub Actions run 43078999350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43078999350), commit `263c1c91`: 857 Python tests and 60 JavaScript regression scripts passed, plus Python compilation. Local HTTPS only; not a hosted BAM app.
-
-## Version-safe proposed date editing (2026-11-11)
-
-Saved unpublished draft-calendar proposals now carry an opaque, one-time write-version token. Every proposed-date reassignment or removal requires the exact token last returned for that draft, while first-time creation explicitly requires no previously saved proposal. New writes rotate the token; a concurrent editor, stale browser view or removed-and-recreated proposal cannot be overwritten or deleted by an older request. The SQLite migration adds version tokens to already saved proposals without deleting their draft data. Server-side business permissions and existing draft revision checks still apply; version tokens are conflict controls, not authentication, approval or publish permission.
-
-The HTTPS proposal contract and Content Studio browser client send and verify versions, returning a refresh-required conflict on stale changes. **Verified:** [GitHub Actions run 43080077237](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43080077237), commit `d03753f2`: 859 Python tests, 60 JavaScript scripts and compilation passed. Publishing and scheduled-post execution remain disabled.
-
-## Private editorial readiness checklist (2026-11-11)
-
-The signed-in large-card dashboard now opens a deeper **Editorial preparation checklist** beneath Approvals. The business-private, strictly GET-only `/api/v1/review-readiness` endpoint examines held draft status, missing required items and the trusted attachment registry; it cannot create an approval intent or post, return private storage paths, or call an external AI/social provider. Even when all required materials are independently verified, the result says **editorial materials complete—not approved**. TruthGuard review, explicit owner approval and production social publishing remain separate blockers on every entry. A former business's data is discarded when its session changes, and view-only users cannot initiate approval. Owner and creator permissions are still checked server-side. The endpoint is disabled unless the local offline gateway is explicitly enabled.
-
-**Verified:** [GitHub Actions run 43081725025](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43081725025) at commit `91d0e0cb`: 867 Python tests and 62 JavaScript regression scripts passed, plus compilation. No public hosting, live posting, actual approval, production media scanning or paid generation was enabled.
-
-## Private team editorial feedback and Content Studio filtering (2026-11-11)
-
-Reviewers can now leave **private, revision-linked feedback notes** on held drafts. An authenticated business owner or marketing manager can add, update or explicitly remove a note; content creators, employees and viewers with draft-read permission can read feedback but cannot edit it. Feedback survives ordinary draft edits and is explicitly marked **stale** when it refers to older copy, so an old comment cannot be mistaken for a fresh review. Each saved note carries a unique optimistic-write version: stale tabs, duplicate first writes, conflicting edits and delete/recreate races are rejected rather than silently overwriting colleagues. Removing a note never deletes its draft. The database records the note for the appropriate business; the browser never stores login credentials, approves posts or sends a publishing request.
-
-The private `GET/PUT/DELETE /api/v1/review-feedback` adapter rejects caller-chosen business IDs, extra fields, spoofed approvals, unauthorized editors and unsafe result shapes. All responses explicitly state `approval_granted: false` and `publishing_enabled: false`. In the **Approvals** large-card drilldown, reviewers see notes and can explicitly edit/remove with a second confirmation for deletion. Creators also see the same read-only feedback on the matching draft in Content Studio, including stale-revision warnings.
-
-Content Studio also offers **local-only search and filters** for channel and draft status, preserving the existing grouped held queue. Filtering never sends search text to the server, changes content, deletes drafts or publishes. Filters reset when a user changes business or signs out, while persisting through ordinary refreshes of the same business.
-
-**Verified:** [GitHub Actions run 43088917850](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43088917850), code commit `b52643de`: **877 Python tests and 65 JavaScript regression scripts** plus compilation passed. Local HTTPS integration only; no public hosting, live provider calls or AI spend was enabled. Free-text review notes are private business records and must not be used to store credentials or sensitive customer information.
-
-## Explicitly confirm proposed dates from the dashboard (2026-11-11)
-
-In the read-only Scheduled card's suggestion preview, a permitted owner, marketing manager or content creator can now **choose** a proposed time for a specific held draft. Selecting it first shows a separate **Confirm this proposed draft date** action; nothing is written until the person explicitly confirms. After confirmation, the browser calls the existing tenant-scoped `/api/v1/calendar-proposals` endpoint with the suggested draft revision, validated UTC time and null expected existing-proposal token. Concurrent edits, occupied slots and stale drafts are rejected by the server; the UI refreshes rather than pretending the write succeeded. Viewers and employees cannot save proposals. The resulting record is still only an unpublished draft-calendar proposal, not a queued social post or actual scheduler event.
-
-**Verified:** [GitHub Actions run 43089512284](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43089512284), code commit `88a9cca1`: 877 Python tests, all **68 JavaScript `ui/*_test.js` scripts**, and Python compilation passed. No publishing, approval or paid service was activated.
-
-## Tamper-resistant private reviewer activity ledger (2026-11-11)
-
-Every newly saved, edited or removed editorial feedback note now creates a corresponding immutable **metadata-only event** in the same database transaction. The event records a random event ID, business, draft reference, change type, associated draft revision, timestamp and internal acting user; it deliberately does **not** duplicate the current or previous note text or stored media. If the audit insert fails, the corresponding note mutation rolls back instead of leaving an unaudited write. Removing a note does not erase its activity metadata.
-
-A separate HTTPS-only, authenticated `GET /api/v1/review-feedback-history` endpoint lets the **current business owner or marketing manager** read up to the latest 50 redacted events; content creators, viewers and employees cannot request history. The Approvals drilldown displays at most 10 recent event summaries without note contents or user identifiers, distinctly labeled as activity rather than approvals. Other business histories remain inaccessible. Historical changes made **before** this ledger was introduced cannot be reconstructed and are not backfilled.
-
-**Verified:** [GitHub Actions run 43090679750](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43090679750), commit `f553f4b0`: **882 Python tests, 70 JavaScript regression scripts and Python compilation passed**. No publishing action, paid AI operation or production deployment was enabled.
-
-## Unpublished priority-aware content queue (2026-11-11)
-
-Content Studio now lets an authorized creator select a draft's **queue priority** when creating a held post: Later (-2), Low (-1), Normal (0), High (+1), or Urgent (+2). The existing backend validates and stores the priority as drafting metadata; it is not an instruction to publish sooner. Each draft displays its priority. The read-only queue summary, shown inside Content Studio, gives business-local counts of incomplete drafts, drafts ready for human review, postponed/unavailable drafts, high-priority incomplete drafts, and outstanding checklist items. Quick shortcuts let team members focus on high-priority content needs, human-review candidates or the full queue. A priority dropdown can also filter the draft listing by Urgent, High, Normal or Low, alongside existing status/channel/text filters. These calculations are based only on currently authorized business drafts, with no fabricated analytics or social-post scheduling.
-
-All filtering and queue counts happen in the browser over already authorized, server-validated draft data; using filters does **not** change priority, draft contents, approved status or server data. Filter state resets when switching BAM businesses or signing out. Queue prioritization never bypasses TruthGuard, media verification, owner approval or the default no-publishing rule.
-
-**Verified:** [GitHub Actions run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513), code commit `5c53c736`: **882 Python tests and 72 JavaScript UI regression scripts passed** with Python compilation. The signed-in shell smoke test now identifies form inputs by their accessible labels instead of fragile numeric positions.
-
-## Editorial source review: current-session tenant enforcement (2026-11-11)
-
-The trusted-attestation editorial source recheck now resolves the **current** membership/session and rejects attempts to recheck a different business using a token from another business—even when the same person belongs to both. A downgraded or deactivated member's previously issued token cannot retain editorial review permissions. New regression tests cover both cross-business membership and stale-role scenarios. This is a safety-only change: it does not approve posts, grant publication, or trigger paid services.
-
-**Verification pending:** GitHub Actions [run 43095601077](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43095601077) for code commit `e957aeadd75f07457bf0d987c71d9c5f94275973`. Do not treat this change as verified until the run passes.
-
-## Alpha safety: current-role review sessions and stale-editor protection — 2026-11-11
-
-This offline alpha batch strengthens the places that evaluate or change private content:
-
-- Trusted-attestation editorial **source intake** now requires an active, tenant-bound session with an unchanged current membership role, rather than accepting a token merely because the person also belongs to the target business.
-- Native and legacy **approval facades** now similarly reject a stale-role session, including the previously unsafe scenario in which a marketing manager has been promoted to owner but is still using a manager-issued token. These offline approval records are not publication permission.
-- Held draft **postpone/unavailable/reopen** controls require the displayed draft revision through the HTTPS and Content Studio browser paths; a stale editor gets HTTP 409 instead of silently overwriting newer content. SQLite status updates use the persisted revision as a compare-and-swap condition.
-- Verified-media **attachment references** are now saved with revision compare-and-swap, preventing a concurrent image/permission update from unintentionally erasing another update.
-- New Python, browser, HTTPS adapter and integrated offline gateway regressions cover conflicts, stale role grants, business separation and blocked publishing.
-
-**Testing status at documentation time:** latest code commit `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions runs for this batch are **queued** without test jobs; these changes are *committed but not yet verified*. The most recent separately confirmed successful workflow is [run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) at `74e55d53`. Do not merge or deploy while the batch remains unverified. Social publishing, production OAuth and paid AI remain off.
-
-
-Alpha-to-private-beta acceptance criteria are maintained in [ALPHA_BETA_READINESS.md](ALPHA_BETA_READINESS.md). The current build is offline alpha, not a hosted multi-user beta or a production publishing system.
-
-Content Studio now reloads authenticated draft data after a rejected edit (including a stale 409 conflict) rather than leaving obsolete controls on screen. The new browser regression checks that a rejected hold produces no optimistic success and that the current revision is fetched. This remains an offline alpha change with GitHub CI pending.
-
-## Additional role-change enforcement: team invites, schedules and TruthGuard — 2026-11-11
-
-A follow-up authorization audit found three more offline service boundaries that consulted the current directory role but did not require the issued session role to match. **Invitation creation/revocation, per-business scheduling settings and owner-only TruthGuard business-fact administration** now use `SessionStore.resolve_current` before evaluating tenant/role permissions. Tests verify that promoting a person to owner never lets an existing viewer/manager token silently acquire those owner powers; a separately issued current-role session is necessary. The change does not send invitations, schedule posts, publish, or approve any external AI call.
-
-**Checkpoint:** code commit `4fc1a6481309318b2c4a34453ccafaaef11a0708`. GitHub Actions remained queued with no assigned jobs at documentation time. Do not record it as verified yet.
+- [AI architecture and approved requirements](AI_ARCHITECTURE.md)
+- [Development continuity / safe resume checkpoint](DEVELOPMENT_CONTINUITY.md)
+- [Detailed development milestones](DEVELOPMENT_MILESTONES.md)
+- [Changelog](CHANGELOG.md)
+- [Local HTTPS preview](LOCAL_PREVIEW.md)
+- [BAM brand assets](branding/README.md)
+- [GitHub Actions tests](.github/workflows/tests.yml)
+
+Development and documentation updates do not activate a paid API, launch a hosted service, connect Facebook, schedule a post or grant publication permission. **Publishing remains off until separately authorized, implemented and verified.**
