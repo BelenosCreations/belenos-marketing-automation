@@ -32,10 +32,26 @@ class FakeAuthAPI:
         return {'session_token': 'd' * 43, 'publishing_enabled': False}
 
 
+class FakeLogoutAPI:
+    def __init__(self):
+        self.calls = []
+
+    def logout(self, **kwargs):
+        self.calls.append(('one', kwargs))
+        return {'signed_out': True, 'publishing_enabled': False}
+
+    def logout_everywhere(self, **kwargs):
+        self.calls.append(('all', kwargs))
+        return {'signed_out': True, 'sessions_revoked': 2,
+                'publishing_enabled': False}
+
+
 class BAMAuthWSGITests(unittest.TestCase):
     def setUp(self):
         self.api = FakeAuthAPI()
-        self.app = BAMAuthWSGI(self.api, enabled=True, clock=lambda: 100)
+        self.logout = FakeLogoutAPI()
+        self.app = BAMAuthWSGI(self.api, enabled=True, clock=lambda: 100,
+                               logout_api=self.logout)
 
     def call(self, *, app=None, path='/api/v1/auth/password', body=None,
              raw=None, **environ_overrides):
@@ -161,6 +177,41 @@ class BAMAuthWSGITests(unittest.TestCase):
                   'tenant_id': 'shop', 'email_verified': True})
         self.assertEqual(meta['status'], '400 Bad Request')
         self.assertEqual(self.api.calls, [])
+
+    def test_explicit_logout_revokes_only_authenticated_session(self):
+        meta, body = self.call(path='/api/v1/auth/logout', body={},
+            HTTP_AUTHORIZATION='Bearer ' + 'a' * 43)
+        self.assertEqual(meta['status'], '200 OK')
+        self.assertEqual(body, {'signed_out': True, 'publishing_enabled': False})
+        self.assertEqual(self.logout.calls, [('one', {
+            'session_token': 'a' * 43, 'server_now': 100})])
+
+    def test_explicit_global_signout(self):
+        meta, body = self.call(path='/api/v1/auth/logout-everywhere', body={},
+            HTTP_AUTHORIZATION='Bearer ' + 'a' * 43)
+        self.assertEqual(meta['status'], '200 OK')
+        self.assertEqual(body['sessions_revoked'], 2)
+        self.assertFalse(body['publishing_enabled'])
+        self.assertEqual(self.logout.calls[0][0], 'all')
+
+    def test_logout_requires_valid_bearer_and_only_empty_body(self):
+        for token in ('', 'Bearer malformed', 'Bearer ' + 'a' * 43 + ' ', None):
+            with self.subTest(token=token):
+                extra = {} if token is None else {
+                    'HTTP_AUTHORIZATION': token}
+                meta, _ = self.call(path='/api/v1/auth/logout',
+                                    body={}, **extra)
+                self.assertEqual(meta['status'], '401 Unauthorized')
+        meta, _ = self.call(path='/api/v1/auth/logout', body={
+            'tenant_id': 'another'}, HTTP_AUTHORIZATION='Bearer ' + 'a' * 43)
+        self.assertEqual(meta['status'], '400 Bad Request')
+        self.assertEqual(self.logout.calls, [])
+
+    def test_unmounted_logout_unavailable(self):
+        app = BAMAuthWSGI(self.api, enabled=True, clock=lambda: 100)
+        meta, _ = self.call(app=app,path='/api/v1/auth/logout', body={},
+                            HTTP_AUTHORIZATION='Bearer ' + 'a' * 43)
+        self.assertEqual(meta['status'], '503 Service Unavailable')
 
     def test_server_rejects_untrusted_session_result(self):
         self.api.password_login = lambda **kwargs: {
