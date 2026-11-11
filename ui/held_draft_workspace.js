@@ -8,11 +8,12 @@
     module.exports=factory(require('./dashboard_http_client.js'),
       require('./held_draft_write_client.js'),
       require('./pending_media_client.js'),
-      require('./content_risk_client.js'));
+      require('./content_risk_client.js'),
+      require('./held_draft_csv_import.js'));
   else root.BAMHeldDraftWorkspace=factory(
     root.BAMReadClient,root.BAMHeldDraftWriteClient,root.BAMPendingMediaClient,
-    root.BAMContentRiskClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient){
+    root.BAMContentRiskClient,root.BAMHeldDraftCSVImport);
+})(typeof globalThis!=='undefined'?globalThis:this,function(readClient,writeClient,pendingClient,riskClient,csvImport){
   'use strict';
   const channelNames=['facebook','instagram','linkedin','pinterest','tiktok','youtube'];
   const holdNames=['needs_content','ready_for_review','postponed','unavailable'];
@@ -37,6 +38,7 @@
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
     let canEdit=false,mediaEnabled=false,mediaStatusReady=false;
     let mediaStatuses=new Map(),riskReports=new Map(),riskPending=new Set();
+    let plannedImport=null;
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
       mediaEnabled=allowed&&canEdit;
@@ -54,7 +56,7 @@
     function clear(){
       epoch++;requestVersion++;active=null;model=null;busy=false;canEdit=false;
       mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
-      riskReports=new Map();riskPending=new Set();
+      riskReports=new Map();riskPending=new Set();plannedImport=null;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -243,7 +245,102 @@
         }
         wrap.append(section);
       }
+      if(canEdit){
+        const bulk=make(document,'section','');
+        bulk.className='panel stack';
+        bulk.append(make(document,'h3','Advanced: import held drafts from CSV'));
+        bulk.append(make(document,'p',
+          'Import 1–20 unpublished drafts. Columns: channel,draft_text,suggestion,required_items. Separate required items with |. Missing items default to image. No publishing or AI requests.'));
+        const chooser=make(document,'input','');
+        chooser.type='file';chooser.accept='.csv,text/csv';
+        bulk.append(chooser);
+        const previewButton=make(document,'button','Preview CSV draft import');
+        previewButton.type='button';previewButton.className='secondary';
+        previewButton.disabled=busy;
+        previewButton.addEventListener('click',async()=>{
+          if(busy||active!==viewingSession||epoch!==viewingEpoch)return;
+          const file=chooser.files&&chooser.files[0];
+          if(!file||!Number.isSafeInteger(file.size)||file.size>131072||
+             file.size<1||typeof file.text!=='function'){
+            if(onError)onError('Choose a CSV file of 128 KiB or smaller.');
+            return;
+          }
+          try{
+            const source=await file.text();
+            if(active!==viewingSession||epoch!==viewingEpoch)return;
+            const entries=csvImport.parse(source);
+            const duplicates=new Set(model.drafts.map(x=>
+              x.channel+'\u0000'+x.text.toLowerCase().replace(/\s+/g,' ').trim()));
+            if(entries.some(x=>duplicates.has(
+                x.channel+'\u0000'+x.draftText.toLowerCase().replace(/\s+/g,' ').trim())))
+              throw new TypeError('Draft text already exists');
+            plannedImport=entries;
+            render();
+          }catch(error){
+            plannedImport=null;
+            if(onError)onError('CSV draft preview failed. Check columns, row count, and duplicates.');
+          }
+        });
+        bulk.append(previewButton);
+        if(plannedImport){
+          bulk.append(make(document,'p',
+            plannedImport.length+' unpublished drafts validated. Review the source CSV, then confirm import. This may partially complete if the server becomes unavailable.'));
+          for(const entry of plannedImport){
+            const row=make(document,'p',entry.channel+': '+entry.draftText);
+            bulk.append(row);
+          }
+          const confirm=make(document,'button',
+            'Confirm import of '+plannedImport.length+' held drafts');
+          confirm.type='button';confirm.className='primary';confirm.disabled=busy;
+          confirm.addEventListener('click',async()=>{
+            if(busy||active!==viewingSession||epoch!==viewingEpoch)return;
+            await importCSV();
+          });
+          bulk.append(confirm);
+          const cancel=make(document,'button','Cancel CSV import');
+          cancel.type='button';cancel.className='secondary';
+          cancel.addEventListener('click',()=>{
+            if(!busy&&active===viewingSession&&epoch===viewingEpoch){
+              plannedImport=null;render();
+            }
+          });
+          bulk.append(cancel);
+        }
+        wrap.append(bulk);
+      }
       container.replaceChildren(wrap);
+    }
+    async function importCSV(){
+      if(!active||!canEdit||busy||!plannedImport)return {error:true};
+      const mine=active,version=epoch,rows=plannedImport;
+      plannedImport=null;busy=true;
+      let created=0,error=false;
+      try{
+        for(const row of rows){
+          if(version!==epoch||active!==mine)return {stale:true};
+          await writeClient.createDraft({
+            origin,fetchImpl,token:mine.token,
+            expectedTenantId:mine.tenantId,
+            channel:row.channel,draftText:row.draftText,
+            suggestion:row.suggestion,requiredItems:[...row.requiredItems],
+            priority:row.priority});
+          created++;
+        }
+      }catch(failure){
+        error=true;
+      }finally{
+        if(version===epoch&&active===mine){
+          try{await refresh();}catch(unavailable){error=true;}
+          if(onNotice&&created)
+            onNotice(created+' held drafts saved as unpublished.');
+          if(error&&onError)
+            onError('CSV import stopped after '+created+
+              ' confirmed drafts. Review existing drafts before trying again.');
+          busy=false;render();
+        }
+      }
+      if(version!==epoch||active!==mine)return {stale:true};
+      return {stale:false,created,error};
     }
     async function inspectRisk({requestId,revision}){
       if(!active||riskPending.has(requestId))return {error:true};
@@ -391,7 +488,7 @@
     function createDraft(args){return mutate(writeClient.createDraft,args);}
     function reviseDraft(args){return mutate(writeClient.reviseDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
-    return Object.freeze({activate,refresh,clear,inspectRisk,
+    return Object.freeze({activate,refresh,clear,inspectRisk,importCSV,
       createDraft,changeHold,
       reviseDraft,
       stageImage,discardImage,setCanEdit,setMediaEnabled});
