@@ -670,3 +670,7 @@ The offline generation workflow now checks the business's fact revision again af
 ## Private AI usage dashboard panel — 2026-11-10
 
 The authenticated account adapter and read-only HTTPS WSGI now expose `GET /api/v1/ai-cost-summary`, scoped to the signed-in user's current business. The browser client, strict data contract and optional AI Settings panel display recorded token counts and operator-priced estimated costs, always labeled **not an invoice or verified charge**. Business-switch/logout and failed-load cleanup clear this panel alongside AI drafts, facts and settings. Python route/scope tests and Node UI tests were added; selected Node tests passed in an isolated JavaScript harness, while complete GitHub Actions/Python verification is still pending. No actual provider charges or publishing were initiated.
+
+## Idempotency enforcement hardening — 2026-11-10
+
+When an idempotency ledger is configured, sponsored generation now **requires** a request key rather than silently bypassing deduplication if a caller omits one. Additional tests cover missing keys and independent users sharing the same business. This safeguard reduces accidental duplicate quota usage; provider retries and ambiguous crashes still need explicit reconciliation.
