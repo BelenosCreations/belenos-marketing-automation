@@ -100,6 +100,12 @@ class AIContentDraftStoreTests(unittest.TestCase):
         self.assertFalse(updated['publishing_enabled'])
         self.assertNotIn('private/image',str(updated))
         self.assertNotIn(attachment,str(updated))
+        revised=self.store.revise(token=self.owner,now=105,
+            draft_id=draft['draft_id'],target='image_prompt',
+            revised_text='Different product photo',expected_revision=1)
+        self.assertFalse(revised['media_attached'])
+        self.assertEqual(revised['status'],'needs_media')
+        self.assertFalse(revised['publishing_enabled'])
 
     def test_verified_image_must_match_exact_draft(self):
         draft=self.stage()
