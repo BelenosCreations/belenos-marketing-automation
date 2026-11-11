@@ -111,6 +111,9 @@ class AIContentPlan:
                        include_image_prompt=True):
         if type(topics) is not list or not 1<=len(topics)<=14:
             raise ValueError('Batch must contain 1–14 topics')
+        if any(type(topic) is not str or not topic.strip() or
+               len(topic)>300 for topic in topics):
+            raise ValueError('Invalid batch topic')
         if len(set(topics))!=len(topics):
             raise ValueError('Duplicate topics')
         return [self.create_request(token=token,now=now,
