@@ -22,6 +22,8 @@
          !channels.has(d.channel)||!statuses.has(d.status)||
          !text(d.draft_text,2000)||!text(d.suggestion,2000)||
          !Number.isSafeInteger(d.priority)||d.priority<-10||d.priority>10||
+         (d.revision!==undefined&&
+          (!Number.isSafeInteger(d.revision)||d.revision<1))||
          !Array.isArray(d.missing_items)||
          d.missing_items.some(item=>!text(item,80))||
          new Set(d.missing_items).size!==d.missing_items.length)
@@ -29,7 +31,8 @@
       seen.add(d.request_id);
       return {id:d.request_id,channel:d.channel,status:d.status,
         text:d.draft_text,suggestion:d.suggestion,
-        priority:d.priority,missing:[...d.missing_items]};
+        priority:d.priority,revision:d.revision===undefined?null:d.revision,
+        missing:[...d.missing_items]};
     });
     return {tenantId:body.tenant_id,drafts,publishingEnabled:false};
   }

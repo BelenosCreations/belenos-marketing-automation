@@ -115,6 +115,30 @@
           if(draft.missing.length)
             article.append(make(document,'p',
               'Still needed: '+draft.missing.join(', ')));
+          if(canEdit&&Number.isSafeInteger(draft.revision)&&draft.revision>=1){
+            for(const [target,label,initial] of [
+              ['draft_text','Save revised post copy',draft.text],
+              ['suggestion','Save revised content guidance',draft.suggestion]
+            ]){
+              const editor=make(document,'textarea','');
+              editor.value=initial;
+              editor.maxLength=2000;editor.rows=3;
+              article.append(editor);
+              const save=make(document,'button',label);
+              save.type='button';save.className='secondary';
+              save.disabled=busy;
+              save.addEventListener('click',async()=>{
+                if(busy||viewingSession!==active||viewingEpoch!==epoch)
+                  return;
+                await reviseDraft({requestId:draft.id,target,
+                  revisedText:editor.value.trim(),
+                  expectedRevision:draft.revision});
+              });
+              article.append(save);
+            }
+            article.append(make(document,'p',
+              'Text changes are version-checked and remain unpublished. No content is automatically approved.'));
+          }
           if(canEdit&&mediaEnabled&&status==='needs_content'){
             const item=draft.missing.find(value=>
               /photo|image|picture|artwork|graphic/i.test(value));
@@ -303,8 +327,10 @@
       }
     }
     function createDraft(args){return mutate(writeClient.createDraft,args);}
+    function reviseDraft(args){return mutate(writeClient.reviseDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
     return Object.freeze({activate,refresh,clear,createDraft,changeHold,
+      reviseDraft,
       stageImage,discardImage,setCanEdit,setMediaEnabled});
   }
   return Object.freeze({create});

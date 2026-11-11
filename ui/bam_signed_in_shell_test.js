@@ -101,7 +101,7 @@ async function main(){
       holds[currentTenant].push({request_id:'b'.repeat(32),
         channel:item.channel,draft_text:item.draft_text,
         suggestion:item.suggestion,missing_items:item.required_items,
-        status:'needs_content',priority:0});
+        status:'needs_content',priority:0,revision:1});
       return {ok:true,json:async()=>({tenant_id:currentTenant,
         request_id:'b'.repeat(32),status:'needs_content',
         publishing_enabled:false})};
@@ -111,8 +111,20 @@ async function main(){
       const item=holds[currentTenant].find(x=>x.request_id===change.request_id);
       if(!item)throw new Error('Unrecognized held draft');
       item.status=change.status;
+      item.revision++;
       return {ok:true,json:async()=>({tenant_id:currentTenant,
         request_id:item.request_id,status:item.status,
+        publishing_enabled:false})};
+    }
+    if(url.endsWith('/content/drafts')&&opts.method==='PUT'){
+      const patch=JSON.parse(opts.body);
+      const draft=holds[currentTenant].find(x=>x.request_id===patch.request_id);
+      if(!draft||draft.revision!==patch.expected_revision)
+        throw new Error('Stale held draft');
+      draft[patch.target]=patch.revised_text;
+      draft.revision++;
+      return {ok:true,json:async()=>({tenant_id:currentTenant,
+        request_id:draft.request_id,status:draft.status,revision:draft.revision,
         publishing_enabled:false})};
     }
     if(kind==='ai-business-facts'&&opts.method==='PUT'){
@@ -210,6 +222,16 @@ async function main(){
   assert.equal(holds.shop.length,1);
   assert.equal(holds.shop[0].status,'needs_content');
   assert.equal(holds.shop[0].draft_text,'New product preview');
+  const draftArticle=e['bam-content-studio'].children[0].children[3].children[1];
+  const editor=draftArticle.children.find(x=>x.tag==='textarea'&&
+    x.value==='New product preview');
+  const save=draftArticle.children.find(
+    x=>x.textContent==='Save revised post copy');
+  assert.ok(editor&&save);
+  editor.value='Edited held product copy';
+  await save.listeners.click();
+  assert.equal(holds.shop[0].draft_text,'Edited held product copy');
+  assert.equal(holds.shop[0].revision,2);
   const heldArticle=e['bam-content-studio'].children[0].children[3].children[1];
   const holdButton=heldArticle.children.find(x=>x.textContent==='Postpone');
   assert.ok(holdButton);

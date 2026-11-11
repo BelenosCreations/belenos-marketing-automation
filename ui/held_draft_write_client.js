@@ -64,5 +64,38 @@
     return post(options,'/api/v1/content/hold',{
       request_id:options.requestId,status:options.status},options.status);
   }
-  return Object.freeze({createDraft,changeHold});
+  async function reviseDraft(options){
+    context(options);
+    const {requestId,target,revisedText,expectedRevision}=options;
+    if(!requestPattern.test(requestId)||
+       !['draft_text','suggestion'].includes(target)||
+       !validText(revisedText,2000)||
+       !Number.isSafeInteger(expectedRevision)||expectedRevision<1)
+      throw new TypeError('Invalid manual held-draft revision');
+    const response=await options.fetchImpl(
+      options.origin+'/api/v1/content/drafts',{
+      method:'PUT',mode:'same-origin',credentials:'omit',
+      cache:'no-store',redirect:'error',
+      headers:{'Content-Type':'application/json',Accept:'application/json',
+        Authorization:'Bearer '+options.token},
+      body:JSON.stringify({request_id:requestId,target,
+        revised_text:revisedText,expected_revision:expectedRevision})
+    });
+    if(!response||!response.ok)
+      throw new Error('Held draft change not confirmed');
+    const body=await response.json();
+    if(!body||typeof body!=='object'||Array.isArray(body)||
+       Object.keys(body).sort().join(',')!==
+         'publishing_enabled,request_id,revision,status,tenant_id'||
+       body.tenant_id!==options.expectedTenantId||
+       body.request_id!==requestId||
+       !['needs_content','ready_for_review','postponed','unavailable']
+         .includes(body.status)||
+       body.revision!==expectedRevision+1||
+       body.publishing_enabled!==false)
+      throw new TypeError('Untrusted updated held draft');
+    return Object.freeze({tenantId:body.tenant_id,id:body.request_id,
+      status:body.status,revision:body.revision,publishingEnabled:false});
+  }
+  return Object.freeze({createDraft,changeHold,reviseDraft});
 });

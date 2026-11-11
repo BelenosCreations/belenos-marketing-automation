@@ -7,6 +7,7 @@ function node(tag){return {tag,textContent:'',children:[],listeners:{},value:'',
 const document={createElement:node},container=node('main');
 const base={tenant_id:'shop',publishing_enabled:false,drafts:[]};
 let draftCount=0,readWait=null,releaseRead=null;
+let copy='New launch',guidance='Wait for photo',revision=1;
 const calls=[];
 const fetchImpl=async(url,opts)=>{
   calls.push({url,opts});
@@ -18,10 +19,20 @@ const fetchImpl=async(url,opts)=>{
       request_id:'b'.repeat(32),status:JSON.parse(opts.body).status,
       publishing_enabled:false})};
   }
+  if(opts.method==='PUT'){
+    const body=JSON.parse(opts.body);
+    assert.equal(body.expected_revision,revision);
+    if(body.target==='draft_text')copy=body.revised_text;
+    else guidance=body.revised_text;
+    revision++;
+    return {ok:true,json:async()=>({
+      tenant_id:'shop',request_id:'b'.repeat(32),
+      status:'needs_content',revision,publishing_enabled:false})};
+  }
   if(readWait)await readWait;
   return {ok:true,json:async()=>({...base,drafts:draftCount?[{
     request_id:'b'.repeat(32),channel:'facebook',status:'needs_content',
-    draft_text:'New launch',suggestion:'Wait for photo',priority:0,
+    draft_text:copy,suggestion:guidance,priority:0,revision,
     missing_items:['image']}]:[]})};
 };
 async function main(){
@@ -35,6 +46,18 @@ async function main(){
   assert.equal(created.status,'needs_content');
   assert.equal(draftCount,1);
   assert.equal(container.children.length,1);
+  const updated=await app.reviseDraft({requestId:'b'.repeat(32),
+    target:'draft_text',revisedText:'Revised launch',expectedRevision:1});
+  assert.equal(updated.revision,2);
+  assert.equal(copy,'Revised launch');
+  assert.equal(guidance,'Wait for photo');
+  const guidanceSave=await app.reviseDraft({requestId:'b'.repeat(32),
+    target:'suggestion',revisedText:'Use a cleared product image',
+    expectedRevision:2});
+  assert.equal(guidanceSave.revision,3);
+  assert.equal(copy,'Revised launch');
+  assert.equal(guidance,'Use a cleared product image');
+  assert.equal(calls.filter(x=>x.opts.method==='PUT').length,2);
   const changed=await app.changeHold({
     requestId:'b'.repeat(32),status:'postponed'});
   assert.equal(changed.status,'postponed');
