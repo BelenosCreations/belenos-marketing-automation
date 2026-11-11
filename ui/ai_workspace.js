@@ -7,20 +7,24 @@
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./dashboard_http_client.js'),
       require('./ai_draft_view.js'),require('./ai_settings_view.js'),
-      require('./ai_facts_view.js'));
+      require('./ai_facts_view.js'),require('./ai_cost_view.js'));
   else root.BAMAIWorkspace=factory(root.BAMReadClient,
-    root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView);
+    root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView,
+    root.BAMAICostView);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(client,draftView,settingsView,factsView){
+function(client,draftView,settingsView,factsView,costView){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
-                   factsContainer,fetchImpl,origin,onError}){
+                   factsContainer,costContainer,fetchImpl,origin,onError}){
     if(!document||!draftsContainer||!settingsContainer||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Workspace dependencies required');
     if(factsContainer!==undefined&&
        (!factsContainer||typeof factsContainer.replaceChildren!=='function'))
       throw new TypeError('Invalid facts mount');
+    if(costContainer!==undefined&&
+       (!costContainer||typeof costContainer.replaceChildren!=='function'))
+      throw new TypeError('Invalid AI cost mount');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Invalid error callback');
     let active=null,epoch=0,requestVersion=0;
@@ -31,6 +35,7 @@ function(client,draftView,settingsView,factsView){
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
       if(factsContainer)factsContainer.replaceChildren();
+      if(costContainer)costContainer.replaceChildren();
     }
     function activate({token,tenantId}){
       if(typeof token!=='string'||!token.trim()||token.length>2048||
@@ -44,12 +49,14 @@ function(client,draftView,settingsView,factsView){
       const mine=active,version=epoch,request=++requestVersion;
       try{
         // Fetch both before rendering either to avoid partial stale UI.
-        const [drafts,settings,facts]=await Promise.all([
+        const [drafts,settings,facts,costs]=await Promise.all([
           client.read({kind:'aiDrafts',token:mine.token,fetchImpl,origin,
                        expectedTenantId:mine.tenantId}),
           client.read({kind:'aiSettings',token:mine.token,fetchImpl,origin,
                        expectedTenantId:mine.tenantId}),
           factsContainer?client.read({kind:'aiFacts',token:mine.token,
+            fetchImpl,origin,expectedTenantId:mine.tenantId}):Promise.resolve(null),
+          costContainer?client.read({kind:'aiCosts',token:mine.token,
             fetchImpl,origin,expectedTenantId:mine.tenantId}):Promise.resolve(null)
         ]);
         if(version!==epoch||request!==requestVersion||active!==mine)return {stale:true};
@@ -71,6 +78,13 @@ function(client,draftView,settingsView,factsView){
           payload:{tenant_id:facts.tenantId,facts:facts.facts,
             revision:facts.revision,provenance:facts.provenance,
             confirmed_at:facts.confirmedAt,publishing_enabled:false},
+          expectedTenantId:mine.tenantId});
+        if(costContainer)costView.render({document,container:costContainer,
+          payload:{tenant_id:costs.tenantId,events:costs.events,
+            input_tokens:costs.inputTokens,output_tokens:costs.outputTokens,
+            estimated_micro_usd:costs.estimatedMicroUsd,
+            pricing_basis:'operator_configured',
+            actual_billing_verified:false,publishing_enabled:false},
           expectedTenantId:mine.tenantId});
         return {stale:false,tenantId:mine.tenantId,
                 draftCount:drafts.drafts.length};
