@@ -118,6 +118,52 @@ class BAMCalendarProposalsWSGI:
                     or (previous is not None and previous>item['utc_at'])):
                     raise RuntimeError('Unsafe proposal item')
                 previous=item['utc_at']
+        elif method=='SUGGESTIONS':
+            if (set(result)!={'tenant_id','status','preference_status',
+                              'unassigned_held_count','available_slot_count',
+                              'items','posts_scheduled','publishing_enabled'}
+                    or result['status']!='suggestion_preview_only'
+                    or result['preference_status'] not in (
+                        'manual_preview','not_configured',
+                        'needs_audience_data')
+                    or type(result['unassigned_held_count']) is not int
+                    or result['unassigned_held_count']<0
+                    or result['unassigned_held_count']>5000
+                    or type(result['available_slot_count']) is not int
+                    or not 0<=result['available_slot_count']<=100
+                    or type(result['items']) is not list
+                    or len(result['items'])>20
+                    or len(result['items'])>
+                       min(result['unassigned_held_count'],
+                           result['available_slot_count'])
+                    or (result['preference_status']!='manual_preview'
+                        and result['items'])):
+                raise RuntimeError('Invalid calendar suggestions')
+            seen_ids=set()
+            seen_times=set()
+            for item in result['items']:
+                if (type(item) is not dict or set(item)!={
+                    'request_id','draft_revision','utc_at','local_date',
+                    'local_time','timezone','publishing_enabled'}
+                    or type(item['request_id']) is not str
+                    or _ID.fullmatch(item['request_id']) is None
+                    or type(item['draft_revision']) is not int
+                    or item['draft_revision']<1
+                    or type(item['utc_at']) is not str
+                    or _UTC.fullmatch(item['utc_at']) is None
+                    or type(item['local_date']) is not str
+                    or _DAY.fullmatch(item['local_date']) is None
+                    or type(item['local_time']) is not str
+                    or _CLOCK.fullmatch(item['local_time']) is None
+                    or type(item['timezone']) is not str
+                    or not item['timezone'].strip()
+                    or len(item['timezone'])>80
+                    or item['publishing_enabled'] is not False
+                    or item['request_id'] in seen_ids
+                    or item['utc_at'] in seen_times):
+                    raise RuntimeError('Unsafe calendar suggestion')
+                seen_ids.add(item['request_id'])
+                seen_times.add(item['utc_at'])
         elif method=='POST':
             if (set(result)!={'tenant_id','request_id','utc_at',
                               'status','posts_scheduled',
@@ -138,12 +184,16 @@ class BAMCalendarProposalsWSGI:
         reply=lambda status,data:self._reply(start_response,status,data)
         if environ.get('wsgi.url_scheme')!='https':
             return reply('403 Forbidden',{'error':'HTTPS required'})
-        if environ.get('PATH_INFO')!='/api/v1/calendar-proposals':
+        path=environ.get('PATH_INFO')
+        if path not in ('/api/v1/calendar-proposals',
+                        '/api/v1/calendar-suggestions'):
             return reply('404 Not Found',{'error':'Not found'})
+        suggestions=path=='/api/v1/calendar-suggestions'
         method=environ.get('REQUEST_METHOD')
-        if method not in ('GET','POST','DELETE'):
+        if method not in (('GET',) if suggestions else
+                          ('GET','POST','DELETE')):
             return reply('405 Method Not Allowed',
-                         {'error':'GET POST or DELETE required'})
+                         {'error':'Method not allowed'})
         if not self.enabled or self.service is None:
             return reply('503 Service Unavailable',
                          {'error':'Calendar proposals disabled'})
@@ -158,7 +208,10 @@ class BAMCalendarProposalsWSGI:
             if now<0:
                 raise RuntimeError('Invalid server time')
             data=self._parse(environ,method) if method!='GET' else None
-            if method=='GET':
+            if suggestions:
+                answer=self.service.suggest_unassigned(
+                    token=bearer[7:],now=now)
+            elif method=='GET':
                 answer=self.service.list_mine_business(
                     token=bearer[7:],now=now)
             elif method=='POST':
@@ -166,7 +219,8 @@ class BAMCalendarProposalsWSGI:
             else:
                 answer=self.service.discard(token=bearer[7:],now=now,**data)
             return reply('201 Created' if method=='POST' else '200 OK',
-                         self._safe(answer,method,data))
+                         self._safe(answer,'SUGGESTIONS' if suggestions else
+                                    method,data))
         except PermissionError:
             return reply('401 Unauthorized',{'error':'Calendar unavailable'})
         except KeyError:

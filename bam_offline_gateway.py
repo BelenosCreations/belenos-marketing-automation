@@ -202,7 +202,8 @@ class BAMOfflineGateway:
             return self.preference_write_wsgi(environ, start_response)
         if path == '/api/v1/ai-business-facts' and environ.get('REQUEST_METHOD') == 'PUT':
             return self.facts_write_wsgi(environ, start_response)
-        if path == '/api/v1/calendar-proposals':
+        if path in ('/api/v1/calendar-proposals',
+                    '/api/v1/calendar-suggestions'):
             return self.calendar_wsgi(environ,start_response)
         if path == '/api/v1/ai/batch-preview':
             return self.ai_batch_preview_wsgi(environ,start_response)

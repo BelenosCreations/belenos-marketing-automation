@@ -25,6 +25,20 @@ class FakeService:
                     'publishing_enabled':False}],
                 'posts_scheduled':1 if self.unsafe else 0,
                 'publishing_enabled':False}
+    def suggest_unassigned(self,**kwargs):
+        self.calls.append(('suggest',kwargs))
+        if self.denied:
+            raise PermissionError('private account')
+        return {'tenant_id':'shop','status':'suggestion_preview_only',
+                'preference_status':'manual_preview',
+                'unassigned_held_count':1,'available_slot_count':2,
+                'items':[{'request_id':RID,'draft_revision':1,
+                          'utc_at':UTC,'local_date':'2026-11-11',
+                          'local_time':'10:00','timezone':'America/New_York',
+                          'publishing_enabled':False}],
+                'posts_scheduled':1 if self.unsafe else 0,
+                'publishing_enabled':False}
+
     def propose(self,**kwargs):
         self.calls.append(('propose',kwargs))
         if self.denied:
@@ -81,6 +95,29 @@ class CalendarProposalTransportTests(unittest.TestCase):
         self.assertFalse(deleted['publishing_enabled'])
         self.assertEqual(self.service.calls[-1][1],{
             'token':'t'*43,'now':101,'request_id':RID})
+
+    def test_suggestion_preview_is_separate_and_read_only(self):
+        path='/api/v1/calendar-suggestions'
+        metadata,data=self.call(PATH_INFO=path)
+        self.assertEqual(metadata['status'],'200 OK')
+        self.assertEqual(data['status'],'suggestion_preview_only')
+        self.assertEqual(data['posts_scheduled'],0)
+        self.assertEqual(data['items'][0]['request_id'],RID)
+        self.assertEqual(self.service.calls[-1],
+                         ('suggest',{'token':'t'*43,'now':101}))
+        self.assertEqual(self.call(PATH_INFO=path,
+                                   REQUEST_METHOD='POST')[0]['status'],
+                         '405 Method Not Allowed')
+        self.assertEqual(self.call(PATH_INFO=path,
+                                   QUERY_STRING='tenant_id=other')[0]
+                         ['status'],'400 Bad Request')
+        self.service.denied=True
+        self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
+                         '401 Unauthorized')
+        self.service.denied=False
+        self.service.unsafe=True
+        self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
+                         '503 Service Unavailable')
 
     def test_invalid_transport_and_spoofed_approval_rejected(self):
         self.assertEqual(self.call(app=BAMCalendarProposalsWSGI())[0]
