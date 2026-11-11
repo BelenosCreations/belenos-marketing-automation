@@ -23,6 +23,7 @@ from bam_posting_preferences_wsgi import BAMPostingPreferencesWSGI
 from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
 from bam_ai_facts_write_wsgi import BAMAIFactsWriteWSGI
 from bam_local_draft_wsgi import BAMLocalProductDraftWSGI
+from bam_signed_in_assets_wsgi import BAMSignedInAssetsWSGI
 from bam_ai_draft_edit_wsgi import BAMAIDraftEditWSGI
 from bam_read_wsgi import BAMReadWSGI
 from business_curation import BusinessCuration
@@ -61,10 +62,14 @@ class BAMOfflineGateway:
     external HTTP/TLS hosting, production enrollment, or publishing is safe.
     """
 
-    def __init__(self, db, *, enabled=False, clock=None, google_verifier=None):
+    def __init__(self, db, *, enabled=False, clock=None, google_verifier=None,
+                 serve_browser_assets=False):
         if type(enabled) is not bool:
             raise ValueError('Boolean integration switch required')
+        if type(serve_browser_assets) is not bool:
+            raise ValueError('Boolean browser-assets switch required')
         self.enabled = enabled
+        self.serve_browser_assets = serve_browser_assets
         self.clock = time.time if clock is None else clock
         if not callable(self.clock):
             raise ValueError('Trusted server clock required')
@@ -108,6 +113,7 @@ class BAMOfflineGateway:
             self.login_api, enabled=enabled, clock=self.clock,
             logout_api=self.read_api)
         self.read_wsgi = BAMReadWSGI(self.read_api, clock=self.clock)
+        self.assets_wsgi = BAMSignedInAssetsWSGI(enabled=enabled and serve_browser_assets)
         self.switch_wsgi = BAMBusinessSwitchWSGI(
             self.read_api, enabled=enabled, clock=self.clock)
         self.content_write_wsgi = BAMContentWriteWSGI(
@@ -141,6 +147,10 @@ class BAMOfflineGateway:
                 start_response,'503 Service Unavailable',
                 'BAM offline integration is disabled')
         path = environ.get('PATH_INFO')
+        if self.serve_browser_assets and (path == '/' or
+            (type(path) is str and (path.startswith('/ui/') or
+                                    path.startswith('/branding/')))):
+            return self.assets_wsgi(environ, start_response)
         if path in _AUTH_PATHS:
             return self.auth_wsgi(environ, start_response)
         if path == '/api/v1/posting-preferences' and environ.get('REQUEST_METHOD') == 'PUT':

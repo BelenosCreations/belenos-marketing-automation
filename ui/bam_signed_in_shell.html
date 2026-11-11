@@ -26,7 +26,7 @@
     .nav button[aria-current="page"]{background:var(--surface2);border-color:var(--teal)}.section-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
     .section-header h1{font-size:clamp(1.4rem,3vw,2rem);margin:.2rem 0}.content-stack{display:grid;gap:1rem}.content-stack article{padding:1rem;border:1px solid var(--line);border-radius:12px}
     #notice{min-height:1.5rem;max-width:1120px;margin:0 auto;padding:0 1rem}.footer{padding:1rem;color:var(--subtle);text-align:center;font-size:.82rem}
-    .settings-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}h2,h3{line-height:1.2}
+    .settings-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}.settings-spaced{margin-top:1rem}h2,h3{line-height:1.2}
     @media(max-width:600px){.app-header{align-items:flex-start}.toolbar{width:100%;justify-content:space-between}.nav button{flex:1}.app-main{padding:1rem}.panel{border-radius:18px}}
   </style>
 </head>
@@ -95,7 +95,7 @@
           <select id="appearance"><option value="auto">Auto</option><option value="light">Light</option><option value="dark">Dark</option></select>
           <p class="muted tiny">Appearance is kept only for this open page.</p>
         </div>
-        <div class="settings-grid" style="margin-top:1rem">
+        <div class="settings-grid settings-spaced">
           <div class="panel" id="bam-posting-preferences"></div>
           <div class="panel" id="bam-ai-settings"></div>
           <div class="panel" id="bam-ai-cost"></div>
