@@ -18,9 +18,13 @@ class IdempotentGenerationTests(unittest.TestCase):
         directory=AccountDirectory(db)
         directory.bootstrap_owner('shop','owner')
         directory.bootstrap_owner('other','other')
+        directory.set_member(Principal('owner','shop',Role.OWNER),
+                             'coworker',Role.CONTENT_CREATOR)
         sessions=SessionStore(db)
         self.token=sessions.issue(Principal('owner','shop',Role.OWNER),now=100)
         self.other=sessions.issue(Principal('other','other',Role.OWNER),now=100)
+        self.coworker=sessions.issue(Principal('coworker','shop',
+                                             Role.CONTENT_CREATOR),now=100)
         policy=AIPolicyStore(db=db,sessions=sessions,directory=directory)
         self.facts=AIBusinessFacts(db=db,policy_store=policy)
         self.facts.confirm(token=self.token,now=101,
@@ -82,6 +86,9 @@ class IdempotentGenerationTests(unittest.TestCase):
         other=self.run_generation(token=self.other)
         self.assertTrue(other['created'])
         self.assertEqual(len(self.calls),2)
+        coworker=self.run_generation(token=self.coworker)
+        self.assertTrue(coworker['created'])
+        self.assertEqual(len(self.calls),3)
 
 if __name__=='__main__':
     unittest.main()
