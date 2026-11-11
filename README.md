@@ -593,3 +593,7 @@ Switching from a personal OpenAI key to BAM-sponsored mode now retains only the 
 ## AI Content Studio read-only integration milestone — 2026-11-10
 
 The authenticated read adapter and HTTPS-only WSGI component now support `GET /api/v1/ai-drafts` for the current user's business-isolated, unpublished AI drafts. `ui/ai_draft_contract.js`, `ui/ai_draft_view.js` and the HTTPS read client validate and display the separate post copy, optional ChatGPT image prompt, and explicit media-needed hold. They reject mismatched business IDs and any response claiming attached media or enabled publishing. Corresponding Python and Node regression tests were added to the CI workflow. The read-only pieces are reusable building blocks, not yet wired to the deployed GUI; live OpenAI generation and trusted media uploads are still absent.
+
+## Secret-free OpenAI Settings read milestone — 2026-11-10
+
+The authenticated read API and HTTPS WSGI adapter now expose `GET /api/v1/ai-settings` for the signed-in user's current business. The response includes only OpenAI mode, whether a personal key is configured, and the user's isolated memory preferences; it never returns a raw API key or encrypted-vault reference. `ui/ai_settings_contract.js` and the HTTPS client validate this response and reject unexpected secret-bearing fields or mismatched business IDs. Regression tests are included in CI. This is read-only infrastructure; the future Settings screen must still implement safe, server-validated mode changes and vault integration.
