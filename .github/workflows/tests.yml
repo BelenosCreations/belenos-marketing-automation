@@ -36,5 +36,6 @@ jobs:
           node ui/ai_workspace_facts_test.js
           node ui/ai_cost_view_test.js
           node ui/ai_write_client_test.js
+          node ui/live_dashboard_cards_test.js
       - name: Run offline tests
         run: python -m unittest discover -s . -p 'test_*.py' -v
