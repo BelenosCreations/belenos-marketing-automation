@@ -37,7 +37,7 @@ const fetchImpl=async(url,opts)=>{
   }
   throw new Error('Unsupported endpoint');
 };
-function flatten(node){return [node,...(node.children||[]).flatMap(flatten);}
+function flatten(node){return [node,...(node.children||[]).flatMap(flatten)];}
 function find(node,text){return flatten(node).find(x=>x.textContent===text);}
 async function settle(){for(let i=0;i<5;i++)
   await new Promise(resolve=>setImmediate(resolve));}

@@ -70,8 +70,9 @@
        for(const [key,label] of labels)
          section.append(element(document,'p',
            label+': '+summary.roles[key]));
-       section.append(element(document,'p',
-         'Team invitations are not connected in this development preview.'));
+       section.append(element(document,'p',enableInvitationPreview
+         ?'Pending invitations can be reviewed and cancelled when a trusted delivery callback is configured. This page cannot send invitations.'
+         :'Team invitation previews are not enabled in this development workspace.'));
        section.append(element(document,'p',
          'These counts do not enable invitations, permission changes or publication.')); 
        if(enableMemberManagement){
