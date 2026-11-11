@@ -9,6 +9,7 @@ import base64
 import hashlib
 from html.parser import HTMLParser
 from pathlib import Path
+import posixpath
 from urllib.parse import urlsplit
 
 _ROOT=Path(__file__).resolve().parent
@@ -62,7 +63,7 @@ class BAMSignedInAssetsWSGI:
                     '\\' in location or '?' in location or '#' in location):
                 raise RuntimeError('Unapproved browser asset reference')
             # Browser-relative paths resolve against the shell's /ui/ directory.
-            url=urlsplit('/ui/'+location).path
+            url=posixpath.normpath(urlsplit('/ui/'+location).path)
             path=(_ROOT/url.lstrip('/')).resolve()
             if (not path.is_relative_to(_ROOT)
                     or not path.is_file()

@@ -32,6 +32,8 @@ class AssetsWSGITests(unittest.TestCase):
         self.assertNotIn("'unsafe-inline'",policy)
         self.assertIn(b'Belenos Automatic Marketing',html)
         self.assertNotIn(b'<script src="https:',html)
+        self.assertIn('/branding/source/app_icon.svg',self.app._assets)
+        self.assertIn('/ui/bam_signed_in_shell.js',self.app._assets)
         for asset in self.app._assets:
             with self.subTest(asset=asset):
                 info,content=self.call(asset)

@@ -79,6 +79,28 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(self.call('/api/v1/ai-generate',
             method='POST',body={})[0]['status'],'404 Not Found')
 
+    def test_authenticated_browser_shell_is_a_separate_explicit_opt_in(self):
+        from bam_signed_in_assets_wsgi import BAMSignedInAssetsWSGI
+        default=self.call('/ui/bam_signed_in_shell.html')[0]
+        self.assertEqual(default['status'],'404 Not Found')
+        enabled=BAMOfflineGateway(self.db,enabled=True,
+            serve_browser_assets=True,clock=lambda:101)
+        meta={}
+        data=b''.join(enabled({'wsgi.url_scheme':'https',
+            'PATH_INFO':'/ui/bam_signed_in_shell.html',
+            'REQUEST_METHOD':'GET'},
+            lambda status,headers:meta.update(status=status,headers=dict(headers))))
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertIn(b'Belenos Automatic Marketing',data)
+        self.assertIn(b'script-src',str(meta['headers']).encode())
+        meta={}
+        icon=b''.join(enabled({'wsgi.url_scheme':'https',
+            'PATH_INFO':'/branding/source/app_icon.svg',
+            'REQUEST_METHOD':'GET'},
+            lambda status,headers:meta.update(status=status)))
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertIn(b'<svg',icon)
+
     def test_real_identity_to_dashboard_and_ai_panels(self):
         token=self.login()
         meta,dashboard=self.call('/api/v1/dashboard',token=token)
