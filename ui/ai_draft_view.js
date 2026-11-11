@@ -103,12 +103,12 @@
             panel.append(topic);
             panel.append(el(document,'p','Describe the change to this component'));
             panel.append(change);
+            let confirmationAdded=false;
             const prepare=el(document,'button','Review AI regeneration request');
             prepare.type='button';
             prepare.addEventListener('click',()=>{
-              if(!change.value.trim()||!topic.value.trim())return;
-              if(panel.children.some(x=>
-                  x.textContent==='Confirm AI revision of '+title))return;
+              if(!change.value.trim()||!topic.value.trim()||confirmationAdded)return;
+              confirmationAdded=true;
               panel.append(el(document,'p',
                 'This may consume sponsored OpenAI quota or incur usage charges on a personal API key. Only this component will be regenerated. No image or post will be approved, scheduled, or published.'));
               const confirm=el(document,'button','Confirm AI revision of '+title);
