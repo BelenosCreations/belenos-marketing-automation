@@ -1,5 +1,13 @@
 # Changelog
 
+## Product README and historical milestone separation — 2026-11-10
+
+### Changed
+- Reorganized README into a detailed product and current architecture description rather than an append-only phase changelog.
+- Preserved the complete prior phase-by-phase notes in `DEVELOPMENT_MILESTONES.md`.
+- Linked AI architecture, UI integration and CI verification documentation.
+
+
 ## AI request reconciliation and JSON ambiguity hardening — 2026-11-10
 
 ### Added
