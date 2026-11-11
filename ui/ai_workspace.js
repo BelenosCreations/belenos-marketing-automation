@@ -7,16 +7,18 @@
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./dashboard_http_client.js'),
       require('./ai_draft_view.js'),require('./ai_settings_view.js'),
-      require('./ai_facts_view.js'),require('./ai_cost_view.js'));
+      require('./ai_facts_view.js'),require('./ai_cost_view.js'),
+      require('./ai_facts_editor.js'));
   else root.BAMAIWorkspace=factory(root.BAMReadClient,
     root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView,
-    root.BAMAICostView);
+    root.BAMAICostView,root.BAMAIFactsEditor);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(client,draftView,settingsView,factsView,costView){
+function(client,draftView,settingsView,factsView,costView,factsEditor){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
                    factsContainer,costContainer,fetchImpl,origin,onError,
-                   copyText,openUrl}){
+                   copyText,openUrl,factsEditorContainer,
+                   canManageFacts=false,onSaveFacts}){
     if(!document||!draftsContainer||!settingsContainer||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Workspace dependencies required');
@@ -29,6 +31,11 @@ function(client,draftView,settingsView,factsView,costView){
     if((copyText!==undefined||openUrl!==undefined)&&
        (typeof copyText!=='function'||typeof openUrl!=='function'))
       throw new TypeError('Manual image handoff requires both callbacks');
+    if(factsEditorContainer!==undefined&&
+       (!factsEditorContainer||typeof factsEditorContainer.replaceChildren!=='function'||
+        typeof canManageFacts!=='boolean'||
+        (canManageFacts&&typeof onSaveFacts!=='function')))
+      throw new TypeError('Invalid fact editor dependencies');
     if(onError!==undefined&&typeof onError!=='function')
       throw new TypeError('Invalid error callback');
     let active=null,epoch=0,requestVersion=0;
@@ -40,6 +47,7 @@ function(client,draftView,settingsView,factsView,costView){
       settingsContainer.replaceChildren();
       if(factsContainer)factsContainer.replaceChildren();
       if(costContainer)costContainer.replaceChildren();
+      if(factsEditorContainer)factsEditorContainer.replaceChildren();
     }
     function activate({token,tenantId}){
       if(typeof token!=='string'||!token.trim()||token.length>2048||
@@ -83,6 +91,13 @@ function(client,draftView,settingsView,factsView,costView){
             revision:facts.revision,provenance:facts.provenance,
             confirmed_at:facts.confirmedAt,publishing_enabled:false},
           expectedTenantId:mine.tenantId});
+        if(factsEditorContainer)factsEditor.render({document,
+          container:factsEditorContainer,
+          payload:{tenant_id:facts.tenantId,facts:facts.facts,
+            revision:facts.revision,provenance:facts.provenance,
+            confirmed_at:facts.confirmedAt,publishing_enabled:false},
+          expectedTenantId:mine.tenantId,
+          canManage:canManageFacts,onSave:onSaveFacts});
         if(costContainer)costView.render({document,container:costContainer,
           payload:{tenant_id:costs.tenantId,events:costs.events,
             input_tokens:costs.inputTokens,output_tokens:costs.outputTokens,
