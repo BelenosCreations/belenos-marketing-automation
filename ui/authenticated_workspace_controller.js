@@ -22,7 +22,8 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
                    aiFactsEditorContainer,canManageFacts=false,onSaveFacts,
                    contentStudioContainer,onOpenContentStudio,onOpenPostingSettings,
                    postingPreferencesContainer,teamOverviewContainer,
-                   enableLocalTemplates=false,hashMediaBytes,onNotice}){
+                   enableLocalTemplates=false,enableBatchPreviews=false,
+                   hashMediaBytes,onNotice}){
     let activeSession=null,epoch=0,active=false;
     const dashboard=dashboardModule.create({
       document,container:dashboardContainer,fetchImpl,origin,onError,
@@ -54,7 +55,7 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
       copyText,openUrl,factsEditorContainer:aiFactsEditorContainer,
       canManageFacts:false,
       onSaveFacts:onSaveFacts||saveConfirmedFacts,
-      enableLocalTemplates});
+      enableLocalTemplates,enableBatchPreviews});
     const held=contentStudioContainer?heldModule.create({document,
       container:contentStudioContainer,fetchImpl,origin,onError,
       hashBytes:hashMediaBytes,onNotice}):null;

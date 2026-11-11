@@ -11,20 +11,22 @@
       require('./ai_facts_editor.js'),require('./local_product_draft_client.js'),
       require('./ai_draft_edit_client.js'),
       require('./ai_targeted_revision_client.js'),
-      require('./ai_memory_client.js'));
+      require('./ai_memory_client.js'),
+      require('./ai_batch_preview_client.js'));
   else root.BAMAIWorkspace=factory(root.BAMReadClient,
     root.BAMAIDraftView,root.BAMAISettingsView,root.BAMAIFactsView,
     root.BAMAICostView,root.BAMAIFactsEditor,root.BAMLocalProductDraftClient,
     root.BAMAIDraftEditClient,root.BAMAITargetedRevisionClient,
-    root.BAMAIMemoryClient);
+    root.BAMAIMemoryClient,root.BAMAIBatchPreviewClient);
 })(typeof globalThis!=='undefined'?globalThis:this,
-function(client,draftView,settingsView,factsView,costView,factsEditor,localClient,editClient,targetedClient,memoryClient){
+function(client,draftView,settingsView,factsView,costView,factsEditor,localClient,editClient,targetedClient,memoryClient,batchClient){
   'use strict';
   function create({document,draftsContainer,settingsContainer,
                    factsContainer,costContainer,fetchImpl,origin,onError,
                    copyText,openUrl,factsEditorContainer,
                    canManageFacts=false,onSaveFacts,enableLocalTemplates=false,
-                   enableTargetedRevisions=false,secureRandom}){
+                   enableTargetedRevisions=false,secureRandom,
+                   enableBatchPreviews=false}){
     if(!document||!draftsContainer||!settingsContainer||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Workspace dependencies required');
@@ -52,7 +54,9 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
         (!secureRandom||typeof secureRandom.getRandomValues!=='function')))
       throw new TypeError('AI revision feature needs an explicit secure opt-in');
     let active=null,epoch=0,requestVersion=0,localPending=false,editPending=false;
-    let regeneratePending=false,memoryPending=false;
+    if(typeof enableBatchPreviews!=='boolean')
+      throw new TypeError('Explicit AI advance preview switch required');
+    let regeneratePending=false,memoryPending=false,batchPending=false;
     let mayManageFacts=canManageFacts,mayCreateDrafts=true;
     function setCapabilities({manageFacts,createDrafts}){
       if(typeof manageFacts!=='boolean'||typeof createDrafts!=='boolean')
@@ -63,7 +67,7 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
       epoch+=1;
       requestVersion+=1;
       active=null;localPending=false;editPending=false;
-      regeneratePending=false;memoryPending=false;
+      regeneratePending=false;memoryPending=false;batchPending=false;
       mayManageFacts=false;mayCreateDrafts=false;
       draftsContainer.replaceChildren();
       settingsContainer.replaceChildren();
@@ -247,6 +251,78 @@ function(client,draftView,settingsView,factsView,costView,factsEditor,localClien
             action.append(button);
           }
           draftsContainer.append(action);
+        }
+        if(enableBatchPreviews&&mayCreateDrafts){
+          const future=document.createElement('section');
+          future.className='panel stack';
+          const heading=document.createElement('h3');
+          heading.textContent='Plan future marketing topics';
+          future.append(heading);
+          const explanation=document.createElement('p');
+          explanation.textContent='Preview 1–14 distinct topics, one per line. This checks owner-confirmed business facts and planned individual OpenAI requests only. It creates no drafts, sends no OpenAI requests, reserves no quota and schedules nothing.';
+          future.append(explanation);
+          const topicsField=document.createElement('textarea');
+          topicsField.rows=5;topicsField.maxLength=4200;
+          topicsField.value='';
+          future.append(topicsField);
+          const platform=document.createElement('select');
+          for(const item of ['facebook','instagram','linkedin',
+                             'pinterest','tiktok','youtube']){
+            const option=document.createElement('option');
+            option.value=item;option.textContent=item;
+            platform.append(option);
+          }
+          platform.value='facebook';
+          future.append(platform);
+          const includeImage=document.createElement('input');
+          includeImage.type='checkbox';includeImage.checked=true;
+          const label=document.createElement('label');
+          label.textContent='Plan optional ChatGPT image prompts';
+          label.append(includeImage);future.append(label);
+          const details=document.createElement('section');
+          future.append(details);
+          const action=document.createElement('button');
+          action.type='button';action.className='secondary';
+          action.textContent='Preview advance topic plan';
+          action.disabled=batchPending;
+          action.addEventListener('click',async()=>{
+            if(batchPending||!mayCreateDrafts||active!==mine||
+               version!==epoch||request!==requestVersion)return;
+            batchPending=true;action.disabled=true;
+            details.replaceChildren();
+            try{
+              const topics=topicsField.value.split(/\r?\n/).map(x=>x.trim())
+                .filter(x=>x.length);
+              const proposed=await batchClient.preview({
+                origin,fetchImpl,token:mine.token,
+                expectedTenantId:mine.tenantId,topics,
+                platform:platform.value,
+                includeImagePrompt:includeImage.checked});
+              if(version!==epoch||active!==mine||request!==requestVersion)
+                return;
+              const label=document.createElement('p');
+              label.textContent=proposed.plannedIndividualRequests+
+                ' prospective per-post requests. Actual API requests: 0. Drafts created: 0. Cost not estimated. No quota reserved, no posts scheduled.';
+              details.append(label);
+              for(const item of proposed.items){
+                const row=document.createElement('p');
+                row.textContent=item.platform+' — '+item.topic+
+                  (item.imagePromptPlanned?' (optional image brief planned)':'');
+                details.append(row);
+              }
+            }catch(error){
+              if(version!==epoch||active!==mine||request!==requestVersion)
+                return;
+              if(onError)onError(
+                'Advance topic preview unavailable. Confirm business facts and use 1–14 distinct topics.');
+            }finally{
+              if(version===epoch&&active===mine&&request===requestVersion){
+                batchPending=false;action.disabled=false;
+              }
+            }
+          });
+          future.append(action);
+          draftsContainer.append(future);
         }
         settingsView.render({document,container:settingsContainer,
           payload:{tenant_id:settings.tenantId,provider:'openai',
