@@ -26,7 +26,7 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **AI provider boundary:** disabled-by-default OpenAI HTTPS transport and a strict structured Responses adapter, with operator-configured token cost estimates. No real provider connection or billing is enabled.
 - **Authenticated AI workspace components:** read-only drafts, AI settings, owner-confirmed fact provenance, an optional explicit owner fact editor, and estimated usage panels; integration into the complete sign-in shell is pending.
 
-**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. Full current-branch CI/Python verification remains pending.
+**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **676 passing Python tests and 22 passing JavaScript UI tests** at commit `fa3647b` on 2026-11-10 (Eastern). This is offline regression verification, not production approval.
 
 ## Product identity
 
@@ -156,7 +156,7 @@ The repository contains a growing set of offline Python modules, strict authenti
 - [Changelog](CHANGELOG.md) records additions, fixes and known limitations.
 - [Authenticated UI integration](AUTHENTICATED_UI_INTEGRATION.md) documents session lifecycle and browser contracts.
 - [AI architecture](AI_ARCHITECTURE.md) records approved generation design and safety requirements.
-- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. Selected JavaScript tests have passed in an isolated harness; the complete current-branch CI/Python run has not been verified.
+- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete 676-test Python suite and all 22 discovered JavaScript UI regression scripts passed together in [GitHub Actions run 42951059295](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42951059295) on commit `fa3647b`. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
 
 ## Operational boundaries
 
