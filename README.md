@@ -690,3 +690,7 @@ When an idempotency ledger is configured, sponsored generation now **requires** 
 ## End-to-end AI HTTPS request replay regression — 2026-11-10
 
 `test_ai_generation_http_e2e.py` now exercises the complete **offline** generation path: HTTPS WSGI request, authenticated session, server-configured sponsorship, idempotency claim, owner-confirmed business facts, structured OpenAI adapter with a fake provider response, and a held unpublished draft. Repeating the same request key must return an already-completed status without a second provider call or duplicate draft. This test is included in the existing Python unittest discovery workflow; complete CI execution has not yet been independently verified.
+
+## Authenticated live-data dashboard cards — 2026-11-10
+
+`ui/live_dashboard_cards.js` and `ui/live_dashboard_cards.css` provide the first live-data counterpart to the sample-data home screen: **four large mobile-first overview cards** with drilldowns, including held content requests and explicit unavailable-state messaging for unconnected scheduling. The controller reads only validated authenticated backend responses, renders via DOM text nodes rather than raw HTML, clears on business change/logout and discards stale asynchronous responses. No fabricated analytics, scheduling or publishing actions are displayed. The JavaScript regression test passed in an isolated harness and was added to CI. **Integration into a production login shell remains pending; the existing HTML demo remains sample-only.**
