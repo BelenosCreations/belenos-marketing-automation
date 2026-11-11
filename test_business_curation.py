@@ -86,6 +86,7 @@ class BusinessCurationTests(unittest.TestCase):
     def test_competitor_subdomain_blocked(self):
         self.curation.block_competitor(tenant_id='belenos',source_url=self.print_source)
         item=Candidate(source_name='Maker',source_url='https://shop.example.org/maker',original_url='https://shop.example.org/maker/post',category='education',summary='Print tips',source_approved=True,verified_facts=True)
-        self.assertEqual(self.curation.evaluate(tenant_id='belenos',topic='3d_printing',candidate=item,local_competitor_risk='cleared')[0],'approval_required')
+        result=self.curation.evaluate(tenant_id='belenos',topic='3d_printing',candidate=item,local_competitor_risk='cleared')
+        self.assertEqual(result,('blocked','known_competitor'))
 
 if __name__=='__main__': unittest.main()
