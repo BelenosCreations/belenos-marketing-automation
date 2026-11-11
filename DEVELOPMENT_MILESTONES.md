@@ -3,6 +3,10 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Alpha → private beta gate (2026-11-11)
+
+Added the evidence-based [alpha/private beta checklist](ALPHA_BETA_READINESS.md) describing offline current capabilities, required real-world tests, and separately authorized integration work. This is a planning checkpoint, not a statement that beta has begun.
+
 ## Alpha safety: current-role review sessions and stale-editor protection — 2026-11-11
 
 This offline alpha batch strengthens the places that evaluate or change private content:

@@ -268,3 +268,6 @@ This offline alpha batch strengthens the places that evaluate or change private 
 - New Python, browser, HTTPS adapter and integrated offline gateway regressions cover conflicts, stale role grants, business separation and blocked publishing.
 
 **Testing status at documentation time:** latest code commit `800e3277350a13dc172c6a68cf0c52f7362608ee`. GitHub Actions runs for this batch are **queued** without test jobs; these changes are *committed but not yet verified*. The most recent separately confirmed successful workflow is [run 43092809091](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43092809091) at `74e55d53`. Do not merge or deploy while the batch remains unverified. Social publishing, production OAuth and paid AI remain off.
+
+
+Alpha-to-private-beta acceptance criteria are maintained in [ALPHA_BETA_READINESS.md](ALPHA_BETA_READINESS.md). The current build is offline alpha, not a hosted multi-user beta or a production publishing system.

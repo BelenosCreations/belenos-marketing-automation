@@ -1,3 +1,8 @@
+## 2026-11-11 — Alpha / private beta acceptance gate
+
+- Added `ALPHA_BETA_READINESS.md` with an explicit offline-alpha capability matrix, evidence required to call each task done, pending private-beta integration conditions, and publish/paid-service prohibition.
+- Documented that GitHub Actions for recent security and stale-edit changes are queued; no release or success implied.
+
 ## Alpha safety — current sessions and edit conflicts (2026-11-11)
 
 ### Changed
