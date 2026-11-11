@@ -58,3 +58,7 @@ Do not expose `bam_read_wsgi.py` directly to the public internet without a trust
 ### AI fact provenance read
 
 `GET /api/v1/ai-business-facts` returns the active business's owner-confirmed fact snapshot and revision. Browser consumers must use `ui/ai_facts_contract.js` and reject tenant mismatches. Owner confirmation is provenance, not independent verification. This route cannot edit facts, approve drafts or publish.
+
+### AI fact provenance panel
+
+The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_facts_view.js` from the authenticated `/api/v1/ai-business-facts` route. It is read-only and rejects stale business responses. If fact confirmation is absent, it shows a hold warning rather than treating AI generation as factually ready. Do not present owner confirmation as independent verification.
