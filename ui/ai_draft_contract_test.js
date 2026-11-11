@@ -10,6 +10,10 @@ const good={tenant_id:'shop',publishing_enabled:false,drafts:[{
   publishing_enabled:false
 }]};
 assert.equal(normalize(good).drafts[0].status,'needs_media');
+const attached=JSON.parse(JSON.stringify(good));
+attached.drafts[0].media_attached=true;
+attached.drafts[0].status='draft_pending_verification';
+assert.equal(normalize(attached).drafts[0].mediaAttached,true);
 assert.equal(normalize(good).drafts[0].postText,
   '<img src=x onerror=alert(1)>');
 for(const change of [
