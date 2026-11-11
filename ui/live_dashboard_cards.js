@@ -6,10 +6,11 @@
   'use strict';
   if(typeof module==='object'&&module.exports)
     module.exports=factory(require('./dashboard_http_client.js'),
-      require('./calendar_proposals_client.js'));
+      require('./calendar_proposals_client.js'),
+       require('./review_readiness_client.js'));
   else root.BAMLiveDashboard=factory(root.BAMReadClient,
-    root.BAMCalendarProposalsClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(client,calendarClient){
+    root.BAMCalendarProposalsClient,root.BAMReviewReadinessClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(client,calendarClient,reviewClient){
   'use strict';
   const order=['scheduled','approvals','content','connections'];
   function element(doc,tag,text){
@@ -20,7 +21,8 @@
   function create({document,container,fetchImpl,origin,onError,
                    onOpenContentStudio,onOpenPostingSettings,
                    enableCalendarProposals=false,
-                   enableCalendarSuggestions=false}){
+                   enableCalendarSuggestions=false,
+                   enableReviewReadiness=false}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Dashboard dependencies required');
@@ -31,7 +33,8 @@
     if(onOpenPostingSettings!==undefined&&typeof onOpenPostingSettings!=='function')
       throw new TypeError('Posting settings navigation callback required');
     if(typeof enableCalendarProposals!=='boolean'||
-       typeof enableCalendarSuggestions!=='boolean')
+       typeof enableCalendarSuggestions!=='boolean'||
+       typeof enableReviewReadiness!=='boolean')
       throw new TypeError('Explicit calendar preview feature switch required');
     let active=null,epoch=0,requestVersion=0,current=null,view='home';
     let connectionData=null,connectionPending=false,connectionError=false;
@@ -39,13 +42,15 @@
     let postingPreview=null,previewPending=false,previewError=false;
     let previewRequest=0,calendarData=null,calendarError=false;
     let suggestionsData=null,suggestionsError=false;
+    let reviewData=null,reviewPending=false,reviewError=false,reviewRequest=0;
     function clear(){
-      epoch++;requestVersion++;connectionRequest++;previewRequest++;
+      epoch++;requestVersion++;connectionRequest++;previewRequest++;reviewRequest++;
       active=null;current=null;view='home';
       connectionData=null;connectionPending=false;connectionError=false;
       postingPreview=null;previewPending=false;previewError=false;
       calendarData=null;calendarError=false;
       suggestionsData=null;suggestionsError=false;
+      reviewData=null;reviewPending=false;reviewError=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -139,6 +144,33 @@
         }
       }
     }
+    async function refreshReviewReadiness(){
+      if(!enableReviewReadiness||!active||!current)return {restricted:true};
+      if(reviewPending)return {pending:true};
+      const mine=active,version=epoch,request=++reviewRequest;
+      reviewPending=true;reviewError=false;
+      if(view==='approvals')show('approvals');
+      try{
+        const data=await reviewClient.read({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId});
+        if(epoch!==version||active!==mine||request!==reviewRequest)
+          return {stale:true};
+        reviewData=data;
+        return {stale:false,heldCount:data.heldCount};
+      }catch(error){
+        if(epoch!==version||active!==mine||request!==reviewRequest)
+          return {stale:true};
+        reviewData=null;reviewError=true;
+        if(onError)onError('Private editorial preparation is unavailable');
+        return {error:true};
+      }finally{
+        if(epoch===version&&active===mine&&request===reviewRequest){
+          reviewPending=false;
+          if(view==='approvals')show('approvals');
+        }
+      }
+    }
     function show(section){
       if(!current)return;
       if(section!=='home'&&!order.includes(section))
@@ -167,6 +199,8 @@
                current.cards.connections.availability==='available')
               void refreshConnections();
             if(id==='scheduled')void refreshPostingPreview();
+            if(id==='approvals'&&enableReviewReadiness)
+              void refreshReviewReadiness();
           });
           cards.append(button);
         }
@@ -354,6 +388,54 @@
             });
             wrap.append(open);
           }
+          if(enableReviewReadiness){
+            const reviewSection=element(document,'section','');
+            reviewSection.append(element(document,'h3',
+              'Editorial preparation checklist'));
+            reviewSection.append(element(document,'p',
+              'This is a private content/materials preview. It does not approve, schedule or publish any post.'));
+            if(reviewPending){
+              reviewSection.append(element(document,'p',
+                'Checking draft material and attachment states...'));
+            }else if(reviewError||!reviewData){
+              reviewSection.append(element(document,'p',
+                'Editorial checklist unavailable. Refresh before relying on any review status.'));
+            }else{
+              reviewSection.append(element(document,'p',
+                reviewData.editorialMaterialCompleteCount+' of '+
+                reviewData.heldCount+
+                ' held drafts have verified required materials for editorial review. None are approved.'));
+              for(const check of reviewData.items){
+                const item=element(document,'article','');
+                const draft=current.drafts.find(x=>x.id===check.requestId);
+                item.append(element(document,'strong',
+                  draft?draft.channel+' · '+draft.text:
+                    check.channel+' · Draft '+check.requestId.slice(0,8)));
+                item.append(element(document,'p',
+                  check.editorialMaterialComplete?
+                    'Required materials verified; editorial and owner review still pending.':
+                    'Not yet prepared for editorial review: '+check.status));
+                if(check.missingItems.length)
+                  item.append(element(document,'p',
+                    'Missing: '+check.missingItems.join(', ')));
+                if(check.unverifiedItems.length)
+                  item.append(element(document,'p',
+                    'Not independently verified: '+check.unverifiedItems.join(', ')));
+                item.append(element(document,'p',
+                  'Still blocked: '+check.blockers.join(', ').replaceAll('_',' ')));
+                reviewSection.append(item);
+              }
+            }
+            const refresh=element(document,'button','Refresh editorial checklist');
+            refresh.type='button';refresh.className='secondary';
+            refresh.disabled=reviewPending;
+            refresh.addEventListener('click',()=>{
+              if(active===scope&&epoch===scopeEpoch)
+                void refreshReviewReadiness();
+            });
+            reviewSection.append(refresh);
+            wrap.append(reviewSection);
+          }
         }else if(section==='connections'){
           const state=current.cards.connections.availability;
           if(state!=='available'){
@@ -413,16 +495,19 @@
           fetchImpl,origin,expectedTenantId:mine.tenantId});
         if(version!==epoch||request!==requestVersion||mine!==active)
           return {stale:true};
-        connectionRequest++;previewRequest++;
+        connectionRequest++;previewRequest++;reviewRequest++;
         connectionData=null;connectionPending=false;connectionError=false;
         postingPreview=null;previewPending=false;previewError=false;
         calendarData=null;calendarError=false;
         suggestionsData=null;suggestionsError=false;
+        reviewData=null;reviewPending=false;reviewError=false;
         current=data;show(view);
         if(view==='connections'&&
            data.cards.connections.availability==='available')
           void refreshConnections();
         if(view==='scheduled')void refreshPostingPreview();
+        if(view==='approvals'&&enableReviewReadiness)
+          void refreshReviewReadiness();
         return {stale:false,tenantId:data.tenantId,role:data.role,
           pendingMediaAvailable:data.pendingMediaAvailable,
           businesses:data.businesses.map(b=>({tenantId:b.tenant_id,name:b.name}))};
@@ -435,7 +520,7 @@
       }
     }
     return Object.freeze({activate,refresh,clear,show,refreshConnections,
-      refreshPostingPreview});
+      refreshPostingPreview,refreshReviewReadiness});
   }
   return Object.freeze({create});
 });

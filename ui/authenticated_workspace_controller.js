@@ -25,12 +25,14 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
                    enableLocalTemplates=false,enableBatchPreviews=false,
                    enableCalendarProposals=false,
                    enableCalendarSuggestions=false,
+                   enableReviewReadiness=false,
                    hashMediaBytes,onNotice}){
     let activeSession=null,epoch=0,active=false;
     const dashboard=dashboardModule.create({
       document,container:dashboardContainer,fetchImpl,origin,onError,
       onOpenContentStudio,onOpenPostingSettings,
-      enableCalendarProposals,enableCalendarSuggestions});
+      enableCalendarProposals,enableCalendarSuggestions,
+      enableReviewReadiness});
     async function saveConfirmedFacts({facts,expectedRevision,expectedTenantId}){
       const mine=activeSession,version=epoch;
       if(!mine||expectedTenantId!==mine.tenantId){
