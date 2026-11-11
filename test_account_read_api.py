@@ -12,6 +12,7 @@ from account_read_api import AccountReadAPI
 from posting_preferences import PostingPreferences
 from ai_account_policy import AIPolicyStore
 from ai_content_drafts import AIContentDraftStore
+from ai_business_facts import AIBusinessFacts
 
 class AccountReadAPITests(unittest.TestCase):
     def setUp(self):
@@ -41,7 +42,8 @@ class AccountReadAPITests(unittest.TestCase):
         self.api=AccountReadAPI(dashboard,posting_preferences=PostingPreferences(
             db=self.db,sessions=self.sessions,directory=directory),
             ai_policy=ai_policy,ai_content_drafts=AIContentDraftStore(
-                db=self.db,policy_store=ai_policy))
+                db=self.db,policy_store=ai_policy),
+            ai_business_facts=AIBusinessFacts(db=self.db,policy_store=ai_policy))
 
     def tearDown(self):
         self.db.close()
@@ -107,6 +109,20 @@ class AccountReadAPITests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.api.get_posting_preferences(
                 session_token='bad',server_now=101)
+
+    def test_ai_business_facts_read_only_and_business_scoped(self):
+        self.api.ai_business_facts.confirm(token=self.token,now=101,
+            facts={'business_name':'A Shop'})
+        first=self.api.get_ai_business_facts(
+            session_token=self.token,server_now=102)
+        self.assertEqual(first['provenance'],'owner_confirmed')
+        self.assertEqual(first['facts']['business_name'],'A Shop')
+        switched=self.api.activate_business(session_token=self.token,
+            target_tenant_id='b',server_now=103)
+        second=self.api.get_ai_business_facts(
+            session_token=switched['session_token'],server_now=104)
+        self.assertEqual(second['provenance'],'not_configured')
+        self.assertEqual(second['facts'],{})
 
     def test_ai_settings_and_drafts_isolated_across_business_switch(self):
         self.api.ai_policy.replace_memory(token=self.token,now=101,
