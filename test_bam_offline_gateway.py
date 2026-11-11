@@ -720,6 +720,36 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         bad,_=self.call('/api/v1/posting-time-preview')
         self.assertEqual(bad['status'],'401 Unauthorized')
 
+    def test_private_editorial_readiness_is_not_an_approval(self):
+        owner=self.login('shop')
+        meta,created=self.call('/api/v1/content/drafts',method='POST',
+            token=owner,body={'channel':'facebook',
+                'draft_text':'Custom image order preview',
+                'suggestion':'Owner must review real product artwork',
+                'required_items':['image']})
+        self.assertEqual(meta['status'],'201 Created')
+        rid=created['request_id']
+        result,report=self.call('/api/v1/review-readiness',token=owner)
+        self.assertEqual(result['status'],'200 OK')
+        self.assertEqual(report['tenant_id'],'shop')
+        self.assertEqual(report['held_count'],1)
+        self.assertEqual(report['editorial_material_complete_count'],0)
+        self.assertEqual(report['approved_count'],0)
+        self.assertEqual(report['items'][0]['request_id'],rid)
+        self.assertEqual(report['items'][0]['missing_items'],['image'])
+        self.assertFalse(report['publishing_enabled'])
+        other=self.login('other')
+        _,private=self.call('/api/v1/review-readiness',token=other)
+        self.assertEqual(private['held_count'],0)
+        self.assertEqual(self.call('/api/v1/review-readiness',
+            method='POST',token=owner,body={'approved':True})[0]['status'],
+            '405 Method Not Allowed')
+        self.assertEqual(self.call('/api/v1/review-readiness',
+            token=owner,extra={'QUERY_STRING':'tenant_id=other'})[0]['status'],
+            '400 Bad Request')
+        self.assertEqual(self.call('/api/v1/review-readiness')[0]['status'],
+                         '401 Unauthorized')
+
     def test_durable_calendar_proposal_is_not_a_scheduled_post(self):
         owner=self.login('shop')
         self.app.preferences.set(token=owner,tenant_id='shop',
