@@ -22,7 +22,8 @@ for(const key of [
   'BAMAIWorkspace','BAMAuthenticatedWorkspace','BAMSessionController',
   'BAMSignedInShell','BAMHeldDraftWorkspace','BAMPostingPreferencesWorkspace',
   'BAMAIDraftEditClient','BAMLocalProductDraftClient',
-  'BAMReviewReadinessClient','BAMReviewFeedbackClient'
+  'BAMReviewReadinessClient','BAMReviewFeedbackClient',
+  'BAMReviewFeedbackHistoryClient'
 ]){
   assert.equal(typeof context[key],'object',key+' browser API missing');
 }

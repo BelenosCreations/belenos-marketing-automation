@@ -8,11 +8,12 @@
     module.exports=factory(require('./dashboard_http_client.js'),
       require('./calendar_proposals_client.js'),
        require('./review_readiness_client.js'),
-       require('./review_feedback_client.js'));
+       require('./review_feedback_client.js'),
+       require('./review_feedback_history_client.js'));
   else root.BAMLiveDashboard=factory(root.BAMReadClient,
     root.BAMCalendarProposalsClient,root.BAMReviewReadinessClient,
-     root.BAMReviewFeedbackClient);
-})(typeof globalThis!=='undefined'?globalThis:this,function(client,calendarClient,reviewClient,feedbackClient){
+     root.BAMReviewFeedbackClient,root.BAMReviewFeedbackHistoryClient);
+})(typeof globalThis!=='undefined'?globalThis:this,function(client,calendarClient,reviewClient,feedbackClient,historyClient){
   'use strict';
   const order=['scheduled','approvals','content','connections'];
   function element(doc,tag,text){
@@ -25,7 +26,8 @@
                    enableCalendarProposals=false,
                    enableCalendarSuggestions=false,
                    enableReviewReadiness=false,
-                   enableReviewFeedback=false}){
+                   enableReviewFeedback=false,
+                   enableReviewAudit=false}){
     if(!document||!container||typeof container.replaceChildren!=='function'||
        typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Dashboard dependencies required');
@@ -40,7 +42,8 @@
     if(typeof enableCalendarProposals!=='boolean'||
        typeof enableCalendarSuggestions!=='boolean'||
        typeof enableReviewReadiness!=='boolean'||
-       typeof enableReviewFeedback!=='boolean')
+       typeof enableReviewFeedback!=='boolean'||
+       typeof enableReviewAudit!=='boolean')
       throw new TypeError('Explicit calendar preview feature switch required');
     let active=null,epoch=0,requestVersion=0,current=null,view='home';
     let connectionData=null,connectionPending=false,connectionError=false;
@@ -52,8 +55,9 @@
     let reviewData=null,reviewPending=false,reviewError=false,reviewRequest=0;
     let feedbackData=null,feedbackPending=false,feedbackError=false;
     let feedbackRequest=0,feedbackWriting=false;
+    let auditData=null,auditPending=false,auditError=false,auditRequest=0;
     function clear(){
-      epoch++;requestVersion++;connectionRequest++;previewRequest++;reviewRequest++;feedbackRequest++;
+      epoch++;requestVersion++;connectionRequest++;previewRequest++;reviewRequest++;feedbackRequest++;auditRequest++;
       active=null;current=null;view='home';
       connectionData=null;connectionPending=false;connectionError=false;
       postingPreview=null;previewPending=false;previewError=false;
@@ -63,6 +67,7 @@
       reviewData=null;reviewPending=false;reviewError=false;
       feedbackData=null;feedbackPending=false;feedbackError=false;
       feedbackWriting=false;
+      auditData=null;auditPending=false;auditError=false;
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -240,6 +245,8 @@
         if(epoch!==version||active!==mine||request!==feedbackRequest)
           return {stale:true};
         feedbackData=data;
+        if(enableReviewAudit&&['owner','marketing_manager']
+           .includes(current.role))void refreshReviewAudit();
         return {stale:false,count:data.items.length};
       }catch(error){
         if(epoch!==version||active!==mine||request!==feedbackRequest)
@@ -250,6 +257,35 @@
       }finally{
         if(epoch===version&&active===mine&&request===feedbackRequest){
           feedbackPending=false;
+          if(view==='approvals')show('approvals');
+        }
+      }
+    }
+    async function refreshReviewAudit(){
+      if(!enableReviewAudit||!active||!current||
+         !['owner','marketing_manager'].includes(current.role))
+        return {restricted:true};
+      if(auditPending)return {pending:true};
+      const mine=active,version=epoch,request=++auditRequest;
+      auditPending=true;auditError=false;
+      if(view==='approvals')show('approvals');
+      try{
+        const result=await historyClient.read({
+          origin,fetchImpl,token:mine.token,
+          expectedTenantId:mine.tenantId});
+        if(epoch!==version||active!==mine||request!==auditRequest)
+          return {stale:true};
+        auditData=result;
+        return {stale:false,count:result.events.length};
+      }catch(error){
+        if(epoch!==version||active!==mine||request!==auditRequest)
+          return {stale:true};
+        auditData=null;auditError=true;
+        if(onError)onError('Private reviewer activity history unavailable');
+        return {error:true};
+      }finally{
+        if(epoch===version&&active===mine&&request===auditRequest){
+          auditPending=false;
           if(view==='approvals')show('approvals');
         }
       }
@@ -660,6 +696,49 @@
             reviewSection.append(refresh);
             wrap.append(reviewSection);
           }
+          if(enableReviewAudit&&
+             ['owner','marketing_manager'].includes(current.role)){
+            const auditSection=element(document,'section','');
+            auditSection.className='bam-review-activity';
+            auditSection.append(element(document,'h3',
+              'Recent reviewer note activity — metadata only'));
+            auditSection.append(element(document,'p',
+              'This history records note creation, changes and removal without storing older note text. No event is approval.'));
+            if(auditPending){
+              auditSection.append(element(document,'p',
+                'Loading private reviewer activity...'));
+            }else if(auditError||!auditData){
+              auditSection.append(element(document,'p',
+                'Reviewer activity unavailable. Refresh to check the current record.'));
+            }else if(!auditData.events.length){
+              auditSection.append(element(document,'p',
+                'No editorial note changes recorded yet.'));
+            }else{
+              for(const entry of auditData.events.slice(0,10)){
+                const readableDate=new Date(entry.occurredAt*1000);
+                const shown=Number.isFinite(readableDate.getTime())
+                  ?readableDate.toISOString().slice(0,16)+' UTC'
+                  :'Recorded timestamp '+entry.occurredAt;
+                auditSection.append(element(document,'p',
+                  shown+' · Draft '+entry.requestId.slice(0,8)+
+                  ' · Note '+entry.action+' (draft revision '+
+                  entry.draftRevision+')'));
+              }
+              if(auditData.events.length>10||auditData.truncated)
+                auditSection.append(element(document,'p',
+                  'More prior activity is omitted from this short preview.'));
+            }
+            const refreshAudit=element(document,'button',
+              'Refresh reviewer activity');
+            refreshAudit.type='button';refreshAudit.className='secondary';
+            refreshAudit.disabled=auditPending;
+            refreshAudit.addEventListener('click',()=>{
+              if(active===scope&&epoch===scopeEpoch)
+                void refreshReviewAudit();
+            });
+            auditSection.append(refreshAudit);
+            wrap.append(auditSection);
+          }
         }else if(section==='connections'){
           const state=current.cards.connections.availability;
           if(state!=='available'){
@@ -719,7 +798,7 @@
           fetchImpl,origin,expectedTenantId:mine.tenantId});
         if(version!==epoch||request!==requestVersion||mine!==active)
           return {stale:true};
-        connectionRequest++;previewRequest++;reviewRequest++;feedbackRequest++;
+        connectionRequest++;previewRequest++;reviewRequest++;feedbackRequest++;auditRequest++;
         connectionData=null;connectionPending=false;connectionError=false;
         postingPreview=null;previewPending=false;previewError=false;
         calendarData=null;calendarError=false;
@@ -728,6 +807,7 @@
         reviewData=null;reviewPending=false;reviewError=false;
         feedbackData=null;feedbackPending=false;feedbackError=false;
         feedbackWriting=false;
+        auditData=null;auditPending=false;auditError=false;
         current=data;show(view);
         if(view==='connections'&&
            data.cards.connections.availability==='available')
@@ -748,7 +828,7 @@
     }
     return Object.freeze({activate,refresh,clear,show,refreshConnections,
       refreshPostingPreview,refreshReviewReadiness,
-       refreshReviewFeedback});
+       refreshReviewFeedback,refreshReviewAudit});
   }
   return Object.freeze({create});
 });
