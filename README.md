@@ -633,3 +633,7 @@ The account read adapter and HTTPS WSGI component now expose `GET /api/v1/ai-bus
 ## AI fact provenance in the authenticated workspace — 2026-11-10
 
 The AI workspace controller can now optionally fetch and render the business's owner-confirmed fact snapshot alongside AI Settings and held drafts. Its read-only fact panel clearly distinguishes unconfigured facts from owner-confirmed facts and explicitly avoids claiming independent verification. Business-switch/logout invalidation, out-of-order refresh rejection and failed-load cleanup also apply to the fact panel. Added safe-DOM and workspace integration tests to CI. The authenticated GUI shell and write-side owner-confirmation interface are still pending.
+
+## AI image revision/media hold safeguard — 2026-11-10
+
+Revising only the post copy now preserves a verified image association, while revising the image prompt invalidates the previous association and returns a media-required draft to `needs_media`. This prevents BAM from silently treating an older image as satisfying a newly revised image brief. The behavior is covered by Python regression tests. A production trusted-media worker must still confirm that a newly supplied image is appropriate for the revised draft.
