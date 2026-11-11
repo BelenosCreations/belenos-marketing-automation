@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {stage}=require('./pending_media_client.js');
+const {stage,statuses}=require('./pending_media_client.js');
 const requestId='a'.repeat(32),attachmentId='b'.repeat(32);
 const png=Uint8Array.from([137,80,78,71,13,10,26,10,45]);
 const file={type:'image/png',size:png.length,
@@ -49,6 +49,38 @@ async function main(){
    {intent:{tenant_id:'other'}})}),TypeError);
  await assert.rejects(()=>stage({...base,fetchImpl:fakeFetch([],
    {receipt:{media_verified:true}})}),TypeError);
+ const states=await statuses({...base,fetchImpl:async(url,opts)=>{
+   assert.equal(url,'https://bam.example/api/v1/content/media-status');
+   assert.equal(opts.method,'GET');
+   assert.equal(opts.credentials,'omit');
+   assert.equal(opts.headers.Authorization,'Bearer '+'t'.repeat(43));
+   return {ok:true,status:200,json:async()=>({
+     tenant_id:'shop',items:[{request_id:requestId,item:'image',
+       status:'pending_scan'}],media_verified:false,publishing_enabled:false})};
+ }});
+ assert.equal(states.items[0].status,'pending_scan');
+ assert.equal(states.mediaVerified,false);
+ await assert.rejects(()=>statuses({...base,fetchImpl:async()=>({
+   ok:true,status:200,json:async()=>({tenant_id:'other',items:[],
+     media_verified:false,publishing_enabled:false})})}),TypeError);
+ await assert.rejects(()=>statuses({...base,fetchImpl:async()=>({
+   ok:true,status:200,json:async()=>({tenant_id:'shop',items:[{
+     request_id:requestId,item:'image',status:'verified'}],
+     media_verified:false,publishing_enabled:false})})}),TypeError);
+ const cancelled=[];
+ await assert.rejects(()=>stage({...base,fetchImpl:fakeFetch(cancelled),
+   isCurrent:()=>false}),/Session changed/);
+ assert.equal(cancelled.length,0);
+ let current=true;
+ const switched=[];
+ await assert.rejects(()=>stage({...base,
+   fetchImpl:async(url,opts)=>{
+     switched.push({url,opts});
+     if(url.endsWith('/upload-preflight'))current=false;
+     return fakeFetch([])(url,opts);
+   },isCurrent:()=>current}),/Session changed/);
+ assert.equal(switched.length,1);
+ assert.ok(switched[0].url.endsWith('/upload-preflight'));
  console.log('BAM pending manual image return client tests passed');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

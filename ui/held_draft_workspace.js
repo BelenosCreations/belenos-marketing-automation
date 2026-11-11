@@ -33,21 +33,25 @@
        (hashBytes!==undefined&&typeof hashBytes!=='function'))
       throw new TypeError('Content Studio dependencies required');
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
-    let canEdit=false,mediaEnabled=false;
+    let canEdit=false,mediaEnabled=false,mediaStatusReady=false;
+    let mediaStatuses=new Map();
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
       mediaEnabled=allowed&&canEdit;
+      mediaStatusReady=false;mediaStatuses=new Map();
       if(model&&active)render();
     }
     function setCanEdit(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted draft edit permission required');
       canEdit=allowed;
-      if(!allowed)mediaEnabled=false;
+      if(!allowed){
+        mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
+      }
       if(model&&active)render();
     }
     function clear(){
       epoch++;requestVersion++;active=null;model=null;busy=false;canEdit=false;
-      mediaEnabled=false;
+      mediaEnabled=false;mediaStatusReady=false;mediaStatuses=new Map();
       container.replaceChildren();
     }
     function activate({token,tenantId}){
@@ -114,6 +118,14 @@
             const item=draft.missing.find(value=>
               /photo|image|picture|artwork|graphic/i.test(value));
             if(item){
+              const state=mediaStatuses.get(draft.id+':'+item);
+              if(!mediaStatusReady){
+                article.append(make(document,'p',
+                  'Private image status unavailable. Refresh before submitting another file.'));
+              }else if(state==='pending_scan'){
+                article.append(make(document,'p',
+                  'Image received in private quarantine. Awaiting review; not verified, approved or publishable.'));
+              }else{
               const picker=make(document,'input','');
               picker.type='file';
               picker.accept='image/png,image/jpeg,image/webp';
@@ -134,6 +146,7 @@
               article.append(upload);
               article.append(make(document,'p',
                 'This image stays private and pending. No safety, rights or approval review has occurred.'));
+              }
             }
           }
           if(canEdit&&status!=='ready_for_review'){
@@ -166,6 +179,25 @@
           fetchImpl,origin,expectedTenantId:mine.tenantId});
         if(version!==epoch||active!==mine||request!==requestVersion)
           return {stale:true};
+        if(mediaEnabled&&hashBytes&&data.drafts.length){
+          try{
+            const latest=await pendingClient.statuses({
+              origin,fetchImpl,token:mine.token,
+              expectedTenantId:mine.tenantId});
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            mediaStatuses=new Map(latest.items.map(x=>[
+              x.requestId+':'+x.item,x.status]));
+            mediaStatusReady=true;
+          }catch(error){
+            if(version!==epoch||active!==mine||request!==requestVersion)
+              return {stale:true};
+            mediaStatuses=new Map();mediaStatusReady=false;
+            if(onError)onError('Private media status could not be checked. Image upload is temporarily disabled.');
+          }
+        }else{
+          mediaStatuses=new Map();mediaStatusReady=false;
+        }
         model=data;render();
         return {stale:false,tenantId:mine.tenantId,
           heldCount:data.drafts.length};
@@ -209,7 +241,9 @@
       try{
         const received=await pendingClient.stage({
           origin,fetchImpl,token:mine.token,expectedTenantId:mine.tenantId,
-          requestId,item,file,hashBytes});
+          requestId,item,file,hashBytes,
+          isCurrent:()=>version===epoch&&mine===active&&
+            canEdit&&mediaEnabled});
         if(version!==epoch||mine!==active)return {stale:true};
         const updated=await refresh();
         if(updated.stale||updated.error)return updated;

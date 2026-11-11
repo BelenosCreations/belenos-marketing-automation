@@ -13,15 +13,21 @@ const data=Uint8Array.from([137,80,78,71,13,10,26,10,42]);
 const file={type:'image/png',size:data.length,
   arrayBuffer:async()=>data.slice().buffer};
 const calls=[],notices=[],errors=[];
+let hasReceipt=false;
 const fetchImpl=async(url,opts)=>{
   calls.push({url,opts});
+  if(url.endsWith('/media-status'))return {ok:true,status:200,
+    json:async()=>({tenant_id:'shop',items:hasReceipt?[{
+      request_id:draftId,item:'image',status:'pending_scan'}]:[],
+      media_verified:false,publishing_enabled:false})};
   if(opts.method==='GET')return {ok:true,json:async()=>({
     tenant_id:'shop',publishing_enabled:false,drafts:[{
       request_id:draftId,channel:'facebook',draft_text:'Draft',
       suggestion:'Provide approved image',status:'needs_content',
       missing_items:['image'],priority:0}]})};
   if(url.endsWith('/upload-preflight'))
-    return {ok:true,status:202,json:async()=>({
+    hasReceipt=true;
+  return {ok:true,status:202,json:async()=>({
       tenant_id:'shop',request_id:draftId,item:'image',
       attachment_id:attachmentId,status:'pending',
       max_bytes:20*1024*1024,upload_url:null,publishing_enabled:false})};
@@ -45,6 +51,10 @@ async function main(){
   await upload.listeners.click();
   assert.equal(calls.filter(x=>x.opts.method==='POST').length,1);
   assert.equal(calls.filter(x=>x.opts.method==='PUT').length,1);
+  assert.equal(calls.filter(x=>x.url.endsWith('/media-status')).length,2);
+  const after=container.children[0].children[3].children[1];
+  assert.ok(after.children.some(x=>/Awaiting review/.test(x.textContent)));
+  assert.equal(after.children.some(x=>x.textContent==='Send image for private review'),false);
   assert.match(notices.at(-1),/pending review/);
   assert.equal(errors.length,0);
   app.setMediaEnabled(false);

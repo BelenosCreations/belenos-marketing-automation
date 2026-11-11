@@ -12,7 +12,7 @@
  const mime=new Set(['image/png','image/jpeg','image/webp']);
  function record(x){return x&&typeof x==='object'&&!Array.isArray(x)}
  async function stage({origin,fetchImpl,token:bearer,expectedTenantId,
-                       requestId,item,file,hashBytes}){
+                       requestId,item,file,hashBytes,isCurrent}){
    if(typeof origin!=='string'||
       !/^https:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?$/.test(origin)||
       typeof fetchImpl!=='function'||!token.test(bearer)||
@@ -21,12 +21,19 @@
       typeof item!=='string'||!item.trim()||item.length>80||
       !file||!mime.has(file.type)||!Number.isSafeInteger(file.size)||
       file.size<1||file.size>20*1024*1024||
-      typeof file.arrayBuffer!=='function'||typeof hashBytes!=='function')
+      typeof file.arrayBuffer!=='function'||typeof hashBytes!=='function'||
+      (isCurrent!==undefined&&typeof isCurrent!=='function'))
      throw new TypeError('Authenticated pending image required');
+   const requireCurrent=()=>{
+     if(isCurrent&&!isCurrent())throw new Error('Session changed during image transfer');
+   };
+   requireCurrent();
    const content=await file.arrayBuffer();
+   requireCurrent();
    if(!(content instanceof ArrayBuffer)||content.byteLength!==file.size)
      throw new TypeError('Invalid selected file bytes');
    const digest=await hashBytes(content);
+   requireCurrent();
    if(typeof digest!=='string'||!sha.test(digest))
      throw new TypeError('Invalid image digest');
    const authorization={'Authorization':'Bearer '+bearer};
@@ -51,6 +58,7 @@
       !Number.isSafeInteger(intent.max_bytes)||
       intent.max_bytes<file.size||intent.max_bytes>250*1024*1024)
      throw new TypeError('Untrusted pending upload intent');
+   requireCurrent();
    const second=await fetchImpl(origin+'/api/v1/content/media-bytes',{
      method:'PUT',mode:'same-origin',credentials:'omit',cache:'no-store',
      redirect:'error',
@@ -73,5 +81,43 @@
      attachmentId:result.attachment_id,status:'pending_scan',
      mediaVerified:false,publishingEnabled:false});
  }
- return Object.freeze({stage});
+ async function statuses({origin,fetchImpl,token:bearer,expectedTenantId}){
+   if(typeof origin!=='string'||
+      !/^https:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?$/.test(origin)||
+      typeof fetchImpl!=='function'||!token.test(bearer)||
+      typeof expectedTenantId!=='string'||!expectedTenantId.trim()||
+      expectedTenantId.length>128)
+     throw new TypeError('Trusted BAM status session required');
+   const response=await fetchImpl(origin+'/api/v1/content/media-status',{
+     method:'GET',mode:'same-origin',credentials:'omit',cache:'no-store',
+     redirect:'error',headers:{Authorization:'Bearer '+bearer,
+       Accept:'application/json'}
+   });
+   if(!response||!response.ok||response.status!==200)
+     throw new Error('Private media status unavailable');
+   const result=await response.json();
+   if(!record(result)||Object.keys(result).some(k=>![
+       'tenant_id','items','media_verified','publishing_enabled'].includes(k))||
+      result.tenant_id!==expectedTenantId||
+      result.media_verified!==false||result.publishing_enabled!==false||
+      !Array.isArray(result.items)||result.items.length>500)
+     throw new TypeError('Untrusted pending media status');
+   const seen=new Set();
+   const items=result.items.map(item=>{
+     if(!record(item)||Object.keys(item).some(k=>![
+         'request_id','item','status'].includes(k))||
+        !id.test(item.request_id)||typeof item.item!=='string'||
+        !item.item.trim()||item.item.length>80||
+        !['awaiting_file','pending_scan'].includes(item.status))
+       throw new TypeError('Invalid pending receipt state');
+     const key=item.request_id+':'+item.item;
+     if(seen.has(key))throw new TypeError('Duplicate pending item');
+     seen.add(key);
+     return Object.freeze({requestId:item.request_id,item:item.item,
+       status:item.status});
+   });
+   return Object.freeze({tenantId:result.tenant_id,items:Object.freeze(items),
+     mediaVerified:false,publishingEnabled:false});
+ }
+ return Object.freeze({stage,statuses});
 });
