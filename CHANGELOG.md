@@ -1,3 +1,10 @@
+## 2026-11-11 — Stale-role safety for team invitations and trusted facts
+
+- Require current tenant-specific sessions for issuing/revoking offline team invitations, changing business scheduling settings, and owner-only TruthGuard fact approval/revocation/lookup.
+- Prevent a role promotion from granting privileges to a session created before the promotion; regression tests require a fresh trusted session.
+- No outbound invites, paid AI, executable scheduling, live approvals or publishing.
+- **Verification pending:** GitHub Actions queued after commit `4fc1a648`.
+
 ## 2026-11-11 — Alpha / private beta acceptance gate
 
 - Added `ALPHA_BETA_READINESS.md` with an explicit offline-alpha capability matrix, evidence required to call each task done, pending private-beta integration conditions, and publish/paid-service prohibition.

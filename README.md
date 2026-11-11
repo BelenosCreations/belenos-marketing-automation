@@ -273,3 +273,9 @@ This offline alpha batch strengthens the places that evaluate or change private 
 Alpha-to-private-beta acceptance criteria are maintained in [ALPHA_BETA_READINESS.md](ALPHA_BETA_READINESS.md). The current build is offline alpha, not a hosted multi-user beta or a production publishing system.
 
 Content Studio now reloads authenticated draft data after a rejected edit (including a stale 409 conflict) rather than leaving obsolete controls on screen. The new browser regression checks that a rejected hold produces no optimistic success and that the current revision is fetched. This remains an offline alpha change with GitHub CI pending.
+
+## Additional role-change enforcement: team invites, schedules and TruthGuard — 2026-11-11
+
+A follow-up authorization audit found three more offline service boundaries that consulted the current directory role but did not require the issued session role to match. **Invitation creation/revocation, per-business scheduling settings and owner-only TruthGuard business-fact administration** now use `SessionStore.resolve_current` before evaluating tenant/role permissions. Tests verify that promoting a person to owner never lets an existing viewer/manager token silently acquire those owner powers; a separately issued current-role session is necessary. The change does not send invitations, schedule posts, publish, or approve any external AI call.
+
+**Checkpoint:** code commit `4fc1a6481309318b2c4a34453ccafaaef11a0708`. GitHub Actions remained queued with no assigned jobs at documentation time. Do not record it as verified yet.

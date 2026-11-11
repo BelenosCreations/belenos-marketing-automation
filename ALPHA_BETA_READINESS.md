@@ -29,6 +29,8 @@ Before opening a hosted private beta, independently verify:
 5. **Social providers and publication:** scoped OAuth connections and revocation, provider permission verification, owner approval receipt and an *explicitly separately authorized* publish/schedule switch; idempotency/retry and audit controls, including an emergency disable.
 6. **Usability and reliability:** real Android-size testing, keyboard and screen-reader checks, offline/error copy, stale-editor recovery, session expiry, backup restore and deployment rollback exercise.
 
+**Additional unverified session hardening:** invitations, scheduling-settings and TruthGuard facts now require matching current-role sessions, with role-promotion regression tests at code commit `4fc1a648`; GitHub Actions remained queued when recorded.
+
 ## C. Non-negotiable safety assertions
 
 - A generated draft is **not** an approved post.
