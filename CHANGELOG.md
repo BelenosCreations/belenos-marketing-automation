@@ -1,3 +1,18 @@
+## Zero-OpenAI-request service-business spotlight support — 2026-11-10
+
+### Added
+- Extended local, literal social-media spotlight templates to non-retail service providers. Owner-confirmed `business_name` and `service` fields can produce a short, factual service marketing draft with optional generic conceptual image prompt, without OpenAI API requests.
+- Added a separate disabled-by-default HTTPS `POST /api/v1/ai/local-service-draft` route. The same server-derived tenant, confirmed fact, authenticated role, content hold, zero-request cost and no-publication safeguards apply as for product drafts.
+- Updated the signed-in AI Drafts editor to choose only currently available product/service template types backed by owner-confirmed facts. Service businesses do not need a fabricated product field to use the local draft option.
+- Added service-template server/client, non-retail business isolation, generic image-prompt and service UI regression tests.
+
+### Verified tests
+- **Passed:** [GitHub Actions run 42962115509](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42962115509), commit `4ceed04c`: Python compilation, **760 Python tests and 35 JavaScript UI test scripts**.
+
+### Known limitations
+- Templates create only generic, literal product/service highlights; they are not full OpenAI campaign generation, image creation or real photographs of actual work.
+- Confirmed owner facts still require review before any future public posting. No live media upload, schedule/publish execution, hosted web app or Android build is enabled.
+
 ## Independent manual AI draft component editing — 2026-11-10
 
 ### Added

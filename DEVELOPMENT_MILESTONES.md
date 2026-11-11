@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Zero-OpenAI-cost templates for product and service businesses (2026-11-10)
+
+The confirmed-fact local draft workflow now supports both product and service spotlights. `LocalDraftTemplates.service_spotlight` assembles short literal service copy and an optional clearly conceptual, non-photographic image prompt from only owner-confirmed `business_name` and `service` facts. `POST /api/v1/ai/local-service-draft` is separately disabled by default, scoped to the active user's business and edit role, and saves only a review-pending AI draft. The signed-in AI workspace shows only the applicable template types for that business, with manual ChatGPT image handoff remaining optional. No platform-neutral factual claims, staff identity, equipment details, customer guarantees, prices or hours are invented.
+
+**Verified [GitHub Actions run 42962115509](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42962115509): 760 Python tests and 35 JS scripts, plus compilation.**
+
 ## Independent manual AI draft component revisions (2026-11-10)
 
 The disabled-by-default `bam_ai_draft_edit_wsgi.py` adds a strict `PUT /api/v1/ai-drafts` route to edit one existing user/business-scoped AI draft component. It requires the authenticated session, a draft ID, target (`post_text` or existing `image_prompt`), revised text and matching revision. The `AIContentDraftStore` stores the updated component only, increments the revision and returns an unpublished draft status; a changed image prompt deletes its old verified image match. The signed-in AI Drafts UI has explicit separate Save controls and reloads the trusted draft after each edit.

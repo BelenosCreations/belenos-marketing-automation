@@ -19,6 +19,12 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Local service-business drafts
+
+Alongside product spotlight templates, the disabled-by-default `POST /api/v1/ai/local-service-draft` route and `LocalDraftTemplates.service_spotlight` create a literal, owner-fact-grounded service draft. Its optional image prompt must be a clearly conceptual illustration and not a claimed photograph of actual employees, customers, properties or completed work. The UI offers only product or service types with currently confirmed facts, never manufacturing a missing field. Template creation makes **zero BAM OpenAI API requests**, but ChatGPT account limits for manual image creation are separate.
+
+**Verified [GitHub Actions run 42962115509](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42962115509): 760 Python tests and 35 JS scripts.**
+
 ## Manual single-component AI draft edits
 
 The signed-in AI Drafts panel offers separate explicit Save controls for the post copy and existing image-generation prompt. `ui/ai_draft_edit_client.js` sends only the draft ID, selected component, revised text and expected revision to the disabled-by-default `PUT /api/v1/ai-drafts` backend. `AccountReadAPI.edit_ai_draft_component` checks the authenticated current user/business and `AIContentDraftStore.revise` enforces edit permission and an optimistic revision guard. A changed image prompt invalidates a prior verified-media match; it cannot imply that fresh media was uploaded.
