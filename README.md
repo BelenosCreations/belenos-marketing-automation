@@ -8,6 +8,8 @@ The platform is being designed to support independent organizations, multiple bu
 
 > **Approved AI direction:** Three usage scenarios (owner-only two posts/day, 5–10 invited users, and potential paid public Google Play release), OpenAI-only generation, default BAM-sponsored AI with optional personal OpenAI API key, and independent per-user AI memories. See [AI architecture and approved requirements](AI_ARCHITECTURE.md). Exact public pricing and quotas are not finalized.
 
+> **UI regression safeguard:** The private image picker is rendered only while the authenticated tenant permits editing and the pending-media capability is enabled. Capability changes immediately redraw Content Studio; no actual approval or publishing is implied.
+
 > **Development status:** Offline development prototype with email/password and Google authentication foundations, a responsive sample-data GUI demonstration, and an authenticated large-card HTML shell that can now be served by an **explicitly opted-in, restricted HTTPS WSGI asset adapter** for direct-call integration tests (not yet hosted). Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Current functional capabilities (offline development build)

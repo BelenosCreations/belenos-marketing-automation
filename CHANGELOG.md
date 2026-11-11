@@ -1,3 +1,9 @@
+## Content Studio pending-media capability redraw regression — 2026-11-11
+
+### Fixed
+- Content Studio now redraws immediately when private pending-image receipt capability is enabled or disabled. This prevents a stale file picker from remaining visible after media receipt is disabled and restores the expected capability-gated browser behavior.
+- Existing browser DOM regression test covers capability revocation; CI verification is required before this fix is considered green.
+
 ## Private, pending-only local image receipt (without verification) — 2026-11-11
 
 ### Added

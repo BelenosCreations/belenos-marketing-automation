@@ -37,6 +37,7 @@
     function setMediaEnabled(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
       mediaEnabled=allowed&&canEdit;
+      if(model&&active)render();
     }
     function setCanEdit(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted draft edit permission required');

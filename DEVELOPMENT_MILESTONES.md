@@ -2,6 +2,10 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Content Studio capability redraw fix (2026-11-11)
+
+The private media capability toggle now re-renders Content Studio immediately, including revocation, rather than waiting for another read. This corrects a failing browser DOM regression without enabling any media approval or publishing. Verify the full GitHub Actions suite before considering the milestone complete.
+
 ## Private pending-only image-byte receipt (2026-11-11)
 
 The approved ChatGPT user-generated image return path now has a default-off **local-only** byte receipt service, `BAMPendingMediaStore`, behind the authenticated `BAMPendingMediaWSGI` endpoint. An allowed editor must already have a server-created pending attachment ID for an active request and a checklist image item. The actual file must be PNG/JPEG/WebP, fit a capped size, match the declared SHA-256 and file signature, and be stored in an explicitly configured private directory outside the source tree. Storage filenames derive only from server-generated attachment IDs and are not exposed to browsers. The registry remains pending and the request still needs content; there is no file download, gallery, malware inspection, content approval or publishing.
