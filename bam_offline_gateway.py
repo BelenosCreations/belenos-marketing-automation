@@ -44,6 +44,8 @@ from identity_auth import IdentityAuth
 from login_throttle import LoginThrottle
 from posting_preferences import PostingPreferences
 from calendar_proposals import CalendarProposals
+from review_readiness import ReviewReadiness
+from bam_review_readiness_wsgi import BAMReviewReadinessWSGI
 from bam_calendar_proposals_wsgi import BAMCalendarProposalsWSGI
 from provider_connection_registry import ProviderConnectionRegistry
 from sessions import SessionStore
@@ -119,6 +121,11 @@ class BAMOfflineGateway:
             preferences=self.preferences)
         self.calendar_wsgi=BAMCalendarProposalsWSGI(
             self.calendar_proposals,enabled=enabled,clock=self.clock)
+        self.review_readiness=ReviewReadiness(
+            sessions=self.sessions,directory=self.directory,
+            content_service=self.dashboard.content_service)
+        self.review_readiness_wsgi=BAMReviewReadinessWSGI(
+            self.review_readiness,enabled=enabled,clock=self.clock)
         self.read_api = AccountReadAPI(
             self.dashboard, posting_preferences=self.preferences,
             ai_content_drafts=self.ai_drafts, ai_policy=self.ai_policy,
@@ -205,6 +212,8 @@ class BAMOfflineGateway:
         if path in ('/api/v1/calendar-proposals',
                     '/api/v1/calendar-suggestions'):
             return self.calendar_wsgi(environ,start_response)
+        if path == '/api/v1/review-readiness':
+            return self.review_readiness_wsgi(environ,start_response)
         if path == '/api/v1/ai/batch-preview':
             return self.ai_batch_preview_wsgi(environ,start_response)
         if path == '/api/v1/ai-memory':
