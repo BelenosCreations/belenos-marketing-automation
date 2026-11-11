@@ -45,6 +45,13 @@ async function main(){
   assert.equal(drafts.children[0].children[2].children[1].textContent,
                'Private b');
   assert.equal(settings.children[0].children[5].textContent,'tone: b');
+  const failing=workspace.refresh();
+  const failedRequests=pending.splice(0);
+  for(const item of failedRequests)item.resolve({ok:false});
+  assert.equal((await failing).error,true);
+  assert.equal(drafts.children.length,0);
+  assert.equal(settings.children.length,0);
+  assert.deepEqual(errors,['Unable to load AI workspace']);
   const after=workspace.refresh();
   workspace.clear();
   flush('b');
@@ -52,7 +59,7 @@ async function main(){
   assert.equal(drafts.children.length,0);
   assert.equal(settings.children.length,0);
   await assert.rejects(()=>workspace.refresh(),TypeError);
-  assert.deepEqual(errors,[]);
+  assert.equal(errors.length,1);
   console.log('BAM AI workspace stale-session tests passed');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
