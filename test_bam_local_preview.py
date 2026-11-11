@@ -110,7 +110,10 @@ class BootstrapTests(unittest.TestCase):
                 self.assertEqual(switched['overview']['tenant_id'],'second')
                 self.assertEqual(switched['overview']['role'],'owner')
                 self.assertFalse(switched['publishing_enabled'])
-                self.assertIsNone(gateway.sessions.resolve(token,now=106))
+                # The trusted HTTP adapter revokes the source session after
+                # successful rotation; the lower-level service does not.
+                self.assertIsNotNone(gateway.sessions.resolve(token,now=106))
+                gateway.read_api.logout(session_token=token,server_now=106)
             with self.assertRaises(PermissionError):
                 add_preview_business(path,email='operator@example.com',
                     password='a strong test password',existing_tenant_id='first',
