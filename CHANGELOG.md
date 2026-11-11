@@ -1,3 +1,10 @@
+## 2026-11-11 — Editorial recheck session isolation hardening
+
+- Recheck now validates current membership and exact active business rather than only a still-live token and membership in the target business.
+- Regression tests cover cross-business membership with a token scoped to another business and stale roles after membership downgrade.
+- No approvals, scheduling, publishing, network calls or paid AI activation.
+- **CI pending:** run 43095601077, code commit `e957aeadd75f07457bf0d987c71d9c5f94275973`.
+
 ## Zero-cost, authenticated advance marketing topic planning — 2026-11-11
 
 ### Added

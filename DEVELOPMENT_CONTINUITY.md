@@ -7,6 +7,8 @@
 **Verification:** [GitHub Actions run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513): 882 Python tests, 72 JavaScript `ui/*_test.js` scripts and compilation **passed**.
 **Document-only checkpoint:** This file and companion README/CHANGELOG/milestone updates are committed after the verified code commit; confirm their own CI result before treating the new documentation commit as a verified head.
 
+**Latest unverified security change:** `e957aeadd75f07457bf0d987c71d9c5f94275973` strengthens editorial review current-session tenant and role checks; [GitHub Actions run 43095601077](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43095601077) was queued at documentation time. Confirm CI before updating the verified checkpoint.
+
 ## Safe resume procedure
 
 1. Verify the branch head and most recent full green GitHub Actions run. If a chat froze mid-edit, discard unverified assumptions and compare the branch's actual commits, tests and files before making changes.

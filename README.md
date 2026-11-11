@@ -250,3 +250,9 @@ Content Studio now lets an authorized creator select a draft's **queue priority*
 All filtering and queue counts happen in the browser over already authorized, server-validated draft data; using filters does **not** change priority, draft contents, approved status or server data. Filter state resets when switching BAM businesses or signing out. Queue prioritization never bypasses TruthGuard, media verification, owner approval or the default no-publishing rule.
 
 **Verified:** [GitHub Actions run 43091924513](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43091924513), code commit `5c53c736`: **882 Python tests and 72 JavaScript UI regression scripts passed** with Python compilation. The signed-in shell smoke test now identifies form inputs by their accessible labels instead of fragile numeric positions.
+
+## Editorial source review: current-session tenant enforcement (2026-11-11)
+
+The trusted-attestation editorial source recheck now resolves the **current** membership/session and rejects attempts to recheck a different business using a token from another business—even when the same person belongs to both. A downgraded or deactivated member's previously issued token cannot retain editorial review permissions. New regression tests cover both cross-business membership and stale-role scenarios. This is a safety-only change: it does not approve posts, grant publication, or trigger paid services.
+
+**Verification pending:** GitHub Actions [run 43095601077](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43095601077) for code commit `e957aeadd75f07457bf0d987c71d9c5f94275973`. Do not treat this change as verified until the run passes.

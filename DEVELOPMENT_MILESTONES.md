@@ -842,3 +842,9 @@ The idempotency ledger now supports a private read-only status lookup for the sa
 ## Explicit owner-confirmed business facts editor — 2026-11-10
 
 `ui/ai_facts_editor.js` adds an optional nested Settings editor for authorized business owners. Facts are never invented or autosaved: an owner must explicitly confirm and save them, with the current revision and active business attached to the request. Duplicate or incomplete fields are rejected. The authenticated AI workspace can mount this editor using a trusted `onSaveFacts` callback; the backend independently checks ownership and revision. Selected JavaScript tests passed in an isolated harness and were added to CI. The production sign-in and write API are not mounted.
+
+## Editorial source review: current-session tenant enforcement (2026-11-11)
+
+The trusted-attestation editorial source recheck now resolves the **current** membership/session and rejects attempts to recheck a different business using a token from another business—even when the same person belongs to both. A downgraded or deactivated member's previously issued token cannot retain editorial review permissions. New regression tests cover both cross-business membership and stale-role scenarios. This is a safety-only change: it does not approve posts, grant publication, or trigger paid services.
+
+**Verification pending:** GitHub Actions [run 43095601077](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43095601077) for code commit `e957aeadd75f07457bf0d987c71d9c5f94275973`. Do not treat this change as verified until the run passes.
