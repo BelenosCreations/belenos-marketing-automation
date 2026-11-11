@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Authenticated owner-confirmed business fact editing (2026-11-10)
+
+The existing owner-only `bam_ai_facts_write_wsgi.py` is now mounted in the disabled-by-default offline BAM gateway for HTTPS direct-call tests. The signed-in nested Settings section mounts `ui/ai_facts_editor.js` with a scoped `ui/ai_write_client.js` callback. Only the user's current business session may confirm an explicit dictionary of facts; a server role check rejects nonowners and revision checks prevent stale overwrites. Successful saves reread the owner-confirmed snapshot and refresh the AI panel. Confirmation is provenance, not a guarantee of truth and not permission to schedule or publish.
+
+**Verified [GitHub Actions run 42960261912](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42960261912): 743 Python tests and 30 JS scripts, plus compilation.**
+
 ## Pending-only media metadata preflight (2026-11-10)
 
 A new disabled-by-default `bam_upload_preflight_wsgi.py` route delegates file **metadata** registration to the existing authenticated `ContentUploadPreflight`. It validates a server-derived tenant, the specific held content request and required checklist item, permitted MIME family, SHA-256 hash, and bounded size before recording a private `pending` attachment. It does not receive file bytes, reveal the storage key, authorize upload, mark verification, grant publishing or satisfy a content request. This is only groundwork for the approved user-controlled ChatGPT media return path, pending real private storage and trusted scanning.

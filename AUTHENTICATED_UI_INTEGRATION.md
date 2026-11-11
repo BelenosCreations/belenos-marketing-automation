@@ -19,6 +19,12 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 - Content attachments are references to externally validated items; real upload/scanning does not exist.
 - Publishing, auto-posting and scheduler execution remain disabled.
 
+## Explicit owner business facts editor
+
+The `bam_offline_gateway.py` direct-call integration fixture now routes `PUT /api/v1/ai-business-facts` to the existing owner-authorized fact confirmation adapter. The signed-in Settings page mounts the prebuilt `ui/ai_facts_editor.js`, with a save callback capturing only the active in-memory BAM business session. The backend independently checks actual owner permission, validates the expected revision and stores confirmed facts scoped to the current business. On a successful save the AI panels reload. A logout/business switch invalidates pending callbacks. Nonowners cannot save even if a control appears in the integration-stage shell.
+
+The browser never transmits tenant/role/approval claims and never enables actual publishing. Confirmed owner statements must still pass factual content review before any future publication.
+
 ## Pending media metadata — not an upload
 
 `POST /api/v1/content/upload-preflight` is deliberately disabled by default and exposed only through the offline gateway. It accepts metadata for an existing required content item in the session's current business. Authorization is server-side and no uploaded bytes, storage keys, presigned URLs or permissions are returned. The response contains an unverified `pending` attachment ID and `publishing_enabled:false`. An attachment remains unusable until a separately trusted storage, inspection, malware/consent verification and acceptance pipeline is implemented. Do not add an Upload button that implies a file has been transferred merely because metadata preflight succeeded.

@@ -1,3 +1,19 @@
+## Signed-in owner-confirmed AI business facts — 2026-11-10
+
+### Added
+- Mounted the existing disabled-by-default owner-only `PUT /api/v1/ai-business-facts` HTTPS route in the offline authenticated gateway.
+- Activated the already-developed owner-confirmed fact editor in the signed-in Settings panel. The explicit Save action uses the active in-memory business session, sends only bounded fact strings and an expected revision, and re-reads the trusted business snapshot after success.
+- Server-side permission verification prevents content creators from confirming business facts, rejects stale revisions and isolates each business.
+- Extended WSGI and browser smoke tests for owner confirmation, denied creator access, stale revisions, and a two-fact editor submission.
+
+### Verified tests
+- **Passed:** [GitHub Actions run 42960261912](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42960261912), commit `db99e5f9`: Python compilation, **743 Python tests and 30 JavaScript UI test scripts**.
+
+### Known limitations
+- A nonowner may see the editor in this integration-stage shell; the backend is authoritative and denies unauthorized Save actions. A future trusted capability flag should hide it for nonowners.
+- Fact confirmation records the owner's provenance, not independent public verification. It does not authorize publishing or AI billing.
+- The gateway is still offline and disabled by default; no live hosted signup, Google browser sign-in, social posting or media transfer is enabled.
+
 ## Pending-only media metadata preflight — 2026-11-10
 
 ### Added
