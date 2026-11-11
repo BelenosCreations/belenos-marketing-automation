@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>BAM — Belenos Automatic Marketing</title>
+  <link rel="icon" href="../branding/source/app_icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="live_dashboard_cards.css">
   <style>
     :root{color-scheme:dark;--bg:#071722;--surface:#122737;--surface2:#1c3545;--line:#375262;--text:#eef5f7;--subtle:#b8c8d0;--gold:#e7c36b;--teal:#5dccbb}
@@ -15,7 +16,7 @@
     button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
     a{color:var(--teal)}p{margin:.5rem 0 1rem}.muted{color:var(--subtle)}.tiny{font-size:.85rem}
     .app-header{background:var(--surface);border-bottom:1px solid var(--line);padding:1rem clamp(1rem,4vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-    .wordmark{display:flex;align-items:center;gap:.7rem}.mark{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;border:2px solid var(--gold);font-size:1.1rem;color:var(--gold);font-weight:900;letter-spacing:-.08em}
+    .wordmark{display:flex;align-items:center;gap:.7rem}.mark{display:block;width:46px;height:46px;border-radius:14px;border:1px solid var(--gold);object-fit:cover}
     .brand-name{font-weight:900;font-size:1.4rem;letter-spacing:.04em}.brand-sub{font-size:.75rem;color:var(--subtle)}
     .app-main{width:min(1120px,100%);margin:0 auto;padding:clamp(1rem,3vw,2rem)}.sign-in{max-width:480px;margin:3vh auto}
     .panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:clamp(1.15rem,3vw,2rem)}
@@ -32,7 +33,7 @@
 <body>
   <header class="app-header">
     <div class="wordmark">
-      <span class="mark" aria-hidden="true">B</span>
+      <img class="mark" src="../branding/source/app_icon.svg" alt="" width="46" height="46">
       <div><div class="brand-name">BAM</div><div class="brand-sub">Belenos Automatic Marketing</div></div>
     </div>
     <div class="toolbar">
