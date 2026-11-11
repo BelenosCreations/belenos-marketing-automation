@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Structured targeted AI revision executor (offline only) (2026-11-11)
+
+`AITargetedRevisionWorkflow` now assembles an existing user's structured draft, current owner-confirmed business facts and a single requested component into the already approved targeted OpenAI request shape. The injected trusted executor receives only a bounded token cap from a server-configured sponsored quota. An idempotency request key is claimed before quota use. Before applying the one-component result, the workflow checks that fact provenance/revision remains unchanged and that the exact draft revision is current. Success increments revision, preserves the other component verbatim and invalidates old verified image attachment associations when the image prompt changes. Provider responses with duplicate JSON keys fail closed. Failed or ambiguous keys are held for explicit reconciliation, not automatically retried. No external OpenAI call, provider key, billing or social publication is enabled.
+
+**Verified:** [GitHub Actions run 43052414192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43052414192), commit `2f540470`, **824 Python tests and 47 JavaScript UI scripts**, plus compilation.
+
 ## Advanced, manually confirmed batch import of held drafts (2026-11-11)
 
 Content Studio can now preview and import 1–20 unpublished marketing drafts from a local CSV file. `ui/held_draft_csv_import.js` parses bounded RFC-style quoted fields, requires known channels and factual guidance, rejects duplicate rows and uses `image` as the default missing content. The browser scans the current business's existing drafts for exact repeated copy and offers a separate explicit confirmation. Each item is created through the existing session-authorized `POST /api/v1/content/drafts` route without new endpoints or OpenAI usage. If a request fails, no remaining rows are sent; the operator sees the count that was confirmed and is warned to check for partial additions. Business/session changes cancel subsequent writes.

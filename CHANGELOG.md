@@ -1,3 +1,20 @@
+## Offline targeted AI draft revisions and strict response validation — 2026-11-11
+
+### Added
+- `ai_targeted_revision_workflow.py` implements an offline, trusted-executor pathway for regenerating **one component at a time**: `post_text` or an existing `image_prompt`, preserving the other component.
+- The workflow validates live tenant/user ownership, draft revision, current owner-confirmed business facts, operator-configured sponsored quota, input bounds, and idempotency **before** an injected provider call. Only server-trusted usage limits can be passed to the executor.
+- The generated result is checked again for fact-revision and draft-revision changes before staging. A targeted image-prompt revision clears any prior verified-media match and retains the media-needed hold.
+- Provider JSON parsing now rejects duplicate fields at any nesting depth rather than silently accepting ambiguous structured output. Duplicate/conflicting model responses cannot be published or used to overwrite a draft.
+- Added isolated, zero-network tests for idempotency, quota, stale/cross-tenant/cross-user edits, changed facts, forged publishing claims, ambiguous provider JSON and image-prompt media invalidation.
+
+### Verification
+- **Passed:** [GitHub Actions run 43052414192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43052414192), commit `2f540470`: **824 Python tests, 47 JavaScript UI regression scripts**, plus Python compilation.
+
+### Known limitations
+- This is **not** a live OpenAI service: the executor is a trusted injected test dependency and no production API, paid provider traffic, encrypted personal-key vault, public subscription, or model-based social publishing is connected.
+- Quota and idempotency remain local SQLite foundations. Production needs shared atomic storage, provider reconciliation, entitlements, observability and independent approval before real paid requests.
+- No frontend AI regeneration control is enabled. Manual component editing and the optional ChatGPT image handoff remain separate working paths.
+
 ## Explicit, bounded CSV import of held marketing drafts — 2026-11-11
 
 ### Added

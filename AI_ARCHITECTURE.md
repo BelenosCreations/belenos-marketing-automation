@@ -50,10 +50,10 @@ A **two-post-per-day** target does not automatically determine a monthly OpenAI 
 - `ai_draft_request.py` and `ai_content_plan.py`: verified-facts-only OpenAI request construction, combined post/optional image prompt output, independent component revisions and bounded batch planning.
 - `ai_local_templates.py`: authenticated, literal-fact, zero-API-cost draft fallback.
 - `ai_content_drafts.py`: versioned, tenant/user-scoped structured draft persistence, held-media status, targeted revisions and association with an existing scanner-verified image; no publishing.
-- `ai_generation_workflow.py`: offline trusted-executor orchestration for owner-confirmed facts, sponsored quota, strict output validation and unpublished draft staging. The actual OpenAI executor is not implemented. **Not a payment gateway, complete cost ledger or distributed production rate limiter.**
+- `ai_generation_workflow.py`: offline trusted-executor orchestration for owner-confirmed facts, sponsored quota, strict output validation and unpublished draft staging. `ai_targeted_revision_workflow.py` provides the corresponding offline **single-component** revision path, with revision/fact checks, sponsored quota and idempotency. Neither implementation directly calls OpenAI; a production-safe provider execution service is not connected. **Not a payment gateway, complete cost ledger or distributed production rate limiter.**
 - `test_ai_account_policy.py` and `test_ai_sponsorship.py`: offline regression coverage for separation, mode changes, invalid credentials and quotas.
 
-**Not implemented:** actual OpenAI API calls, prompt orchestration, encryption vault, billing/Google Play subscriptions, real user onboarding, direct Facebook OAuth/Page publishing, live scheduling or production multi-worker enforcement. Existing BAM work is preserved and publishing remains disabled.
+**Not implemented:** actual live OpenAI API calls, prompt orchestration, encryption vault, billing/Google Play subscriptions, real user onboarding, direct Facebook OAuth/Page publishing, live scheduling or production multi-worker enforcement. Existing BAM work is preserved and publishing remains disabled.
 
 ## Future implementation gates
 
