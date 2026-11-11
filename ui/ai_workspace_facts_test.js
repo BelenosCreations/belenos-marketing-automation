@@ -1,9 +1,10 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {create}=require('./ai_workspace.js');
-function node(tag){return {tag,textContent:'',children:[],
+function node(tag){return {tag,textContent:'',children:[],listeners:{},
   append(...items){this.children.push(...items)},
-  replaceChildren(...items){this.children=items}}}
+  replaceChildren(...items){this.children=items},
+  addEventListener(name,fn){this.listeners[name]=fn}}}
 const document={createElement:node};
 const drafts=node('main'),settings=node('main'),facts=node('main'),
   costs=node('main'),editor=node('main');
