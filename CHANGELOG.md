@@ -1,5 +1,16 @@
 # Changelog
 
+## Owner-confirmed AI fact registry — 2026-11-10
+
+### Added
+- `ai_business_facts.py`: owner-confirmed business facts with tenant isolation, revision checks and provenance metadata.
+- `AIContentPlan.create_from_confirmed_facts`: draft request construction from an authenticated, current-business fact snapshot.
+- Tests for owner-only confirmation, creator use, business isolation and stale fact revision denial.
+
+### Limitation
+- Owner confirmation is not independent external verification; final TruthGuard and approval remain required.
+
+
 ## AI workspace refresh ordering — 2026-11-10
 
 ### Fixed
