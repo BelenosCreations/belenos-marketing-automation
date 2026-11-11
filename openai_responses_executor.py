@@ -15,13 +15,17 @@ _MAX_RESPONSE_BYTES=65536
 class OpenAIResponsesExecutor:
     """Callable adapter accepted by AIDraftGenerationWorkflow."""
 
-    def __init__(self, *, transport, model=DEFAULT_MODEL):
+    def __init__(self, *, transport, model=DEFAULT_MODEL,
+                 usage_observer=None):
         if not callable(transport):
             raise TypeError('Trusted transport required')
         if model not in _ALLOWED_MODELS:
             raise ValueError('Model must be explicitly approved')
+        if usage_observer is not None and not callable(usage_observer):
+            raise TypeError('Trusted usage observer required')
         self.transport=transport
         self.model=model
+        self.usage_observer=usage_observer
 
     def __call__(self, *, request, max_output_tokens):
         if type(request) is not dict or request.get('provider')!='openai' or (
@@ -67,7 +71,21 @@ class OpenAIResponsesExecutor:
             'tools':[],
             'parallel_tool_calls':False}
         response=self.transport(payload)
-        return self._extract(response)
+        parsed=self._extract(response)
+        if self.usage_observer is not None:
+            if type(response) is not dict:
+                raise ValueError('Structured provider usage required')
+            usage=response.get('usage')
+            if type(usage) is not dict or any(
+                type(usage.get(key)) is not int or
+                not 0<=usage[key]<=100000000
+                for key in ('input_tokens','output_tokens')):
+                raise ValueError('Provider token usage required for accounting')
+            self.usage_observer(tenant_id=request['tenant_id'],
+                subject_id=request['subject_id'],model=self.model,
+                input_tokens=usage['input_tokens'],
+                output_tokens=usage['output_tokens'])
+        return parsed
 
     @staticmethod
     def _extract(response):
