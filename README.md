@@ -135,3 +135,7 @@ When an administrator separately supplies a trusted invitation delivery callback
 ### Private invitation activity (offline Alpha)
 
 The optional owner-only Team Settings view can show redacted, tenant-scoped invitation activity: delivered, failed delivery, cancellation and acceptance. A new append-only SQLite metadata table records these transitions with trusted server timestamps and IDs, excluding recipient addresses and invitation secrets from audit responses. The private read-only endpoint and browser panel require the same opt-in, trusted delivery configuration as pending invitation cancellation. Prior invitation actions are not backfilled. This is an offline collaboration/audit milestone, **not** an operational invitation email service or a hosted Beta deployment.
+
+### Transaction-safe invitation redemption (offline Alpha)
+
+BAM now redeems a trusted invitation by claiming its one-use token **inside the same SQLite write transaction** that rechecks the verified identity, inviting owner's current permissions, existing business membership and audit recording. Any failed check, simultaneous attempt, or audit-storage failure rolls back the attempted claim rather than partially adding a member. File-backed tests with two independently initialized SQLite clients simulate simultaneous duplicate issuance, double redemption, and cancellation racing redemption. These protect **offline** consistency only; they do not constitute real hosted enrollment, live email delivery, social publishing, or an approved production database.

@@ -3,6 +3,14 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Atomic invitation redemption and concurrent-client regression — November 11, 2026
+
+To prevent partial invitation enrollment or role-revocation races, the service acquires a SQLite write lock through a conditional one-use token claim, then rechecks the verified identity, current inviting owner, and existing membership and records the accepted event **within one transaction**. Errors roll back the token claim. A forced audit-trigger failure proves that a membership cannot survive without its corresponding audit record.
+
+A new file-backed, two-connection regression verifies that only one of two simultaneous issuance/redemption attempts can succeed, and that concurrent cancellation and acceptance cannot both complete. The test harness uses independent SQLite connections and trusted in-memory callback stubs; it is **not** a hosted invitation/email service or production load test.
+
+**Verification:** Core transactional change `35027204` passed Actions [43123314052](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43123314052). The new concurrency and rollback tests and this documentation are pending exact-SHA verification.
+
 ## Tenant-private invitation activity trail — November 11, 2026
 
 An append-only `bam_business_invitation_events` SQLite table now records trusted delivery success/failure, cancellation and accepted invitations transactionally with their status changes. A read-only owner-scoped service, strict `GET /api/v1/team/invitations/activity` WSGI route, validated browser client and optional Team Settings activity panel expose **metadata only**, never invitation tokens or recipient emails. Activity is strictly isolated to the signed-in business and cleared on logout/business switching. Missing historical events are never fabricated. This work is offline-only and requires an explicit trusted delivery callback even for a private preview.

@@ -3,8 +3,8 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified main code:** `7662dd2976e6420b73cf6ec825eb7aba1dbdb9ac` ([Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700)). Earlier checkpoints below are historical.
-**Most recent verified development code:** `538bb79d874821e406b2521384d3feaad0297c33` ([Actions 43122286878](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43122286878)). This newer Alpha milestone is not merged to main yet.
+**Most recent verified main code:** `8945577d4b9e46ac40e2c7f808ab7097c59c85bd` ([Actions 43122902226](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43122902226) passed); [PR #9](https://github.com/BelenosCreations/belenos-marketing-automation/pull/9) merged owner-private invitation activity audit. Earlier checkpoints below are historical.
+**Most recent verified development code:** `350272042a3b84f49d7dc82cc109aff1317ef086` ([Actions 43123314052](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43123314052) passed). Concurrency and audit-rollback tests through `bd08b9b19878b34bfbca62e1b7dda52e054f0045` plus this documentation are pending exact-head CI.
 **Verification:** Full GitHub Actions [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) completed successfully on the exact merged commit. Integration candidate `748c3a1a` also passed [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217).
 **Merge:** [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) reconciled `main` with development; a two-parent integration history preserved both sets of changes. Development was fast-forwarded to main once the merged commit passed.
 **Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`. These are not off-site backups or enforced protection.
@@ -15,6 +15,10 @@
 **Latest confirmed development source:** `92d172552a5e63cf48f8ed9ef99bebb1f5114e88` passed [Actions 43120560150](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120560150), including JavaScript syntax validation, UI regressions, and offline Python tests. [Actions 43120107192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120107192) separately passed the repaired invitation workspace syntax. Follow-up logout-race test/documentation is pending exact-SHA verification. `main` remains distinct and the new checkpoint is not yet merged. No hosting or social publishing was enabled.
 
 **Latest verified main checkpoint:** `7662dd2976e6420b73cf6ec825eb7aba1dbdb9ac` ([Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700)). **Most recent verified development checkpoint:** `538bb79d874821e406b2521384d3feaad0297c33`, [Actions 43122286878](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43122286878) **passed** all offline tests. This documentation-only status update has not yet been separately verified, and the audit milestone still requires a reviewed merge to main. Recovery checkpoint `checkpoint/alpha-team-invitations-2026-11-11` preserves the preceding verified main milestone.
+
+## Current work — transactional invitation acceptance (November 11, 2026)
+
+`main` and development were synchronized at `8945577d4b` after PR #9 and successful main CI. Development then added a single-transaction invitation acceptance flow, followed by independent-file-connection duplicate issuance, double-redemption, cancel-versus-redeem races and audit-failure rollback regressions. **Preserve the separate development branch until exact-head CI passes and the reviewed PR merge succeeds.** No external services have been enabled.
 
 ## Product-direction checkpoint — 2026-11-11 (documentation only)
 
