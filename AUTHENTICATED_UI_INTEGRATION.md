@@ -27,6 +27,14 @@ See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-
 
 The [signed-in shell](ui/bam_signed_in_shell.html) composes an HTTPS-only password form with the authenticated workspace controller. A four-card Overview leads to deeper, read-only AI Drafts and Settings; no analytics are fabricated, no media are uploaded and no posts publish. The sample-data [prototype](ui/bam_dashboard_prototype.html) remains separate. The DOM integration test validates password field clearing, sign-in views, navigation, appearance, refresh and logout. **Verified in [GitHub Actions run 42952514922](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42952514922): 693 Python and 25 JavaScript tests passed**. The shell is not a deployed website or Android app; a trusted HTTPS hosting/service composition is still required.
 
+## Verified business switching and offline service composition
+
+The signed-in header renders the business names returned by the authenticated dashboard, not a client-invented membership list. `ui/business_switch_client.js` sends only `target_tenant_id` with the in-memory session token to `POST /api/v1/businesses/activate`. The strict `bam_business_switch_wsgi.py` uses the trusted `AccountReadAPI.activate_business` to verify active membership and role, creates a replacement session, revokes the source session and returns only a session token and selected business ID. The UI clears the old business data before requesting new data, discards stale asynchronous responses and refuses to store tokens in localStorage/cookies. No social posting is triggered by switching.
+
+`bam_offline_gateway.py` is a disabled-by-default integration composition for *direct* WSGI calls: real SQLite identity checks, a trusted login throttle, dashboard, owner-confirmed AI data and session rotation can be tested end-to-end. It is not a server startup script, cannot be used as production authentication without additional controls, and has no live Google provider, social network, OpenAI connection or publishing capability. The branded shell uses canonical `branding/source/app_icon.svg` and the repository includes Android adaptive icon templates, but no APK is built.
+
+**Verified [GitHub Actions run 42954241030](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42954241030): 717 Python tests and 26 JavaScript test scripts passed.**
+
 ## Remaining steps before real authenticated GUI
 
 1. Establish a production database with migrations, backups, transactional consistency and secure key management.
