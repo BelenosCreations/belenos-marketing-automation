@@ -100,6 +100,10 @@ class IdempotentGenerationTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.run_generation()
         second=self.run_generation()
+        status=self.dedup.status(token=self.token,now=103,
+            request_key=self.key)
+        self.assertEqual(status['status'],'failed')
+        self.assertIsNone(status['draft_id'])
         self.assertEqual(second['reason'],'already_failed')
         self.assertEqual(len(self.calls),1)
 
