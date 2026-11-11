@@ -444,6 +444,25 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (safe unassigned draft time suggestions)
+
+### Added
+- Prioritized, business-scoped, read-only suggestions pairing up to 20 unassigned held drafts with available, configured Manual posting times over the preview window.
+- Strict HTTPS-only, disabled-by-default `GET /api/v1/calendar-suggestions` with validated tenant-bound browser response contracts.
+- Separate Scheduled dashboard suggestions panel, linked to Content Studio for a subsequent explicit date selection.
+
+### Changed and safeguards
+- Persisted proposals, including stale ones, remain untouched and continue reserving their slots until removed by an authorized user.
+- Postponed/unavailable drafts, non-current Smart scheduling recommendations, cross-business reads, extra response fields, and any purported scheduled-post count fail closed or remain unavailable.
+- **No automated date assignment, live scheduling, publication, social provider calls, or paid AI requests.**
+
+### Test status
+- [GitHub Actions run 43078999350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43078999350), commit `263c1c91`: 857 Python and 60 JavaScript test scripts passed; compilation passed.
+
+### Known limitations
+- These are non-binding suggestions, not saved dates. No production scheduler, worker, publishing or public hosting is enabled.
+
+
 ## Phase 3.5 — 2026-11-11 (private proposed draft calendar)
 
 ### Added

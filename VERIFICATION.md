@@ -4,10 +4,10 @@
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`  
 **Branch:** `development/phase-3-5-account-directory`  
-**Verified commit:** `912c1ebcb465369215bc271c6aeafe384ed7752a`  
-**CI:** [GitHub Actions run 43060585710](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43060585710)
+**Verified commit:** `263c1c917348a204abb3416010ed58024a5bc374`  
+**CI:** [GitHub Actions run 43078999350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43078999350)
 
-**Result:** Python compilation and all JavaScript and Python tests passed for current commit `912c1ebc`. In addition to previous milestones, the suite now covers persisted calendar proposals, strict tenant-scoped authenticated proposal read/write/delete, Manual posting-time and DST validation, stale-draft status flags, and safe browser UI controls that never publish. This is test execution, not production security assessment or permission to launch.
+**Result:** 857 Python unit/integration tests passed, 60 JavaScript regression scripts passed, and Python compilation passed. New coverage includes strict private read-only calendar time suggestions, used-slot exclusions, priority ordering, Smart-mode no-fabrication, tenant isolation, unauthorized request rejection and dashboard lifecycle safety. The earlier saved-proposal and private pending-image tests remain in the suite. The system is still only a local development preview with no actual live scheduler, deployment or publication authorization.
 
 ## Archived original Phase 3.2 package
 

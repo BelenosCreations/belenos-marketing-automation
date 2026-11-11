@@ -250,3 +250,7 @@ The optional `factsContainer` argument to `ui/ai_workspace.js` renders `ui/ai_fa
 ### Combined signed-in workspace
 
 `ui/authenticated_workspace_controller.js` coordinates the live dashboard and AI workspace with a single `activate({token,tenantId})`, `refresh()`, and `clear()` lifecycle. Call `clear()` before logout or business change, then `activate` with the newly issued business-specific session. A failed refresh clears all private panels; no token is stored persistently. It is a browser controller awaiting production sign-in integration.
+
+## Unassigned held-draft slot suggestions — preview only
+
+`GET /api/v1/calendar-suggestions` returns a read-only, tenant-scoped snapshot of at most 20 potential slots for eligible held drafts, based solely on confirmed Manual-mode times. It does not reserve slots or mutate saved proposals. The exact response contract requires `status: suggestion_preview_only`, `posts_scheduled: 0`, `publishing_enabled: false`, unique request IDs and UTC times, bounded counts and draft revisions. `ui/calendar_proposals_client.js` rejects anything else; the signed-in Scheduled drilldown shows this separately from saved proposals and actual scheduled posts. A viewer may read only if its current business role permits draft reads. No user input can inject a tenant, schedule a post or trigger an OpenAI request. **Verified:** [run 43078999350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43078999350).

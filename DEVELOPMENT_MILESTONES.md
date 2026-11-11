@@ -9,6 +9,12 @@ A dedicated `CalendarProposals` table stores at most one current proposed date p
 
 **Verified:** [run 43060585710](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43060585710), commit `912c1ebc`, Python and JavaScript suites and compilation passed. No external provider requests, public hosting, paid AI or publication occurred.
 
+## Read-only unassigned draft time suggestions (2026-11-11)
+
+`CalendarProposals.suggest_unassigned` safely previews possible dates without writing. It first resolves an active tenant-scoped draft-read session, selects unassigned held drafts by explicit priority and created-time order, and excludes slots already occupied by saved proposals. The service returns only draft IDs, draft revisions, selected local and UTC times, safe counts, a preference-mode status and nonpublishing flags—no post copy or credentials. `GET /api/v1/calendar-suggestions` validates the exact response shape and cannot POST, DELETE, approve or schedule. A separate opt-in browser client and authenticated dashboard panel show the potential times and link to manual Content Studio choices. The UI discards stale session/business responses. The preview permits up to 20 suggestions; Smart mode cannot imply audience recommendations without verified evidence.
+
+**Verified:** [GitHub Actions run 43078999350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43078999350), commit `263c1c91`: 857 Python tests and 60 JavaScript regression scripts passed, plus compilation.
+
 ## Zero-spend advance AI topic batch planning (2026-11-11)
 
 `AIBatchPreview` and a strict `POST /api/v1/ai/batch-preview` gateway route let an authenticated editor preview 1–14 distinct future topic requests using current owner-confirmed facts, their business, and the account's AI mode, without sending or charging any OpenAI API requests. The service generates **metadata only**: a list of topics/platform/image-prompt intentions, owner-facts revision and count of proposed per-topic model requests. It refuses to claim that a provider job ran, a discount was calculated, quota was reserved, a draft was created, or a post was scheduled. The AI Drafts page exposes this as a cost-free **Plan future marketing topics** section; viewers do not see it and session/business-switch checks stop stale responses. The legacy internal memory replacement is also hardened to apply the same credential-resistant validation as external preference writes.
