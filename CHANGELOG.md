@@ -1,5 +1,16 @@
 # Changelog
 
+## Coordinated authenticated workspace lifecycle — 2026-11-10
+
+### Added
+- Single session/business lifecycle coordinator for live dashboard cards and read-only AI workspace.
+- Fail-closed clearing of private panels on refresh errors and stale-response invalidation on logout/switch.
+- Isolated JavaScript lifecycle regression test, included in CI.
+
+### Limitations
+- Production login shell, deployment and real provider credentials are still unconnected.
+
+
 ## Authenticated large-card live dashboard foundation — 2026-11-10
 
 ### Added
