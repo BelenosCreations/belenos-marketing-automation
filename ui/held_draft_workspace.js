@@ -30,10 +30,15 @@
        (onError!==undefined&&typeof onError!=='function'))
       throw new TypeError('Content Studio dependencies required');
     let active=null,epoch=0,requestVersion=0,busy=false,model=null;
-    let canEdit=false;
+    let canEdit=false,mediaEnabled=false;
+    function setMediaEnabled(allowed){
+      if(typeof allowed!=='boolean')throw new TypeError('Trusted media capability required');
+      mediaEnabled=allowed&&canEdit;
+    }
     function setCanEdit(allowed){
       if(typeof allowed!=='boolean')throw new TypeError('Trusted draft edit permission required');
       canEdit=allowed;
+      if(!allowed)mediaEnabled=false;
       if(model&&active)render();
     }
     function clear(){
@@ -167,7 +172,8 @@
     }
     function createDraft(args){return mutate(writeClient.createDraft,args);}
     function changeHold(args){return mutate(writeClient.changeHold,args);}
-    return Object.freeze({activate,refresh,clear,createDraft,changeHold,setCanEdit});
+    return Object.freeze({activate,refresh,clear,createDraft,changeHold,
+      setCanEdit,setMediaEnabled});
   }
   return Object.freeze({create});
 });
