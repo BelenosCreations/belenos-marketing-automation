@@ -30,7 +30,12 @@ class OpenAITransport:
             raise PermissionError('OpenAI requests disabled until deployment approval')
         if type(payload) is not dict or payload.get('store') is not False or (
             payload.get('tools')!=[] or
-            payload.get('text',{}).get('format',{}).get('type')!='json_schema'):
+            payload.get('model') not in ('gpt-4.1-mini','gpt-4.1','gpt-5-mini') or
+            type(payload.get('max_output_tokens')) is not int or
+            not 1<=payload['max_output_tokens']<=16384 or
+            type(payload.get('text')) is not dict or
+            type(payload['text'].get('format')) is not dict or
+            payload['text']['format'].get('type')!='json_schema'):
             raise ValueError('Unsupported OpenAI payload')
         body=json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf-8')
         if len(body)>32768:
