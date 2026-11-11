@@ -10,7 +10,7 @@ class SchedulingSettingsService:
         self.directory=directory
 
     def _principal(self, *, token, tenant_id, now):
-        session=self.sessions.resolve(token,now=now)
+        session=self.sessions.resolve_current(token,directory=self.directory,now=now)
         if session is None or session.principal.tenant_id!=tenant_id:
             raise PermissionError('Authentication required for this business')
         member=self.directory.resolve(tenant_id,session.principal.subject_id)

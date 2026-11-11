@@ -55,6 +55,24 @@ class InvitationTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.service.create(actor_token=self.manager_token,tenant_id='belenos',role=Role.VIEWER,now=101)
 
+    def test_promoted_manager_must_reauthenticate_before_team_changes(self):
+        existing=self.invite()
+        self.directory.set_member(
+            Principal('owner','belenos',Role.OWNER),
+            'manager',Role.OWNER)
+        with self.assertRaises(PermissionError):
+            self.service.create(actor_token=self.manager_token,
+                tenant_id='belenos',role=Role.VIEWER,now=102)
+        with self.assertRaises(PermissionError):
+            self.service.revoke(actor_token=self.manager_token,
+                tenant_id='belenos',invite_token=existing,now=102)
+        # The new role only takes effect after a trusted new session.
+        current=self.sessions.issue(
+            Principal('manager','belenos',Role.OWNER),now=100)
+        created=self.service.create(actor_token=current,
+            tenant_id='belenos',role=Role.VIEWER,now=102)
+        self.assertTrue(created)
+
     def test_owner_role_invitation_denied(self):
         with self.assertRaises(PermissionError):
             self.service.create(actor_token=self.owner_token,tenant_id='belenos',role=Role.OWNER,now=101)

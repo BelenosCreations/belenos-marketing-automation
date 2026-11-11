@@ -56,6 +56,15 @@ class TruthGuardFactServiceTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.approve(token=self.editor)
 
+    def test_promoted_editor_cannot_approve_fact_with_old_session(self):
+        self.directory.set_member(
+            Principal('owner','shop',Role.OWNER),'editor',Role.OWNER)
+        with self.assertRaises(PermissionError):
+            self.approve(token=self.editor)
+        current=self.sessions.issue(
+            Principal('editor','shop',Role.OWNER),now=100)
+        self.assertTrue(self.approve(token=current))
+
     def test_owner_can_revoke(self):
         fact=self.approve()
         self.assertTrue(self.service.revoke(token=self.owner,tenant_id='shop',

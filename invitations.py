@@ -29,7 +29,7 @@ class InvitationService:
         now=int(time.time()) if now is None else now
         if not isinstance(ttl_seconds,int) or isinstance(ttl_seconds,bool) or not 60<=ttl_seconds<=604800:
             raise ValueError('Invalid invitation TTL')
-        session=self.sessions.resolve(actor_token,now=now)
+        session=self.sessions.resolve_current(actor_token,directory=self.directory,now=now)
         if session is None or not self.directory.authorize(session.principal,Action.MANAGE_TEAM,tenant_id):
             raise PermissionError('Owner authorization required')
         role=Role(role)
@@ -74,7 +74,7 @@ class InvitationService:
 
     def revoke(self, *, actor_token, tenant_id, invite_token, now=None):
         now=int(time.time()) if now is None else now
-        session=self.sessions.resolve(actor_token,now=now)
+        session=self.sessions.resolve_current(actor_token,directory=self.directory,now=now)
         if session is None or not self.directory.authorize(session.principal,Action.MANAGE_TEAM,tenant_id):
             raise PermissionError('Owner authorization required')
         self.db.execute("""UPDATE invitations SET revoked_at=?

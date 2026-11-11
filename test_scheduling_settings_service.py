@@ -57,6 +57,17 @@ class SchedulingSettingsServiceTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.service.get(token=self.viewer,tenant_id='shop',now=102)
 
+    def test_promoted_viewer_requires_fresh_session_before_writing(self):
+        self.directory.set_member(
+            Principal('owner','shop',Role.OWNER),'viewer',Role.OWNER)
+        with self.assertRaises(PermissionError):
+            self.service.save(token=self.viewer,tenant_id='shop',
+                preferences=self.prefs,now=102)
+        fresh=self.sessions.issue(
+            Principal('viewer','shop',Role.OWNER),now=100)
+        self.assertEqual(self.service.save(token=fresh,
+            tenant_id='shop',preferences=self.prefs,now=102),1)
+
     def test_revision_conflict(self):
         self.service.save(token=self.owner,tenant_id='shop',
             preferences=self.prefs,expected_revision=0,now=101)
