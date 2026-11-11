@@ -59,6 +59,8 @@ async function main(){
   assert.match(html,/id="login-form"/);
   assert.match(html,/id="bam-dashboard"/);
   assert.match(html,/data-bam-panel="settings"/);
+  assert.match(html,/src="\.\.\/branding\/source\/app_icon\.svg"/);
+  assert.doesNotMatch(html,/class="mark"[^>]*>B<\/span>/);
   for(const script of ['dashboard_http_client.js',
       'authenticated_workspace_controller.js','authenticated_session_controller.js',
       'bam_signed_in_shell.js'])
