@@ -231,8 +231,11 @@ async function main(){
   assert.equal(e['active-business'].textContent,'Business: shop');
   // The Content Studio is an explicit, unpublished, tenant-scoped write UI.
   const heldForm=e['bam-content-studio'].children[0].children[2];
-  heldForm.children[2].children[1].value='New product preview';
-  heldForm.children[3].children[1].value='Use a confirmed product photograph';
+  // Find inputs by their visible labels, not by a fragile field position.
+  heldForm.children.find(x=>x.children?.[0]?.textContent==='Draft copy')
+    .children[1].value='New product preview';
+  heldForm.children.find(x=>x.children?.[0]?.textContent==='Content guidance')
+    .children[1].value='Use a confirmed product photograph';
   await heldForm.listeners.submit({preventDefault(){}});
   assert.equal(holds.shop.length,1);
   assert.equal(holds.shop[0].status,'needs_content');
