@@ -141,14 +141,52 @@ class BAMReviewFeedbackWSGI:
                 raise RuntimeError('Unsafe removed feedback')
         return result
 
+    @staticmethod
+    def _safe_history(result):
+        if (type(result) is not dict or set(result)!={
+                'tenant_id','status','events','truncated',
+                'approval_granted','publishing_enabled'}
+                or type(result['tenant_id']) is not str
+                or not result['tenant_id'].strip()
+                or len(result['tenant_id'])>128
+                or result['status']!='feedback_history_only'
+                or type(result['events']) is not list
+                or len(result['events'])>50
+                or type(result['truncated']) is not bool
+                or (result['truncated'] and len(result['events'])!=50)
+                or result['approval_granted'] is not False
+                or result['publishing_enabled'] is not False):
+            raise RuntimeError('Unsafe review feedback history')
+        seen=set()
+        for event in result['events']:
+            if (type(event) is not dict
+                    or set(event)!={'event_id','request_id','action',
+                                    'draft_revision','occurred_at'}
+                    or type(event['event_id']) is not str
+                    or _ID.fullmatch(event['event_id']) is None
+                    or event['event_id'] in seen
+                    or type(event['request_id']) is not str
+                    or _ID.fullmatch(event['request_id']) is None
+                    or event['action'] not in ('created','updated','removed')
+                    or type(event['draft_revision']) is not int
+                    or event['draft_revision']<1
+                    or type(event['occurred_at']) is not int
+                    or event['occurred_at']<0):
+                raise RuntimeError('Unsafe review feedback event')
+            seen.add(event['event_id'])
+        return result
+
     def __call__(self,environ,start_response):
         reply=lambda status,data:self._reply(start_response,status,data)
         if environ.get('wsgi.url_scheme')!='https':
             return reply('403 Forbidden',{'error':'HTTPS required'})
-        if environ.get('PATH_INFO')!='/api/v1/review-feedback':
+        path=environ.get('PATH_INFO')
+        if path not in ('/api/v1/review-feedback',
+                        '/api/v1/review-feedback-history'):
             return reply('404 Not Found',{'error':'Not found'})
+        history=path=='/api/v1/review-feedback-history'
         method=environ.get('REQUEST_METHOD')
-        if method not in ('GET','PUT','DELETE'):
+        if method not in (('GET',) if history else ('GET','PUT','DELETE')):
             return reply('405 Method Not Allowed',{'error':'GET PUT or DELETE required'})
         if not self.enabled or self.service is None:
             return reply('503 Service Unavailable',{'error':'Feedback unavailable'})
@@ -163,6 +201,10 @@ class BAMReviewFeedbackWSGI:
             if now<0:
                 raise RuntimeError('Invalid server time')
             body=self._parse(environ,method) if method!='GET' else None
+            if history:
+                result=self.service.history_current_business(
+                    token=auth[7:],now=now)
+                return reply('200 OK',self._safe_history(result))
             if method=='GET':
                 result=self.service.list_current_business(
                     token=auth[7:],now=now)

@@ -219,7 +219,8 @@ class BAMOfflineGateway:
         if path in ('/api/v1/calendar-proposals',
                     '/api/v1/calendar-suggestions'):
             return self.calendar_wsgi(environ,start_response)
-        if path == '/api/v1/review-feedback':
+        if path in ('/api/v1/review-feedback',
+                    '/api/v1/review-feedback-history'):
             return self.review_feedback_wsgi(environ,start_response)
         if path == '/api/v1/review-readiness':
             return self.review_readiness_wsgi(environ,start_response)
