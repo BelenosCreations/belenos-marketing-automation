@@ -1,0 +1,58 @@
+/* BAM signed-in workspace coordinator, independent of authentication provider.
+ * The login service supplies a session token and active business.
+ * No token persistence, demo data, background polling or publishing.
+ */
+(function(root,factory){
+  'use strict';
+  if(typeof module==='object'&&module.exports)
+    module.exports=factory(require('./live_dashboard_cards.js'),
+      require('./ai_workspace.js'));
+  else root.BAMAuthenticatedWorkspace=factory(
+    root.BAMLiveDashboard,root.BAMAIWorkspace);
+})(typeof globalThis!=='undefined'?globalThis:this,
+function(dashboardModule,aiModule){
+  'use strict';
+  function create({document,dashboardContainer,aiDraftsContainer,
+                   aiSettingsContainer,aiFactsContainer,aiCostContainer,
+                   fetchImpl,origin,onError}){
+    const dashboard=dashboardModule.create({
+      document,container:dashboardContainer,fetchImpl,origin,onError});
+    const ai=aiModule.create({document,draftsContainer:aiDraftsContainer,
+      settingsContainer:aiSettingsContainer,factsContainer:aiFactsContainer,
+      costContainer:aiCostContainer,fetchImpl,origin,onError});
+    let active=false,epoch=0;
+    function clear(){
+      epoch++;active=false;dashboard.clear();ai.clear();
+    }
+    function activate({token,tenantId}){
+      clear();
+      dashboard.activate({token,tenantId});
+      ai.activate({token,tenantId});
+      active=true;
+    }
+    async function refresh(){
+      if(!active)throw new TypeError('Sign-in required');
+      const version=epoch;
+      // Sequential loading avoids showing AI content under a stale dashboard.
+      const overview=await dashboard.refresh();
+      if(version!==epoch)return {stale:true};
+      if(overview.error){
+        clear();
+        return {stale:false,error:true};
+      }
+      if(overview.stale)return {stale:true};
+      const details=await ai.refresh();
+      if(version!==epoch)return {stale:true};
+      if(details.error){
+        clear();
+        return {stale:false,error:true};
+      }
+      if(details.stale)return {stale:true};
+      return {stale:false,tenantId:overview.tenantId,
+        draftCount:details.draftCount};
+    }
+    return Object.freeze({activate,refresh,clear,
+      showDashboardSection:dashboard.show});
+  }
+  return Object.freeze({create});
+});
