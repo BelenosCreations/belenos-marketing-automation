@@ -1,5 +1,11 @@
 # Changelog
 
+## Targeted AI revision schema correction — 2026-11-10
+
+### Fixed
+- Removed conflicting combined-generation JSON instructions from targeted component revisions; the revision request now asks for only `revised_text` and preserves the untouched component.
+
+
 ## Nested AI Settings presentation — 2026-11-10
 
 ### Added
