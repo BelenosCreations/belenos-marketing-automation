@@ -65,7 +65,7 @@ function(dashboardModule,aiModule,heldModule,prefsModule,aiWriter,teamModule){
     const held=contentStudioContainer?heldModule.create({document,
       container:contentStudioContainer,fetchImpl,origin,onError,
       hashBytes:hashMediaBytes,onNotice,
-      enableCalendarProposals}):null;
+      enableCalendarProposals,enableReviewFeedback}):null;
     const prefs=postingPreferencesContainer?prefsModule.create({document,
       container:postingPreferencesContainer,fetchImpl,origin,onError}):null;
     const team=teamOverviewContainer?teamModule.create({document,
