@@ -55,14 +55,24 @@ class AIPolicyStore:
         principal=self._principal(token,now)
         if type(mode) is not str or mode not in AI_MODES:
             raise ValueError('Unsupported AI mode')
+        current=self.db.execute('''SELECT credential_ref FROM bam_ai_preferences
+            WHERE tenant_id=? AND subject_id=?''',
+            (principal.tenant_id,principal.subject_id)).fetchone()
+        existing_ref=current[0] if current else None
         if mode=='own_openai_key':
-            # The reference must be created by a trusted encrypted vault,
-            # not accepted as a raw user-supplied API key by an HTTP endpoint.
+            # A previously vault-registered key can be reselected without
+            # requiring another signup or exposing its raw secret.
+            if credential_ref is None:
+                credential_ref=existing_ref
             if (type(credential_ref) is not str or
                 re.fullmatch(r'vault:[A-Za-z0-9_-]{16,128}',credential_ref) is None):
                 raise ValueError('Trusted server-side vault reference required')
         elif credential_ref is not None:
             raise ValueError('Sponsored mode cannot carry a personal credential')
+        else:
+            # Preserve encrypted-vault reference for effortless mode switching;
+            # explicit key revocation must be a separate trusted operation.
+            credential_ref=existing_ref
         with self.db:
             self.db.execute("""INSERT INTO bam_ai_preferences
                 (tenant_id,subject_id,ai_mode,credential_ref,updated_at)
