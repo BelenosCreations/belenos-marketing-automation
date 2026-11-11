@@ -14,6 +14,33 @@ class SessionTests(unittest.TestCase):
     def tearDown(self):
         self.db.close()
 
+    def test_revoke_identity_across_businesses(self):
+        other_business = Principal("owner-1", "busy_b", Role.VIEWER)
+        a = self.store.issue(self.owner, now=100)
+        b = self.store.issue(other_business, now=100)
+        unrelated = self.store.issue(Principal("another", "busy_b", Role.VIEWER), now=100)
+        self.assertEqual(self.store.revoke_identity("owner-1", now=101), 2)
+        self.assertIsNone(self.store.resolve(a, now=102))
+        self.assertIsNone(self.store.resolve(b, now=102))
+        self.assertIsNotNone(self.store.resolve(unrelated, now=102))
+
+    def test_resolve_current_rejects_stale_role_and_inactive_membership(self):
+        from accounts import AccountDirectory
+        directory = AccountDirectory(self.db)
+        directory.bootstrap_owner("belenos", "owner-1")
+        token = self.store.issue(self.owner, now=100)
+        self.assertIsNotNone(self.store.resolve_current(token, directory=directory, now=101))
+        self.db.execute("UPDATE members SET role=? WHERE tenant_id=? AND subject_id=?",
+                        (Role.VIEWER.value, "belenos", "owner-1"))
+        self.db.commit()
+        self.assertIsNone(self.store.resolve_current(token, directory=directory, now=101))
+        viewer_token = self.store.issue(Principal("owner-1","belenos",Role.VIEWER), now=101)
+        self.assertIsNotNone(self.store.resolve_current(viewer_token,directory=directory,now=102))
+        self.db.execute("UPDATE members SET active=0 WHERE tenant_id=? AND subject_id=?",
+                        ("belenos","owner-1"))
+        self.db.commit()
+        self.assertIsNone(self.store.resolve_current(viewer_token,directory=directory,now=102))
+
     def test_issue_resolve(self):
         token = self.store.issue(self.owner, now=100, ttl_seconds=30)
         self.assertEqual(self.store.resolve(token, now=101).principal, self.owner)

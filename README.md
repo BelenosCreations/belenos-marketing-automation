@@ -1,117 +1,115 @@
 # BAM — Belenos Automatic Marketing
 
-**BAM (Belenos Automatic Marketing)** is a planned multi-business marketing automation platform. It is designed to manage separate brand profiles, audience engagement, curated creator content, scheduling intelligence, and approval controls for businesses in distinct industries. Belenos Creations in Marion, Ohio is the initial business profile; additional businesses and independent installations are part of the product direction.
+**BAM is an AI-assisted marketing planning, creation, collaboration, scheduling, and analytics platform for businesses.** It is intended to replace the need for a separate marketing scheduler such as Metricool for its core supported workflows. Each business has its own workspace, brand voice, content, social connections, team permissions, and reporting. BAM is the product name; it is **not limited to Belenos Creations or any particular industry**.
 
-> **Development status:** Offline automation prototype through Phase 3.4, with approved BAM brand assets integrated in Phase 3.5. **Publishing is disabled.** There is no native Android app, APK, or connected publishing service yet.
+> **Current status — November 11, 2026:** **Private offline alpha, not a deployed commercial service.** A responsive, authenticated local web interface and extensive Python/JavaScript backend foundations exist on the active development branch. Real social-account OAuth, live analytics, executable post scheduling/publishing, paid OpenAI calls, production hosting, and an Android APK are **not yet active**. Publishing remains **disabled** and requires separate, explicit authorization. See [alpha readiness](ALPHA_BETA_READINESS.md) and [development continuity](DEVELOPMENT_CONTINUITY.md).
 
-## Project goals
+## Product experience
 
-- Maintain an accurate voice for each configured business without repetitive or generic posts.
-- Isolate business profiles, audiences, creator categories, and local-competitor exclusions so unrelated industries never cross-promote by accident.
-- Hold drafts when user-supplied photos or other assets are required, with clear content-creation suggestions instead of publishing incomplete posts.
-- Share original product highlights, creative projects, community questions, and useful 3D-printing discoveries.
-- Use audience engagement data to choose better posting windows rather than relying on the owner's availability.
-- Protect business accuracy: do not invent discounts, prices, special hours, promotions, giveaways, events, or order promises.
-- Keep an auditable distinction between drafts, approvals, scheduled posts, and published posts.
-- Make future operation reliable, recoverable, and maintainable as marketing needs evolve.
+BAM is designed to let an owner or authorized team run marketing from one place:
 
-## Planned content streams
+1. **Sign in to BAM** using email/password or Google sign-in, select an existing business or create a workspace, and access only businesses to which the account belongs.
+2. **Set up each business:** confirmed products, services, contact and operating facts, voice, audience, marketing goals, media, and permission policies.
+3. **Connect social accounts directly to BAM.** Start with eligible Facebook business Pages through official Meta authorization and APIs; expand platform support only where each provider permits the required actions. No Metricool account, subscription, or API key is required for BAM's planned core functionality.
+4. **Plan and create content:** generate AI-assisted post copy and, when useful, a separate image-creation prompt; use factual zero-API-cost templates where appropriate; bring in original media and permitted third-party references.
+5. **Collaborate and review:** assign access by role, save draft revisions, request photos or approvals, comment on content, and protect one editor's work from being silently overwritten by another.
+6. **Choose when to post:** use owner-configured manual times or, after trustworthy audience data is connected, data-informed Smart recommendations. Schedule only content that passes the applicable review and media checks.
+7. **Publish and learn:** after a separately approved production rollout, BAM's own scheduler should publish directly through authorized social-provider APIs, reconcile platform results, and use available native insights to improve recommendations.
 
-| Stream | Intended behavior | Approval policy |
-| --- | --- | --- |
-| Belenos products and services | Short, Facebook-first showcases of custom work, 3D prints, tumblers, apparel, and resin-printed artwork | New promotional claims require approval |
-| Community engagement | Local, conversational posts and questions for Marion-area followers | Routine non-promotional content can become auto-eligible after activation |
-| Authorized promotions and events | Use only terms and dates explicitly supplied or confirmed by the owner | Previously authorized exact terms may be reused within their scope and validity |
-| Curated 3D-printing content | Mix of impressive prints, creative projects, industry news, and educational tips | Trusted-source, verified link posts may become auto-eligible; unfamiliar, sponsored, or sensitive items require approval |
-| Operational reminders | Store openings, pickup expectations, order deadlines, and closures | Bound to confirmed operational facts and relevant times |
+The workflow is intended to be **draft → factual/media checks → team review when needed → approval → schedule → direct publication → performance review**. Today, the offline alpha deliberately stops before real scheduling and publication.
 
-Curated content must credit its creator, distinguish outside work from Belenos work, avoid copying media without permission, and respect the capabilities and restrictions of Facebook and any scheduling provider.
+## Core capabilities and direction
 
-## Scheduling philosophy
+| Area | Intended product capability |
+| --- | --- |
+| Multi-business workspaces | Independent brand identities, facts, topics, campaigns, assets, schedules, social accounts, usage and access rules under a single login |
+| Team collaboration | Individual employee logins, invitations, business-specific owner/manager/creator/employee/viewer roles, shared draft queue, feedback, activity history, and configurable approval policies |
+| Content Studio | Post drafting and editing, revision/conflict detection, media-needed requests, campaign priorities, CSV draft imports, content queues and review checklists |
+| OpenAI-assisted copy | One structured request for post copy plus an optional separately editable image prompt, targeted regeneration of only the changed component, optional advance batches and local templates |
+| Artwork workflow | Upload owned or licensed media; optionally copy an image prompt into the user's own ChatGPT Free/paid account, refine the image there, and return it to BAM; ChatGPT is not a programmatic free image API |
+| Publishing | BAM-managed job queue, retries, idempotency, cancellation, provider-status reconciliation and owner-controlled pause/emergency stop, all **planned and not live** |
+| Analytics | Native platform insights where authorized and available, content performance, audience patterns, posting-time evaluation and transparent limits when providers expose insufficient data |
+| Cost control | Shared hosting, business-level resource accounting, sponsored AI allowances, optional personal OpenAI API keys, usage limits and budget safeguards |
 
-The system is designed to use engagement data, including Metricool audience-activity recommendations, to rank candidate publishing windows. It should account for content relevance, existing scheduled posts, spacing, deadlines, and America/New_York daylight-saving transitions.
+The first business examples are **Belenos Creations** and **Busy B Cleaning Service** in Marion, Ohio. They are examples for testing business separation, not hard-coded target customers.
 
-Fixed times remain appropriate when a message is operational (for example, an opening reminder). Audience-activity scores are directional indicators, **not guaranteed engagement forecasts**. Scheduling changes should be tested against actual post performance over time.
+## Direct social-platform integrations — no Metricool dependency
 
-Historical drafting schedule used during planning:
-- Daily morning marketing drafts around 10:00 AM Eastern.
-- Community engagement drafts Monday, Wednesday, Friday, and Saturday around 6:30 PM Eastern.
-- Store reminders aligned with actual opening hours.
+**The approved architecture is direct connection to social networks, not a required Metricool integration.** BAM will provide the scheduler, publishing records, review process and analytics views itself.
 
-These are planning baselines, not promises of active automatic publishing.
+- **Facebook first:** authorize an eligible business Page via Meta's official login/permission flows; securely store and refresh/revoke authorized credentials; publish to Pages through supported APIs only after review and activation.
+- **Other social platforms later:** implement separate provider adapters only after verifying current API eligibility, supported account types, app-review requirements, publishing capabilities and limits. Access to personal profiles, groups, particular content formats or private insights must never be assumed.
+- **BAM analytics:** use the social platforms' own authorized data when available; never display sample activity scores as live metrics. Smart posting suggestions must declare when usable audience evidence is missing.
+- **Resilience:** local scheduling and audits must not depend on Metricool. Failed/revoked permissions, provider outages, rate limits, duplicate submits and status mismatches require explicit reconciliation, safe retries and visible errors.
 
-## Android application and account architecture
+BAM does **not** promise unlimited posting or unrestricted analytics; each social network's rules, API approvals and quotas still apply. Metricool is not needed to create a BAM account or to use its planned supported publishing features.
 
-The target experience is a native Android application (Kotlin / Jetpack Compose) backed by a separately hosted Python automation service. The server will own identities, permissions, approval decisions, audit logs, and integration credentials; the phone is a client, not the unattended scheduler. The initial account will be owner-operated, with future support for multiple segregated businesses, staff memberships and roles. `access_policy.py` is the initial **offline authorization policy**, not a login system or a working Android application. Biometric sign-in is a planned client capability subject to secure server-side session management.
+## Accounts, teams and business isolation
 
-## Safety and approval model
+Each person has one BAM identity and can have different permissions in different businesses. The current offline policy uses **owner, manager, content creator, employee and viewer** role boundaries. For the finished collaboration experience, owners should be able to invite and remove members, assign/restrict permissions, make approval mandatory for selected posts, and view an audit trail of editing, approval and publication events.
 
-The intended workflow is **discover → validate → draft → review when required → schedule → reconcile → audit**.
+The existing offline alpha already has tenant-scoped sessions, role checks, business switching, shared draft data, version-safe editing, private reviewer notes, activity metadata and team-count visibility. **Full invitation delivery, employee administration and real hosted multi-device collaboration are not yet operational.** Business switching must immediately invalidate stale private UI and prevent cross-business data leakage.
 
-Key safeguards:
-1. **Publishing disabled by default**; separate explicit authorization is required before activation.
-2. New discounts, pricing, promotions, giveaways, and event claims are never invented by the system.
-3. Previously approved claims are reusable only within their confirmed terms, dates, and scope.
-4. Source credibility and fact verification are distinct from content popularity.
-5. Sponsored, sensitive, unfamiliar, or ambiguous third-party content is held for review.
-6. Media reuse requires appropriate rights; link-and-commentary is the preferred fallback.
-7. Duplicate prevention, cancellation, expiry, and an audit trail are core requirements.
-8. A production integration must authenticate approvers and use least-privilege credentials.
+A team's additional members do not require individual application servers. Seats, AI allowances, media quotas and any future subscription policies are distinct configuration decisions; no unlimited free-seat or public-pricing promise is made here.
 
-## Technical direction
+## AI and image generation
 
-- **Language:** Python for the current offline prototype.
-- **State:** SQLite in the prototype; production persistence and multi-process safety to be evaluated.
-- **Scheduling:** Timezone-aware ranking using externally supplied activity scores.
-- **Integration target:** Metricool and supported Facebook publishing workflows, subject to verified provider capabilities.
-- **Testing:** Unit tests, followed by integration tests, failure recovery, and dry-run verification before activation.
-- **Source control:** This private GitHub repository is intended to become the primary source of truth.
+**OpenAI is the only approved generative-AI provider.** The intended default is BAM-sponsored OpenAI API access so that a user does not need to create a separate OpenAI API account or buy their own key. A user may optionally configure a **personal paid OpenAI API key** for their own API charges, held in an encrypted server-side secret vault after that capability is built. This must not expose the key to employees, the frontend or the repository.
 
-### Phase 3.2 prototype (imported)
+The generation design uses business-approved facts and isolated per-user/per-business writing preferences. One model request can return structured `post_text` and an optional `image_prompt`. Users can change either field independently without regenerating both. Local factual templates can avoid API calls; future batch work may reduce generation overhead where supported and useful. Requested images are an optional **manual** workflow in ChatGPT or can be uploaded directly; BAM must not silently publish a post missing required artwork.
 
-The current offline package contains:
-- `engine.py`: basic post staging, authorization records, deduplication, and publishing gate.
-- `workflow.py`: audit log, draft approvals, discovered-event decisions, pause controls, and dry-run preparation.
-- `optimizer.py`: candidate slot ranking, minimum spacing, deadline handling, and conservative third-party curation.
-- `test_engine.py`, `test_workflow.py`, `test_optimizer.py`: **26 passing offline unit tests** at the time of packaging.
-- `README.md`: implementation notes and known limitations.
+A sponsored experience **still costs the BAM operator money** for real API calls. Rate, token and spend caps; safe billing/usage records; abuse controls; and possible future plans remain subject to explicit configuration and validation. Public subscription pricing, user quotas, model choices and payment integrations are not finalized. See [AI architecture](AI_ARCHITECTURE.md).
 
-The prototype **does not** yet implement live discovery, secure approval identity, remote scheduling, real Metricool write integration, or production-grade verification of caller-provided trust flags. A green unit-test run does not imply production readiness.
+## Scheduling and content safety
 
-## Development roadmap
+BAM should offer both **Manual** and **Smart** posting modes. Manual mode honors explicitly saved local times and time zones, handling daylight-saving transitions conservatively. Smart mode uses trustworthy first-party audience and performance measurements to recommend times, with no invented engagement forecasts. Posting intervals, campaigns, business hours, deadlines, duplicate protection and platform restrictions constrain both modes.
 
-1. **Import and baseline (completed):** Phase 3.2 source, changelog, and GitHub Actions test workflow committed. Verify the first remote CI run.
-2. **Validation and authorization:** Replace naive text matching and caller-controlled trust indicators with structured, authenticated facts and approval evidence.
-3. **Content discovery:** Implement vetted source feeds, creator whitelisting, deduplication, attribution, and rights-aware rendering.
-4. **Analytics and optimization:** Retrieve Metricool timing and performance data, score windows, and measure outcomes with controlled adjustments.
-5. **Scheduling integration:** Verify provider capabilities, build idempotent scheduling and reconciliation, and test cancellation, retries, and outage recovery.
-6. **Controlled rollout:** Require explicit owner approval before enabling any unattended publishing; start with limited, observable categories.
+Content safeguards are fundamental:
 
-## Operational boundaries
+- No invented discounts, prices, giveaways, promotions, inventory guarantees, events, opening hours, or order commitments.
+- Owner-confirmed facts carry provenance; confirmation is not represented as independent verification. Uncertain claims remain held for review.
+- New or changed promotional claims require applicable authorization. Previously approved claims may be reused only within their authorized scope and validity.
+- Missing or unverified media, unclear content rights, sponsored/unfamiliar third-party references and sensitive content remain held. Credit creators and do not copy images without permission.
+- A draft, reviewer note, image receipt, suggested time, or proposed calendar date is **never itself permission to publish**.
+- All publication must require authenticated roles, current content and media state, trusted social permissions, an auditable approval policy, an explicitly authorized production switch, and an emergency stop.
 
-**No live publishing, post scheduling, or automatic reposting is authorized by this repository or its README.** Development, testing, and deployment are separate from authorization to publish. Business-specific promotional content must remain grounded in confirmed facts.
+## What works today (offline alpha)
 
-## Documentation and release discipline
+The active development branch contains these **local development** components, not production integrations:
 
-Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/fixed items, test status, and known limitations. Use Git history and tagged releases for reproducible versions. Never commit passwords, access tokens, private keys, or customer information.
+- A responsive **large-card, mobile-first HTML workspace** with deeper settings, Content Studio, Approvals, social connection status and posting-time previews. Native Android is a future delivery target.
+- Local password sign-in/session foundations and Google sign-in verification scaffolding, multi-business membership isolation, logout on current/all sessions, role-aware access, switching and invitation policy foundations.
+- Held draft creation, revisions and stale-edit conflict protection; priority/filtering, optional CSV import, missing-media holds, private reviewer feedback and audit metadata, factual-risk hints and review-readiness checklists.
+- Owner-confirmed business-fact editing, independently editable user/business AI writing preferences, local zero-provider-cost templates, structured AI draft records, targeted-revision/test-executor flows, cost ledger/quota foundations and a **zero-OpenAI-call** future-topic preview.
+- Owner-configured Manual/Smart preferences, daylight-saving-safe Manual time previews, proposed dates with conflict tokens, and suggested unpublished slots. **These are not executable scheduled posts.**
+- Read-only social connection metadata and offline OAuth/PKCE foundations. **No real account connection, live platform insight or API publication is enabled.**
+- Optional, explicitly opted-in **private quarantine** for pending image bytes. It does not perform production malware scanning, ownership verification or media approval.
+- A local-only opt-in HTTPS preview/gateway and automated Python/JavaScript tests. The SQLite and WSGI development arrangement is **not** a production deployment.
 
----
+Past successful CI runs are documented in [development milestones](DEVELOPMENT_MILESTONES.md). The exact latest security-batch commit may not yet have passed GitHub Actions; consult [development continuity](DEVELOPMENT_CONTINUITY.md) before merging or making any claim about a new release.
 
-**Initial business profile:** Belenos Creations · Marion, Ohio  
-**Platform:** BAM — Belenos Automatic Marketing  
-**Status:** Active development · publishing disabled
+## Architecture and operating costs
 
-## Phase 3.4 session prototype
+The planned production system is a **shared hosted BAM backend** (Python service plus durable relational database, private media/object storage, background workers and monitoring), with strict tenant isolation and a responsive/web and eventual Kotlin/Jetpack Compose Android client. Each user signs in independently; phones do not need to remain open to run approved future jobs. SQLite remains an offline prototype store until production migrations, concurrency controls, backups and recovery are verified.
 
-`sessions.py` provides an **offline, server-side** session storage prototype with opaque random bearer tokens, SHA-256 hashes at rest, expiry, and revocation. This is not a login system: identity verification, employee enrollment, role freshness, secure HTTPS transport, credential handling, API middleware, CSRF protection (if cookies are used), and mobile biometric unlock still require implementation and security review. Production access must validate current account membership and role on every request; a session's stored role alone is insufficient. No publishing capability has been enabled.
+Content text, draft states, permissions, audit events and schedules belong in the database; privately stored media belongs in durable object storage. Published content also resides on the destination social network subject to its policies. Secure backups, retention controls, rights handling and deletion are required.
 
+**Cost philosophy:** no mandatory Metricool fee, no server for each employee, and no separate OpenAI signup for BAM-sponsored AI. Ongoing operator costs will come from hosting/database, media and backups, OpenAI usage, observability and upkeep. AI usage and media storage may increase with more businesses; adding a colleague to one workspace should cause little incremental hosting overhead. Exact pricing and customer billing are **not yet set**; no zero-cost or unlimited-use guarantee is implied.
 
-## Phase 3.5 — approved product branding (2026-11-10)
+## Release path and developer documentation
 
-The official name is **BAM — Belenos Automatic Marketing**. It is a platform identity, not a limitation on which businesses the software can serve.
+The [current product and implementation plan](PRODUCT_PLAN.md) records direct social API delivery, team collaboration, shared hosting/cost design, phased integration gates and measurable acceptance criteria. [Alpha/private beta readiness](ALPHA_BETA_READINESS.md) covers security, hosting, media, provider and publishing evidence needed before release.
 
-![BAM light-background logo](branding/source/logo_light.svg)
+- [AI architecture and approved requirements](AI_ARCHITECTURE.md)
+- [Development continuity / safe resume checkpoint](DEVELOPMENT_CONTINUITY.md)
+- [Detailed development milestones](DEVELOPMENT_MILESTONES.md)
+- [Changelog](CHANGELOG.md)
+- [Local HTTPS preview](LOCAL_PREVIEW.md)
+- [BAM brand assets](branding/README.md)
+- [GitHub Actions tests](.github/workflows/tests.yml)
 
-The gold, teal, silver, and deep-navy identity now has canonical SVG logos for light/dark interfaces, a simplified square launcher source, a transparent Android adaptive-icon foreground, and a themed monochrome source. Brand palette, Android XML resource templates, a PNG generation script, and four regression tests are tracked in the repository. See [brand guidance](branding/README.md) and [Android integration instructions](android/branding/README.md).
+Development and documentation updates do not activate a paid API, launch a hosted service, connect Facebook, schedule a post or grant publication permission. **Publishing remains off until separately authorized, implemented and verified.**
 
-**Current integration boundary:** This is a Python automation prototype, not an Android app. Branding source and launcher templates are committed for a future Kotlin client. No APK was built; no publishing/integration behavior was changed.
+## GitHub branch and recoverability
+
+BAM's active Alpha code is committed to GitHub on a development branch. On November 11, 2026, independent recovery refs were created at `checkpoint/alpha-last-green-2026-11-11` (`74e55d53`) and `checkpoint/alpha-pre-merge-2026-11-11` (`f66522a4`). A dedicated integration branch reconciles the existing `main` branding history without rewriting or deleting development commits. Merge approvals depend on passing the exact merge-candidate tests, not on an earlier unrelated green run. These checkpoints are independent Git references, **not** enforced branch protection or an off-GitHub backup.

@@ -1,0 +1,10 @@
+/* BAM authenticated dashboard card layout.
+   Add to the real signed-in shell; no demo data or navigation is implied. */
+.bam-live-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+.bam-live-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:14px;min-height:168px;width:100%;padding:22px;border:1px solid var(--line,#35505d);border-radius:18px;background:var(--surface,#132433);color:var(--text,#f0f5f7);text-align:left;cursor:pointer;font:inherit}
+.bam-live-card strong{font-size:1rem}
+.bam-live-card span{font-size:clamp(1.3rem,3vw,2rem);font-weight:750}
+.bam-live-card:focus-visible{outline:3px solid var(--gold,#e9c66c);outline-offset:3px}
+.bam-live-card:hover{background:var(--surface2,#1b3040)}
+@media(max-width:480px){.bam-live-cards{gap:10px}.bam-live-card{padding:16px;min-height:140px}}
+@media(prefers-reduced-motion:reduce){.bam-live-card{transition:none}}

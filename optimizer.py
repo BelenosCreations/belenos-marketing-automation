@@ -19,7 +19,8 @@ class Candidate:
     sensitive: bool = False
     verified_facts: bool = False
 
-CATEGORIES = {'impressive_print', 'creative_project', 'industry_news', 'education'}
+CATEGORIES = {'impressive_print', 'creative_project', 'industry_news', 'education',
+              'industry_best_practice', 'community', 'facility_care', 'case_study'}
 
 def curate(item: Candidate):
     """Conservative recommendation: linking is allowed, copying media requires rights."""
