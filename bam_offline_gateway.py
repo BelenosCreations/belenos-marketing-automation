@@ -20,6 +20,7 @@ from bam_auth_wsgi import BAMAuthWSGI
 from bam_business_switch_wsgi import BAMBusinessSwitchWSGI
 from bam_content_write_wsgi import BAMContentWriteWSGI
 from bam_posting_preferences_wsgi import BAMPostingPreferencesWSGI
+from bam_upload_preflight_wsgi import BAMUploadPreflightWSGI
 from bam_read_wsgi import BAMReadWSGI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
@@ -110,6 +111,8 @@ class BAMOfflineGateway:
             self.read_api, enabled=enabled, clock=self.clock)
         self.preference_write_wsgi = BAMPostingPreferencesWSGI(
             self.read_api, enabled=enabled, clock=self.clock)
+        self.upload_preflight_wsgi = BAMUploadPreflightWSGI(
+            self.read_api, enabled=enabled, clock=self.clock)
 
     @staticmethod
     def _unavailable(start_response, status, message):
@@ -137,5 +140,7 @@ class BAMOfflineGateway:
             return self.switch_wsgi(environ, start_response)
         if path in ('/api/v1/content/drafts','/api/v1/content/hold'):
             return self.content_write_wsgi(environ, start_response)
+        if path == '/api/v1/content/upload-preflight':
+            return self.upload_preflight_wsgi(environ, start_response)
         return self._unavailable(
             start_response,'404 Not Found','Unknown BAM API route')

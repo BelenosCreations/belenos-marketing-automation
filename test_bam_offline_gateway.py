@@ -326,6 +326,43 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         _,saved=self.call('/api/v1/posting-preferences',token=token)
         self.assertFalse(saved['configured'])
 
+    def test_pending_only_media_preflight_never_grants_upload_or_publish(self):
+        shop=self.login('shop')
+        status,created=self.call('/api/v1/content/drafts',
+            method='POST',token=shop,
+            body={'channel':'facebook','draft_text':'Needs a photo',
+                  'suggestion':'Image confirmation required',
+                  'required_items':['image']})
+        self.assertEqual(status['status'],'201 Created')
+        request_id=created['request_id']
+        meta,pending=self.call('/api/v1/content/upload-preflight',
+            method='POST',token=shop,
+            body={'request_id':request_id,'item':'image',
+                  'media_type':'image/png','sha256':'f'*64,
+                  'byte_count':200})
+        self.assertEqual(meta['status'],'202 Accepted')
+        self.assertEqual(pending['tenant_id'],'shop')
+        self.assertEqual(pending['status'],'pending')
+        self.assertIsNone(pending['upload_url'])
+        self.assertFalse(pending['publishing_enabled'])
+        self.assertNotIn('storage_key',pending)
+        self.assertIsNone(self.app.attachments.resolve_verified(
+            tenant_id='shop',request_id=request_id,item='image',
+            attachment_id=pending['attachment_id']))
+        other=self.login('other')
+        bad,_=self.call('/api/v1/content/upload-preflight',
+            method='POST',token=other,
+            body={'request_id':request_id,'item':'image',
+                  'media_type':'image/png','sha256':'f'*64,
+                  'byte_count':200})
+        self.assertIn(bad['status'],('404 Not Found','401 Unauthorized'))
+        bad,_=self.call('/api/v1/content/upload-preflight',
+            method='POST',token=shop,
+            body={'request_id':request_id,'item':'image',
+                  'media_type':'image/png','sha256':'f'*64,
+                  'byte_count':200,'role':'owner'})
+        self.assertEqual(bad['status'],'400 Bad Request')
+
     def test_ai_drafts_are_scoped_and_unpublished(self):
         shop=self.login('shop')
         other=self.login('other')

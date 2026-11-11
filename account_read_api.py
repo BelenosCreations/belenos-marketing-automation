@@ -7,6 +7,7 @@ The adapter never accepts tenant IDs or roles from client body claims.
 from account_dashboard import AccountDashboard
 from dashboard_cards import build_dashboard_cards
 from dashboard_view import build_dashboard_view
+from content_upload_preflight import ContentUploadPreflight
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
@@ -209,6 +210,36 @@ class AccountReadAPI:
         return {'tenant_id':session.principal.tenant_id,
                 'request_id':request_id,'status':'needs_content',
                 'publishing_enabled':False}
+
+    def begin_content_upload_preflight(self, *, session_token, server_now,
+                                       request_id, item, media_type, sha256,
+                                       byte_count):
+        """Register pending-only, tenant-scoped metadata. No bytes or upload URL.
+
+        Requires a separately trusted object-store integration and scanner
+        before any media can be supplied to a held content request.
+        """
+        token=self._token(session_token)
+        now=self._now(server_now)
+        session=self.dashboard.sessions.resolve_current(
+            token,directory=self.dashboard.directory,now=now)
+        if session is None:
+            raise PermissionError('Valid BAM session required')
+        service=self.dashboard.content_service
+        if service is None:
+            raise RuntimeError('Content Requests not configured')
+        preflight=ContentUploadPreflight(service=service)
+        result=preflight.begin(token=token,
+            tenant_id=session.principal.tenant_id,
+            request_id=request_id,item=item,media_type=media_type,
+            sha256=sha256,byte_count=byte_count,now=now)
+        if result.get('status')!='pending' or result.get('upload_url') is not None:
+            raise RuntimeError('Unsafe upload metadata result')
+        return {'tenant_id':session.principal.tenant_id,
+                'request_id':request_id,'item':item,
+                'attachment_id':result['attachment_id'],
+                'status':'pending','max_bytes':result['max_bytes'],
+                'upload_url':None,'publishing_enabled':False}
 
     def supply_verified_content(self, *, session_token, server_now,
                                 request_id, item, attachment_id):
