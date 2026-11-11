@@ -117,13 +117,30 @@ class BusinessInvitations:
         token=secrets.token_urlsafe(32)
         invitation_id=uuid.uuid4().hex
         digest=self._digest(token)
+        # A single atomic INSERT ... SELECT prevents duplicate active
+        # invitations from being created by simultaneous owner requests.
+        # Expired, consumed and explicitly cancelled links do not block a
+        # fresh invite. An existing membership (even deactivated) must be
+        # handled through team administration, never another invite link.
         with self.db:
-            self.db.execute("""INSERT INTO bam_business_invitations
+            created=self.db.execute("""INSERT INTO bam_business_invitations
                 (token_hash,tenant_id,email,role,expires_at,created_by,
                  invitation_id,delivery_state)
-                VALUES (?,?,?,?,?,?,?,'pending')""",
+                SELECT ?,?,?,?,?,?,?,'pending'
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM bam_business_invitations
+                    WHERE tenant_id=? AND email=? AND consumed_at IS NULL
+                    AND revoked_at IS NULL AND expires_at>?
+                    AND delivery_state IN ('pending','delivered'))
+                AND NOT EXISTS (
+                    SELECT 1 FROM members m JOIN bam_identities i
+                    ON i.subject_id=m.subject_id
+                    WHERE m.tenant_id=? AND i.email=?)""",
                 (digest,tenant_id,email,role.value,timestamp+604800,
-                 principal.subject_id,invitation_id))
+                 principal.subject_id,invitation_id,
+                 tenant_id,email,timestamp,tenant_id,email))
+            if created.rowcount!=1:
+                raise ValueError('Active invitation or existing membership for business')
         # The token is never returned from this service. An invitation is not
         # redeemable until trusted delivery returns successfully.
         try:

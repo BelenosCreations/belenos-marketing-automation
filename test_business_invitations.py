@@ -45,6 +45,77 @@ class InvitationTests(unittest.TestCase):
             self.invites.accept_trusted(verified_subject_id=self.guest,
                 token=token,now=104)
 
+    def test_repeat_active_invitation_is_refused_without_second_delivery(self):
+        first=self.invite()
+        with self.assertRaises(ValueError):
+            self.invite(role=Role.VIEWER,now=103)
+        self.assertEqual(len(self.outbox),1)
+        pending=self.invites.pending_current(
+            owner_session=self.owner_token,now=104)
+        self.assertEqual([x['invitation_id'] for x in pending['items']],
+                         [first['invitation_id']])
+
+    def test_cancel_then_reinvite_creates_new_single_use_link(self):
+        first=self.invite()
+        self.invites.cancel_current(owner_session=self.owner_token,
+            invitation_id=first['invitation_id'],now=103)
+        replacement=self.invite(now=104)
+        self.assertNotEqual(first['invitation_id'],
+                            replacement['invitation_id'])
+        self.assertEqual(len(self.outbox),2)
+        pending=self.invites.pending_current(
+            owner_session=self.owner_token,now=105)
+        self.assertEqual([x['invitation_id'] for x in pending['items']],
+                         [replacement['invitation_id']])
+
+    def test_expired_or_failed_invitation_does_not_block_reinvite(self):
+        first=self.invite()
+        # Seven days later requires a newly authenticated owner session.
+        fresh=self.sessions.issue(
+            Principal(self.owner,'shop',Role.OWNER),now=604900)
+        later=self.invite(owner_session=fresh,now=604903)
+        self.assertNotEqual(later['invitation_id'],first['invitation_id'])
+        self.assertEqual(len(self.outbox),2)
+        # A failed trusted delivery must never reserve the recipient email.
+        def broken(*args):
+            raise OSError('offline test delivery failure')
+        self.invites.deliver=broken
+        self.invites.cancel_current(owner_session=fresh,
+            invitation_id=later['invitation_id'],now=604904)
+        with self.assertRaises(RuntimeError):
+            self.invite(owner_session=fresh,now=604905)
+        self.invites.deliver=lambda email,tenant,token:self.outbox.append(
+            (email,tenant,token))
+        self.assertTrue(self.invite(owner_session=fresh,now=604906)
+                        ['invitation_created'])
+
+    def test_existing_active_or_inactive_member_cannot_be_reinvited(self):
+        self.invite()
+        self.invites.accept_trusted(verified_subject_id=self.guest,
+            token=self.outbox[-1][2],now=103)
+        with self.assertRaises(ValueError):
+            self.invite(now=104)
+        self.directory.set_member(
+            Principal(self.owner,'shop',Role.OWNER),
+            self.guest,Role.CONTENT_CREATOR,active=False)
+        with self.assertRaises(ValueError):
+            self.invite(now=105)
+        self.assertEqual(len(self.outbox),1)
+
+    def test_other_business_can_invite_same_email_independently(self):
+        self.invite()
+        other_owner=self.sessions.issue(
+            Principal('another_owner','other',Role.OWNER),now=100)
+        second=self.invites.invite(owner_session=other_owner,
+            tenant_id='other',email='guest@example.com',
+            role=Role.VIEWER,now=102)
+        self.assertTrue(second['invitation_created'])
+        self.assertEqual(len(self.outbox),2)
+        self.assertEqual(len(self.invites.pending_current(
+            owner_session=self.owner_token,now=103)['items']),1)
+        self.assertEqual(len(self.invites.pending_current(
+            owner_session=other_owner,now=103)['items']),1)
+
     def test_owner_pending_list_and_single_use_cancellation(self):
         created=self.invite()
         invitation_id=created['invitation_id']
