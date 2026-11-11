@@ -1,3 +1,17 @@
+## Explicit, bounded CSV import of held marketing drafts — 2026-11-11
+
+### Added
+- A browser-only CSV parser validates a strict `channel,draft_text,suggestion,required_items` header, quoted/escaped fields, bounded size (128 KiB), 1–20 rows, supported platforms and required item names. Missing required items default to `image`; repetitive copy within the file is rejected before any network requests.
+- Content Studio's Advanced section can preview every unpublished row and then requires a separate **Confirm import** action. It checks for exact duplicates against currently loaded drafts and creates each request through the existing authenticated held-draft endpoint. The importer never makes AI calls, attaches images, approves a claim, schedules, or publishes.
+- A server failure stops the import immediately. BAM reports only confirmed successes and explicitly warns that partial imports cannot be automatically rolled back or blindly retried. Business rotation or sign-out cancels further actions and discards the import preview.
+- Added CSV parser regression tests plus an end-to-end browser import test for success, duplicates, partial failure and session lifecycle.
+
+### Verification
+- **Passed:** [GitHub Actions run 43038527274](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43038527274), commit `0b98f105`: **813 Python tests, 47 JavaScript UI scripts**, and Python compilation.
+
+### Known limitations
+- The importer does not guarantee cross-device duplicate prevention under concurrent writes. It does not create verified media or automated posts, and it is available only in the currently offline authenticated preview.
+
 ## Private read-only marketing claim-risk preview — 2026-11-11
 
 ### Added

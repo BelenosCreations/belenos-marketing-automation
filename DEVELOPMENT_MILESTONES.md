@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Advanced, manually confirmed batch import of held drafts (2026-11-11)
+
+Content Studio can now preview and import 1–20 unpublished marketing drafts from a local CSV file. `ui/held_draft_csv_import.js` parses bounded RFC-style quoted fields, requires known channels and factual guidance, rejects duplicate rows and uses `image` as the default missing content. The browser scans the current business's existing drafts for exact repeated copy and offers a separate explicit confirmation. Each item is created through the existing session-authorized `POST /api/v1/content/drafts` route without new endpoints or OpenAI usage. If a request fails, no remaining rows are sent; the operator sees the count that was confirmed and is warned to check for partial additions. Business/session changes cancel subsequent writes.
+
+**Verified:** [run 43038527274](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43038527274), commit `0b98f105`, 813 Python and 47 JavaScript scripts, plus compilation.
+
 ## Read-only marketing claim-risk hints in Content Studio (2026-11-11)
 
 `BAMContentRiskWSGI` now serves a bounded GET review for a specific existing held draft; `AccountReadAPI.get_content_risk_preview` derives the tenant from the authenticated session and scans stored copy with `truthguard_risk_signals.py`. The response discloses only flagged text snippets/categories and the draft revision, and explicitly asserts that claim extraction is incomplete, review is required and publishing is disabled. A dedicated browser client validates this contract and Content Studio displays warnings only after user action. Revision mismatches, business switches and sign-out invalidate previous risk reports. A clean heuristic preview does not verify content.

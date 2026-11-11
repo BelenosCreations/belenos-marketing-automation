@@ -4,6 +4,12 @@ Updated 2026-11-10. Development branch: `development/phase-3-5-account-directory
 
 See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for the approved OpenAI-only three-scenario content-generation plan. The future Settings view should expose BAM-sponsored versus personal OpenAI key mode without displaying raw credentials. User/business AI memories must remain isolated; combined post/image-prompt output and component-targeted revisions must remain unpublished drafts.
 
+## Explicit CSV bulk held draft import
+
+Content Studio's Advanced panel can read a local CSV file in the user's browser, parse a strict 1–20 row draft schema and preview the unpublished copy/guidance before a separate **Confirm import** button is enabled. It uses existing authenticated draft-create calls sequentially—no new OAuth token, model API call, batch server privilege or publication capability is required. The user is told that partial server failures may leave confirmed draft requests created; the UI stops automatically and never retries without explicit new confirmation. Malformed rows, duplicate copy and stale tenant/session state fail closed. Images and permissions remain missing until the usual trust checks occur.
+
+**Verified:** [run 43038527274](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43038527274), 813 Python and 47 JavaScript scripts.
+
 ## Read-only marketing claim-risk preview
 
 From each versioned Content Studio draft, **Check marketing claim risks** makes an authenticated GET to `/api/v1/content/risk-preview?request_id=<opaque-id>`. The backend resolves the current tenant and reads the stored draft; the browser accepts only bounded, version-matched, nonpublishing heuristic risk signals, displays them as safe text, and clears them when the draft revision changes or the session is invalidated. The analysis can flag pricing, scarcity, warranties, hours and testimonials but neither the presence nor absence of flags grants factual verification or publishing authorization.
