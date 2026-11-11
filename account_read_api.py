@@ -10,10 +10,11 @@ from dashboard_view import build_dashboard_view
 
 class AccountReadAPI:
     def __init__(self, dashboard: AccountDashboard, posting_preferences=None,
-                 ai_content_drafts=None):
+                 ai_content_drafts=None,ai_policy=None):
         self.dashboard=dashboard
         self.posting_preferences=posting_preferences
         self.ai_content_drafts=ai_content_drafts
+        self.ai_policy=ai_policy
 
     @staticmethod
     def _token(value):
@@ -53,6 +54,23 @@ class AccountReadAPI:
             target_tenant_id=target_tenant_id,now=self._now(server_now))
         result['overview']['dashboard_cards']=build_dashboard_cards(result['overview'])['cards']
         return result
+
+    def get_ai_settings(self, *, session_token, server_now):
+        """Read only the caller's OpenAI mode and safe memory preferences."""
+        if self.ai_policy is None:
+            raise RuntimeError('AI policy not configured')
+        token=self._token(session_token)
+        now=self._now(server_now)
+        mode=self.ai_policy.get_mode(token=token,now=now)
+        memory=self.ai_policy.get_memory(token=token,now=now)
+        if (mode['tenant_id']!=memory['tenant_id'] or
+                mode['subject_id']!=memory['subject_id']):
+            raise PermissionError('AI settings scope mismatch')
+        return {'tenant_id':mode['tenant_id'],'provider':'openai',
+                'mode':mode['mode'],
+                'own_key_configured':mode['own_key_configured'],
+                'memory':memory['memory'],
+                'key_exposed':False,'publishing_enabled':False}
 
     def list_ai_content_drafts(self, *, session_token, server_now):
         """Read only the authenticated user's drafts in the active business."""
