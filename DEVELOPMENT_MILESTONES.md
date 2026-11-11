@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Tenant-switching security and approved branding (2026-11-10)
+
+Added a strict, disabled-by-default `bam_business_switch_wsgi.py` that uses the trusted account-directory membership checks to issue a replacement session scoped to the chosen business. It revokes the old session before returning the new token and attempts to revoke any orphaned replacement after failures. The browser's `ui/business_switch_client.js` and `ui/authenticated_session_controller.js` enforce in-memory token rotation, private workspace clearing, stale result protection and sign-out during in-flight switching. A business selector appears in the signed-in header only when the trusted dashboard returns multiple permitted businesses.
+
+Integrated the already-approved BAM icon, wordmarks, color palette, adaptive launcher XML and source SVGs from `main` into the active development branch without overwriting its README, changelog or CI workflow; the signed-in page now renders the real BAM icon rather than a placeholder monogram. The new `bam_offline_gateway.py` uses a disabled-by-default WSGI composition of actual SQLite password login, session checking, read-only dashboard, AI panels and account rotation for offline end-to-end tests. A real hosted site, signup and provider configuration still do not exist.
+
+**Verified [GitHub Actions run 42954241030](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42954241030): 717 Python tests and 26 JavaScript UI test scripts, plus compilation.**
+
 ## Authenticated responsive shell and explicit logout (2026-11-10)
 
 The new `ui/bam_signed_in_shell.html` is distinct from the earlier sample-data dashboard prototype. Its `ui/bam_signed_in_shell.js` controller wires the approved overview-first large cards to authenticated data, AI draft panels, deeper Settings and local Light/Dark/Auto appearance preferences. Email/password form authentication, explicit per-session and identity-wide logout, retry-free session cleanup, stale login rejection and security-disabled HTTP/file loading are exercised through `ui/authenticated_session_controller.js`, `ui/auth_login_client.js`, and a DOM smoke test. Python's disabled-by-default `bam_auth_wsgi.py` now supports WSGI logout routes backed by injected trusted session revocation. GitHub Actions [run 42952514922](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42952514922) validated **693 Python and 25 JavaScript tests**, including the signed-in shell. The UI is not hosted; Google provider configuration, real signup, integration service assembly, security review and native Android packaging remain pending.
