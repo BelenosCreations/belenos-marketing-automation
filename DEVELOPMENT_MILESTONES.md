@@ -566,3 +566,7 @@ The idempotency ledger now supports a private read-only status lookup for the sa
 ## Optional manual ChatGPT image handoff — 2026-11-10
 
 `ui/ai_manual_image_handoff.js` and the AI draft view now offer explicit, separate Copy Prompt and Open ChatGPT actions only for media-held drafts with an image brief, when trusted browser callbacks are provided. Neither action runs automatically. The user creates and revises the image in their own ChatGPT account and returns to BAM for later verified upload. No API key is required for this optional manual flow; ChatGPT account usage limits remain separate. The selected JavaScript tests passed in an isolated harness and were added to CI.
+
+## Disabled-by-default AI service composition — 2026-11-10
+
+`bam_ai_offline_factory.py` now assembles policy, business facts, structured content planning, quota reservations, request idempotency, held draft storage, cost ledger, OpenAI Responses executor and both WSGI write endpoints into a deliberately disabled service bundle. No credentials are read, no network requests are possible through the default transport, and neither write endpoint is enabled. An offline regression test checks these boundaries. Production enabling requires a separately reviewed composition root, secrets, cost limits and full verification.
