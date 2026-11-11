@@ -4,10 +4,10 @@
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`  
 **Branch:** `development/phase-3-5-account-directory`  
-**Verified commit:** `b52643de98009a2cac6ac71cd5824114385accd5`  
+**Verified commit:** `88a9cca1f00f30ac9c38e745befa386f471f20da`  
 **CI:** ${link}
 
-**Result:** 877 Python unit/integration tests, 65 JavaScript UI regression scripts, and Python compilation passed. Coverage now includes private revision-linked editorial feedback, role-checked and tenant-isolated HTTP writes, stale version recovery and delete/recreate conflicts, read-only creator feedback display, nonmutating Content Studio search/filters and previous calendar collaboration and private-media tests. All results verify offline development only—not deployment, final approval or social publishing.
+**Result:** 877 Python tests, 68 JavaScript test scripts in `ui/*_test.js`, and Python compilation passed. The suite now covers explicit two-step, non-executable draft-calendar suggestion saving with confirmation, current-draft/slot conflict checks, role and session safety, private editorial note collaboration, business-local Content Studio filtering, and prior tenant-isolated workflows. Offline verification is not permission to deploy, schedule or publish.
 
 ## Archived original Phase 3.2 package
 

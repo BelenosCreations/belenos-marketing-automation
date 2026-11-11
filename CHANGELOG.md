@@ -444,6 +444,19 @@
 
 # Changelog
 
+## Phase 3.5 — 2026-11-11 (confirmed unpublished calendar suggestions)
+
+### Added
+- Two-step confirmation from the Scheduled dashboard suggestion panel to save a **draft-only** proposed date, without first navigating into Content Studio.
+- Server-validated revision and currently unused Manual-mode clock slot, explicit writer role checks, duplicate slot rejection, tenant/session invalidation, and fail-closed refresh on conflicts.
+
+### Safety
+- No date is saved on preview or the first click. Viewers and employees cannot write; even an explicitly confirmed proposed date does not schedule, approve or publish a social post.
+
+### Tests
+- **Passed:** [GitHub Actions run 43089512284](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43089512284), `88a9cca1`: 877 Python tests and 68 JavaScript UI scripts plus compilation.
+
+
 ## Phase 3.5 — 2026-11-11 (private editorial feedback and held-draft filters)
 
 ### Added

@@ -12,6 +12,13 @@ A dedicated `CalendarProposals` table stores at most one current proposed date p
 
 
 
+
+## Dashboard two-step date selection (2026-11-11)
+
+A verified business editor may explicitly choose a proposed upcoming Manual-mode time from the Scheduled dashboard's read-only suggested-date list. A second confirmation prevents the preview from creating records unintentionally. The browser submits the existing `CalendarProposals.propose` contract with `expected_proposal_token: null` and a server-provided draft revision; the backend enforces actual membership, draft currency, uniqueness, time validity and lack of an existing saved proposal. A committed choice appears only in the separately labeled **proposed** calendar and never becomes an executable scheduled job. Tests cover role boundaries, no request before second confirmation, absence of publishing requests, and cleared state after sign-out.
+
+**Verified:** [GitHub Actions run 43089512284](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43089512284), commit `88a9cca1`: 877 Python tests, 68 JavaScript scripts and compilation.
+
 ## Private team review notes, versioned edits and held-draft filters (2026-11-11)
 
 The `ReviewFeedback` SQLite service records one current private feedback note per business/draft. A current user may read only their business notes, while new feedback requires server-confirmed owner/marketing-manager status and a current draft revision. A 32-character random version token rotates on every write and is required for update or removal. Stale concurrent writes, old revision edits, unauthorized roles, and delete/recreate ABA conflicts fail closed. Existing content requests, media states and the approval ledger remain untouched; a changed draft revision marks the existing note stale rather than laundering it into a new approval.

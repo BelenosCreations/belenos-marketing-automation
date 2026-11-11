@@ -3,8 +3,8 @@
 **Date:** 2026-11-11, America/New_York.
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
-**Most recent verified code commit:** `b52643de98009a2cac6ac71cd5824114385accd5`.
-**Verification:** [GitHub Actions run 43088917850](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43088917850): 877 Python tests, 65 JavaScript regression scripts and compilation **passed**.
+**Most recent verified code commit:** `88a9cca1f00f30ac9c38e745befa386f471f20da`.
+**Verification:** [GitHub Actions run 43089512284](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43089512284): 877 Python tests, 68 JavaScript `ui/*_test.js` scripts and compilation **passed**.
 **Document-only checkpoint:** This file and companion README/CHANGELOG/milestone updates are committed after the verified code commit; confirm their own CI result before treating the new documentation commit as a verified head.
 
 ## Safe resume procedure
@@ -22,6 +22,7 @@
 - Owner-configured Manual/Smart posting preferences, DST-safe Manual preview, saved unpublished draft-calendar proposals, read-only suggested slots, and version tokens preventing stale editor date changes.
 - Private, GET-only `/api/v1/review-readiness` with content/material verification flags, a deeper Approvals checklist and tests for isolation and fail-closed nonapproval.
 - Private, version-checked `GET/PUT/DELETE /api/v1/review-feedback` for owner/manager notes; same notes read-only in Content Studio, stale draft feedback warnings, explicit removal confirmation and business-local filters.
+- Scheduled dashboard requires an explicit two-step confirmation to save a non-executable proposed date from a suggested slot; stale/conflicting entries fail closed.
 
 ## Non-negotiable active limits
 
