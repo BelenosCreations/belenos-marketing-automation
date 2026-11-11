@@ -8,7 +8,7 @@ The platform is being designed to support independent organizations, multiple bu
 
 > **Approved AI direction:** Three usage scenarios (owner-only two posts/day, 5–10 invited users, and potential paid public Google Play release), OpenAI-only generation, default BAM-sponsored AI with optional personal OpenAI API key, and independent per-user AI memories. See [AI architecture and approved requirements](AI_ARCHITECTURE.md). Exact public pricing and quotas are not finalized.
 
-> **Development status:** Offline development prototype with password-and-Google authentication foundations, a responsive mobile-first GUI demonstration, and an authenticated dashboard card contract. Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
+> **Development status:** Offline development prototype with email/password and Google authentication foundations, a responsive sample-data GUI demonstration, and a separate authenticated large-card HTML shell (not yet hosted). Publishing is disabled. The platform is not yet a deployed multi-user service or finished Android application.
 
 ## Current functional capabilities (offline development build)
 
@@ -24,9 +24,9 @@ BAM now has a runnable **local account and content-workflow demonstration**, bui
 - **Backend card contract:** `dashboard_cards.py` supplies permission-aware content counts and explicitly unavailable scheduling values for eventual live UI integration.
 - **AI draft backend:** owner-confirmed business fact registry, OpenAI-only structured draft planning, sponsored quota reservations, optional idempotency protection, held drafts, verified-image references and targeted revisions. Drafts are not approved or published.
 - **AI provider boundary:** disabled-by-default OpenAI HTTPS transport and a strict structured Responses adapter, with operator-configured token cost estimates. No real provider connection or billing is enabled.
-- **Authenticated AI workspace components:** read-only drafts, AI settings, owner-confirmed fact provenance, an optional explicit owner fact editor, and estimated usage panels; integration into the complete sign-in shell is pending.
+- **Authenticated large-card interface:** `ui/bam_signed_in_shell.html` and its browser controller compose password sign-in, verified-session dashboard reads, AI drafts, deeper Settings, light/dark preferences and sign-out. Its pages use server-validated data, not fabricated analytics; Google sign-in awaits a configured provider flow. The interface is not deployed.
 
-**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **689 passing Python tests and 23 passing JavaScript UI test scripts** at commit `9ef6e73` on 2026-11-10 (Eastern). This is offline regression verification, not production approval.
+**Not yet implemented:** production account enrollment and recovery, native Android app, deployed multi-user backend, real social provider token exchange, production media uploads, live OpenAI generation, production scheduling, or automatic social posting. Authenticated WSGI and UI integration components are available but not assembled into a deployed service. GitHub Actions verified **693 passing Python tests and 25 passing JavaScript UI test scripts** at commit `569a947` on 2026-11-10 (Eastern). This is offline regression verification, not production approval.
 
 ## Product identity
 
@@ -146,9 +146,11 @@ The repository contains a growing set of offline Python modules, strict authenti
 
 **Cost and account privacy.** Token counts and estimated costs use explicit operator-supplied prices and are scoped by user and business. Estimates are not invoices. Credentials and raw provider secrets must remain server-side, never in the browser, logs or repository.
 
-**UI.** The [sample dashboard](ui/bam_dashboard_prototype.html) demonstrates large home cards and deeper settings; `ui/live_dashboard_cards.js`, `ui/ai_workspace.js`, and `ui/authenticated_workspace_controller.js` provide read-only authenticated components awaiting the production sign-in shell. They clear on logout/business switch and do not publish.
+**UI.** The [sample dashboard](ui/bam_dashboard_prototype.html) is an unauthenticated sample-data concept. The distinct [signed-in HTML shell](ui/bam_signed_in_shell.html), `ui/bam_signed_in_shell.js` and `ui/authenticated_session_controller.js` connect the real authenticated read-only workspace with login/logout lifecycle, large cards, AI drafts, deeper settings and appearance selection. No live server, Google browser credential flow or deployed Android application is supplied. They clear on logout/business switch and do not publish.
 
-**Auth transport.** `bam_auth_wsgi.py` offers disabled-by-default, strict JSON HTTPS routes for password login and one-time Google sign-in challenges, backed by `AuthLoginAPI` and a required sign-in throttle. `ui/auth_login_client.js` validates responses and retains sessions only in the authenticated shell's memory. Real provider verification and production gateway policies still require configuration. Neither component is activated by the existing HTTP demo server.\n\n**API boundaries.** `bam_read_wsgi.py` provides read-only HTTPS endpoints. Separate disabled-by-default `bam_ai_write_wsgi.py` and `bam_ai_facts_write_wsgi.py` constrain generation and owner fact confirmation to authenticated, validated requests. None of these should be considered deployed production APIs.
+**Auth transport.** `bam_auth_wsgi.py` offers disabled-by-default strict JSON HTTPS routes for password login, one-time Google sign-in challenges, and single/all-session sign-out, backed by trusted `AuthLoginAPI`, an explicit logout service and a required sign-in throttle. `ui/auth_login_client.js` validates responses and retains sessions only in the authenticated shell's memory. Real provider verification and production gateway policies still require configuration. Neither component is activated by the existing HTTP demo server.
+
+**API boundaries.** `bam_read_wsgi.py` provides read-only HTTPS endpoints. Separate disabled-by-default `bam_ai_write_wsgi.py` and `bam_ai_facts_write_wsgi.py` constrain generation and owner fact confirmation to authenticated, validated requests. None of these should be considered deployed production APIs.
 
 ## Development records and verification
 
@@ -156,7 +158,7 @@ The repository contains a growing set of offline Python modules, strict authenti
 - [Changelog](CHANGELOG.md) records additions, fixes and known limitations.
 - [Authenticated UI integration](AUTHENTICATED_UI_INTEGRATION.md) documents session lifecycle and browser contracts.
 - [AI architecture](AI_ARCHITECTURE.md) records approved generation design and safety requirements.
-- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete 689-test Python suite and all 23 discovered JavaScript UI regression scripts passed together in [GitHub Actions run 42951600141](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42951600141) on commit `9ef6e73`. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
+- [GitHub Actions tests](.github/workflows/tests.yml) define Python and Node regression checks. The complete 693-test Python suite and all 25 discovered JavaScript UI regression scripts passed together in [GitHub Actions run 42952514922](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/42952514922) on commit `569a947`. CI checks Python compilation, all `ui/*_test.js` scripts, and Python unit tests on every push. This does not cover production social publishing, real OAuth, or deployment security.
 
 ## Operational boundaries
 
@@ -168,7 +170,7 @@ Maintain a `CHANGELOG.md` recording each release's version, date, added/changed/
 
 ---
 
-**Business:** Belenos Creations · Marion, Ohio  
+**Pilot businesses:** Belenos Creations and Busy B Cleaning Service · Marion, Ohio (nonexclusive examples)  
 **Project:** BAM (Belenos Automatic Marketing)  
 **Status:** Active development · publishing disabled
 
