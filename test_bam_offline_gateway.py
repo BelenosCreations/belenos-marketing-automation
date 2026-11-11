@@ -720,6 +720,39 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         bad,_=self.call('/api/v1/posting-time-preview')
         self.assertEqual(bad['status'],'401 Unauthorized')
 
+    def test_advance_ai_batch_preview_is_cost_free_and_scoped(self):
+        owner=self.login('shop')
+        self.app.ai_business_facts.confirm(token=owner,now=101,
+            facts={'business_name':'Example Shop','product':'Tumblers'})
+        body={'topics':['Holiday tumbler','Gift customization'],
+              'platform':'facebook','include_image_prompt':True}
+        meta,preview=self.call('/api/v1/ai/batch-preview',method='POST',
+            token=owner,body=body)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(preview['tenant_id'],'shop')
+        self.assertEqual(preview['status'],'planning_only')
+        self.assertEqual(preview['fact_provenance'],'owner_confirmed')
+        self.assertEqual(preview['planned_individual_requests'],2)
+        self.assertEqual(preview['provider_requests_made'],0)
+        self.assertEqual(preview['drafts_created'],0)
+        self.assertFalse(preview['publishing_enabled'])
+        self.assertEqual(meta['headers']['Cache-Control'],'no-store, private')
+        self.assertEqual(self.call('/api/v1/ai/batch-preview',method='POST',
+            token=owner,body={**body,'tenant_id':'other'})[0]['status'],
+            '400 Bad Request')
+        self.assertEqual(self.call('/api/v1/ai/batch-preview',method='POST',
+            token=owner,body={**body,'topics':['Gift','gift']})[0]['status'],
+            '400 Bad Request')
+        other=self.login('other')
+        self.assertNotEqual(self.call('/api/v1/ai/batch-preview',method='POST',
+            token=other,body=body)[0]['status'],'200 OK')
+        self.assertEqual(self.call('/api/v1/ai/batch-preview',method='POST',
+            body=body)[0]['status'],'401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/ai/batch-preview',token=owner)[0]
+                         ['status'],'405 Method Not Allowed')
+        self.assertEqual(self.app.ai_drafts.list_mine(token=owner,now=102)
+                         ['drafts'],[])
+
     def test_edit_private_ai_memory_requires_current_expectation(self):
         owner=self.login('shop')
         meta,updated=self.call('/api/v1/ai-memory',method='PUT',

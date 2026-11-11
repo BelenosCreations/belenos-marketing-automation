@@ -32,6 +32,7 @@ from bam_local_draft_wsgi import BAMLocalProductDraftWSGI
 from bam_signed_in_assets_wsgi import BAMSignedInAssetsWSGI
 from bam_ai_draft_edit_wsgi import BAMAIDraftEditWSGI
 from bam_ai_memory_wsgi import BAMAIMemoryWSGI
+from bam_ai_batch_preview_wsgi import BAMAIBatchPreviewWSGI
 from bam_read_wsgi import BAMReadWSGI
 from business_curation import BusinessCuration
 from business_switcher import BusinessSwitcher
@@ -160,6 +161,8 @@ class BAMOfflineGateway:
             self.read_api,enabled=enabled,clock=self.clock)
         self.local_service_wsgi = BAMLocalProductDraftWSGI(
             self.read_api,enabled=enabled,clock=self.clock,template='service')
+        self.ai_batch_preview_wsgi=BAMAIBatchPreviewWSGI(
+            self.read_api,enabled=enabled,clock=self.clock)
         self.ai_memory_wsgi=BAMAIMemoryWSGI(
             self.read_api,enabled=enabled,clock=self.clock)
         self.ai_draft_edit_wsgi = BAMAIDraftEditWSGI(
@@ -191,6 +194,8 @@ class BAMOfflineGateway:
             return self.preference_write_wsgi(environ, start_response)
         if path == '/api/v1/ai-business-facts' and environ.get('REQUEST_METHOD') == 'PUT':
             return self.facts_write_wsgi(environ, start_response)
+        if path == '/api/v1/ai/batch-preview':
+            return self.ai_batch_preview_wsgi(environ,start_response)
         if path == '/api/v1/ai-memory':
             return self.ai_memory_wsgi(environ,start_response)
         if path == '/api/v1/ai-drafts' and environ.get('REQUEST_METHOD') == 'PUT':

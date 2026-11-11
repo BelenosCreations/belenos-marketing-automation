@@ -9,6 +9,8 @@ from dashboard_cards import build_dashboard_cards
 from dashboard_view import build_dashboard_view
 from content_upload_preflight import ContentUploadPreflight
 from ai_local_templates import LocalDraftTemplates
+from ai_batch_preview import AIBatchPreview
+from ai_content_plan import AIContentPlan
 from ai_draft_request import AIDraftRequestBuilder
 from posting_time_preview import build_posting_time_preview
 from access_policy import Action, Resource, require_permission
@@ -104,6 +106,20 @@ class AccountReadAPI:
                 'own_key_configured':mode['own_key_configured'],
                 'memory':memory['memory'],
                 'key_exposed':False,'publishing_enabled':False}
+
+    def preview_ai_batch(self, *, session_token, server_now,
+                         topics, platform, include_image_prompt):
+        """Preview validated advance topics without creating or charging."""
+        if self.ai_policy is None or self.ai_business_facts is None:
+            raise RuntimeError('AI planning prerequisites unavailable')
+        planner=AIBatchPreview(
+            plan=AIContentPlan(request_builder=AIDraftRequestBuilder(
+                policy_store=self.ai_policy)),
+            facts=self.ai_business_facts)
+        return planner.preview(
+            token=self._token(session_token),now=self._now(server_now),
+            topics=topics,platform=platform,
+            include_image_prompt=include_image_prompt)
 
     def edit_ai_memory(self, *, session_token, server_now,
                        memory, expected_memory):
