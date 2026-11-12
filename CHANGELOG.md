@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Hosting design selected ($7 Render Starter + Neon Free), unprovisioned
+
+- Record the owner-selected BAM infrastructure design: **one independent Render Starter web service ($7/month base)** and **one Neon Free PostgreSQL project ($0 within quotas)**, with strict separation from existing EdgePilot service and data.
+- Add `BAM_HOSTING_PLAN.json`, a read-only fail-closed planning contract and CI tests for all-disabled activation, uncreated resource identifiers, no service blueprint and $0 other approved charges. These tests protect plan history, not Render operational billing.
+- Update README, product plan, beta architecture, alpha readiness, development milestones and continuity; identify SQLite/PostgreSQL migration, ephemeral local file storage, verified backups, external auth and reliable job execution as real remaining gates.
+- **Planning only:** no Render or Neon creation, no charge authorization, no actual hard spending cap, no live users, paid AI or social posting. Requires reviewed PR and exact-head CI.
+
 ## November 12, 2026 — Atomic shared-account login throttling groundwork
 
 - Replace the offline throttle's read-then-write count updates with a single SQLite UPSERT, preventing lost increments when independent app/database clients log failures simultaneously.

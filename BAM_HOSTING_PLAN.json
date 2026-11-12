@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "decision_date": "2026-11-12",
+  "status": "planning_only",
+  "project": "Belenos Automatic Marketing",
+  "web_service": {
+    "provider": "render",
+    "instance_type": "starter",
+    "type": "new_dedicated_web_service",
+    "workspace_plan_for_estimate": "hobby",
+    "instance_count": 1,
+    "estimated_usd_month": 7,
+    "memory_mb": 512,
+    "render_service_id": null
+  },
+  "database": {
+    "provider": "neon",
+    "plan": "free",
+    "type": "new_separate_postgresql_project",
+    "estimated_usd_month": 0,
+    "storage_gb_per_project": 1,
+    "cu_hours_per_project_month": 100,
+    "neon_project_id": null
+  },
+  "cost_and_approval": {
+    "estimated_base_usd_month": 7,
+    "other_monthly_spend_authorized_usd": 0,
+    "service_creation_authorized": false,
+    "credit_card_charges_authorized": false,
+    "free_tier_overages_guaranteed_capped": false
+  },
+  "activation": {
+    "public_access": false,
+    "live_user_enrollment": false,
+    "google_oauth_real": false,
+    "meta_oauth_real": false,
+    "social_publishing": false,
+    "scheduled_job_execution": false,
+    "paid_ai_calls": false,
+    "real_email_delivery": false,
+    "billable_media_storage": false
+  },
+  "deployment": {
+    "application_created": false,
+    "database_created": false,
+    "release_entrypoint_approved": false,
+    "production_database_migration_complete": false,
+    "encrypted_backup_restore_verified": false,
+    "multi_tenant_live_tests_verified": false,
+    "domain_or_subdomain": null,
+    "auto_deploy_allowed": false
+  }
+}
