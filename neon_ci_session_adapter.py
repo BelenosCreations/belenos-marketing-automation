@@ -16,6 +16,8 @@ from neon_session_write_contract import prepare_session_priority_cas
 from neon_scoped_writes import priority_cas_result
 from neon_session_collaboration_contract import (
     prepare_session_pending_owner_invitations)
+from neon_session_inbox_contract import (
+    prepare_session_inbox_page,summarize_inbox_page)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -49,6 +51,17 @@ class EphemeralSessionPostgres:
             request_id=request_id,server_now=server_now)
         row=self._conn.execute(sql,params).fetchone()
         return summarize_held_draft_row(row)
+
+    def read_held_inbox_page(self,*,raw_session_token,tenant_id,server_now,
+                             limit=20,after_created_at=None,
+                             after_request_id=None,status=None):
+        sql,params=prepare_session_inbox_page(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            server_now=server_now,limit=limit,
+            after_created_at=after_created_at,
+            after_request_id=after_request_id,status=status)
+        rows=self._conn.execute(sql,params).fetchall()
+        return summarize_inbox_page(rows,limit=limit)
 
     def read_calendar_proposal(self,*,raw_session_token,tenant_id,request_id,
                                server_now):
