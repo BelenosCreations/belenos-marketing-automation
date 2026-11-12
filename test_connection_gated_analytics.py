@@ -75,6 +75,27 @@ class ConnectionGateTests(unittest.TestCase):
             self.gate.import_page(**dict(self.args,import_secret='bad'))
         self.assertEqual(self.fetcher.calls,0)
 
+    def test_legacy_write_scope_denied_before_fetch(self):
+        self.registry.db.execute("""INSERT INTO provider_connections VALUES
+            (?,?,?,?,?,?,?,?)""",
+            ('shop','facebook','page','vault/legacy',
+             'pages_manage_posts','connected',200,10))
+        self.registry.db.commit()
+        with self.assertRaises(PermissionError):
+            self.gate.import_page(**self.args)
+        self.assertEqual(self.fetcher.calls,0)
+
+    def test_revocation_cannot_be_undone_by_metadata_replay(self):
+        self.registry.register_trusted(**self.metadata)
+        self.registry.register_trusted(**dict(self.metadata,
+            state='revoked',now=50))
+        with self.assertRaises(ValueError):
+            self.registry.register_trusted(**dict(self.metadata,
+                state='connected',now=60))
+        with self.assertRaises(PermissionError):
+            self.gate.preview_import(**self.args)
+        self.assertEqual(self.fetcher.calls,0)
+
     def test_cross_tenant_denied(self):
         self.registry.register_trusted(**self.metadata)
         with self.assertRaises(PermissionError):
