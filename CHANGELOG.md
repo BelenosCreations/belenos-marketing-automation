@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — AI budget, drafts and cost ledger PostgreSQL schema stage (candidate)
+
+- Extend disposable PostgreSQL CI migration to stage 4, with eight more AI business fact, copy/prompt, media reference, usage receipt, generation idempotency, tenant/operator quota and paused operator-control tables (29 reviewed total).
+- Add migration of user AI usage `reserved_micro_usd` and `unpriced_requests` columns, explicit unique trusted-usage receipt reference per tenant/user, and **default paused** staging operator AI control.
+- Add source SQLite schema parity and real PostgreSQL checks for receipt duplicate denial, separate-business cost records and never-unpause control. No paid provider activation, billing or live database created. PR/main CI pending.
+
 ## November 12, 2026 — Seven additional provider/AI/auth tables (candidate)
 
 - Expand the reviewed PostgreSQL preview to 21 tables by adding AI preferences, AI private memories/usage, read-only provider connection metadata, Google challenges, OAuth attempts and private attachment metadata.

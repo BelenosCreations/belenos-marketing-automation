@@ -58,6 +58,10 @@ The first two synthetic PostgreSQL schema stages (nine core tables, then five pr
 
 Seven additional table definitions now have **actual disposable PostgreSQL CI coverage**, expanding the reviewed schema from 14 to **21 tables**. They cover each user's AI mode/memory/usage, *vault-reference-only* read-capable social connection metadata, Google nonce and OAuth PKCE attempt ledgers, and private content-attachment metadata. The new prepared read queries recheck current membership and business scope for connection metadata and each user's own AI usage. The query never returns vault references or provider tokens and does **not** establish live provider access. The CI-only migration journal now has a third version; many other tables and production work remain.
 
+### PostgreSQL AI budget and held content schema safety (offline)
+
+The fourth **ephemeral CI migration stage** now models AI business facts, independently editable post/image draft components and their verified-media references, projected AI cost receipts, generation idempotency, and tenant/operator spending counters. The reviewed subset expands to **29 tables**. It adds the reserved-cost/unpriced-request columns required by BAM's existing sponsorship logic, and starts staged PostgreSQL operator AI control **paused by default**. Real PostgreSQL CI verifies estimated-cost receipt deduplication and the pause invariant. This is a data-model safeguard, **not permission to call OpenAI or charge users**.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

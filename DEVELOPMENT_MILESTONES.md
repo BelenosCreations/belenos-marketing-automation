@@ -1076,3 +1076,7 @@ Review-only two-stage schema loader for disposable GitHub Actions Postgres: vers
 ## November 12, 2026 — AI, provider and authentication metadata PostgreSQL CI parity
 
 Seven reviewed DDL tables extend three stages of disposable PostgreSQL CI migration to 21 total: per-user AI settings/memory/usage, vault-reference-only provider metadata, Google challenge nonce, PKCE OAuth attempt, pending content attachments. SQL read contracts join active identity/current membership to prevent cross-business provider-list and personal AI usage leaks, with no secret/vault ref in the response. Real runner PostgreSQL tests, local SQLite parity and README/continuity docs. No real social OAuth, AI usage, hosting or payment; CI pending.
+
+## November 12, 2026 — AI cost containment and held content PostgreSQL schema parity
+
+Eight further tables and two usage columns in disposable PostgreSQL CI migration stage 4 (29 reviewed total). Includes private confirmed facts, independently editable AI copy/image prompts, verified media references, deduplicated estimated AI costs, generation idempotency, tenant/operator quotas and operator pause defaulted ON for staged PostgreSQL. Actual PostgreSQL tests for unique provider usage receipt/hash and pause; source SQLite parity. No real provider execution, billing, production migration or publishing. README/CHANGELOG/continuity updated; CI pending.
