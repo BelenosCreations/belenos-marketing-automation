@@ -2,6 +2,8 @@
 
 **Status: only partial schema blueprint, NO migration, NO Neon connection, no approved deployment.**
 
+**Verified offline-only groundwork:** PR #30 (partial nine-table schema/DDL parity), PR #31 (all-table metadata inventory and prepared read SQL), PR #32 (privacy-safe local integrity checks) and PR #33 (priority CAS SQL preview) each passed exact merged-main GitHub Actions through `1c4ab9b7` (Actions 43218122644). **No Neon PostgreSQL connection or real migration exists.** Do not mistake placeholder-converted SQLite tests for PostgreSQL compatibility or production tenant isolation.
+
 BAM's current alpha instantiates multiple SQLite-first service modules with `CREATE TABLE` statements, `PRAGMA table_info` checks and occasional SQLite-specific `AUTOINCREMENT`, `BEGIN IMMEDIATE` and `sqlite3.IntegrityError` handling. Passing unit tests in SQLite does not prove code will run on PostgreSQL. Never expose the offline gateway to Render or insert a PostgreSQL URL into its SQLite connection.
 
 ## Verified offline subset blueprint

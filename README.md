@@ -4,11 +4,11 @@
 
 > **Current status — November 12, 2026:** **Private offline alpha, not a deployed commercial service.** A responsive, authenticated local web interface and extensive Python/JavaScript backend foundations exist on the active development branch. Real social-account OAuth, live analytics, executable post scheduling/publishing, paid OpenAI calls, production hosting, and an Android APK are **not yet active**. Publishing remains **disabled** and requires separate, explicit authorization. See [alpha readiness](ALPHA_BETA_READINESS.md) and [development continuity](DEVELOPMENT_CONTINUITY.md).
 
-**Latest fully verified GitHub baseline before this planning change (November 12, 2026):** both `main` and `development/phase-3-5-account-directory` at `2321a19bc4f683aa88fa89b115e3df20106ac071`, with [merged-main CI 43211450362](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43211450362) **success** after PR #28. Offline AI input/output hardening, trusted password/Google invitation acceptance, calendar readiness, local-only gateway hardening and concurrent login failure counting have been tested. These do **not** establish production hosting, external provider connections, paid AI, executable scheduling, live publication or Android release.
+**Last fully verified code checkpoint (November 12, 2026):** `main` and `development/phase-3-5-account-directory` synchronized at `1c4ab9b7cd92e8ffc0984240866447ff66d24c00`, [full merged-main CI 43218122644](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43218122644) **success** after PR #33. PRs #30–#33 added offline-only Neon planning: nine-table DDL preview, complete local SQLite schema inventory, active-member/tenant-scoped prepared PostgreSQL read contracts, aggregate integrity preflight, and held-draft priority CAS SQL preview with synthetic SQLite tests. These do **not** establish real PostgreSQL execution, production hosting, external provider access, paid AI, executable scheduling or an Android release.
 
 ### Private beta preparation (November 12)
 
-The offline BAM WSGI composition now checks for loopback-only network context: requests advertising public origins or reverse proxies are denied before any route. This is an **offline defense-in-depth regression**, not production hosting or an endorsed public server. A separate hardened production runtime and explicit budget/hosting decision remain prerequisites. See [private beta infrastructure proposal](PRIVATE_BETA_INFRASTRUCTURE.md).
+The offline BAM WSGI composition now checks for loopback-only network context: requests advertising public origins or reverse proxies are denied before any route. This is an **offline defense-in-depth regression**, not production hosting or an endorsed public server. A separate hardened production runtime, explicit authorization to create the selected Render/Neon services, and approvals for any other costs remain prerequisites. See [private beta infrastructure proposal](PRIVATE_BETA_INFRASTRUCTURE.md).
 
 ### Atomic account login-failure accounting (offline Alpha)
 
@@ -37,6 +37,10 @@ A migration safety audit now checks synthetic/local SQLite data for **orphan ide
 ### Guarded PostgreSQL-style priority write preview (offline)
 
 BAM now has a **non-executing** SQL contract for editing a held draft's priority on PostgreSQL. It combines current active/verified identity, editable team role, tenant scope and `priority_token` compare-and-swap within one `UPDATE ... RETURNING` statement. Separate synthetic SQLite tests verify that stale editors, viewers, revoked members and other businesses cannot change priority. This does not approve, schedule or publish a post, and it is **not yet tested on Neon**. It is not wired into a production application or exposed as an API.
+
+### Database transition checkpoint and next release gate
+
+The current Alpha remains fully SQLite-backed. All Neon DDL, query and integrity additions are offline **planning/tests only**; no PostgreSQL connection is implemented or running. The first nine-table schema preview is incomplete, and the full inventory still lists unmapped tables. A useful hosted private beta will require complete schema and data migration, correctly authenticated PostgreSQL transactions, private durable media, encrypted backup/restore, and verified live cross-business isolation. The owner-selected **separate $7/month Render Starter + free Neon** design is recorded but **not authorized for provisioning or billing**. See [Neon roadmap](NEON_MIGRATION_ROADMAP.md), [hosting gates](PRIVATE_BETA_INFRASTRUCTURE.md), and [readiness evidence](ALPHA_BETA_READINESS.md).
 
 ## Product experience
 
