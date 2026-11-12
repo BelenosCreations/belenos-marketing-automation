@@ -73,3 +73,8 @@ The public repository can now run standard GitHub-hosted runners with temporary 
 ## Cost and authorization
 
 Target remains one new separate $7/month **Render Starter** BAM service and one dedicated **Neon Free PostgreSQL** project, *planning only*. Additional service or paid worker/storage/backup/email/AI costs: **$0 authorized**. No resource creation, connection or deployment may happen without new explicit owner approval. See `BAM_HOSTING_PLAN.json` and `PRIVATE_BETA_INFRASTRUCTURE.md`.
+
+
+## Token-authenticated priority-only edit query (November 12, 2026 candidate)
+
+The non-executing neon_session_write_contract SQL builder hashes the server-presented session token and performs same-statement tenant, role, identity, expiry and revocation checks while comparing a draft priority version token. Offline and ephemeral PostgreSQL tests include cross-business denial, stale edits and concurrent writers. This is not a production database adapter, live gateway, user-facing API or publication permission. Trusted ingress, transaction controls, backups, full schema port and explicit deployment approval remain required.

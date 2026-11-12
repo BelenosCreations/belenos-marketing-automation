@@ -662,5 +662,78 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(current[1],1)
 
 
+    def test_pg_session_bound_priority_edit_is_tenant_scoped_and_revocable(self):
+        import hashlib
+        from neon_session_write_contract import prepare_session_priority_cas
+        token='Synthetic_Postgres_Authenticated_Edit_Token_123'
+        digest=hashlib.sha256(token.encode()).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",(digest,self.a))
+        def prepare(tenant='shop-a',rid=None,expected=None,now=101):
+            return prepare_session_priority_cas(
+                raw_session_token=token,tenant_id=tenant,
+                request_id=self.rid_a if rid is None else rid,
+                expected_priority_token=self.priority_token if expected is None
+                    else expected,priority=6,server_now=now)
+        sql,params=prepare()
+        self.assertNotIn(token,sql+str(params))
+        self.assertNotIn(self.a,sql+str(params))
+        self.assertIsNone(self.conn.execute(*prepare(
+            tenant='shop-b',rid=self.rid_b)).fetchone())
+        self.assertIsNone(self.conn.execute(*prepare(now=3600)).fetchone())
+        self.conn.execute("""UPDATE members SET role='viewer'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.assertIsNone(self.conn.execute(*prepare()).fetchone())
+        self.conn.execute("""UPDATE members SET role='owner'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        receipt=priority_cas_result(self.conn.execute(sql,params).fetchone(),
+                                    expected_new_token=params[1])
+        self.assertFalse(receipt['publishing_enabled'])
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        self.assertEqual(self.conn.execute("""SELECT priority,revision,draft_text
+            FROM content_requests WHERE request_id=%s""",(self.rid_a,)
+            ).fetchone(),(6,1,'private tenant A copy'))
+        self.conn.execute("""UPDATE sessions SET revoked_at=102
+            WHERE token_hash=%s""",(digest,))
+        self.assertIsNone(self.conn.execute(*prepare(
+            expected=params[1],now=103)).fetchone())
+
+    def test_pg_two_session_bound_concurrent_cas_only_one_wins(self):
+        import hashlib
+        from neon_session_write_contract import prepare_session_priority_cas
+        token='Synthetic_Postgres_Concurrent_Edit_Token_123456'
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (hashlib.sha256(token.encode()).hexdigest(),self.a))
+        barrier=threading.Barrier(2)
+        results=[]
+        errors=[]
+        def worker(priority):
+            conn=self._connect()
+            try:
+                sql,params=prepare_session_priority_cas(
+                    raw_session_token=token,tenant_id='shop-a',
+                    request_id=self.rid_a,
+                    expected_priority_token=self.priority_token,
+                    priority=priority,server_now=101)
+                barrier.wait(timeout=15)
+                results.append(conn.execute(sql,params).fetchone() is not None)
+            except Exception as exc:
+                errors.append(type(exc).__name__)
+            finally:
+                conn.close()
+        threads=[threading.Thread(target=worker,args=(v,)) for v in (2,9)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=20)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertEqual(errors,[])
+        self.assertEqual(sorted(results),[False,True])
+
+
+
 if __name__=='__main__':
     unittest.main()

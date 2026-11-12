@@ -1,5 +1,7 @@
 # BAM — Belenos Automatic Marketing
 
+**Verified checkpoint (November 12, 2026):** PR #45 merged at 1bfedc0e and [merged-main CI 43262031729](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43262031729) passed. The next candidate is a token-hash-authenticated, atomic, priority-only PostgreSQL draft edit with no user-facing endpoint; its new CI is pending. All hosting, paid AI and publishing remain disabled. BAM has **$0 authorized additional spending**.
+
 **BAM is an AI-assisted marketing planning, creation, collaboration, scheduling, and analytics platform for businesses.** It is intended to replace the need for a separate marketing scheduler such as Metricool for its core supported workflows. Each business has its own workspace, brand voice, content, social connections, team permissions, and reporting. BAM is the product name; it is **not limited to Belenos Creations or any particular industry**.
 
 > **Current status — November 12, 2026:** **Offline Alpha, not a deployed commercial service. The source repository is public; the app is not.** A responsive, authenticated local web interface and extensive Python/JavaScript backend foundations exist on the active development branch. Real social-account OAuth, live analytics, executable post scheduling/publishing, paid OpenAI calls, production hosting, and an Android APK are **not yet active**. Publishing remains **disabled** and requires separate, explicit authorization. See [alpha readiness](ALPHA_BETA_READINESS.md) and [development continuity](DEVELOPMENT_CONTINUITY.md).
