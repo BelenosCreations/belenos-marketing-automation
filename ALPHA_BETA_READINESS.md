@@ -74,3 +74,7 @@ An optionally keyed AI cost ledger can now reject duplicate or conflicting trust
 ## Mandatory pre-dispatch OpenAI guard (offline Alpha)
 
 An enabled transport now requires a trusted operator guard, checked before resolving a key and again before the HTTPS opener; negative/missing/error states deny dispatch. The offline `SponsoredAIQuota` exposes a trusted guard reflecting the durable operator pause. Code `d14bbd3f` passed [GitHub Actions 43144166053](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144166053). This is **not** a guarantee of atomic network cancellation or actual billed-spend enforcement. Private beta still requires operator-approved provider access, worker fencing, credential vault, verified prices, billing reconciliation and deployment security tests.
+
+## Provider response identity and estimated cost events (offline Alpha)
+
+The simulated Responses execution boundary now derives a per-response private usage reference and passes it to the scoped, deduplicating estimated-cost ledger. Missing or malformed IDs fail closed, reused IDs with conflicting counts are refused, and cross-business isolation is tested. Code `f95f0820` passed [GitHub Actions 43145005354](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43145005354). This is **not verified provider billing**, a complete reservation-to-receipt ledger, or a real OpenAI activation. Beta still requires independent reconciliation and owner-approved paid API pricing/credentials.

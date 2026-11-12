@@ -20,6 +20,10 @@
 **New verified development code:** `d14bbd3f1857d73777a6ec8b958ac0b474a2a1d6` passed [GitHub Actions 43144166053](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144166053). Mandatory offline OpenAI dispatch guard checks are committed but **not yet merged into main**. This docs-only checkpoint must pass its own CI.
 **Safety:** Even with a quota pause and transport preflight, a newly activated pause cannot atomically cancel a concurrent network send already past its final check. Production provider transport remains disabled by default; no paid OpenAI, social publishing or hosting was activated.
 
+**Latest verified `main` checkpoint:** `2d491c0c9e2425021cbc2394614acee591aa744e`, [full main Actions 43144758552](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144758552) **passed**, merged in [PR #19](https://github.com/BelenosCreations/belenos-marketing-automation/pull/19). Development was fast-forwarded to this merge.
+**New verified development source:** `f95f0820080ac77600257e0ea072a0d0c0af3fa3`, [GitHub Actions 43145005354](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43145005354) **passed**. Provider-response identity is connected to the optional local estimated-cost deduplication observer, with fake-transport tests only. Not yet merged to `main`; the following documentation-only SHA requires its own CI.
+**Provider/financial safety:** Real paid OpenAI, token-price verification, invoice reconciliation, encrypted vault, durable worker fencing, social publishing, public hosting and billing remain explicitly **disabled or pending separate authorization**. A rejected/invalid response does not prove the provider was not billed.
+
 ## Most recent development milestone
 
 - Sponsored request-count and operator-estimated micro-USD quotas are atomic across the individual, business, and BAM operator. Unpriced historical requests prevent accidental mid-month cost undercounting.

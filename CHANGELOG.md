@@ -1,5 +1,13 @@
 # Changelog
 
+## November 11, 2026 — Provider response identity wired into estimated AI cost deduplication
+
+- The offline OpenAI Responses executor now requires a strictly validated `resp_...` identifier **when a trusted usage observer is configured**. It derives a deterministic, private 128-bit SHA-256-based `usage_ref` and forwards it with tenant/user/model/token counters to `AICostLedger.record_trusted`.
+- The earlier optional ledger deduplication is now exercised end to end with synthetic Responses API envelopes: repeated identical provider IDs produce one estimated-cost event, conflicting counts for a reused ID fail closed, different businesses remain isolated, and malformed/missing IDs never reach the observer.
+- The raw Responses identifier is not persisted in the usage ledger or surfaced to clients; the underlying optional SQLite receipt reference is hashed again in storage. Legacy ledger rows remain intact.
+- **Code verified:** `f95f0820080ac77600257e0ea072a0d0c0af3fa3` passed [GitHub Actions 43145005354](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43145005354); this documentation-only checkpoint requires its own exact-SHA run.
+- **Limitations:** These are fake-transport local tests, not verified live provider usage, billing reconciliation, or a money-back guarantee. An actual provider request may have incurred costs even if its returned ID or usage is unusable. Live OpenAI, customer billing, publishing and hosting stay disabled.
+
 ## November 11, 2026 — Mandatory pre-dispatch OpenAI pause checks
 
 - The *injected* `OpenAITransport` now requires a **trusted server-side dispatch guard whenever explicitly enabled**; an absent, noncallable, false, nonboolean or exception-raising guard fails closed before resolving an API key or using the network opener.
