@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Offline gateway network isolation and beta architecture plan
+
+- Add a fail-closed test-gateway guard for public remote IPs, non-loopback Host/ServerName and forwarded-proxy metadata. Enforce it before sign-in, team invitations or UI assets.
+- Add negative regression tests and a host-neutral proposed production architecture covering multi-business persistence, media, worker, vault, backup, hosting and cost-approval boundaries.
+- **Verification pending:** exact source CI plus reviewed PR and merged-main CI required. No production hosting, new payment, live OAuth, paid AI or publishing enabled.
+
+
 ## November 12, 2026 — Verified multi-milestone checkpoint
 
 Five reviewed PRs passed full Python and JavaScript CI at the PR source and after merge to `main`, with fast-forward-only synchronization of development:

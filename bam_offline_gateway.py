@@ -58,6 +58,7 @@ from bam_team_membership_wsgi import BAMTeamMembershipWSGI
 from business_invitations import BusinessInvitations
 from bam_team_invitations_wsgi import BAMTeamInvitationsWSGI
 from bam_invitation_accept_wsgi import BAMInvitationAcceptWSGI
+from bam_offline_network_guard import offline_gateway_request_allowed
 
 _AUTH_PATHS = frozenset((
     '/api/v1/auth/password', '/api/v1/auth/google-challenge',
@@ -245,6 +246,12 @@ class BAMOfflineGateway:
             return self._unavailable(
                 start_response,'503 Service Unavailable',
                 'BAM offline integration is disabled')
+        # Not a production WSGI app: deny public/proxied origins before
+        # serving assets, validating credentials or mutating any records.
+        if not offline_gateway_request_allowed(environ):
+            return self._unavailable(
+                start_response,'403 Forbidden',
+                'Offline gateway is local-only')
         path = environ.get('PATH_INFO')
         if self.serve_browser_assets and (path == '/' or
             (type(path) is str and (path.startswith('/ui/') or

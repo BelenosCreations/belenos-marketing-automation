@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Offline WSGI public-exposure boundary | **New defense-in-depth test guard, pending CI; not a production gateway** | Reject public Host/IP/proxy metadata; build a separate hardened production runtime, enforce network isolation and verify hosted tests |
 | Responsive signed-in overview with large cards and deeper details | **Implemented in offline alpha**, not production validated | Mobile browser checks at common Android sizes, focus/keyboard accessibility smoke tests, signed-in shell regression |
 | Password sign-in, business switching, logout, and role restrictions | **Offline scaffolding and tests** | Correct session expiry, revocation, role-change and current-tenant isolation under an actual hosted trusted identity service |
 | Read-only social connection metadata and analytics revocation | **Verified offline concurrency, not connected to actual social APIs** | Internal read-capability allowlist, monotonic status/revocation, transaction-time permission recheck, separate-client races; still requires trusted OAuth, vault, real platform data, token lifecycle and app review before Beta |
