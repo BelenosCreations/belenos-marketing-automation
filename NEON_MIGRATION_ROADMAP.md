@@ -1,5 +1,9 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Session-authenticated held draft writes in disposable PostgreSQL (candidate — November 12, 2026)
+
+Build on verified PR #51 (`386efe5f`, merged-main CI 43317840660 passed): generate SQL-only, parameterized held-draft INSERT and optimistic draft text/guidance UPDATE, with active session token hash, current tenant, editor role, verified identity and session expiry/revocation checked in the *same* statement. All new drafts begin unapproved in `needs_content` state, provided media is empty, and only allowed text fields can be revised with revision compare-and-swap. The restricted CI adapter uses transaction-scoped execution and has no external connectivity, scheduler, approval/publish action, media upload, or paid AI. SQLite-source and real ephemeral PostgreSQL tests must cover hostile input, tenant isolation and concurrent editors before merge. Real Neon data migration, production pool/gateway, backups and beta access remain blocked pending separate engineering and user authorization.
+
 ## Owner-private collaboration roster read (candidate — November 12, 2026)
 
 PR #50 is verified on merged main `dd0b3210`, Actions 43316746266 successful, with development synchronized. Add a read-only owner roster SQL contract to the disposable PostgreSQL CI adapter, compatible with the offline team roster's public fields. Same-statement current owner-session/membership checks protect member emails; unverified or disabled target email values remain redacted, and inactive membership remains visible to the owner for management. Current offline team-management mutations are **not** ported or enabled against Postgres. Validate local SQLite and ephemeral PostgreSQL role/tenant/revocation denial before PR/main merge. No customer data migration, provider API, public gateway or spending authorization.

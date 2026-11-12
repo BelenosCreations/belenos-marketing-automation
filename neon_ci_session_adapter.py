@@ -20,6 +20,9 @@ from neon_session_inbox_contract import (
     prepare_session_inbox_page,summarize_inbox_page)
 from neon_session_team_contract import (
     prepare_session_owner_team_roster,summarize_owner_team_roster)
+from neon_session_draft_write_contract import (
+    prepare_session_held_draft_create,summarize_held_draft_create,
+    prepare_session_held_draft_revision,summarize_held_draft_revision)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -92,6 +95,31 @@ class EphemeralSessionPostgres:
             server_now=server_now)
         rows=self._conn.execute(sql,params).fetchall()
         return summarize_owner_team_roster(rows,tenant_id=tenant_id)
+
+    def create_held_draft(self,*,raw_session_token,tenant_id,channel,
+                          draft_text,suggestion,required_items,
+                          priority=0,server_now):
+        sql,params=prepare_session_held_draft_create(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            channel=channel,draft_text=draft_text,suggestion=suggestion,
+            required_items=required_items,priority=priority,
+            server_now=server_now)
+        with self._conn.transaction():
+            row=self._conn.execute(sql,params).fetchone()
+            return summarize_held_draft_create(
+                row,expected_id=params[0],tenant_id=tenant_id,
+                expected_priority_token=params[7])
+
+    def revise_held_draft(self,*,raw_session_token,tenant_id,request_id,
+                          target,revised_text,expected_revision,server_now):
+        sql,params=prepare_session_held_draft_revision(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            request_id=request_id,target=target,revised_text=revised_text,
+            expected_revision=expected_revision,server_now=server_now)
+        with self._conn.transaction():
+            row=self._conn.execute(sql,params).fetchone()
+            return summarize_held_draft_revision(
+                row,request_id=request_id,expected_revision=expected_revision)
 
     def update_draft_priority(self,*,raw_session_token,tenant_id,request_id,
                               expected_priority_token,priority,server_now):

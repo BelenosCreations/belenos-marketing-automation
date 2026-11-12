@@ -1009,5 +1009,176 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             separate.close()
 
 
+    def test_pg_authenticated_create_and_revise_held_draft(self):
+        import hashlib
+        import json
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Draft_Create_Owner_Session_123456789'
+        viewer='Synthetic_PG_Draft_Create_Viewer_Session_12345678'
+        for bearer,actor,role in ((token,self.a,'owner'),
+                                  (viewer,self.viewer,'viewer')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (hashlib.sha256(bearer.encode('ascii')).hexdigest(),
+                 actor,role))
+        owner=EphemeralSessionPostgres(self.conn)
+        base={'raw_session_token':token,'tenant_id':'shop-a',
+              'channel':'facebook','draft_text':'New held copy',
+              'suggestion':'Use approved artwork',
+              'required_items':['image','alt_text'],'server_now':101}
+        with self.assertRaises(PermissionError):
+            owner.create_held_draft(**(base|{'tenant_id':'shop-b'}))
+        with self.assertRaises(PermissionError):
+            owner.create_held_draft(
+                **(base|{'raw_session_token':viewer}))
+        created=owner.create_held_draft(**base,priority=3)
+        rid=created['request_id']
+        self.assertEqual(len(rid),32)
+        self.assertEqual(created['revision'],1)
+        self.assertFalse(created['publishing_enabled'])
+        self.assertEqual(created['posts_scheduled'],0)
+        row=self.conn.execute("""SELECT tenant_id,status,priority,revision,
+            provided_items,required_items,draft_text,suggestion
+            FROM content_requests WHERE request_id=%s""",(rid,)).fetchone()
+        self.assertEqual(row[:5],('shop-a','needs_content',3,1,'{}'))
+        self.assertEqual(json.loads(row[5]),['image','alt_text'])
+        self.assertEqual(row[6:],
+                         ('New held copy','Use approved artwork'))
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM bam_calendar_proposals""").fetchone()[0],0)
+        edited=owner.revise_held_draft(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=rid,target='draft_text',
+            revised_text='Revision two',expected_revision=1,
+            server_now=102)
+        self.assertEqual(edited['draft_text'],'Revision two')
+        self.assertEqual(edited['suggestion'],'Use approved artwork')
+        self.assertEqual(edited['revision'],2)
+        self.assertFalse(edited['publishing_enabled'])
+        with self.assertRaises(PermissionError):
+            owner.revise_held_draft(
+                raw_session_token=token,tenant_id='shop-a',
+                request_id=rid,target='draft_text',
+                revised_text='Stale overwrite',expected_revision=1,
+                server_now=103)
+        with self.assertRaises(PermissionError):
+            owner.revise_held_draft(
+                raw_session_token=viewer,tenant_id='shop-a',
+                request_id=rid,target='suggestion',
+                revised_text='Viewer overwrite',expected_revision=2,
+                server_now=103)
+        other=owner.revise_held_draft(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=rid,target='suggestion',
+            revised_text='Updated guidance',expected_revision=2,
+            server_now=104)
+        self.assertEqual(other['revision'],3)
+        self.assertEqual(other['status'],'needs_content')
+        self.assertEqual(self.conn.execute(
+            'SELECT COUNT(*) FROM tenant_posts').fetchone()[0],0)
+
+    def test_pg_authenticated_write_session_change_and_revocation(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Create_Draft_Revocation_1234567890'
+        digest=hashlib.sha256(token.encode('ascii')).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (digest,self.a))
+        second=self._connect()
+        try:
+            adapter=EphemeralSessionPostgres(second)
+            base={'raw_session_token':token,'tenant_id':'shop-a',
+                  'channel':'facebook','draft_text':'Private copy',
+                  'suggestion':'Original photo',
+                  'required_items':['image'],'server_now':101}
+            created=adapter.create_held_draft(**base)
+            self.conn.execute("""UPDATE members SET role='viewer'
+                WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+            with self.assertRaises(PermissionError):
+                adapter.create_held_draft(**base)
+            with self.assertRaises(PermissionError):
+                adapter.revise_held_draft(
+                    raw_session_token=token,tenant_id='shop-a',
+                    request_id=created['request_id'],target='suggestion',
+                    revised_text='No access',expected_revision=1,
+                    server_now=102)
+            self.conn.execute("""UPDATE members SET role='owner'
+                WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+            self.conn.execute("""UPDATE bam_identities SET email_verified=0
+                WHERE subject_id=%s""",(self.a,))
+            with self.assertRaises(PermissionError):
+                adapter.create_held_draft(**base)
+            self.conn.execute("""UPDATE bam_identities SET email_verified=1
+                WHERE subject_id=%s""",(self.a,))
+            with self.assertRaises(PermissionError):
+                adapter.create_held_draft(
+                    **(base|{'server_now':3600}))
+            self.conn.execute("""UPDATE sessions SET revoked_at=103
+                WHERE token_hash=%s""",(digest,))
+            with self.assertRaises(PermissionError):
+                adapter.create_held_draft(
+                    **(base|{'server_now':104}))
+            with self.assertRaises(PermissionError):
+                adapter.revise_held_draft(
+                    raw_session_token=token,tenant_id='shop-a',
+                    request_id=created['request_id'],target='draft_text',
+                    revised_text='No access',expected_revision=1,
+                    server_now=104)
+            self.assertEqual(self.conn.execute("""SELECT revision
+                FROM content_requests WHERE request_id=%s""",
+                (created['request_id'],)).fetchone()[0],1)
+        finally:
+            second.close()
+
+    def test_pg_two_clients_only_one_held_revision_wins(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Concurrent_Held_Revision_123456789'
+        digest=hashlib.sha256(token.encode('ascii')).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",(digest,self.a))
+        adapter=EphemeralSessionPostgres(self.conn)
+        created=adapter.create_held_draft(
+            raw_session_token=token,tenant_id='shop-a',channel='facebook',
+            draft_text='Unchanged original',suggestion='Owned photo',
+            required_items=['image'],server_now=101)
+        barrier=threading.Barrier(2)
+        successes=[]
+        errors=[]
+        def writer(copy):
+            client=self._connect()
+            try:
+                gateway=EphemeralSessionPostgres(client)
+                barrier.wait(timeout=15)
+                try:
+                    result=gateway.revise_held_draft(
+                        raw_session_token=token,tenant_id='shop-a',
+                        request_id=created['request_id'],
+                        target='draft_text',revised_text=copy,
+                        expected_revision=1,server_now=102)
+                    successes.append(result['draft_text'])
+                except PermissionError:
+                    errors.append('stale')
+            finally:
+                client.close()
+        workers=[threading.Thread(target=writer,args=(copy,))
+                 for copy in ('Editor A','Editor B')]
+        for worker in workers:
+            worker.start()
+        for worker in workers:
+            worker.join(timeout=20)
+        self.assertTrue(all(not worker.is_alive() for worker in workers))
+        self.assertEqual(len(successes),1)
+        self.assertEqual(errors,['stale'])
+        row=self.conn.execute("""SELECT draft_text,revision,status
+            FROM content_requests WHERE request_id=%s""",
+            (created['request_id'],)).fetchone()
+        self.assertEqual(row,(successes[0],2,'needs_content'))
+
+
 if __name__=='__main__':
     unittest.main()
