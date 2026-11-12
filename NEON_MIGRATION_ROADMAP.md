@@ -20,6 +20,10 @@ Run `python -m neon_schema_inventory` for a no-data, ephemeral initialized schem
 
 `neon_integrity_preflight.py` performs read-only `PRAGMA integrity_check`/`foreign_key_check` and aggregate-only cross-table checks for membership, identities, credentials, sessions, normalized email collisions, role/tokens and held calendar pointers. The strict fixture helper raises on findings but still refuses to declare production readiness. Run it **only on trusted offline synthetic test data** in this phase. It exports no customer rows or secrets, does not connect to Postgres and does not validate production restore, privacy or independent transaction isolation. Some existing offline bootstrapped identities may intentionally have no verified identity record; those conditions appropriately appear as future migration blockers.
 
+## Non-executing priority compare-and-swap SQL preview
+
+`neon_scoped_writes.py` produces a prepared PostgreSQL `UPDATE ... RETURNING` contract for held draft priority only, with a same-statement check of active/verified identity, current eligible team role, tenant and priority-version token. The fixture tests run against SQLite after explicit test-only parameter conversion. No caller can use this module to connect or write to Neon, and it has **no publish/schedule capability**. Before real migration, verify PostgreSQL transaction isolation and rowcount/return values, true authenticated trusted principal resolution, audit events, error mapping and conflict/permission behavior.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

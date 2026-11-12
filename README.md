@@ -34,6 +34,10 @@ The next portability slice defines **parameterized, read-only SQL** for private 
 
 A migration safety audit now checks synthetic/local SQLite data for **orphan identities or sessions, stale membership roles, malformed session hashes, duplicate normalized emails, and orphan draft-calendar links**. The report contains only aggregate counts and boolean readiness indicators—never email addresses, session tokens, password digests or draft text. It is read-only and permanently marks production readiness false; a passing local audit is **not** proof that Neon can host BAM. See [Neon migration roadmap](NEON_MIGRATION_ROADMAP.md).
 
+### Guarded PostgreSQL-style priority write preview (offline)
+
+BAM now has a **non-executing** SQL contract for editing a held draft's priority on PostgreSQL. It combines current active/verified identity, editable team role, tenant scope and `priority_token` compare-and-swap within one `UPDATE ... RETURNING` statement. Separate synthetic SQLite tests verify that stale editors, viewers, revoked members and other businesses cannot change priority. This does not approve, schedule or publish a post, and it is **not yet tested on Neon**. It is not wired into a production application or exposed as an API.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:
