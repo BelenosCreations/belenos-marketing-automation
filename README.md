@@ -258,3 +258,7 @@ This is **not a production/public invitation flow**: the gateway is a direct-cal
 ### Private calendar readiness digest (offline Alpha)
 
 A new owner/teammate-scoped **read-only** `GET /api/v1/calendar-readiness` reports held draft-calendar proposals, counts of draft revisions requiring refresh and owner-configured posting times that have changed, plus an explicit publication-blocker list for each item. The response contains no proposal edit tokens, and neither a current draft nor an apparently valid posting time is presented as permission to publish. The final publication review and social writing integration are deliberately reported unavailable. HTTPS, session validation, tenant isolation and strict response shape checks are exercised in offline WSGI regression tests. It creates **zero scheduled jobs** and cannot publish.
+
+## Public GitHub readiness (preparation only)
+
+Hosting this source publicly is under consideration to reduce GitHub Actions compute costs. The repository remains private until a historical credential and Actions-artifact review is complete. See [Public repository readiness](PUBLIC_REPOSITORY_READINESS.md). Repository visibility does not grant permission for live integrations, production deployment, additional spending, trades, transfers or publishing.
