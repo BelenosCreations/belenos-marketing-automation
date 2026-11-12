@@ -183,3 +183,7 @@ When a historical document mentions Metricool, treat that mention as **supersede
 ### Offline recovery evidence (November 11, 2026)
 
 The local Alpha test suite verifies SQLite's online backup/restore consistency, database integrity, business draft isolation, member-change audit and tenant-scoped revoked sessions across restore. The test snapshots are temporary and unencrypted, so Gate B still requires **an approved encrypted off-site backup service, retention policy, recovery monitoring and production-database restore drill**. This test alone does not authorize or configure a backup provider.
+
+### Offline read-only connection hardening (November 11, 2026)
+
+The disconnected Alpha metadata registry now rejects permission markers other than the internal `read_insights` label and prevents delayed updates from reviving a revoked connection. Read-only fake analytics imports revalidate connection status under the SQLite write lock, with two-client revocation-in-flight regression tests. These are safety foundations only; they neither verify Meta scopes nor connect real Pages or authorize a network call. Future credential reauthorization requires a new trusted OAuth workflow and fresh user permission.
