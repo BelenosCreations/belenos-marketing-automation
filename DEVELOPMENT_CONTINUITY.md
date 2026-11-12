@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## AI budget PostgreSQL schema stage candidate — November 12, 2026
+
+**Verified starting point:** PR #39 merged `e7b4dcc9d79a21b702364c3196a9d8674e91b2ff` with full [main Actions 43244657532](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43244657532) **success**; dev fast-forwarded without force.
+
+**Current unverified stage 4:** eight AI budget/content/cost tables and two user budget columns, on temporary PostgreSQL runner. Includes staging-only operator AI pause by default and scoped unique estimated cost usage reference. Source code/tests/README/roadmap await PR and merged-main CI, then safe dev sync. No real OpenAI API call, Neon/Render resource, paid storage or live publishing.
+
 ## Third ephemeral PostgreSQL schema stage candidate — November 12, 2026
 
 **Last verified baseline:** PR #38 merged at `73d072394ddcf500d81753c1878171e2e5621fbc` and full [merged-main CI 43243478933](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43243478933) **success**, development safely synchronized.

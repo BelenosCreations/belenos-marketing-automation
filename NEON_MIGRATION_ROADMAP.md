@@ -42,6 +42,10 @@ The public repository can now run standard GitHub-hosted runners with temporary 
 
 `neon_identity_provider_schema.py` defines a further seven PostgreSQL table previews (total **21**) covering AI mode/memories/request usage, private provider connection vault **references** (not raw OAuth credentials), Google nonce challenges, OAuth attempt PKCE hashes, and attachment metadata. A third CI-only schema migration version replays this stage with journal checksums. `neon_scoped_provider_queries.py` adds current-role tenant-scoped provider metadata reads without selecting a vault ref, and same-identity AI usage queries. Synthetic SQLite and actual temporary PostgreSQL tests confirm isolation and revocation; these are *not* a real OAuth integration, AI billing implementation, content storage provider or Neon deployment.
 
+## Fourth stage: AI cost limits, verified facts and held draft components
+
+`neon_ai_budget_schema.py` adds eight SQL preview tables, bringing the reviewed test subset to **29 tables**. The stage also adds `reserved_micro_usd` and `unpriced_requests` to stage-3 user AI usage, mirroring the actual local sponsorship initializer's post-upgrade columns. Cost ledger schema preserves the tenant/user-scoped unique trusted-usage hash, while stage-only operator control starts `paused=1` rather than silently allowing sponsored provider calls. GitHub Actions uses its disposable PostgreSQL container to verify deduplication and pause rules. Values remain **estimates**, not real provider invoices; no automatic OpenAI permission, production Postgres adapter or approved Neon deployment exists.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

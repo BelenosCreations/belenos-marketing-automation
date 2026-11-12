@@ -12,6 +12,7 @@ from neon_schema_blueprint import ddl_preview,TABLE_NAMES
 from neon_collaboration_schema import (
     COLLABORATION_NAMES,collaboration_ddl_preview)
 from neon_identity_provider_schema import EXTRA_TABLE_NAMES
+from neon_ai_budget_schema import BUDGET_TABLE_NAMES,ai_budget_ddl_preview
 from neon_scoped_provider_queries import (
     prepare_connections_read,prepare_personal_ai_usage,
     safe_connection_preview)
@@ -60,7 +61,11 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
     def setUp(self):
         self.conn.execute('TRUNCATE TABLE '+','.join(
-            TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES)+' CASCADE')
+            TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
+            tuple(name for name in BUDGET_TABLE_NAMES if
+                name!='bam_ai_operator_control'))+' CASCADE')
+        self.conn.execute("""UPDATE bam_ai_operator_control
+            SET paused=1,updated_at=0 WHERE control_id=1""")
         self.a='identityA'
         self.b='identityB'
         self.viewer='viewerC'
@@ -90,8 +95,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
     def test_ci_schema_migration_journal_is_idempotent(self):
-        self.assertEqual(self.migration_result['versions_present'],3)
-        self.assertEqual(self.migration_result['versions_applied'],[1,2,3])
+        self.assertEqual(self.migration_result['versions_present'],4)
+        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4])
         reread=apply_ephemeral_ci_migrations(self.conn)
         self.assertEqual(reread['versions_applied'],[])
         self.assertFalse(reread['migration_production_ready'])
@@ -99,7 +104,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertFalse(reread['neon_connected'])
         self.assertFalse(reread['social_publishing_enabled'])
         self.assertEqual(self.conn.execute(
-            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],3)
+            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],4)
 
     def test_schema_digest_tamper_is_refused_without_changing_data(self):
         old=self.conn.execute('SELECT checksum FROM bam_ci_migration_journal '
@@ -147,6 +152,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             (_SCHEMA,)).fetchall()
         self.assertEqual({name for (name,) in rows},
                          set(TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
+                             BUDGET_TABLE_NAMES+
                              ('bam_ci_migration_journal',)))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
@@ -230,6 +236,44 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             WHERE subject_id=%s""",(self.a,))
         self.assertIsNone(self.conn.execute(*statement(
             self.a,self.priority_token)).fetchone())
+
+    def test_ai_cost_receipt_deduplication_scoped_to_identity_business(self):
+        self.conn.execute("""INSERT INTO bam_ai_cost_events
+            (event_id,tenant_id,subject_id,provider,model,input_tokens,
+             output_tokens,estimated_micro_usd,occurred_at,trusted_usage_hash)
+            VALUES (%s,'shop-a',%s,'openai','test-model',10,20,2,101,%s)""",
+            ('a'*32,self.a,'f'*64))
+        with self.assertRaises(self.psycopg.errors.UniqueViolation):
+            self.conn.execute("""INSERT INTO bam_ai_cost_events
+                (event_id,tenant_id,subject_id,provider,model,input_tokens,
+                output_tokens,estimated_micro_usd,occurred_at,trusted_usage_hash)
+                VALUES (%s,'shop-a',%s,'openai','test-model',11,22,5,102,%s)""",
+                ('b'*32,self.a,'f'*64))
+        self.conn.execute("""INSERT INTO bam_ai_cost_events
+            (event_id,tenant_id,subject_id,provider,model,input_tokens,
+             output_tokens,estimated_micro_usd,occurred_at,trusted_usage_hash)
+            VALUES (%s,'shop-b',%s,'openai','test-model',9,7,1,101,%s)""",
+            ('c'*32,self.b,'f'*64))
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM bam_ai_cost_events WHERE tenant_id='shop-a'""").fetchone()[0],1)
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM bam_ai_cost_events WHERE tenant_id='shop-b'""").fetchone()[0],1)
+
+    def test_ai_budget_state_never_unpauses_or_approves_paid_ai(self):
+        self.assertEqual(self.conn.execute("""SELECT paused
+            FROM bam_ai_operator_control WHERE control_id=1"""
+            ).fetchone()[0],1)
+        columns={row[0] for row in self.conn.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_schema=%s AND table_name='bam_ai_usage'""",
+            (_SCHEMA,)).fetchall()}
+        self.assertTrue({'reserved_micro_usd','unpriced_requests'}<=columns)
+        with self.assertRaises(self.psycopg.errors.CheckViolation):
+            self.conn.execute("""INSERT INTO bam_ai_operator_control
+                (control_id,paused,updated_at) VALUES (2,0,101)""")
+        self.assertEqual(self.conn.execute("""SELECT paused
+            FROM bam_ai_operator_control WHERE control_id=1"""
+            ).fetchone()[0],1)
 
     def test_provider_metadata_stays_tenant_private_without_vault_reference(self):
         self.conn.execute("""INSERT INTO provider_connections
