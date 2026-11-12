@@ -10,8 +10,8 @@ import json
 import re
 import time
 
-_TOKEN=re.compile(r'[A-Za-z0-9_-]{20,256}\\Z')
-_NONCE=re.compile(r'[A-Za-z0-9_-]{20,256}\\Z')
+_TOKEN=re.compile(r'[A-Za-z0-9_-]{20,256}\Z')
+_NONCE=re.compile(r'[A-Za-z0-9_-]{20,256}\Z')
 _PATHS={
     '/api/v1/team/invitations/accept-password':
         frozenset(('email','password','invitation_token')),
