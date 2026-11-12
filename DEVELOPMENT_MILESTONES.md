@@ -1040,3 +1040,7 @@ Design selection: one dedicated new BAM Render Starter Python web service ($7/mo
 ## November 12, 2026 — Neon partial schema blueprint (offline-only)
 
 New `neon_schema_blueprint.py` defines nine explicit PostgreSQL DDL preview statements for identity/credentials/Google binding, member roles, sessions, account failure throttle, held drafts, posting preferences and manual calendar proposals. `inspect_sqlite_subset` refuses drift and exposes only counts/schema digest/readiness blockers, never data. Strict offline tests; no migration executor, database URL, connection, new service, publishing or AI. `NEON_MIGRATION_ROADMAP.md` tracks critical remaining table families and transactional behavior needed for a complete PostgreSQL port. Exact CI pending.
+
+## November 12, 2026 — Schema-wide portability audit (offline)
+
+Add deterministic all-table SQLite metadata inventory, isolate the nine reviewed foundational tables from all unported tables, and mark DDL-specific review signals. Reproducible ephemeral CLI report and privacy/schema-drift regression tests; no user records or actual SQL DDL returned, no PostgreSQL connection, no migrations, external charges or publishing. Full CI pending.

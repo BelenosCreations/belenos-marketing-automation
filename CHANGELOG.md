@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Complete local SQLite table inventory (offline)
+
+- Add `neon_schema_inventory.py` for deterministic, privacy-safe metadata inventory across all initialized alpha tables, with explicit nine-table blueprint mapping and unmapped backlog.
+- Report SQLite DDL review flags without exposing CREATE TABLE SQL, account/draft/session contents, provider tokens or customer rows; add regression tests for schema drift and malformed identifiers.
+- Keep real Neon PostgreSQL, data migration, billable hosting and publication disabled. Full CI required.
+
 ## November 12, 2026 — Neon partial schema portability groundwork (offline)
 
 - Add nine-table review-only PostgreSQL DDL blueprint for BAM identity, sessions, membership, account throttle, held drafts, posting preferences and nonpublishing calendar proposals.

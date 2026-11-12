@@ -22,6 +22,10 @@ BAM's intended first hosted setup is **its own Render Starter web service ($7/mo
 
 The first database-portability milestone introduces a review-only PostgreSQL DDL blueprint for **nine** foundational BAM tables plus live SQLite schema parity checks, deterministic schema fingerprinting and privacy-safe row counts. No user records, credentials, or draft text are exported; no PostgreSQL driver, Neon service, Render deployment or paid integration is invoked. This is explicitly **incomplete** and cannot operate BAM on Neon yet. See [Neon migration roadmap](NEON_MIGRATION_ROADMAP.md).
 
+### Complete local schema inventory before PostgreSQL port (offline)
+
+Beyond the nine-table blueprint, `neon_schema_inventory.py` enumerates **all** initialized BAM SQLite tables, distinguishes previewed versus unported tables, and flags SQLite-specific DDL concepts that require manual PostgreSQL translation. It exposes only schema metadata and a fingerprint—not SQL source, customer rows or secrets—and has no PostgreSQL connectivity. `python -m neon_schema_inventory` prints an ephemeral in-memory inventory for development review. This is a prerequisite assessment, **not an actual migration or hosted-readiness claim**.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:
