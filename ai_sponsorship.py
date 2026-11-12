@@ -5,6 +5,7 @@ are supported as separate policies. Production billing/subscriptions and
 actual OpenAI requests are NOT implemented here.
 """
 import re
+from datetime import datetime,timezone
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
@@ -100,6 +101,21 @@ class SponsoredAIQuota:
         if row[1]+delta>cap:
             raise _QuotaExhausted(reason)
         return cap-(row[1]+delta)
+
+    def reserve_current_utc_month(self, *, token, now, plan):
+        """Trusted production composition should derive month from server time.
+
+        The legacy reserve(...,month=...) entry point remains for explicit
+        offline fixtures only. Never accept a billing month from a browser
+        or mobile client, or a user could switch months to avoid quotas.
+        """
+        if type(now) is not int or now<0:
+            raise ValueError('Trusted UTC timestamp required')
+        try:
+            month=datetime.fromtimestamp(now,tz=timezone.utc).strftime('%Y-%m')
+        except (OverflowError,OSError,ValueError) as exc:
+            raise ValueError('Invalid UTC billing timestamp') from exc
+        return self.reserve(token=token,now=now,plan=plan,month=month)
 
     def reserve(self, *, token, now, plan, month):
         if not isinstance(plan,SponsorshipPlan):

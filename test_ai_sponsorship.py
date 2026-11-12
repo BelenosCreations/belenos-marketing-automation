@@ -345,6 +345,31 @@ class SponsoredAITests(unittest.TestCase):
         self.assertEqual(self.db.execute("""SELECT count(*) FROM
             bam_ai_usage""").fetchone()[0],0)
 
+    def test_current_billing_month_is_server_utc_not_client_supplied(self):
+        from datetime import datetime,timezone
+        nov=int(datetime(2026,11,30,23,59,tzinfo=timezone.utc).timestamp())
+        dec=int(datetime(2026,12,1,0,1,tzinfo=timezone.utc).timestamp())
+        november=self.sessions.issue(
+            Principal('owner','shop',Role.OWNER),now=nov)
+        december=self.sessions.issue(
+            Principal('owner','shop',Role.OWNER),now=dec)
+        plan=SponsorshipPlan('owner',1,200,
+            max_request_estimated_micro_usd=100,
+            operator_monthly_estimated_micro_usd=100)
+        self.assertTrue(self.quota.reserve_current_utc_month(
+            token=november,now=nov,plan=plan)['reserved'])
+        self.assertTrue(self.quota.reserve_current_utc_month(
+            token=december,now=dec,plan=plan)['reserved'])
+        self.assertEqual(self.quota.reserve_current_utc_month(
+            token=december,now=dec,plan=plan)['reason'],'limit_reached')
+        rows=self.db.execute("""SELECT month,accepted,reserved_micro_usd
+            FROM bam_ai_operator_usage ORDER BY month""").fetchall()
+        self.assertEqual(rows,[('2026-11',1,100),('2026-12',1,100)])
+        for invalid in (True,-1,'2026-11',10**100):
+            with self.assertRaises(ValueError):
+                self.quota.reserve_current_utc_month(
+                    token=november,now=invalid,plan=plan)
+
     def test_months_are_isolated(self):
         plan=SponsorshipPlan('owner',1,400)
         self.assertTrue(self.quota.reserve(token=self.token,now=101,
