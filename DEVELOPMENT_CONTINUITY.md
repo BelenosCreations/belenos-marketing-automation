@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Legacy tenant content and manual scheduling stage-six candidate — November 12, 2026
+
+**Last fully verified baseline:** PR #42 merged `4a71a70a331c3b9f4ce680a2e80ff2a733d28861`, [merged-main GitHub Actions 43258725694](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43258725694) **success**; `main` and development synchronized without force.
+
+**Current unverified candidate:** four offline tenant post/approval/event/scheduling tables, version-six disposable CI migration, tenant-scoped draft review and manual schedule read contracts. Must pass exact PR+merged-main CI before next safe sync. No actual scheduler or live publishing, and no paid services/hosting activated. The owner-approved incremental development budget stays $0.
+
 ## Business research/analytics PostgreSQL stage-five candidate — November 12, 2026
 
 **Last fully verified code:** `main` and `development/phase-3-5-account-directory` at `c130f7a74f7842c8c2aba900da04df1d4f4a99f3`; [merged-main Actions 43255534251](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43255534251) **success** after PR #41 implementing the $0 policy.

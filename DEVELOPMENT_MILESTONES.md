@@ -1088,3 +1088,7 @@ Owner makes $0 incremental spend the active BAM development policy until a funct
 ## November 12, 2026 — Business research and private analytics PostgreSQL stage five
 
 Add seven schema-preview tables, source SQLite metadata parity and prepared owner-scoped research/analytics queries. Run foreign-key and active membership/identity isolation tests on disposable GitHub Actions PostgreSQL, raising reviewed DDL coverage to 36. Update README, CHANGELOG, DEVELOPMENT_CONTINUITY and migration roadmap. No real analytics, scraping, hosted Neon/Render, extra spending or social publishing; exact PR CI pending.
+
+## November 12, 2026 — Legacy tenant-content and scheduling PostgreSQL stage six
+
+Preview four legacy source tables: tenant_posts, tenant_approvals, tenant_events and scheduling_settings. Source SQLite parity, owner-scoped read contracts and disposable PostgreSQL tests for cross-business denial and composite FK constraints, plus a hard rejection of publishing status. Reviewed table coverage 40; no runnable posting queue or third-party provider. Full PR/main CI pending, $0 extra-cost policy preserved.
