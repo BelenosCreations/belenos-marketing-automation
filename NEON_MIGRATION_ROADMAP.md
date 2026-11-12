@@ -1,5 +1,9 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Authenticated scheduling preference reads and optimistic saves (November 12, 2026 candidate)
+
+Building from verified PR #54 (`165a5398`, merged-main Actions 43328713423 passed), add a CI-only session-bound adapter for `scheduling_settings`. Its SQL verifies the hashed session, active/verified identity, current role and tenant on every read and write, with source-matching editor permissions. Persist manual weekday/timezone and smart preferred-hours preferences using an exact current revision CAS; a first save uses revision 0. Strictly validate IANA zone, bounded unique HH:MM weekday entries and hourly ranges before SQL. This is **not** a scheduler, queued job, provider write, verified audience recommendation, paid hosting, real Neon data migration or production authorization. Test with synthetic SQLite and disposable PostgreSQL before merge.
+
 ## Review feedback deletion/history parity (candidate — November 12, 2026)
 
 Build on verified PR #53 (`25a99947`, full merged-main Actions 43326407161 passed). The CI-only PostgreSQL adapter now needs to match the source offline feedback's remaining versioned deletion and private owner/manager event-history read: scoped token-hash-checked DELETE by exact feedback version, followed by an independently authorized `removed` audit event in one atomic transaction. Audit events must remain after note removal and must carry **no prior note copy**. A bounded 50-event history checks role, active identity, tenant, session expiration/revocation on the SELECT. Denial, conflict, audit failure or duplicate action must fail closed and never touch publication state. Verify actual disposable PostgreSQL concurrency and SQLite parity. Production APIs, real Neon migration, encrypted backups, media storage and paid integrations remain separate unapproved work.

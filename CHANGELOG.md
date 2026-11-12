@@ -1,6 +1,13 @@
 # Changelog
 
-## November 12, 2026 — Owner-reviewed feedback removal and metadata-only history (candidate)
+## November 12, 2026 — Session-scoped versioned scheduling preferences in ephemeral PostgreSQL (candidate)
+
+- Add pure parameterized PostgreSQL read plus first-create/revision-CAS updates for existing per-tenant `scheduling_settings` schema. Each statement derives identity from the hashed live session and current membership/role/verified identity, not a caller-asserted user.
+- Only owner/marketing-manager/content-creator roles can edit. Any active business member may read. Validate IANA timezones, unique bounded weekday HH:MM slots, distinct preferred hours, and manual-mode time requirements before writing.
+- Extend the CI-only psycopg facade with session-scoped read/save methods and add SQLite SQL-parity and actual disposable PostgreSQL tests for cross-tenant/viewer denial, conflict between two editors, role drift, revocation, saved-data validation and zero executable schedule jobs.
+- Last fully verified baseline: PR #54 at `165a5398` and [merged-main Actions 43328713423](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43328713423) success. New candidate still needs PR/main CI. $0 additional costs; no hosting, paid OpenAI, social publishing or EdgePilot resource sharing.
+
+## November 12, 2026 — Owner-reviewed feedback removal and metadata-only history (verified PR #54)
 
 - Add token-hash-bound, same-statement verified role/membership/tenant checks to versioned feedback DELETE. Its successful receipt returns only a non-approval, non-publishing removal status.
 - Add a separate live-authorized, metadata-only `removed` event in **the same disposable PostgreSQL transaction**, failing and rolling back the DELETE if the audit insert fails. Add a bounded 50-event owner/marketing-manager history view, retaining audit records after the note itself has been removed without exposing historical note bodies.

@@ -1,5 +1,13 @@
 # BAM development continuity checkpoint
 
+## Authenticated scheduling-preference persistence candidate — November 12, 2026
+
+**Last fully verified GitHub checkpoint:** PR #54 merged as `165a5398a499a16118313bb26cb8b11d8a936178`; exact merged-main [GitHub Actions 43328713423](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43328713423) passed. `main` and `development/phase-3-5-account-directory` synchronized without force. PR #54 fixed two *synthetic test fixture* issues before final clean CI; prior candidate headings are historical.
+
+**Current candidate:** `neon_session_schedule_settings_contract.py`, SQLite SQL-parity tests, two methods on `EphemeralSessionPostgres`, and actual ephemeral PostgreSQL regressions. Read permitted for currently active members, edit only for current owner/marketing-manager/content-creator, every statement revalidates hashed session, verified identity, tenant and role. Exact current revision required for atomic writes, first create via revision 0, IANA timezone + weekly time validation. Output only planning preferences, no schedule creation/publication or paid API.
+
+**Steps:** Verify exact PR head in GitHub Actions, fix failures on development branch, merge only green PR, verify exact merged-main CI, safely fast-forward development. Future major gates: migration/backup completeness, secure hosted ingress, durable media, provider OAuth and direct publishing only after separate authorization. $0 new costs, no Render/Neon activation and no EdgePilot services.
+
 ## Versioned private review feedback removal and owner audit history candidate — November 12, 2026
 
 **Verified baseline:** PR #53 merged as `25a99947829121b792f9d74d5542a9638d847fb9`. Full [merged-main Actions 43326407161](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43326407161) passed and the development branch was safely fast-forwarded to match `main`. Prior candidate descriptions below are historical, not active PRs.

@@ -6,7 +6,8 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
-| Private feedback removal + owner audit history in PostgreSQL | **Versioned deletion and metadata history candidate; CI pending** | Prove one-event/one-deletion, rollback on audit failure, 50-event cap, role/revocation denial and two-client race in actual disposable PostgreSQL |
+| Session-backed scheduling settings + revision CAS | **New CI-only PostgreSQL read/save and conflict-race candidate** | Verify live role, tenant, revocation, IANA timezone, validated time sets and two-client revision behavior before implementing real background jobs |
+| Private feedback removal + owner audit history in PostgreSQL | **Verified PR #54, merged-main Actions 43328713423 passed; CI-only** | Prove one-event/one-deletion, rollback on audit failure, 50-event cap, role/revocation denial and two-client race in actual disposable PostgreSQL |
 | Private review feedback + atomic audit on PostgreSQL | **Verified PR #53; merged-main Actions 43326407161 passed; CI-only** | Validate roles, revocation, stale note/draft version denial, cross-tenant privacy and one-event-per-save in real PG before any production gateway |
 | Held draft create + optimistic revision on disposable PostgreSQL | **Verified PR #52, merged-main Actions 43325036530 successful; CI-only** | Validate current-editor role, clean input, server-generated IDs, immutable publication state, cross-tenant denial and two-client CAS; requires separately audited production gateway and full migrations |
 | Owner-private PostgreSQL team roster read | **Verified PR #51, merged-main Actions 43317840660 success; CI-only** | Match offline 200-member cap, owner-self identity, inactive member visibility, target email redaction and token/role/tenant denial; production gateway and writes remain outstanding |
