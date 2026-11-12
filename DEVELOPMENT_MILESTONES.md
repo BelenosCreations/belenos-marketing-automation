@@ -1068,3 +1068,7 @@ PRs #30–#33 have passed exact GitHub Actions after merge to `main`: commits `1
 ## November 12, 2026 — Team collaboration schema/permission parity on ephemeral Postgres
 
 Extend the nine-table SQL preview with five collaboration/invite/review tables, including identity columns replacing SQLite autoincrement, explicit unique invitation ID and tenant/time indexes. Add owner-only private invitation metadata SQL; verify in local GitHub runner Postgres with role changes, cross-business read denial, consumption, constrained actions and uniqueness. Source tests and README/CHANGELOG/continuity updated. No actual Neon migration, invitation transport, live social publishing or paid deployment.
+
+## November 12, 2026 — Transactional versioned ephemeral PostgreSQL schema tests
+
+Review-only two-stage schema loader for disposable GitHub Actions Postgres: version 1 nine core tables, version 2 five collaboration tables/indexes. Transaction/advisory lock, checksum journal, safe rerun and fail-closed tests for drift/unknown versions. Explicit opt-in environment and test-only host/database/schema/user restrictions; no shared Neon credentials, production migration entrypoint or hosting bill. README/CHANGELOG/continuity maintained; exact PR CI pending.

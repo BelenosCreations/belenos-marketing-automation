@@ -12,6 +12,7 @@ from neon_schema_blueprint import ddl_preview,TABLE_NAMES
 from neon_collaboration_schema import (
     COLLABORATION_NAMES,collaboration_ddl_preview)
 from neon_scoped_collaboration_queries import prepare_pending_owner_invitations
+from neon_ephemeral_ci_migrations import apply_ephemeral_ci_migrations
 from neon_scoped_queries import (draft_select_for_verified_member,
     calendar_select_for_verified_member)
 from neon_scoped_writes import (
@@ -37,8 +38,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
              'password':os.environ['PGPASSWORD'],'connect_timeout':5}
         cls.conn=cls._connect()
         cls.conn.execute('CREATE SCHEMA IF NOT EXISTS '+_SCHEMA)
-        for ddl in ddl_preview()+collaboration_ddl_preview():
-            cls.conn.execute(ddl)
+        cls.migration_result=apply_ephemeral_ci_migrations(cls.conn)
 
     @classmethod
     def tearDownClass(cls):
@@ -85,13 +85,65 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                         'needs_content',0,%s,100,100,1)""",
                 (rid,tenant,copy,self.priority_token))
 
+    def test_ci_schema_migration_journal_is_idempotent(self):
+        self.assertEqual(self.migration_result['versions_present'],2)
+        self.assertEqual(self.migration_result['versions_applied'],[1,2])
+        reread=apply_ephemeral_ci_migrations(self.conn)
+        self.assertEqual(reread['versions_applied'],[])
+        self.assertFalse(reread['migration_production_ready'])
+        self.assertFalse(reread['customer_records_migrated'])
+        self.assertFalse(reread['neon_connected'])
+        self.assertFalse(reread['social_publishing_enabled'])
+        self.assertEqual(self.conn.execute(
+            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],2)
+
+    def test_schema_digest_tamper_is_refused_without_changing_data(self):
+        old=self.conn.execute('SELECT checksum FROM bam_ci_migration_journal '
+                              'WHERE version=2').fetchone()[0]
+        self.conn.execute("""UPDATE bam_ci_migration_journal SET checksum=%s
+            WHERE version=2""",('x'*64,))
+        try:
+            with self.assertRaises(ValueError):
+                apply_ephemeral_ci_migrations(self.conn)
+            self.assertEqual(self.conn.execute('SELECT COUNT(*) FROM members'
+                              ).fetchone()[0],3)
+        finally:
+            self.conn.execute("""UPDATE bam_ci_migration_journal SET
+                checksum=%s WHERE version=2""",(old,))
+
+    def test_schema_drift_is_refused_even_if_journal_is_intact(self):
+        self.conn.execute('DROP TABLE bam_review_feedback')
+        try:
+            with self.assertRaises(ValueError):
+                apply_ephemeral_ci_migrations(self.conn)
+        finally:
+            self.conn.execute(collaboration_ddl_preview()[3])
+        self.assertEqual(apply_ephemeral_ci_migrations(
+            self.conn)['versions_applied'],[])
+
+    def test_unknown_future_migration_is_refused(self):
+        self.conn.execute("""INSERT INTO bam_ci_migration_journal
+            (version,checksum,completed_at) VALUES (99,%s,0)""",
+            ('f'*64,))
+        try:
+            with self.assertRaises(ValueError):
+                apply_ephemeral_ci_migrations(self.conn)
+        finally:
+            self.conn.execute('DELETE FROM bam_ci_migration_journal '
+                              'WHERE version=99')
+
+    def test_migration_loader_refuses_non_psycopg_connections(self):
+        with self.assertRaises(TypeError):
+            apply_ephemeral_ci_migrations(object())
+
     def test_actual_postgresql_ddl_and_private_bytea_type(self):
         rows=self.conn.execute("""SELECT table_name
             FROM information_schema.tables
             WHERE table_schema=%s AND table_type='BASE TABLE'""",
             (_SCHEMA,)).fetchall()
         self.assertEqual({name for (name,) in rows},
-                         set(TABLE_NAMES+COLLABORATION_NAMES))
+                         set(TABLE_NAMES+COLLABORATION_NAMES+
+                             ('bam_ci_migration_journal',)))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
             WHERE table_schema=%s AND table_name='bam_password_credentials'
