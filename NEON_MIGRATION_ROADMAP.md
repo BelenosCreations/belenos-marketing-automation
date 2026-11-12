@@ -1,5 +1,10 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Held-draft inbox execution seam (candidate — November 12, 2026)
+
+Starting from verified merged PR #49 (`e8b696cb`, main CI 43312549398 successful), add a tenant-bound list of held drafts to the **disposable CI-only** psycopg adapter. The query takes the hash of a validated session bearer, checks current active membership, session role, verified identity, expiry and revocation in the SELECT, and exposes a capped keyset page using stable creation-time/request-ID ordering. Filter values are allowlisted and parameterized; no customer credentials or draft data are exported. Real ephemeral PostgreSQL and offline SQLite tests are required before merging. This does not deliver a production query adapter, Neon migration, public API, media storage, publication or an authorization to spend money.
+
+
 **Status: only partial schema blueprint, NO migration, NO Neon connection, no approved deployment.**
 
 **Verified offline-only groundwork:** PR #30 (partial nine-table schema/DDL parity), PR #31 (all-table metadata inventory and prepared read SQL), PR #32 (privacy-safe local integrity checks) and PR #33 (priority CAS SQL preview) each passed exact merged-main GitHub Actions through `1c4ab9b7` (Actions 43218122644). **No Neon PostgreSQL connection or real migration exists.** Do not mistake placeholder-converted SQLite tests for PostgreSQL compatibility or production tenant isolation.

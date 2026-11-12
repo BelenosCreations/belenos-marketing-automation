@@ -1,5 +1,13 @@
 # BAM development continuity checkpoint
 
+## Authenticated held-draft inbox page candidate — November 12, 2026
+
+**Last fully verified GitHub baseline:** PR #49 merged at `e8b696cb9fc4aa59b9adbcc112b4668e326df3c5`. Full [merged-main Actions 43312549398](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43312549398) **success**, and `main` and `development/phase-3-5-account-directory` synchronized without force.
+
+**Current unverified candidate:** `neon_session_inbox_contract.py`, `test_neon_session_inbox_contract.py`, new `EphemeralSessionPostgres.read_held_inbox_page`, and real PostgreSQL fixture regressions. Bounded deterministic keyset pagination for held business drafts with optional status, rechecking session hash/current role/member/verified identity per query. Verify exact PR-head CI, merge main only if green, verify exact post-merge main CI, then safely fast-forward development with no force. Preserve all $0-cost, no provisioned Render/Neon, no EdgePilot reuse, no paid AI/social publishing restrictions.
+
+**Recovery procedure:** inspect GitHub branch SHAs and latest exact-SHA CI first. Treat older entries labeled candidates below as historical; do not mistakenly revert successfully merged code. Work stays offline Alpha until a separate approved production gateway, complete migration, backup/restore, and real provider safety work exist.
+
 ## Disposable PostgreSQL session I/O candidate — November 12, 2026
 
 **Verified baseline:** PR #48 merged at `7baf3be09f8b8dfba92e44e628d6d8efd6e3f22a`; full [merged-main Actions 43271490619](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43271490619) **success**, development fast-forwarded safely. **Current unverified candidate:** strictly test-only psycopg execution facade for hashed-session draft/calendar reads, owner invitation preview and priority CAS. It accepts only a disposable loopback CI connection and executes no live provider operations; check against temporary PostgreSQL transactions and separate-client revocation. PR green → main merge → exact merged-main green → non-force development sync. **$0** incremental cost, no new Render/Neon or paid AI, no production/public API.

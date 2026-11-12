@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Tenant-private held-draft PostgreSQL inbox pagination (candidate)
+
+- Introduce SQL-only signed-in held-draft inbox SELECT with per-statement current identity/member/session checks, strict business scope, optional validated status and bounded stable (created_at, request_id) keyset pagination.
+- Extend the disposable CI-only psycopg session facade to execute inbox reads without opening external connections, scheduling, approving, publishing or changing content.
+- Add SQLite parity tests and real ephemeral PostgreSQL tests for multiple pages with equal timestamps, session hash secrecy, viewer role drift, token revocation, disabled identity and cross-tenant denial.
+- Verified starting baseline: PR #49 merged `e8b696cb` and full merged-main Actions 43312549398 passed; development safely synchronized. This candidate remains unverified until its exact PR/head and post-merge main CI pass. $0 incremental spend; no Render/Neon activation or EdgePilot service sharing.
+
 ## November 12, 2026 — Disposable PostgreSQL authenticated read/CAS execution facade (candidate)
 
 - Add a strictly CI-loopback PostgreSQL psycopg facade to execute existing token-hash-bound held draft, non-executable calendar, owner invitation and draft-priority CAS SQL against synthetic data. It opens no connections and refuses unknown host, database, user or schema.

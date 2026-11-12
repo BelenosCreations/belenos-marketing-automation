@@ -859,5 +859,92 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
 
 
+    def test_ci_psycopg_session_inbox_pages_and_business_isolation(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_CI_Inbox_Session_1234567890123456789012'
+        digest=hashlib.sha256(token.encode('ascii')).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",(digest,self.a))
+        for rid,created,status,copy in (
+            ('e'*32,100,'ready_for_review','shop A review'),
+            ('f'*32,100,'postponed','shop A postponed'),
+            ('9'*32,101,'unavailable','shop A unavailable')):
+            self.conn.execute("""INSERT INTO content_requests
+                (request_id,tenant_id,channel,draft_text,suggestion,
+                 required_items,provided_items,status,priority_token,
+                 created_at,updated_at)
+                VALUES (%s,'shop-a','facebook',%s,'photo','[]',
+                        '{}',%s,%s,%s,%s)""",
+                (rid,copy,status,'c'*32,created,created))
+        adapter=EphemeralSessionPostgres(self.conn)
+        params={'raw_session_token':token,'tenant_id':'shop-a',
+                'server_now':101,'limit':2}
+        first=adapter.read_held_inbox_page(**params)
+        self.assertEqual([x['request_id'] for x in first['items']],
+                         [self.rid_a,'e'*32])
+        self.assertEqual(first['next_cursor'],
+                         {'created_at':100,'request_id':'e'*32})
+        self.assertTrue(first['has_more'])
+        second=adapter.read_held_inbox_page(
+            **params,**{'after_created_at':100,'after_request_id':'e'*32})
+        self.assertEqual([x['request_id'] for x in second['items']],
+                         ['f'*32,'9'*32])
+        self.assertFalse(second['has_more'])
+        self.assertIsNone(second['next_cursor'])
+        only_review=adapter.read_held_inbox_page(
+            raw_session_token=token,tenant_id='shop-a',
+            server_now=101,limit=50,status='ready_for_review')
+        self.assertEqual([x['draft_text'] for x in only_review['items']],
+                         ['shop A review'])
+        cross=adapter.read_held_inbox_page(
+            raw_session_token=token,tenant_id='shop-b',server_now=101)
+        self.assertEqual(cross['items'],[])
+        self.assertEqual(first['posts_scheduled'],0)
+        self.assertFalse(first['publishing_enabled'])
+        self.assertNotIn('private tenant B copy',str(first))
+
+    def test_ci_psycopg_session_inbox_revocation_and_live_access(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_Inbox_Viewer_Permission_Token_123456789'
+        digest=hashlib.sha256(token.encode('ascii')).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','viewer',3600)""",
+            (digest,self.viewer))
+        separate=self._connect()
+        try:
+            adapter=EphemeralSessionPostgres(separate)
+            args={'raw_session_token':token,'tenant_id':'shop-a',
+                  'server_now':101}
+            self.assertEqual(
+                len(adapter.read_held_inbox_page(**args)['items']),1)
+            self.conn.execute("""UPDATE members SET role='owner'
+                WHERE tenant_id='shop-a' AND subject_id=%s""",
+                (self.viewer,))
+            self.assertEqual(
+                adapter.read_held_inbox_page(**args)['items'],[])
+            self.conn.execute("""UPDATE members SET role='viewer'
+                WHERE tenant_id='shop-a' AND subject_id=%s""",
+                (self.viewer,))
+            self.conn.execute("""UPDATE bam_identities SET active=0
+                WHERE subject_id=%s""",(self.viewer,))
+            self.assertEqual(
+                adapter.read_held_inbox_page(**args)['items'],[])
+            self.conn.execute("""UPDATE bam_identities SET active=1
+                WHERE subject_id=%s""",(self.viewer,))
+            self.conn.execute("""UPDATE sessions SET revoked_at=101
+                WHERE token_hash=%s""",(digest,))
+            self.assertEqual(
+                adapter.read_held_inbox_page(**args)['items'],[])
+            with self.assertRaises(ValueError):
+                adapter.read_held_inbox_page(
+                    **args,limit=51)
+        finally:
+            separate.close()
+
+
 if __name__=='__main__':
     unittest.main()
