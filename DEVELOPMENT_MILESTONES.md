@@ -1002,3 +1002,7 @@ The synthetic Responses executor enforces tenant/user scope before a potential p
 ## November 12, 2026 — Internal invitation redemption for a new workspace member
 
 A trusted password-identity verification method now supports confirmed existing BAM identities with no business memberships, without granting them a session. The BusinessInvitations backend can use this proof to redeem a previously delivered one-use invitation through its existing transactional identity, inviter, token, membership and audit checks. Tests cover wrong credentials, email mismatches, verification removal, token replay and tenant isolation. This is a backend-only offline milestone, pending full exact-commit CI. Public invitation endpoints, email transport, anti-abuse throttling and hosted enrollment remain unimplemented and unauthorized.
+
+## November 12, 2026 — Offline invitation password admission throttling
+
+The trusted AuthLoginAPI offers a disabled-by-default password invitation redemption method, requiring explicit constructor opt-in, a trusted invitation service and a shared LoginThrottle. Failed secret/password claims increase hashed-email throttling; successful redemption clears failures, creates one-use tenant membership and does not issue a session. Tests demonstrate lockout followed by safe retry and later ordinary login. No HTTP handler, trusted email verification delivery, IP/global rate-limit layer, production hosted collaboration or social publishing is configured. Exact candidate CI pending.

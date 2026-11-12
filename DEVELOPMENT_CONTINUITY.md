@@ -1,5 +1,8 @@
 # BAM development continuity checkpoint
 
+**Current unmerged development continuation:** An AuthLoginAPI internal invitation redemption gate now requires explicit activation plus trusted persistent login throttling, and returns membership only (no session). New source and tests need exact-head GitHub Actions before review/merge. No network endpoint, new signup or email verification flow was enabled.
+
+
 **November 12 verified merge:** PR #21 merged at c8a48f359789f0ee63b601c9ba51a3beb74267df; Actions 43171790537 passed the exact merged main commit. The development branch was safely fast-forwarded to the same commit without force. Recovery is available from prior Git references.
 
 **Current development batch:** Verified-password invitation redemption for an existing email-verified identity without initial business membership. The backend remains internal-only, with no public acceptance route or email delivery. Await exact-source GitHub Actions and reviewed PR before merging this new work.

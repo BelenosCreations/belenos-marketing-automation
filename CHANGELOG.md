@@ -1,5 +1,13 @@
 # Changelog
 
+## November 12, 2026 — Internal invitation redemption admission gate
+
+- Added explicit, disabled-by-default AuthLoginAPI admission for invitation password redemption. Turning it on requires both a trusted invitation service and a shared LoginThrottle.
+- Failed email/password or token verification increments the existing hashed-email throttle. A successful one-time redemption clears failures but **never issues a login session**.
+- Added tests for off-by-default behavior, missing throttle, lockout timing, accepted membership, token non-disclosure, cross-business isolation and subsequent ordinary login.
+- **Verification:** new code awaiting exact-head full CI. There is no HTTP invitation-acceptance endpoint; production enrollment, email transport, IP/global abuse limits, hosted access and posting remain disabled.
+
+
 ## November 12, 2026 — Trusted offline invitation redemption for new team members
 
 - Extracted the existing password-KDF verification into an internal verified-identity check that does not require existing business membership, issue a login session or change permissions. Normal member logins still require current business membership.
