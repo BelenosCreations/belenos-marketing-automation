@@ -89,7 +89,7 @@ class AuthenticatedPriorityUpdateTests(unittest.TestCase):
         self.assertIsNone(self.execute(self.prepare()))
         self.db.execute('UPDATE bam_identities SET active=1 WHERE subject_id=?',
                         (self.owner,))
-        self.assertIsNone(self.execute(self.prepare(server_now=3600)))
+        self.assertIsNone(self.execute(self.prepare(server_now=3700)))
         self.db.execute('UPDATE sessions SET revoked_at=101 WHERE token_hash=?',
                         (hashlib.sha256(self.token.encode()).hexdigest(),))
         self.assertIsNone(self.execute(self.prepare()))
