@@ -75,6 +75,15 @@ class SponsoredAIQuota:
         db.execute("""CREATE TABLE IF NOT EXISTS bam_ai_operator_usage(
             month TEXT PRIMARY KEY,
             accepted INTEGER NOT NULL DEFAULT 0)""")
+        # An offline internal control, not an API enable flag. Preserves
+        # existing simulated admissions on upgrade; production OpenAI HTTPS
+        # is independently disabled and requires separate authorization.
+        db.execute("""CREATE TABLE IF NOT EXISTS bam_ai_operator_control(
+            control_id INTEGER PRIMARY KEY CHECK(control_id=1),
+            paused INTEGER NOT NULL CHECK(paused IN (0,1)),
+            updated_at INTEGER NOT NULL)""")
+        db.execute("""INSERT OR IGNORE INTO bam_ai_operator_control
+            (control_id,paused,updated_at) VALUES(1,0,0)""")
         # Existing databases predate estimated-cost accounting. Never
         # retroactively pretend legacy sponsored requests have known prices.
         # Backfill them as unpriced; adding a USD estimate ceiling mid-month
@@ -91,6 +100,36 @@ class SponsoredAIQuota:
                            ' ADD COLUMN unpriced_requests INTEGER NOT NULL DEFAULT 0')
                 db.execute('UPDATE '+table+' SET unpriced_requests=accepted')
         db.commit()
+
+    def set_operator_paused_trusted(self, *, paused, now):
+        """Offline operator-only circuit breaker: never expose as a user API.
+
+        Blocks NEW sponsored quota reservations across all businesses and
+        SQLite connections. It cannot recall requests that have already
+        reserved quota or begun provider execution; a production executor
+        still needs its own separately authorized dispatch stop.
+        """
+        if type(paused) is not bool or type(now) is not int or now<0:
+            raise ValueError('Trusted operator pause and server time required')
+        with self.db:
+            self.db.execute('BEGIN IMMEDIATE')
+            changed=self.db.execute("""UPDATE bam_ai_operator_control
+                SET paused=?,updated_at=? WHERE control_id=1""",
+                (int(paused),now))
+            if changed.rowcount!=1:
+                raise RuntimeError('Operator control unavailable')
+        return {'operator_paused':paused,
+                'publishing_enabled':False,
+                'provider_execution_enabled':False}
+
+    def operator_pause_status_trusted(self):
+        """Internal diagnostics only; not a token-authenticated web route."""
+        row=self.db.execute("""SELECT paused,updated_at
+            FROM bam_ai_operator_control WHERE control_id=1""").fetchone()
+        if row is None or row[0] not in (0,1):
+            raise RuntimeError('Operator control unavailable')
+        return {'operator_paused':bool(row[0]),'updated_at':row[1],
+                'provider_execution_enabled':False}
 
     @staticmethod
     def _check_estimate(*,row,delta,cap,reason):
@@ -146,6 +185,10 @@ class SponsoredAIQuota:
                 if self.policy_store.get_mode(token=token,now=now)[
                         'mode']!='bam_sponsored':
                     raise PermissionError('Sponsored mode changed')
+                operator_control=self.db.execute("""SELECT paused
+                    FROM bam_ai_operator_control WHERE control_id=1""").fetchone()
+                if operator_control is None or operator_control[0]!=0:
+                    raise _QuotaExhausted('operator_paused')
                 self.db.execute("""INSERT OR IGNORE INTO bam_ai_usage
                     (tenant_id,subject_id,month,accepted)
                     VALUES(?,?,?,0)""",

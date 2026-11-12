@@ -165,6 +165,49 @@ class SponsoredAIConcurrentBudgetTests(unittest.TestCase):
             self.assertEqual(self.db1.execute(
                 'SELECT COUNT(*) FROM '+table).fetchone()[0],0)
 
+    def test_operator_pause_after_preflight_denies_waiting_worker(self):
+        ready=threading.Event()
+        proceed=threading.Event()
+        prior=self.quota1.policy_store.get_mode
+        def pause_before_lock(*,token,now):
+            mode=prior(token=token,now=now)
+            if token==self.shop_owner and not ready.is_set():
+                ready.set()
+                if not proceed.wait(timeout=8):
+                    raise TimeoutError('Operator pause race timed out')
+            return mode
+        self.quota1.policy_store.get_mode=pause_before_lock
+        output=[]
+        plan=SponsorshipPlan('owner',5,300,
+            max_request_estimated_micro_usd=100,
+            operator_monthly_estimated_micro_usd=1000)
+        def worker():
+            try:
+                output.append(self.reserve(self.quota1,self.shop_owner,plan))
+            except Exception as exc:
+                output.append(exc)
+        thread=threading.Thread(target=worker,daemon=True)
+        thread.start()
+        try:
+            self.assertTrue(ready.wait(timeout=8))
+            self.quota2.set_operator_paused_trusted(paused=True,now=101)
+        finally:
+            proceed.set()
+        thread.join(timeout=12)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(len(output),1)
+        self.assertIsInstance(output[0],dict)
+        self.assertEqual(output[0]['reason'],'operator_paused')
+        for table in ('bam_ai_usage','bam_ai_tenant_usage',
+                      'bam_ai_operator_usage'):
+            self.assertEqual(self.db1.execute(
+                'SELECT COUNT(*) FROM '+table).fetchone()[0],0)
+        self.assertTrue(self.quota1.operator_pause_status_trusted()[
+            'operator_paused'])
+        self.quota2.set_operator_paused_trusted(paused=False,now=102)
+        self.assertTrue(self.reserve(
+            self.quota1,self.shop_owner,plan)['reserved'])
+
     def test_operator_budget_shared_between_independent_businesses(self):
         plan=SponsorshipPlan('owner',10,300,
             tenant_monthly_requests=10,operator_monthly_requests=1)
