@@ -1,5 +1,14 @@
 # Changelog
 
+## November 12, 2026 — Strict offline OpenAI draft and request boundaries
+
+- Refuse missing/malformed tenant or user scopes before invoking any sponsored Responses transport. Reject duplicate JSON keys at the provider-envelope or generated-copy level, blank/non-string posts, and oversized copy or image prompts before any draft can be staged.
+- Allowlist outbound HTTPS request fields. Reject background jobs, conversation linkage, unreviewed request parameters, parallel tool calls, non-user messages, non-text parts and non-strict schema descriptors.
+- Add regression tests for rejected scopes, duplicate or malformed model output, post-size limits, unapproved API parameters, and safe provider-usage observation even when generated text is rejected.
+- **Code candidate:** 93caf1ab18a6adf299ccffc42da1012699b91e3c. CI is not yet claimed; GitHub Actions must verify the exact full checkpoint before a merge.
+- **No activation:** The transport remains disabled by default. No paid API requests, real credentials, hosting, billed usage, media creation or publication was enabled.
+
+
 ## November 11, 2026 — Provider response identity wired into estimated AI cost deduplication
 
 - The offline OpenAI Responses executor now requires a strictly validated `resp_...` identifier **when a trusted usage observer is configured**. It derives a deterministic, private 128-bit SHA-256-based `usage_ref` and forwards it with tenant/user/model/token counters to `AICostLedger.record_trusted`.
