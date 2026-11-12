@@ -50,6 +50,10 @@ After PR #35, the **source repository is public**, while the BAM product remains
 
 The next offline migration slice adds **five more PostgreSQL table definitions** covering team invitation issuance/activity, role-change audit, private draft review notes and review event history. The preview preserves constrained event actions, one-use invitation identifiers and PostgreSQL identity columns for former SQLite autoincrement IDs. Real PostgreSQL CI tests check unique-token metadata, current-owner-only invitation visibility, role changes and no invitation bearer secrets in the returned rows. The source now has **14 PostgreSQL schema-preview tables**, but still lacks many other tables and a production migration service. Hosting, invitation delivery and social publishing remain disabled.
 
+### Versioned migration safety in disposable PostgreSQL CI
+
+The first two synthetic PostgreSQL schema stages (nine core tables, then five private collaboration tables) now run through a **transactional, versioned CI-only migration loader** with database advisory locking and SHA-256 script checksums. CI verifies repeat runs are no-ops and rejects tampered migration history, unknown future versions or missing tables. The loader *refuses non-loopback databases* and has no deployed entrypoint. A dedicated production migration framework, full table coverage, data conversion, encrypted backup/restore and explicit Neon/Render approval are still prerequisites.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

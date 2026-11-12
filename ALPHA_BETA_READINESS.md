@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Versioned PostgreSQL schema migrations (CI only) | **Two transactional CI schema stages with checksum journal and drift/idempotency tests, pending CI** | Need independently reviewed production migration runner, full table set, encrypted backup/restore, failure recovery and authorized Neon staging |
 | Collaboration and invite PostgreSQL table parity | **Five new DDL previews/owner-only read tests; pending CI** | Full invite transaction semantics, cryptographic token lifecycle and all remaining tables must pass actual Neon staging tests before private beta |
 | Real PostgreSQL query/DDL verification on public GitHub CI | **New ephemeral PostgreSQL 16 CI integration candidate, not Neon staging** | Verify actual PG isolation and versioned writes under CI, then port all remaining tables, run real hosted multi-user tests, encrypted backup/restore and explicitly authorized deployment |
 | Postgres write-path CAS preview | **Offline contract/SQLite tests passed PR #33 and merged-main CI 43218122644; not exercised on PostgreSQL** | Test same SQL with real Postgres transactions and authenticated server sessions before any hosted edit endpoint; no executable posts |

@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Transactional PostgreSQL CI schema versioning (candidate)
+
+- Introduce a fixed, two-version disposable CI migration loader using one PostgreSQL transaction, advisory lock, script checksum journal and strict schema-table parity check.
+- Add actual PostgreSQL regressions for idempotent re-run, tampered checksums, unknown future versions, missing table detection and permanent no-Neon/no-data-migration/no-publishing flags.
+- Safe test-only guard requires explicit CI opt-in, Psycopg connection, local 127.0.0.1 PostgreSQL test database, schema, user and autocommit. No production schema tool, no hosted migration or paid service. CI pending.
+
 ## November 12, 2026 — Team and invitation PostgreSQL schema parity (candidate)
 
 - Add five additional explicit PostgreSQL DDL preview tables: business invitations, invitation activity, team role-change audit, private review feedback and review history. Convert SQLite autoincrement to PostgreSQL identity columns while retaining explicit legacy unique/index behavior.

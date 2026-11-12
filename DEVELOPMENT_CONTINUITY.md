@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Ephemeral PostgreSQL migration journal candidate — November 12, 2026
+
+**Last verified merged baseline:** PR #37 merged at `beb00e9dda822cf5fb811712ce8b162ee8d3ee5c`, full [main Actions 43242495634](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43242495634) **success**; development synchronized without force.
+
+**Unverified new milestone:** two-stage synthetic CI PostgreSQL schema loader with transactional advisory lock, checksum journal, drift detection and idempotency tests. Update README, roadmap, changelog and readiness. Must pass exact PR+merged-main tests before branch sync. It is *not* a production migration runner, still no Neon project, Render service, customer data or external provider requests.
+
 ## Collaboration schema preview candidate — November 12, 2026
 
 **Last fully verified starting point:** PR #36 merged at `f898bdf903d66b06620793651426cf4009c09cfa` and full merged-main [Actions 43240922531](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43240922531) **success**. Development safely fast-forwarded to same SHA.
