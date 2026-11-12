@@ -870,7 +870,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         for rid,created,status,copy in (
             ('e'*32,100,'ready_for_review','shop A review'),
             ('f'*32,100,'postponed','shop A postponed'),
-            ('g'*32,101,'unavailable','shop A unavailable')):
+            ('9'*32,101,'unavailable','shop A unavailable')):
             self.conn.execute("""INSERT INTO content_requests
                 (request_id,tenant_id,channel,draft_text,suggestion,
                  required_items,provided_items,status,priority_token,
@@ -890,7 +890,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         second=adapter.read_held_inbox_page(
             **params,**{'after_created_at':100,'after_request_id':'e'*32})
         self.assertEqual([x['request_id'] for x in second['items']],
-                         ['f'*32,'g'*32])
+                         ['f'*32,'9'*32])
         self.assertFalse(second['has_more'])
         self.assertIsNone(second['next_cursor'])
         only_review=adapter.read_held_inbox_page(
