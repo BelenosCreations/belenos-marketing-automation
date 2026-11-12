@@ -74,8 +74,10 @@ def inventory_sqlite_for_neon(db):
     names={entry['table'] for entry in entries}
     if not names.issuperset(TABLE_NAMES):
         raise ValueError('Core BAM identity/draft tables missing')
-    if not names.issuperset(REVIEWED_PREVIEW_NAMES):
-        raise ValueError('Initialized BAM schema missing a reviewed PG preview table')
+    # Some source tables are lazily initialized by optional Alpha features.
+    # A reviewed DDL declaration is not proof the table exists in this DB.
+    uninitialized=sorted(set(REVIEWED_PREVIEW_NAMES)-names)
+    present=sorted(names.intersection(REVIEWED_PREVIEW_NAMES))
     missing=sorted(names-set(TABLE_NAMES))
     pending=sorted(names-set(REVIEWED_PREVIEW_NAMES))
     digest=hashlib.sha256(json.dumps(shape,
@@ -87,6 +89,8 @@ def inventory_sqlite_for_neon(db):
             'unmapped_table_count':len(missing),
             'unmapped_table_names':missing,
             'reviewed_pg_preview_count':len(REVIEWED_PREVIEW_NAMES),
+            'reviewed_pg_preview_present_count':len(present),
+            'reviewed_pg_preview_uninitialized_names':uninitialized,
             'reviewed_pg_preview_table_names':sorted(REVIEWED_PREVIEW_NAMES),
             'reviewed_pg_stage_counts':[len(group) for group in _REVIEWED_GROUPS],
             'unreviewed_pg_preview_count':len(pending),

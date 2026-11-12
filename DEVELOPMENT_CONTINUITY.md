@@ -4,7 +4,7 @@
 
 PR #46 is **fully verified** on merged main at bc037deda62f1402e0c1ba2468391dec1f4d54d2; [full main CI 43268647305](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43268647305) passed, and the existing development branch was safely fast-forwarded. All external effects remain disabled.
 
-**Current next candidate:** accurate metadata-only source inventory for all seven ephemeral PostgreSQL DDL stages (46 reviewed tables, not production migrations), plus remaining unreviewed source tables, stage counts and fail-closed mismatch tests. Full PR/main CI and safe non-force development sync still required. Budget unchanged: **$0 new costs**, no Render/Neon activation, no shared EdgePilot services, no paid AI or social posting.
+**Current next candidate:** accurate metadata-only source inventory for all seven ephemeral PostgreSQL DDL stages (46 reviewed tables, not production migrations), plus remaining unreviewed initialized source tables, lazily uninitialized reviewed tables and stage counts. Full PR/main CI and safe non-force development sync still required. Budget unchanged: **$0 new costs**, no Render/Neon activation, no shared EdgePilot services, no paid AI or social posting.
 
 ## Session-authenticated PostgreSQL priority CAS candidate — November 12, 2026
 

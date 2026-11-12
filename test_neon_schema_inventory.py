@@ -39,14 +39,17 @@ class NeonSchemaInventoryTests(unittest.TestCase):
         self.assertEqual(report['reviewed_pg_preview_count'],46)
         self.assertEqual(len(report['reviewed_pg_preview_table_names']),46)
         self.assertEqual(report['all_table_count'],
-            report['reviewed_pg_preview_count']+
+            report['reviewed_pg_preview_present_count']+
             report['unreviewed_pg_preview_count'])
+        self.assertEqual(report['reviewed_pg_preview_present_count']+
+            len(report['reviewed_pg_preview_uninitialized_names']),46)
         self.assertNotIn('bam_ai_preferences',
                          report['unreviewed_pg_preview_table_names'])
         self.assertIn('bam_ai_preferences',
                       report['reviewed_pg_preview_table_names'])
         self.assertEqual(sum(item['reviewed_in_postgresql_preview']
-            for item in report['tables']),46)
+            for item in report['tables']),
+            report['reviewed_pg_preview_present_count'])
         self.assertFalse(report['postgres_data_migrated'])
         self.assertFalse(report['postgres_production_ready'])
         self.assertEqual(report['mapped_subset_count'],9)
