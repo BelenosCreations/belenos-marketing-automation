@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+**Third verified merge November 12:** Google-only invitation API groundwork PR #23 merged to main at `39b3c04f31b8c2fc91b0348bf36d658cf4bcbff7`. Full Actions `43174049448` passed; development fast-forwarded to the exact merge commit.
+
+**Unverified current feature batch:** `BAMInvitationAcceptWSGI`, independent offline gateway acceptance opt-in, and direct-call HTTP-style e2e regressions. Source plus README/CHANGELOG/milestones are staged in a new development commit requiring exact-head GitHub CI and reviewed PR. No production HTTP enrollment, email delivery, hosted service or publishing has been enabled.
+
+
 **Second verified merge November 12:** Invitation redemption and admission guard PR #22 merged at e24a2b3e46ec924c19a0e8b5e4ea6affd3419dff; full main Actions 43172997850 passed. Development was fast-forwarded without force.
 
 **Current unverified development batch:** Non-session verified Google identity lookup plus nonce-verified internal Google invitation redemption; awaiting exact-head CI. No new public route, live external service or paid API.
