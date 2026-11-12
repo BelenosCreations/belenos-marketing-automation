@@ -1,5 +1,13 @@
 # Changelog
 
+## November 12, 2026 — Internal Google-only invitation redemption
+
+- Added an internal verified Google identity lookup that can validate a known, registered Google-only BAM subject without implicitly granting membership or a login session. Ordinary Google login still requires current business membership.
+- Extended the disabled-by-default invitation admission gate to consume a one-use Google challenge, verify the ID token including nonce, match the registered identity, apply hashed-email throttling and redeem the invitation transactionally.
+- Added tests for registration mapping persistence and duplicate-subject atomic rollback, Google-subject impersonation, mismatched emails, missing membership, nonce reuse and successful post-acceptance Google login.
+- **Exact-source GitHub Actions pending.** No live Google OAuth browser flow, public invite acceptance, hosted registration, paid AI or social publication was activated.
+
+
 ## November 12, 2026 — Internal invitation redemption admission gate
 
 - Added explicit, disabled-by-default AuthLoginAPI admission for invitation password redemption. Turning it on requires both a trusted invitation service and a shared LoginThrottle.

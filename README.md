@@ -206,3 +206,7 @@ This is an **internal offline backend method only**: there is still no public in
 ### Rate-limited internal invitation acceptance gate (offline Alpha)
 
 The internal authentication service now requires an **explicit opt-in** and a shared persistent password throttle before it can invoke trusted invitation redemption. Failed credential/token claims consume the throttle allowance; successful acceptance clears the credential failures, creates the membership through the transactional invitation service and **returns no logged-in session**. A separate normal login is required afterward. No HTTP route is mounted for this action. Production still needs verified enrollment, IP/global anti-abuse controls, secure delivery, and hosted multi-user testing.
+
+### Google-only invitation redemption groundwork (offline Alpha)
+
+A Google-only BAM identity already stores its independently verified provider-subject mapping at registration, without business membership. The internal admission service can now resolve that verified identity **without issuing a session**, using a fresh one-time Google nonce, the trusted Google ID-token verifier, a shared hashed-email throttle, and a delivered, one-use business invitation. Only the membership is created. Subsequent Google login still separately requires that membership. Tests cover unknown subjects, mismatched emails, nonce replay, expired token reuse and successful team sign-in after acceptance. There is still no hosted Google browser flow, public invite endpoint, automatic email account linking or production hosting.

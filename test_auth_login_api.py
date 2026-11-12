@@ -131,6 +131,54 @@ class AuthLoginAPITests(unittest.TestCase):
             id_token='x'*24,tenant_id='shop',server_now=103)
         self.assertIsNotNone(self.sessions.resolve(logged['session_token'],now=104))
 
+    def test_registered_google_only_invitee_can_redeem_after_nonce_check(self):
+        registration=self.challenge()
+        self.claims['sub']='new-invited-google'
+        self.claims['email']='googleguest@example.com'
+        subject=self.api.register_google(challenge_id=registration['challenge_id'],
+            id_token='x'*24,server_now=102)['subject_id']
+        self.assertIsNone(self.directory.resolve('shop',subject))
+        owner_session=self.password()
+        delivered=[]
+        invites=BusinessInvitations(db=self.db,sessions=self.sessions,
+            directory=self.directory,auth=self.auth,
+            deliver=lambda email,tenant,secret:delivered.append(secret))
+        invites.invite(owner_session=owner_session,tenant_id='shop',
+            email='googleguest@example.com',role=Role.EMPLOYEE,now=103)
+        gate=AuthLoginAPI(auth=self.auth,google_verifier=self.verifier,
+            challenges=self.challenges,invitations=invites,
+            throttle=LoginThrottle(self.db,max_failures=3,window_seconds=60),
+            allow_invitation_redemption=True)
+        wrong=gate.begin_google(server_now=104)
+        self.claims['sub']='another-google-sub'
+        self.claims['email']='googleguest@example.com'
+        self.claims['nonce']=wrong['nonce']
+        with self.assertRaises(PermissionError):
+            gate.redeem_invitation_google(challenge_id=wrong['challenge_id'],
+                id_token='x'*24,token=delivered[-1],server_now=105)
+        self.assertIsNone(self.directory.resolve('shop',subject))
+        self.assertEqual(gate.throttle.db.execute(
+            'SELECT failures FROM bam_login_throttle').fetchone()[0],1)
+        fresh=gate.begin_google(server_now=106)
+        self.claims['sub']='new-invited-google'
+        self.claims['nonce']=fresh['nonce']
+        admitted=gate.redeem_invitation_google(challenge_id=fresh['challenge_id'],
+            id_token='x'*24,token=delivered[-1],server_now=107)
+        self.assertTrue(admitted['membership_created'])
+        self.assertIsNone(admitted['session_token'])
+        self.assertEqual(self.directory.resolve('shop',subject).role,Role.EMPLOYEE)
+        self.assertIsNone(self.directory.resolve('other',subject))
+        with self.assertRaises(PermissionError):
+            gate.redeem_invitation_google(challenge_id=fresh['challenge_id'],
+                id_token='x'*24,token=delivered[-1],server_now=108)
+        login_challenge=gate.begin_google(server_now=109)
+        self.claims['nonce']=login_challenge['nonce']
+        session=gate.google_login(challenge_id=login_challenge['challenge_id'],
+            id_token='x'*24,tenant_id='shop',server_now=110)['session_token']
+        self.assertEqual(self.sessions.resolve_current(
+            session,directory=self.directory,now=111
+        ).principal.subject_id,subject)
+
     def test_google_only_signup_has_no_business_access(self):
         challenge=self.challenge()
         self.claims['sub']='new-google-sub'

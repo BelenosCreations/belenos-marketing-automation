@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+**Second verified merge November 12:** Invitation redemption and admission guard PR #22 merged at e24a2b3e46ec924c19a0e8b5e4ea6affd3419dff; full main Actions 43172997850 passed. Development was fast-forwarded without force.
+
+**Current unverified development batch:** Non-session verified Google identity lookup plus nonce-verified internal Google invitation redemption; awaiting exact-head CI. No new public route, live external service or paid API.
+
+
 **Current unmerged development continuation:** An AuthLoginAPI internal invitation redemption gate now requires explicit activation plus trusted persistent login throttling, and returns membership only (no session). New source and tests need exact-head GitHub Actions before review/merge. No network endpoint, new signup or email verification flow was enabled.
 
 

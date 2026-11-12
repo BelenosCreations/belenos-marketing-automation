@@ -1006,3 +1006,7 @@ A trusted password-identity verification method now supports confirmed existing 
 ## November 12, 2026 — Offline invitation password admission throttling
 
 The trusted AuthLoginAPI offers a disabled-by-default password invitation redemption method, requiring explicit constructor opt-in, a trusted invitation service and a shared LoginThrottle. Failed secret/password claims increase hashed-email throttling; successful redemption clears failures, creates one-use tenant membership and does not issue a session. Tests demonstrate lockout followed by safe retry and later ordinary login. No HTTP handler, trusted email verification delivery, IP/global rate-limit layer, production hosted collaboration or social publishing is configured. Exact candidate CI pending.
+
+## November 12, 2026 — Google-only invitation acceptance foundation
+
+Trusted Google identity lookup can now return a previously registered and linked identity without granting session or business membership. The optional invitation admission gate consumes a one-use nonce, verifies an injected trusted Google ID-token verifier, throttles verified email attempts and redeems delivered invitations under existing tenant-scoped transactional checks. Success remains separate from a later login. Added failed verification, impersonation, duplicate-registration rollback and nonce replay regressions. Exact-source full CI pending. No public registration, Google OAuth browser workflow, production verification, externally delivered invitations or posting.

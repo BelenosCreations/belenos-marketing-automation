@@ -100,6 +100,39 @@ class IdentityAuthTests(unittest.TestCase):
         self.assertEqual(self.sessions.resolve(token,now=102).principal.subject_id,
                          self.subject)
 
+    def test_registered_google_identity_is_bound_without_a_business_session(self):
+        guest=self.auth.register_google_verified(
+            google_sub='registered-google-guest',
+            email='google-guest@example.com',email_verified=True,now=101)
+        linked=self.db.execute("""SELECT subject_id FROM bam_google_identities
+            WHERE google_sub='registered-google-guest'""").fetchone()
+        self.assertEqual(linked[0],guest)
+        self.assertEqual(self.auth.verify_google_identity_trusted(
+            google_sub='registered-google-guest',
+            email='google-guest@example.com',email_verified=True),guest)
+        self.assertIsNone(self.directory.resolve('shop',guest))
+        with self.assertRaises(PermissionError):
+            self.auth.login_google_verified(
+                google_sub='registered-google-guest',
+                email='google-guest@example.com',email_verified=True,
+                tenant_id='shop',now=102)
+        for sub,email,verified in (
+            ('different-google','google-guest@example.com',True),
+            ('registered-google-guest','other@example.com',True),
+            ('registered-google-guest','google-guest@example.com',False)
+        ):
+            with self.assertRaises(PermissionError):
+                self.auth.verify_google_identity_trusted(
+                    google_sub=sub,email=email,email_verified=verified)
+        before=self.db.execute('SELECT COUNT(*) FROM bam_identities').fetchone()[0]
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.auth.register_google_verified(google_sub='registered-google-guest',
+                email='different-email@example.com',email_verified=True,now=102)
+        self.assertEqual(self.db.execute(
+            'SELECT COUNT(*) FROM bam_identities').fetchone()[0],before)
+        self.assertEqual(self.db.execute(
+            'SELECT COUNT(*) FROM sessions').fetchone()[0],0)
+
     def test_google_subject_mismatch_denied(self):
         self.verify()
         self.auth.link_google_verified(subject_id=self.subject,google_sub='google-1',
