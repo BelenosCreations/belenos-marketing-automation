@@ -3,6 +3,14 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Offline sponsored AI aggregate quotas and simultaneous users — November 11, 2026
+
+To protect the future operator-sponsored generation budget, `SponsoredAIQuota` reserves **per-user, per-business and whole-operator** monthly *request counts* in one transaction, with rollback if any tier is exhausted. Optional aggregate ceilings are disabled until a trusted operator plan supplies them, but the accepted aggregate counts are still recorded, preventing a later mid-month ceiling from overlooking previously accepted requests. A current draft-creation role is required; personal-key mode never consumes the sponsored counters. No API traffic occurs in these tests.
+
+The offline tests exercise two distinct SQLite connections and simultaneous users competing for a shared business cap and two different businesses competing for one operator cap. The browser, database and provider need more production controls before this could be treated as a USD expenditure ceiling or a hosted AI quota system.
+
+**Verification:** Core individual/tenant/operator counter tests and concurrent-client races passed at `7d18e5ed` ([Actions 43127670375](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43127670375)). The mid-month accounting change and this documentation require an exact final GitHub Actions run. The production OpenAI request and spend/price policy remain unauthorized.
+
 ## Atomic proposed calendar slots under simultaneous editors — November 11, 2026
 
 A proposal is not a publish job. `CalendarProposals.propose` now uses SQL-level revision and current-held-status checks in its conditional INSERT/UPDATE. New proposals refuse replacement of an existing request; existing proposals can only be changed with the exact previously displayed proposal token. A second database connection cannot win a race using a stale read, and unique tenant/UTC-slot constraints prevent duplicate slot assignments. Saving does not reclassify draft approval, media, or publishability.

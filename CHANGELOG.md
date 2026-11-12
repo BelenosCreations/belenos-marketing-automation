@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-11 — Offline sponsored AI cost-containment layers
+
+- Extended server-issued `SponsorshipPlan` with optional per-business and BAM-operator **monthly request-count ceilings**, in addition to existing individual request and output-token allowances; all caps are validated with strict integer bounds.
+- Sponsored quota reservations now use a single SQLite transaction across individual, tenant aggregate and operator aggregate counters. A depleted cap rolls back every partial increment, and denials explicitly identify `limit_reached`, `tenant_limit_reached` or `operator_limit_reached` without granting a draft or paid call.
+- Aggregate usage is metered on **all accepted sponsored reservations**, including while a cap is not configured, so adding a limit mid-month cannot overlook earlier activity. Viewer-only members cannot reserve generation quota.
+- Added in-memory regression tests for business isolation, unchanged per-user counters on denial, mid-month cap configuration, invalid plan values, and independent-file-backed SQLite races between two users in one business and competing businesses under one operator ceiling.
+- **Verification:** [Actions 43127670375](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43127670375) passed the initial optional-ceilings and independent-client tests at `7d18e5ed789d353416236beb934de08ce334957f`. Mid-month metering improvement through `ef3e3509f273e621d0ad26663d02dd36cba650fa` and this documentation require exact-head CI.
+- No USD spend cap, billing integration, provider key, live AI call or social publishing has been activated. Operator still needs to approve an actual spend budget before any production traffic.
+
 ## 2026-11-11 — Atomic held-draft calendar proposal updates
 
 - Replaced read-then-upsert updates with a database-guarded conditional insert/compare-and-swap update. The current `content_requests` revision and held status are checked within the same SQLite write as the saved proposal, preventing a stale service snapshot or race from assigning a changed draft.
