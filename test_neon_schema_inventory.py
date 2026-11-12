@@ -22,11 +22,9 @@ class NeonSchemaInventoryTests(unittest.TestCase):
         self.assertEqual(report['all_table_count'],
             report['mapped_subset_count']+report['unmapped_table_count'])
         self.assertNotIn('bam_identities',report['unmapped_table_names'])
-        self.assertIn('bam_business_invitations',
-                      report['unmapped_table_names']
-                      if 'bam_business_invitations' in
-                      [x['table'] for x in report['tables']] else
-                      ['bam_business_invitations'])
+        # AI policy tables are always initialized by the offline gateway,
+        # and are not part of the nine-table DDL preview.
+        self.assertIn('bam_ai_preferences',report['unmapped_table_names'])
         self.assertFalse(report['provider_connected'])
         self.assertFalse(report['migration_executed'])
         self.assertFalse(report['ready_for_hosting'])
