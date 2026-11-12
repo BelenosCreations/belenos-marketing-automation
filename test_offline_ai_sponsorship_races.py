@@ -124,15 +124,17 @@ class SponsoredAIConcurrentBudgetTests(unittest.TestCase):
     def test_role_revocation_while_reservation_waits_for_lock(self):
         ready=threading.Event()
         proceed=threading.Event()
-        first=self.quota1.policy_store._editor
-        def delayed_check(token,now):
-            resolved=first(token,now)
+        first=self.quota1.policy_store.get_mode
+        def delayed_mode(*,token,now):
+            result=first(token=token,now=now)
             if token==self.shop_writer and not ready.is_set():
+                # Pause after first authentication + mode preflight, but
+                # before the SQLite BEGIN IMMEDIATE admission boundary.
                 ready.set()
                 if not proceed.wait(timeout=8):
                     raise TimeoutError('Role-race pause not released')
-            return resolved
-        self.quota1.policy_store._editor=delayed_check
+            return result
+        self.quota1.policy_store.get_mode=delayed_mode
         output=[]
         plan=SponsorshipPlan('invited',10,300,
             max_request_estimated_micro_usd=250,

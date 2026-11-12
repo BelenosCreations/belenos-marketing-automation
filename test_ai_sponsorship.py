@@ -39,22 +39,45 @@ class SponsoredAITests(unittest.TestCase):
             Principal('owner','shop',Role.OWNER),'writer',Role.CONTENT_CREATOR)
         writer=self.sessions.issue(
             Principal('writer','shop',Role.CONTENT_CREATOR),now=100)
-        initial=self.policy._editor
+        initial=self.policy.get_mode
         seen=[0]
-        def demote_after_check(token,now):
-            member=initial(token,now)
+        def demote_after_preflight(*,token,now):
+            mode=initial(token=token,now=now)
             seen[0]+=1
             if seen[0]==1:
+                # Authorization and mode preflight have BOTH succeeded;
+                # only the new transaction-time check can stop this writer.
                 self.policy.directory.set_member(
                     Principal('owner','shop',Role.OWNER),
                     'writer',Role.VIEWER)
-            return member
-        self.policy._editor=demote_after_check
+            return mode
+        self.policy.get_mode=demote_after_preflight
         with self.assertRaises(PermissionError):
             self.quota.reserve(token=writer,now=101,
                 plan=SponsorshipPlan('invited',10,500,
                     max_request_estimated_micro_usd=100,
                     operator_monthly_estimated_micro_usd=500),
+                month='2026-11')
+        self.assertEqual(self.db.execute(
+            'SELECT COUNT(*) FROM bam_ai_usage').fetchone()[0],0)
+
+    def test_mode_switch_between_preflight_and_transaction_denied(self):
+        original=self.policy.get_mode
+        calls=[0]
+        def switch_after_preflight(*,token,now):
+            mode=original(token=token,now=now)
+            calls[0]+=1
+            if calls[0]==1:
+                self.policy.set_mode(token=token,now=now,
+                    mode='own_openai_key',
+                    credential_ref='vault:abcdefghijklmnop')
+            return mode
+        self.policy.get_mode=switch_after_preflight
+        with self.assertRaises(PermissionError):
+            self.quota.reserve(token=self.token,now=101,
+                plan=SponsorshipPlan('owner',10,400,
+                    max_request_estimated_micro_usd=100,
+                    operator_monthly_estimated_micro_usd=1000),
                 month='2026-11')
         self.assertEqual(self.db.execute(
             'SELECT COUNT(*) FROM bam_ai_usage').fetchone()[0],0)
