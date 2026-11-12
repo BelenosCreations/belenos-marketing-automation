@@ -204,7 +204,7 @@
                   !inviteData||inviteError)return;
                const email=emailInput.value.trim().toLowerCase();
                if(email.length<3||email.length>254||
-                  !/^[^\\s@]+@[^\\s@]+$/.test(email)||
+                  !/^[^\s@]+@[^\s@]+$/.test(email)||
                   !['viewer','employee','content_creator',
                     'marketing_manager'].includes(roleSelect.value)){
                  if(onError)onError('Valid recipient email and non-owner role required');

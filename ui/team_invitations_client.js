@@ -114,7 +114,7 @@
     if(typeof options.email!=='string'||
        options.email.length<3||options.email.length>254||
        options.email!==options.email.trim()||
-       !/^[^\\s@]+@[^\\s@]+$/.test(options.email)||
+       !/^[^\s@]+@[^\s@]+$/.test(options.email)||
        !roles.has(options.role))
       throw new TypeError('Valid invitation recipient and non-owner role required');
     const res=await options.fetchImpl(

@@ -61,6 +61,11 @@ async function main(){
   assert.deepEqual(JSON.parse(calls[3].opts.body),
     {email:'friend@example.com',role:'content_creator'});
   assert.equal(calls[3].opts.credentials,'omit');
+  // A normal email containing the letter "s" must not be mistaken for
+  // invalid whitespace by either invitation form or browser client.
+  const second=await issue({...ctx,fetchImpl,
+    email:'second@example.com',role:'viewer'});
+  assert.equal(second.issued,true);
   for(const bad of [
     {email:'not-an-email',role:'viewer'},
     {email:'friend@example.com',role:'owner'},
