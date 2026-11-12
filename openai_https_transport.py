@@ -11,6 +11,11 @@ from urllib.error import HTTPError,URLError
 
 _API_URL='https://api.openai.com/v1/responses'
 _MAX_BODY=65536
+# Explicit outbound request allowlist: prevent provider conversations, stored
+# state, background requests, extra tools or unreviewed provider features.
+_ALLOWED_FIELDS=frozenset((
+    'model','instructions','input','text','max_output_tokens','store',
+    'tools','parallel_tool_calls'))
 
 class OpenAITransport:
     def __init__(self, *, key_resolver, opener, enabled=False,
@@ -35,15 +40,34 @@ class OpenAITransport:
     def __call__(self,payload):
         if not self._enabled:
             raise PermissionError('OpenAI requests disabled until deployment approval')
-        if type(payload) is not dict or payload.get('store') is not False or (
+        if type(payload) is not dict or set(payload)-_ALLOWED_FIELDS or (
+            payload.get('parallel_tool_calls',False) is not False or
+            ('instructions' in payload and (
+                type(payload['instructions']) is not str or
+                not payload['instructions'].strip())) or
+            type(payload.get('input')) is not list or
+            payload.get('store') is not False or
             payload.get('tools')!=[] or
             payload.get('model') not in ('gpt-4.1-mini','gpt-4.1','gpt-5-mini') or
             type(payload.get('max_output_tokens')) is not int or
             not 1<=payload['max_output_tokens']<=16384 or
             type(payload.get('text')) is not dict or
             type(payload['text'].get('format')) is not dict or
-            payload['text']['format'].get('type')!='json_schema'):
+            payload['text']['format'].get('type')!='json_schema' or
+            payload['text']['format'].get('strict') is not True or
+            type(payload['text']['format'].get('schema')) is not dict):
             raise ValueError('Unsupported OpenAI payload')
+        # Reject non-user messages and unsupported content even with tools=[].
+        for message in payload['input']:
+            if type(message) is not dict or set(message)!={'role','content'} or (
+                message['role']!='user' or type(message['content']) is not list
+                or not 1<=len(message['content'])<=4):
+                raise ValueError('Unsupported OpenAI input')
+            for part in message['content']:
+                if type(part) is not dict or set(part)!={'type','text'} or (
+                    part['type']!='input_text' or type(part['text']) is not str
+                    or not part['text'].strip()):
+                    raise ValueError('Unsupported OpenAI input')
         body=json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf-8')
         if len(body)>32768:
             raise ValueError('OpenAI request too large')

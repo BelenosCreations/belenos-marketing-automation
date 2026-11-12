@@ -123,7 +123,20 @@ class OpenAITransportTests(unittest.TestCase):
             dispatch_guard=lambda:True)
         for change in ({'store':True},{'tools':[{'type':'web_search'}]},
                        {'text':{}},{'max_output_tokens':'bad'},
-                       {'model':'unapproved'}):
+                       {'model':'unapproved'},
+                       {'parallel_tool_calls':True},
+                       {'background':True},
+                       {'previous_response_id':'resp_prior_12345678'},
+                       {'conversation':{'id':'other-account'}},
+                       {'include':['output_text']},
+                       {'text':{'format':{'type':'json_schema',
+                           'strict':False,'schema':{}}}},
+                       {'input':[{'role':'system','content':[
+                           {'type':'input_text','text':'unsafe'}]}]},
+                       {'input':[{'role':'user','content':[
+                           {'type':'input_image','image_url':'https://example.com'}]}]},
+                       {'input':[{'role':'user','content':[
+                           {'type':'input_text','text':' '}]}]}):
             with self.assertRaises(ValueError):
                 transport({**payload(),**change})
         self.assertEqual(calls,[])
