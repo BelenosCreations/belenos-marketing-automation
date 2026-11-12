@@ -76,6 +76,10 @@ A fifth versioned, disposable GitHub CI PostgreSQL stage now previews seven more
 
 Version six of the disposable PostgreSQL test schema now models four more legacy multi-business tables: **tenant posts, tenant review decisions, unconfirmed events, and per-business scheduling preferences**—bringing the reviewed test subset to **40 tables**. PostgreSQL tests enforce composite tenant/post foreign keys, deny cross-business reads and revoked roles, and explicitly reject a `published` status in the local-only approval schema. A stored review decision or preference does **not** schedule or publish any social post; there is no production queue, Meta connection or paid service.
 
+### Editorial, verified-facts and credential-recovery schema (offline)
+
+A seventh PostgreSQL CI schema stage covers six more private review/security tables: vetted editorial inbox, identity/competitor attestations, offline owner approval intents, TruthGuard verified business facts, creator identity status and hashed email recovery actions. The reviewed subset now contains **46 tables**, with protected PostgreSQL checks denying a `published` editorial state or marketing emails, and current owner/manager-scoped verified-fact reads excluding revoked and expired facts. This stage does **not** deliver email, publish posts, or run a production identity service. Development remains $0 additional spend.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

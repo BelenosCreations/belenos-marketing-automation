@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Private editorial/fact and credential-recovery schema stage-seven candidate — November 12, 2026
+
+**Last fully verified baseline:** PR #43 merged at `cdec5896190421fcc001ce56aef58110e2167143`; [merged-main Actions 43259735453](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43259735453) **success**; development synchronized without force.
+
+**Unverified stage 7:** six editorial review, owner intent, TruthGuard, creator status and hashed email-action tables, private current-member verified-fact SELECT, PostgreSQL constraint and isolation checks, raising reviewed preview to 46. This is not an email service, publish approval flow, real credential provider or production data migration. PR green → merge main → verify exact main CI → safe dev fast-forward. $0 extra-cost policy unchanged.
+
 ## Legacy tenant content and manual scheduling stage-six candidate — November 12, 2026
 
 **Last fully verified baseline:** PR #42 merged `4a71a70a331c3b9f4ce680a2e80ff2a733d28861`, [merged-main GitHub Actions 43258725694](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43258725694) **success**; `main` and development synchronized without force.
