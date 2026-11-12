@@ -55,6 +55,8 @@ Keep the existing authorization model aligned with **owner, manager, content cre
 
 **Additional offline evidence:** two independent gateway instances on separate SQLite connections to one durable test database can share held drafts, detect stale edits and retain role revocation across reinitialization. Production multi-device hosting and persistence migration remain Gate B. **Not built yet:** production invitation delivery/acceptance, real shared online team hosting, finished approval/publish execution or subscription/seat administration.
 
+**Atomic offline invitation redemption:** The trusted acceptance service uses one SQLite writer transaction for token consumption, current-role/identity checks, membership creation and audit. File-backed separate-client tests exercise duplicate issuance, double redemption, cancellation races and audit-storage rollback; none of these imply a live invitation route or approved production email delivery.
+
 **Acceptance tests:** two authorized editors see the same business drafts; a stale editor cannot overwrite newer work; members of Business A cannot access Business B; a revoked or demoted member cannot use an old session to retain elevated privileges; approvals cannot be spoofed through the client.
 
 ## 4. Content, AI and imagery

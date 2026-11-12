@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 — Transactional invitation redemption and concurrent-client safety
+
+- Changed `BusinessInvitations.accept_trusted` to claim the one-use token and revalidate the verified recipient, inviting owner's current role, and pre-existing membership **under one SQLite writer transaction**. If any check or audit write fails, the entire attempted redemption rolls back without granting access.
+- Added offline file-backed, separate-connection race tests for simultaneous duplicate active invitation creation, two clients redeeming one link, and cancellation racing redemption. Added a forced audit-write failure regression to confirm neither member creation nor token consumption persists.
+- **Verification:** The first transactional redemption code `350272042a3b84f49d7dc82cc109aff1317ef086` passed [GitHub Actions 43123314052](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43123314052). The expanded concurrency/rollback tests through `bd08b9b19878b34bfbca62e1b7dda52e054f0045` and this documentation still require exact-SHA CI.
+- Private offline Alpha only; trusted delivery callbacks remain optional and disabled without configuration, and no production invitation acceptance route, email, hosting, paid API or publishing is enabled.
+
 ## 2026-11-11 — Tenant-private invitation activity trail (offline Alpha)
 
 - Implemented append-only server metadata for delivered, failed-delivery, cancelled and accepted business invitations. The audit is written transactionally with state changes, is scoped to the current business and never stores/returns a bearer invitation token or recipient email in the audit record.
