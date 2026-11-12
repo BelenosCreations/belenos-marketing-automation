@@ -14,6 +14,9 @@ from neon_collaboration_schema import (
 from neon_identity_provider_schema import EXTRA_TABLE_NAMES
 from neon_ai_budget_schema import BUDGET_TABLE_NAMES,ai_budget_ddl_preview
 from neon_business_analytics_schema import BUSINESS_ANALYTICS_TABLES
+from neon_tenant_content_schema import TENANT_CONTENT_TABLES
+from neon_scoped_tenant_content import (prepare_tenant_post_review,
+    prepare_tenant_schedule_read)
 from neon_scoped_business_analytics import (prepare_business_sources_read,
     prepare_private_audience_read)
 from neon_scoped_provider_queries import (
@@ -67,7 +70,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
             tuple(name for name in BUDGET_TABLE_NAMES if
                 name!='bam_ai_operator_control')+
-            BUSINESS_ANALYTICS_TABLES)+' CASCADE')
+            BUSINESS_ANALYTICS_TABLES+TENANT_CONTENT_TABLES)+' CASCADE')
         self.conn.execute("""UPDATE bam_ai_operator_control
             SET paused=1,updated_at=0 WHERE control_id=1""")
         self.a='identityA'
@@ -99,8 +102,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
     def test_ci_schema_migration_journal_is_idempotent(self):
-        self.assertEqual(self.migration_result['versions_present'],5)
-        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5])
+        self.assertEqual(self.migration_result['versions_present'],6)
+        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5,6])
         reread=apply_ephemeral_ci_migrations(self.conn)
         self.assertEqual(reread['versions_applied'],[])
         self.assertFalse(reread['migration_production_ready'])
@@ -108,7 +111,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertFalse(reread['neon_connected'])
         self.assertFalse(reread['social_publishing_enabled'])
         self.assertEqual(self.conn.execute(
-            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],5)
+            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],6)
 
     def test_schema_digest_tamper_is_refused_without_changing_data(self):
         old=self.conn.execute('SELECT checksum FROM bam_ci_migration_journal '
@@ -157,6 +160,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual({name for (name,) in rows},
                          set(TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
                              BUDGET_TABLE_NAMES+BUSINESS_ANALYTICS_TABLES+
+                             TENANT_CONTENT_TABLES+
                              ('bam_ci_migration_journal',)))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
@@ -278,6 +282,63 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute("""SELECT paused
             FROM bam_ai_operator_control WHERE control_id=1"""
             ).fetchone()[0],1)
+
+    def test_manual_tenant_post_approval_fk_does_not_publish(self):
+        for tenant in ('shop-a','shop-b'):
+            self.conn.execute("""INSERT INTO tenant_posts
+               (tenant_id,post_id,content,category,status)
+               VALUES (%s,'draft-1',%s,'marketing','approval_required')""",
+               (tenant,'private '+tenant))
+        self.conn.execute("""INSERT INTO tenant_approvals
+            (tenant_id,post_id,actor_id,decision)
+            VALUES ('shop-a','draft-1',%s,'approved')""",(self.a,))
+        sql,params=prepare_tenant_post_review(
+            tenant_id='shop-a',post_id='draft-1',
+            verified_subject_id=self.a)
+        row=self.conn.execute(sql,params).fetchone()
+        self.assertEqual(row[1],'private shop-a')
+        self.assertEqual(row[3],'approval_required')
+        self.assertEqual(row[4],'approved')
+        sql,params=prepare_tenant_post_review(
+            tenant_id='shop-b',post_id='draft-1',
+            verified_subject_id=self.a)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        with self.assertRaises(self.psycopg.errors.ForeignKeyViolation):
+            self.conn.execute("""INSERT INTO tenant_approvals
+                (tenant_id,post_id,actor_id,decision)
+                VALUES ('shop-b','missing-post',%s,'approved')""",
+                (self.b,))
+        with self.assertRaises(self.psycopg.errors.CheckViolation):
+            self.conn.execute("""UPDATE tenant_posts SET status='published'
+                WHERE tenant_id='shop-a' AND post_id='draft-1'""")
+        self.conn.execute("""UPDATE members SET active=0
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        sql,params=prepare_tenant_post_review(
+            tenant_id='shop-a',post_id='draft-1',
+            verified_subject_id=self.a)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+
+    def test_schedule_preferences_are_private_and_not_executable(self):
+        for tenant in ('shop-a','shop-b'):
+            self.conn.execute("""INSERT INTO scheduling_settings
+                (tenant_id,mode,timezone_name,weekly_json,
+                 preferred_hours_json,revision)
+                VALUES (%s,'manual','America/New_York','{}','[]',1)""",
+                (tenant,))
+        sql,params=prepare_tenant_schedule_read(
+            tenant_id='shop-a',verified_subject_id=self.a)
+        self.assertEqual(self.conn.execute(sql,params).fetchone()[0],'manual')
+        sql,params=prepare_tenant_schedule_read(
+            tenant_id='shop-b',verified_subject_id=self.a)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        sql,params=prepare_tenant_schedule_read(
+            tenant_id='shop-a',verified_subject_id=self.viewer)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        self.conn.execute("""UPDATE bam_identities SET active=0
+            WHERE subject_id=%s""",(self.a,))
+        sql,params=prepare_tenant_schedule_read(
+            tenant_id='shop-a',verified_subject_id=self.a)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
 
     def test_business_research_fk_and_private_tenant_read(self):
         for tenant in ('shop-a','shop-b'):

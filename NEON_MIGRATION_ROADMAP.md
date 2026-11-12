@@ -50,6 +50,10 @@ The public repository can now run standard GitHub-hosted runners with temporary 
 
 `neon_business_analytics_schema.py` adds seven further Postgres DDL previews: business profiles/topics/sources/competitor blocks, audience observation records, analytics cursors, and legacy tenant ownership metadata. `neon_scoped_business_analytics.py` offers *non-executing* parameterized tenant/current-owner research and synthetic audience read contracts, each joining verified active identity and current membership. Stage 5 of temporary CI-only Postgres now covers **36 tables** and tests cross-business isolation and composite foreign keys. It is not a production database driver, real insights feed, hosted app or scraped source ingestion.
 
+## Sixth disposable CI stage: tenant-owned review and scheduling state
+
+`neon_tenant_content_schema.py` previews four legacy tenant_posts, tenant_approvals, tenant_events and scheduling_settings tables, bringing the reviewed subset to **40 tables**. Explicit tenant/post composite foreign keys keep decisions attached to the correct business, while `neon_scoped_tenant_content.py` builds non-executing, active identity/membership checked review and scheduling read queries. The source `approved` value is an **offline editorial decision**, never a publishing authorization. No actual scheduling dispatcher, social-provider connection or hosted service exists.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

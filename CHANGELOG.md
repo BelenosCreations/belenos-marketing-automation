@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Nonpublishing tenant post/review/scheduling PostgreSQL stage six (candidate)
+
+- Add four Postgres DDL previews for tenant posts, review decisions, events and manual scheduling preferences (40 reviewed tables total).
+- Source SQLite parity and actual disposable PostgreSQL tests verify same-business post/decision foreign keys, separate business post identities, active owner access, private scheduling settings, and disallow `published` as a legacy local status.
+- Add prepared owner-scoped read contracts without any execution or external provider integration. CI and reviewed PR required. No new charges, hosted database or live social posting.
+
 ## November 12, 2026 — Business-scoped research/analytics schema stage five (candidate)
 
 - Add seven explicit PostgreSQL DDL previews (36 reviewed tables total): business profiles, topics, research sources, blocked competitors, imported-analytics checkpoints, audience observations and transitional tenant resource ownership.
