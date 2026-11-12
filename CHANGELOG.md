@@ -1,5 +1,13 @@
 # Changelog
 
+## November 12, 2026 — $0 incremental-cost development policy (pending CI)
+
+- Owner directs **$0 additional spend for BAM** until the app functions well enough to justify hosting or an essential development task is blocked with no practical free option. Either condition requires a fresh explicit approval; no cost or service activation is automatic.
+- Preserve planned separate $7/month Render Starter plus Neon Free as the *deferred architecture* rather than an approved monthly charge. Do not share EdgePilot's live Render service, secrets, accounts or data.
+- Use free standard public GitHub runners, temporary PostgreSQL CI and offline tools. Minimize duplicate workflows, build time, artifacts, overages and storage. Free Render or Neon is an option only for separately approved testing.
+- Add a strict source-controlled `BAM_HOSTING_PLAN.json` zero-cost policy, CI validation/tamper regressions and refreshed README/product/infrastructure/readiness/continuity documentation. This guard is not a provider billing cap.
+- Starting verified baseline is PR #40 merged at `babbba517`, [main CI 43246016783](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43246016783) **success**. Current planning-only change must pass exact PR/main CI before acceptance.
+
 ## November 12, 2026 — AI budget, drafts and cost ledger PostgreSQL schema stage (candidate)
 
 - Extend disposable PostgreSQL CI migration to stage 4, with eight more AI business fact, copy/prompt, media reference, usage receipt, generation idempotency, tenant/operator quota and paused operator-control tables (29 reviewed total).

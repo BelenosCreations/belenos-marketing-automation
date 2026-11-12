@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Current incremental cost cap and deployment policy | **$0 new costs authorized; paid Render Starter deferred, neither free Render nor free Neon provisioned** | Continue free CI/offline. Before *any* provider provisioning or new cost, explicitly approve actual scope, quotas, overage safeguards and isolation. A functioning app or unavoidable blocker only triggers reconsideration |
 | AI budget and cost accounting PostgreSQL parity | **Eight more DDL previews + usage columns and paused-on test schema, pending CI** | Real billing/model pricing and transactional budget admissions must be independently verified before *separate* approval of paid AI |
 | AI/provider/auth metadata PostgreSQL parity | **Seven additional DDL previews, version 3 in ephemeral CI, pending CI** | Full vault lifecycle, actual provider OAuth, real hosted identity and all remaining table migrations are still unimplemented |
 | Versioned PostgreSQL schema migrations (CI only) | **Two transactional CI schema stages with checksum journal and drift/idempotency tests, pending CI** | Need independently reviewed production migration runner, full table set, encrypted backup/restore, failure recovery and authorized Neon staging |

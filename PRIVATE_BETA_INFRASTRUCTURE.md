@@ -3,7 +3,15 @@
 **November 12, 2026 | Planning only.** This document does not create hosting, authorize charges, enable publishing or mark BAM Beta-ready.
 
 
-## Selected initial hosting design — November 12, 2026
+## Active $0 incremental-cost development policy — November 12, 2026
+
+The owner has superseded the immediate paid-hosting direction with **$0 additional BAM costs** until either (a) a functioning application is ready to justify paid infrastructure or (b) further development demonstrably cannot proceed through practical free alternatives. These are conditions to **request a new explicit authorization**, not automatic purchase or deployment triggers.
+
+Use free standard public-repository GitHub Actions runners with minimal duplication, artifacts and storage; local offline runtimes; and disposable PostgreSQL containers in CI. Do not provision Render Starter, Render Free, Neon Free, other providers, or use EdgePilot's existing hosting for BAM without a separate authorization. Render/Neon free tiers may still have quotas and possible overage billing. Provider account settings/budgets, quotas, billed usage and trial expiry must be checked before any later connection or trial.
+
+The previously designed dedicated Render Starter ($7/month base) plus separate Neon Free project stays as a **deferred architectural target**; it is not the current expenditure budget. No service is active, no charges are authorized, and no eventual commercial feature is cancelled. Full tenant separation and all existing application security rules still apply. The `BAM_HOSTING_PLAN.json` development policy is reviewed in CI, but does not impose actual billing-provider limits.
+
+## Deferred paid hosting design — selected earlier, not approved for purchase
 
 The owner selected **one new, separate Render Starter web service ($7/month base compute)** paired with **one new Neon Free PostgreSQL project ($0/month under its usage limits)**. This is the engineering target for BAM's eventual private beta, **not authorization to create either service, incur a charge, expose BAM publicly, or deploy code**. The existing EdgePilot web service, database, tokens and credentials must remain segregated and unchanged. Use Render's Hobby workspace pricing assumption where eligible; independently confirm the actual billing workspace before provisioning.
 

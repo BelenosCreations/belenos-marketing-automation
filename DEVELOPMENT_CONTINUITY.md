@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Authoritative $0 cost policy and verified baseline — November 12, 2026
+
+- **Owner's latest decision:** BAM development must incur **$0 additional costs** until a functioning application is ready to justify paid hosting or a proven blocker requires spend. Neither condition automatically authorizes spending; present costed options and obtain explicit approval before creating even a nominally free externally hosted service, incurring provider overages, or altering paid resources.
+- **Deferred architecture:** own $7/month Render Starter + separate Neon Free PostgreSQL project, not purchased or provisioned. **Do not reuse or change EdgePilot Render service, credentials, database or deployment.**
+- **Free-first engineering:** preserve public GitHub repo; use free standard runners, one nonredundant CI workflow, no artifact storage, disposable PostgreSQL integration tests and local tools. Provider resources/free tiers require quota, overage and data/security review plus approval before activation.
+- **Verified starting GitHub commit:** `main` and `development/phase-3-5-account-directory` at `babbba517a0a301601d1371dace6e5a0c2161e94`, [merged-main Actions 43246016783](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43246016783) **success** after PR #40. The current policy/docs/CI-guard candidate requires exact PR CI, review, green merged-main CI and non-force development fast-forward.
+- **Status:** public source, **offline Alpha**, 29 schema-preview tables across four CI-tested ephemeral PostgreSQL stages, no hosted app or live social provider. Do not confuse public source with a public deployment. Avoid asserting the production PostgreSQL migration is completed.
+
+The older checkpoints below are historical and superseded by this one.
+
 ## AI budget PostgreSQL schema stage candidate — November 12, 2026
 
 **Verified starting point:** PR #39 merged `e7b4dcc9d79a21b702364c3196a9d8674e91b2ff` with full [main Actions 43244657532](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43244657532) **success**; dev fast-forwarded without force.

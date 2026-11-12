@@ -8,6 +8,12 @@ The authoritative product direction is **BAM-managed social publishing and analy
 
 BAM is an industry-independent, multi-business platform. Initial test workspaces may include Belenos Creations and Busy B Cleaning Service; businesses share infrastructure, **not** their private data, content, social credentials or permissions.
 
+## Current development cost decision — November 12, 2026
+
+**$0 incremental spend is now the active BAM engineering policy.** Use free GitHub public-repository standard runners, short-lived PostgreSQL CI containers and local/offline development. Avoid automatic paid integrations, overages, hosting, extra build/storage charges and duplicate CI. Neither free Render nor free Neon should be provisioned without separate approval; do not move BAM into EdgePilot's existing Render service or share secrets/data. The previously selected separate Render Starter ($7/month base) plus Neon Free remains a *deferred future hosting architecture*, not a current operating cost.
+
+When an actual functioning app warrants hosted testing **or** an essential development task cannot reasonably be completed with free alternatives, present a priced proposal for owner decision. That milestone does not authorize spending, service creation, public hosting, OAuth or real publishing by itself. Preserve the planned full multi-user SaaS capabilities and strict per-business/user isolation during the free-first phase.
+
 ## 1. Outcomes the product must deliver
 
 1. A business owner can sign in to **one BAM account** using email/password or Google and manage multiple independently configured businesses.

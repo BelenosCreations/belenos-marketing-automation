@@ -17,6 +17,13 @@ class HostingPlanContractTests(unittest.TestCase):
         self.assertEqual(report['status'],'planning_only')
         self.assertEqual(report['estimated_base_usd_month'],7)
         self.assertEqual(report['additional_costs_approved_usd_month'],0)
+        self.assertEqual(report['development_budget_additional_usd_month'],0)
+        self.assertEqual(report['deferred_render_starter_estimate_usd_month'],7)
+        self.assertFalse(report['free_render_provisioning_allowed'])
+        self.assertFalse(report['free_neon_provisioning_allowed'])
+        self.assertFalse(report['edgepilot_host_sharing_allowed'])
+        self.assertTrue(report[
+            'explicit_owner_approval_required_for_budget_change'])
         self.assertFalse(report['provisioning_allowed'])
         self.assertFalse(report['live_social_publishing_allowed'])
         self.assertFalse(report['paid_ai_allowed'])
@@ -42,6 +49,16 @@ class HostingPlanContractTests(unittest.TestCase):
             ('database','neon_project_id','db-real'),
             ('cost_and_approval','other_monthly_spend_authorized_usd',1),
             ('cost_and_approval','service_creation_authorized',True),
+            ('development_policy','monthly_new_spend_authorized_usd',1),
+            ('development_policy','monthly_new_spend_authorized_usd',True),
+            ('development_policy','mode','pay_as_you_go'),
+            ('development_policy','render_starter_plan_deferred',False),
+            ('development_policy','render_free_provisioning_authorized',True),
+            ('development_policy','neon_free_provisioning_authorized',True),
+            ('development_policy','share_existing_edgepilot_host_authorized',True),
+            ('development_policy','paid_or_overage_services_authorized',True),
+            ('development_policy','explicit_owner_approval_required_for_any_new_spend',False),
+            ('development_policy','budget_review_when','automatically_after_beta'),
             ('cost_and_approval','credit_card_charges_authorized',True),
             ('cost_and_approval','free_tier_overages_guaranteed_capped',True),
             ('deployment','application_created',True),
@@ -63,13 +80,16 @@ class HostingPlanContractTests(unittest.TestCase):
                     verify_planning_only_contract(candidate)
 
     def test_extra_fields_or_malformed_values_fail_closed(self):
-        for change in ('unknown_root','unknown_activation','bad_type'):
+        for change in ('unknown_root','unknown_activation',
+                       'unknown_development_policy','bad_type'):
             with self.subTest(change=change):
                 bad=copy.deepcopy(self.plan)
                 if change=='unknown_root':
                     bad['database_connection_url']='postgresql://secret'
                 elif change=='unknown_activation':
                     bad['activation']['live_billing']=False
+                elif change=='unknown_development_policy':
+                    bad['development_policy']['silent_monthly_budget']=10
                 else:
                     bad['web_service']['estimated_usd_month']=True
                 with self.assertRaises(ValueError):

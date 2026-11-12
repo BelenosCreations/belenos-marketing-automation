@@ -49,5 +49,19 @@
     "multi_tenant_live_tests_verified": false,
     "domain_or_subdomain": null,
     "auto_deploy_allowed": false
+  },
+  "development_policy": {
+    "mode": "zero_additional_costs",
+    "effective_date": "2026-11-12",
+    "monthly_new_spend_authorized_usd": 0,
+    "free_standard_github_runners_preferred": true,
+    "disposable_postgresql_ci_only": true,
+    "render_starter_plan_deferred": true,
+    "render_free_provisioning_authorized": false,
+    "neon_free_provisioning_authorized": false,
+    "share_existing_edgepilot_host_authorized": false,
+    "paid_or_overage_services_authorized": false,
+    "budget_review_when": "functioning_app_or_development_blocked_without_cost",
+    "explicit_owner_approval_required_for_any_new_spend": true
   }
 }
