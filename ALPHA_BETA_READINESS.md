@@ -1,6 +1,6 @@
 # BAM Alpha → Private Beta Readiness Gate
 
-**Status as of November 11, 2026:** Private, offline **alpha**. This checklist is an acceptance gate, not a claim that release milestones were reached. BAM remains unpublished and has no permission to call social publishing services or paid AI.
+**Status as of November 12, 2026:** Private, offline **alpha**. This checklist is an acceptance gate, not a claim that release milestones were reached. BAM remains unpublished and has no permission to call social publishing services or paid AI.
 
 ## A. Checks that can be developed without production authorization
 
@@ -14,6 +14,8 @@
 | Atomic invitation redemption and concurrent clients | **Transactional one-use redemption and multi-client races verified offline** | One-use token claim, current owner/identity recheck and audit insertion share one SQLite write transaction; verify file-backed duplicate/cancel/redeem races and rollback before hosted Beta |
 | Owner-only invitation activity audit | **Offline metadata implementation verified (CI 43122286878), not hosted** | Trusted state transitions, bounded GET, strict response validation and tenant isolation; do not backfill invented past events, require hosted tests and provider-backed invite delivery for Beta |
 | Owner-private pending invitation cancellation | **Opt-in offline only; no email delivery activated** | Current-role owner session, one-use no-token list/cancel, duplicate/member checks, logout-race regression; requires separately trusted delivery callback and real hosted acceptance testing before beta |
+| Verified password/Google-only invitation acceptance | **Gated offline identity and HTTP-style tests verified; not a public enrollment service** | Requires existing verified BAM identity, delivered one-use token, password or trusted nonce-verified Google proof, shared credential throttle, no automatic session, and cross-tenant denial; production needs email delivery, IP/global rate limits and hosted tests |
+| Non-executable private calendar readiness digest | **Implemented offline, no publish jobs** | Reports held calendar items, stale draft and manual time blockers; final approval and direct social publishing still unavailable |
 | Existing-member team management | **Implemented offline, not hosted** | Owner-only roster, revision-checked role/deactivation, scoped session revocation and owner-private activity history; verify behavior with real accounts and devices before Beta |
 | Two-client collaboration & persistence | **File-backed local integration verified, not hosted** | Two authenticated independent gateways, shared drafts, stale writes and role-revocation after restart tested; still requires actual hosted multi-device and backup/restore exercises |
 | Local SQLite snapshot/restore | **Ephemeral offline regression verified; not a backup service** | Consistent temporary snapshots and SQLite integrity checked; requires encrypted off-site production backups, retention and a deployment-specific restore drill |
@@ -23,7 +25,7 @@
 | Private review-feedback notes, change history, readiness summaries | **Implemented offline** | Audit metadata consistency, note permissions and unapproved status after every change |
 | Private media preview/receipt | **Pending-only, optional local quarantine** | No storage path exposure, verified file signature and size checks; discarded upload no longer visible |
 | Safe AI business facts, targeted drafts, and cost planning | **Offline architecture** | Owner-confirmed facts, isolated personal memory and quota simulation, prompt/response strictness |
-| Automated test and migration stability | **Latest development code green at exact SHA 5d80f58c; documentation follow-up pending** | Full Python and browser suite **green for the exact release candidate SHA**, restore-from-backup/migration simulation, complete test log |
+| Automated test and migration stability | **Five recent PRs passed exact merged-main CI; latest synchronized main/dev SHA `427566c6` passed Actions `43175777320`; this documentation-only follow-up still needs CI** | Full Python and browser suite **green for the exact release candidate SHA**, restore-from-backup/migration simulation, complete test log |
 | Non-production risk/threat walkthrough | **In progress** | Tenant role swaps, stale sessions, duplicate requests, reflected HTML, no hard-coded credentials, no external side effect under failure |
 
 ## B. Requirements for a useful private beta (not yet complete)
