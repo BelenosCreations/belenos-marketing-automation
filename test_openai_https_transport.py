@@ -2,6 +2,9 @@ import io
 import json
 import sqlite3
 from ai_sponsorship import SponsoredAIQuota
+from ai_account_policy import AIPolicyStore
+from accounts import AccountDirectory
+from sessions import SessionStore
 import unittest
 from openai_https_transport import OpenAITransport
 
@@ -57,7 +60,9 @@ class OpenAITransportTests(unittest.TestCase):
 
     def test_trusted_quota_pause_is_rechecked_before_key_resolution(self):
         db=sqlite3.connect(':memory:')
-        quota=SponsoredAIQuota(db=db,policy_store=None)
+        policy=AIPolicyStore(db=db,sessions=SessionStore(db),
+            directory=AccountDirectory(db))
+        quota=SponsoredAIQuota(db=db,policy_store=policy)
         observed=[]
         transport=OpenAITransport(
             key_resolver=lambda:(observed.append('key') or 'sk-'+'a'*30),
