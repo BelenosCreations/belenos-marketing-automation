@@ -1084,3 +1084,7 @@ Eight further tables and two usage columns in disposable PostgreSQL CI migration
 ## November 12, 2026 — Zero-additional-cost operating policy
 
 Owner makes $0 incremental spend the active BAM development policy until a functioning application justifies hosting or free development is truly blocked; both are **review triggers, never automatic billing or deployment approval**. Preserve the deferred separate $7 Render Starter + Neon Free design, strict isolation from EdgePilot and all existing commercial targets. Extend `BAM_HOSTING_PLAN.json` planning-only contract and CI tamper checks; update README, CHANGELOG, DEVELOPMENT_CONTINUITY, PRODUCT_PLAN, infrastructure and readiness. All external service provisioning—including free services—is still approval-gated. Exact-head CI pending.
+
+## November 12, 2026 — Business research and private analytics PostgreSQL stage five
+
+Add seven schema-preview tables, source SQLite metadata parity and prepared owner-scoped research/analytics queries. Run foreign-key and active membership/identity isolation tests on disposable GitHub Actions PostgreSQL, raising reviewed DDL coverage to 36. Update README, CHANGELOG, DEVELOPMENT_CONTINUITY and migration roadmap. No real analytics, scraping, hosted Neon/Render, extra spending or social publishing; exact PR CI pending.

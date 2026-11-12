@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Business-scoped research/analytics schema stage five (candidate)
+
+- Add seven explicit PostgreSQL DDL previews (36 reviewed tables total): business profiles, topics, research sources, blocked competitors, imported-analytics checkpoints, audience observations and transitional tenant resource ownership.
+- Add local SQLite schema-parity/no-data-export tests and PostgreSQL fixture tests for tenant isolation, active ownership, review-only research reads and cross-table foreign keys.
+- Add stage 5 to disposable public GitHub runner migration; no Neon or Render provisioning, live provider insights, paid services, publishing or extra hosting costs. PR and merged-main CI required.
+
 ## November 12, 2026 — $0 incremental-cost development policy (pending CI)
 
 - Owner directs **$0 additional spend for BAM** until the app functions well enough to justify hosting or an essential development task is blocked with no practical free option. Either condition requires a fresh explicit approval; no cost or service activation is automatic.

@@ -13,6 +13,9 @@ from neon_collaboration_schema import (
     COLLABORATION_NAMES,collaboration_ddl_preview)
 from neon_identity_provider_schema import EXTRA_TABLE_NAMES
 from neon_ai_budget_schema import BUDGET_TABLE_NAMES,ai_budget_ddl_preview
+from neon_business_analytics_schema import BUSINESS_ANALYTICS_TABLES
+from neon_scoped_business_analytics import (prepare_business_sources_read,
+    prepare_private_audience_read)
 from neon_scoped_provider_queries import (
     prepare_connections_read,prepare_personal_ai_usage,
     safe_connection_preview)
@@ -63,7 +66,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.conn.execute('TRUNCATE TABLE '+','.join(
             TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
             tuple(name for name in BUDGET_TABLE_NAMES if
-                name!='bam_ai_operator_control'))+' CASCADE')
+                name!='bam_ai_operator_control')+
+            BUSINESS_ANALYTICS_TABLES)+' CASCADE')
         self.conn.execute("""UPDATE bam_ai_operator_control
             SET paused=1,updated_at=0 WHERE control_id=1""")
         self.a='identityA'
@@ -95,8 +99,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
     def test_ci_schema_migration_journal_is_idempotent(self):
-        self.assertEqual(self.migration_result['versions_present'],4)
-        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4])
+        self.assertEqual(self.migration_result['versions_present'],5)
+        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5])
         reread=apply_ephemeral_ci_migrations(self.conn)
         self.assertEqual(reread['versions_applied'],[])
         self.assertFalse(reread['migration_production_ready'])
@@ -104,7 +108,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertFalse(reread['neon_connected'])
         self.assertFalse(reread['social_publishing_enabled'])
         self.assertEqual(self.conn.execute(
-            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],4)
+            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],5)
 
     def test_schema_digest_tamper_is_refused_without_changing_data(self):
         old=self.conn.execute('SELECT checksum FROM bam_ci_migration_journal '
@@ -152,7 +156,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             (_SCHEMA,)).fetchall()
         self.assertEqual({name for (name,) in rows},
                          set(TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
-                             BUDGET_TABLE_NAMES+
+                             BUDGET_TABLE_NAMES+BUSINESS_ANALYTICS_TABLES+
                              ('bam_ci_migration_journal',)))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
@@ -274,6 +278,63 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute("""SELECT paused
             FROM bam_ai_operator_control WHERE control_id=1"""
             ).fetchone()[0],1)
+
+    def test_business_research_fk_and_private_tenant_read(self):
+        for tenant in ('shop-a','shop-b'):
+            self.conn.execute("""INSERT INTO business_profiles
+                (tenant_id,display_name,industry) VALUES (%s,%s,'retail')""",
+                (tenant,'Business '+tenant))
+            self.conn.execute("""INSERT INTO business_topics
+                (tenant_id,topic) VALUES (%s,'merch')""",(tenant,))
+            self.conn.execute("""INSERT INTO business_sources
+                (tenant_id,source_url,source_name,topic,approved)
+                VALUES (%s,%s,'Private source','merch',1)""",
+                (tenant,'https://source.invalid/'+tenant))
+        sql,params=prepare_business_sources_read(
+            tenant_id='shop-a',verified_subject_id=self.a)
+        rows=self.conn.execute(sql,params).fetchall()
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0][0],'https://source.invalid/shop-a')
+        sql,params=prepare_business_sources_read(
+            tenant_id='shop-b',verified_subject_id=self.a)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+        sql,params=prepare_business_sources_read(
+            tenant_id='shop-a',verified_subject_id=self.viewer)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+        with self.assertRaises(self.psycopg.errors.ForeignKeyViolation):
+            self.conn.execute("""INSERT INTO business_sources
+                (tenant_id,source_url,source_name,topic,approved)
+                VALUES ('shop-a','https://bad.invalid','bad','not-a-topic',1)""")
+        self.conn.execute("""UPDATE members SET active=0
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        sql,params=prepare_business_sources_read(
+            tenant_id='shop-a',verified_subject_id=self.a)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+
+    def test_private_audience_data_requires_current_owner(self):
+        for tenant in ('shop-a','shop-b'):
+            self.conn.execute("""INSERT INTO audience_observations
+                (tenant_id,platform,source_post_id,candidate,
+                 engagement_rate,measured_at,source_name)
+                VALUES (%s,'facebook',%s,'evening',0.4,101,'fixture')""",
+                (tenant,'post-'+tenant))
+        sql,params=prepare_private_audience_read(tenant_id='shop-a',
+            platform='facebook',verified_subject_id=self.a)
+        self.assertEqual(self.conn.execute(sql,params).fetchone()[0],
+                         'post-shop-a')
+        sql,params=prepare_private_audience_read(tenant_id='shop-b',
+            platform='facebook',verified_subject_id=self.a)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        sql,params=prepare_private_audience_read(tenant_id='shop-a',
+            platform='facebook',verified_subject_id=self.viewer)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        self.conn.execute("""UPDATE bam_identities SET email_verified=0
+            WHERE subject_id=%s""",(self.a,))
+        sql,params=prepare_private_audience_read(tenant_id='shop-a',
+            platform='facebook',verified_subject_id=self.a)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM audience_observations""").fetchone()[0],2)
 
     def test_provider_metadata_stays_tenant_private_without_vault_reference(self):
         self.conn.execute("""INSERT INTO provider_connections

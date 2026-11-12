@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Business research/analytics PostgreSQL stage-five candidate — November 12, 2026
+
+**Last fully verified code:** `main` and `development/phase-3-5-account-directory` at `c130f7a74f7842c8c2aba900da04df1d4f4a99f3`; [merged-main Actions 43255534251](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43255534251) **success** after PR #41 implementing the $0 policy.
+
+**Unverified milestone:** seven more business research/analytics/tenant-resource tables (36 total) and stage 5 on a disposable GitHub Actions PostgreSQL container. Tests require both data isolation and FK constraints; no external analytics or hosted service created. Review/merge only after green exact PR CI and then green merged-main CI, followed by non-force branch sync. $0 additional spend continues.
+
 ## Authoritative $0 cost policy and verified baseline — November 12, 2026
 
 - **Owner's latest decision:** BAM development must incur **$0 additional costs** until a functioning application is ready to justify paid hosting or a proven blocker requires spend. Neither condition automatically authorizes spending; present costed options and obtain explicit approval before creating even a nominally free externally hosted service, incurring provider overages, or altering paid resources.
