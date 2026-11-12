@@ -1734,5 +1734,186 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             FROM content_attachments""").fetchone()[0],0)
 
 
+    def test_pg_verified_media_binding_respects_scope_and_state(self):
+        import hashlib
+        import json
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Bind_Media_Owner_Session_123456789'
+        viewer='Synthetic_PG_Bind_Media_Viewer_Session_12345678'
+        for bearer,actor,role in ((token,self.a,'owner'),
+                                  (viewer,self.viewer,'viewer')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (hashlib.sha256(bearer.encode()).hexdigest(),actor,role))
+        aid='f'*32
+        self.conn.execute("""INSERT INTO content_attachments
+            (attachment_id,tenant_id,request_id,item,media_type,
+             sha256,storage_key,status,created_at)
+            VALUES (%s,'shop-a',%s,'image','image/png',%s,
+                    'private/not-a-public-url','pending',101)""",
+            (aid,self.rid_a,'a'*64))
+        app=EphemeralSessionPostgres(self.conn)
+        args={'raw_session_token':token,'tenant_id':'shop-a',
+              'request_id':self.rid_a,'item':'image',
+              'attachment_id':aid,'expected_revision':1,'server_now':102}
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(**args)
+        self.conn.execute("""UPDATE content_attachments SET status='rejected'
+            WHERE attachment_id=%s""",(aid,))
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(**args)
+        self.conn.execute("""UPDATE content_attachments SET status='verified'
+            WHERE attachment_id=%s""",(aid,))
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(
+                **(args|{'raw_session_token':viewer}))
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(
+                **(args|{'tenant_id':'shop-b','request_id':self.rid_b}))
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(
+                **(args|{'attachment_id':'1'*32}))
+        receipt=app.bind_verified_attachment(**args)
+        self.assertEqual(receipt['revision'],2)
+        self.assertEqual(receipt['status'],'ready_for_review')
+        self.assertTrue(receipt['editorial_review_required'])
+        self.assertFalse(receipt['approval_granted'])
+        self.assertFalse(receipt['publishing_enabled'])
+        self.assertEqual(receipt['posts_scheduled'],0)
+        draft=self.conn.execute("""SELECT provided_items,status,revision
+            FROM content_requests WHERE request_id=%s""",
+            (self.rid_a,)).fetchone()
+        self.assertEqual(json.loads(draft[0]),
+                         {'image':'verified-attachment:'+aid})
+        self.assertEqual(draft[1:],('ready_for_review',2))
+        self.assertNotIn('private/not-a-public-url',str(receipt))
+        self.assertNotIn('a'*64,str(receipt))
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(**args)
+        self.conn.execute("""UPDATE content_requests SET status='postponed'
+            WHERE request_id=%s""",(self.rid_a,))
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(
+                **(args|{'expected_revision':2}))
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM bam_calendar_proposals""").fetchone()[0],0)
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM tenant_posts""").fetchone()[0],0)
+
+    def test_pg_verified_media_binding_two_item_review_and_live_revocation(self):
+        import hashlib
+        import json
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Bind_Media_Two_Item_Session_1234567'
+        digest=hashlib.sha256(token.encode()).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",(digest,self.a))
+        rid='9'*32
+        self.conn.execute("""INSERT INTO content_requests
+            (request_id,tenant_id,channel,draft_text,suggestion,
+             required_items,provided_items,status,created_at,updated_at,
+             revision)
+            VALUES (%s,'shop-a','facebook','private copy','photo',
+                    '["image","alt_text"]','{}','needs_content',100,100,1)""",
+            (rid,))
+        for item,aid in (('image','8'*32),('alt_text','7'*32)):
+            self.conn.execute("""INSERT INTO content_attachments
+                (attachment_id,tenant_id,request_id,item,media_type,
+                 sha256,storage_key,status,created_at)
+                VALUES (%s,'shop-a',%s,%s,'text/plain',%s,
+                        'private/synthetic','verified',101)""",
+                (aid,rid,item,'a'*64))
+        adapter=EphemeralSessionPostgres(self.conn)
+        opts={'raw_session_token':token,'tenant_id':'shop-a',
+              'request_id':rid,'server_now':102}
+        first=adapter.bind_verified_attachment(
+            **opts,item='image',attachment_id='8'*32,expected_revision=1)
+        self.assertEqual(first['status'],'needs_content')
+        self.assertEqual(first['revision'],2)
+        second=adapter.bind_verified_attachment(
+            **opts,item='alt_text',attachment_id='7'*32,expected_revision=2)
+        self.assertEqual(second['status'],'ready_for_review')
+        self.assertEqual(second['revision'],3)
+        draft=self.conn.execute("""SELECT provided_items FROM content_requests
+            WHERE request_id=%s""",(rid,)).fetchone()[0]
+        self.assertEqual(json.loads(draft),{
+            'image':'verified-attachment:'+'8'*32,
+            'alt_text':'verified-attachment:'+'7'*32})
+        self.conn.execute("""UPDATE members SET role='viewer'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        with self.assertRaises(PermissionError):
+            adapter.bind_verified_attachment(
+                **opts,item='image',attachment_id='8'*32,
+                expected_revision=3)
+        self.conn.execute("""UPDATE members SET role='owner'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.conn.execute("""UPDATE sessions SET revoked_at=103
+            WHERE token_hash=%s""",(digest,))
+        with self.assertRaises(PermissionError):
+            adapter.bind_verified_attachment(
+                **(opts|{'server_now':104}),item='image',
+                attachment_id='8'*32,expected_revision=3)
+        self.assertEqual(self.conn.execute("""SELECT revision
+            FROM content_requests WHERE request_id=%s""",(rid,)
+        ).fetchone()[0],3)
+
+    def test_pg_verified_media_binding_concurrent_revisions_one_wins(self):
+        import hashlib
+        import json
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Concurrent_Media_Binding_123456789'
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (hashlib.sha256(token.encode()).hexdigest(),self.a))
+        for aid in ('3'*32,'4'*32):
+            self.conn.execute("""INSERT INTO content_attachments
+                (attachment_id,tenant_id,request_id,item,media_type,
+                 sha256,storage_key,status,created_at)
+                VALUES (%s,'shop-a',%s,'image','image/png',%s,
+                        'private/synthetic','verified',101)""",
+                (aid,self.rid_a,'b'*64))
+        gate=threading.Barrier(2)
+        successes=[]
+        failures=[]
+        errors=[]
+        def writer(aid):
+            conn=self._connect()
+            try:
+                gateway=EphemeralSessionPostgres(conn)
+                gate.wait(timeout=15)
+                try:
+                    result=gateway.bind_verified_attachment(
+                        raw_session_token=token,tenant_id='shop-a',
+                        request_id=self.rid_a,item='image',
+                        attachment_id=aid,expected_revision=1,
+                        server_now=102)
+                    successes.append(result['attachment_id'])
+                except PermissionError:
+                    failures.append(aid)
+            except Exception as exc:
+                errors.append(type(exc).__name__)
+            finally:
+                conn.close()
+        threads=[threading.Thread(target=writer,args=(aid,))
+                 for aid in ('3'*32,'4'*32)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=20)
+        self.assertTrue(all(not t.is_alive() for t in threads))
+        self.assertEqual(errors,[])
+        self.assertEqual(len(successes),1)
+        self.assertEqual(len(failures),1)
+        current=self.conn.execute("""SELECT provided_items,status,revision
+            FROM content_requests WHERE request_id=%s""",
+            (self.rid_a,)).fetchone()
+        self.assertEqual(json.loads(current[0]),
+                         {'image':'verified-attachment:'+successes[0]})
+        self.assertEqual(current[1:],('ready_for_review',2))
+
+
 if __name__=='__main__':
     unittest.main()

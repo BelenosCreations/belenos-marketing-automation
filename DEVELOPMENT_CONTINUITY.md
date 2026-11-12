@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Verified attachment reference binding in CI-only PostgreSQL (candidate — November 12, 2026)
+
+**Last verified state:** PR #56 merged into `main` as `1cfcca10b8bb44b72972d02cdcd7b07db2ad4f10`, full [merged-main Actions 43332328800](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43332328800) **success** and `development/phase-3-5-account-directory` safely synchronized. PR #56 uncovered the existing `content_attachments` stage-3 table and properly implemented **stage-8 constraint-only hardening** instead of duplicating a 47th table. Exact reviewed table count remains **46** across seven creation groups, plus stage 8 constraints.
+
+**Current candidate (unverified):** New `neon_session_media_bind_contract.py` plus tests, `EphemeralSessionPostgres.bind_verified_attachment` and real ephemeral PostgreSQL regressions. Single SQL UPDATE enforces tenant/request/item+verified-attachment status, live authenticated editor role, exact draft revision and held status, updating provided-item JSON and revision CAS without scheduling or publication. Metadata-only receipts never expose private storage keys. A fully supplied draft is only `ready_for_review`—approval and provider writes are still disabled.
+
+**Recovery:** Inspect actual GitHub refs and exact CI before changing code. PR-head tests → reviewed merge → merged-main exact SHA tests → safe non-force dev fast-forward. Preserve README, CHANGELOG, roadmap and this continuity file. Next engineering: secure object-storage/media attestation, read-only review readiness and migration/restore gates before any private beta.
+
+**Costs/authority:** $0 additional spend; no new Render/Neon service, EdgePilot infra sharing, paid OpenAI, public BAM service, media scanner trust claim or social publishing.
+
 ## Reviewed attachment metadata stage + signed-in status read candidate — November 12, 2026
 
 **Last verified baseline:** PR #55 merged at `508f5c2b572c845efb402266fa594acee74d8832`; [full merged-main Actions 43329651094](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43329651094) **success**. Main and `development/phase-3-5-account-directory` safely synchronized without force. Older headings below labeled candidate are history, not active work.

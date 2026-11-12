@@ -1,6 +1,13 @@
 # Changelog
 
-## November 12, 2026 — Eighth PostgreSQL constraint stage: private attachment metadata (candidate)
+## November 12, 2026 — Session-verified attachment reference binding for held drafts (candidate)
+
+- Add a single revision-CAS PostgreSQL UPDATE that links an existing synthetic **verified** attachment to precisely its own tenant, held draft, required item and authenticated owner/manager/creator session. Pending/rejected, mismatched, stale, held or foreign-business media cannot be attached.
+- Match existing offline Content Requests behavior by incrementing draft revision and marking the request `ready_for_review` only when required item keys are complete, with no unexpected provided keys. This status remains an editorial state, not owner approval or social publishing authority.
+- Extend the disposable CI-only psycopg session adapter, pure SQL argument/receipt checks, and actual PostgreSQL tests for two required items, concurrent editors, live role/revocation changes and no scheduled jobs. No uploads or trust scanner are implemented.
+- Verified baseline: PR #56 merged at `1cfcca10`; [full merged-main Actions 43332328800](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43332328800) succeeded. Current candidate requires new PR and merged-main verification. $0 new costs, no hosted services, paid AI, or provider writing.
+
+## November 12, 2026 — Eighth PostgreSQL constraint stage: private attachment metadata (verified PR #56)
 
 - Harden the existing stage-3 `content_attachments` table with additive PostgreSQL media-type/ID/hash/timestamp/item constraints, private state index and a composite (tenant,request) foreign key. The existing status check remains unchanged. No table is created twice: **46 reviewed tables in seven creation groups**, plus an **eighth constraint-only migration stage**.
 - Add session-bound read-only attachment metadata lookup for active business members. Never expose SHA-256, storage path, file bytes, URLs or credential material. A row marked `verified` reflects only an existing synthetic test value; no trust scanner or publication permission is created.
