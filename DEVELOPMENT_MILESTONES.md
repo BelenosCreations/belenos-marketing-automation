@@ -1018,3 +1018,9 @@ BAM's direct-call WSGI alpha gateway now optionally exposes an HTTPS-requiring, 
 ## November 12, 2026 — Private calendar readiness digest
 
 The held-calendar service derives a read-only, business-scoped digest from existing proposals and current revision/manual-slot checks, including stale-draft/time counts and a per-item list of blockers. Its WSGI adapter validates the exact schema, nonexecutability and mandatory publication-disabled blockers before returning a response, and rejects untrusted query or write methods. End-to-end tests cover two business scopes, stale drafts, changed configured hours, unauthorized tokens, incorrect data and no generated scheduled jobs. Exact-commit CI pending. This remains an unpublished planning aid, not a real scheduler or a connected social account.
+
+## November 12, 2026 — Verified offline alpha five-milestone checkpoint
+
+Five reviewed PRs (#21–#25) each passed exact-head GitHub Actions, were merged into main and passed the exact merged-main full Python/JS CI. The latest main and development heads were safely synchronized at `427566c610bbbcc03b78b4a436746f9832410638`, [Actions 43175777320](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43175777320). These comprise strict OpenAI-offline boundaries, business-invitation identity proof for password and Google accounts, separately gated offline acceptance endpoints, and read-only held-calendar blockers. This documentation-only follow-up requires its own exact-commit CI and PR merge.
+
+Production hosting, verified enrollment, secure vault, direct Meta connection, publish worker and owner-authorized paid API usage remain gated. Continue safe offline work; BAM's core roadmap is direct official platform integrations rather than Metricool.

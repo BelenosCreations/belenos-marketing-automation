@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Authoritative recovery status — November 12, 2026
+
+- **Private repository:** `BelenosCreations/belenos-marketing-automation`.
+- **Latest fully verified baseline:** `main` and `development/phase-3-5-account-directory` synchronized at `427566c610bbbcc03b78b4a436746f9832410638`, [successful merged-main Actions 43175777320](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43175777320).
+- **Reviewed and merged this development session:** PRs #21, #22, #23, #24 and #25. Each exact PR code and merged-main SHA passed the full offline Python/JavaScript test workflow.
+- **This documentation-only follow-up:** changes README, CHANGELOG, DEVELOPMENT_CONTINUITY, DEVELOPMENT_MILESTONES and ALPHA_BETA_READINESS. It must pass its own CI and merge to main before its newer SHA can be marked fully verified. If interrupted, resume from the last green baseline above.
+- **Current stage:** private **offline alpha**, no production backend or public signups. Existing trusted team invitations, Google/password acceptance, AI checks and calendar readiness are implemented only in gated/offline test paths. No email transport, hosted verified Google OAuth, live Meta Page connection, publisher worker, automatic social posts, real paid OpenAI requests or Android APK.
+- **Next authorization gate:** Owner must separately approve any public/private hosted setup, credential vault, hosting and recurring cost; direct official platform integration (not Metricool) is the planned next production track.
+- **Recovery rules:** never force-push, verify CI for each exact commit, merge reviewed green PR to main, verify main CI, then fast-forward development. Historical notes below are preserved as development history and may have old "pending/unmerged" wording.
+
 **Fourth verified merge November 12:** PR #24 merged at `b81430bcd3496d2504a2651534e6fa726eb781a7`; full merged main Actions `43174989252` passed, and development was fast-forwarded without force.
 
 **New unverified development batch:** Private held-calendar readiness digest, authenticated GET-only, with real draft/time consistency indicators but permanent no-publication blockers. New code/test/docs require exact-head CI and reviewed PR; no real schedule worker or provider publishing.

@@ -1,5 +1,19 @@
 # Changelog
 
+## November 12, 2026 — Verified multi-milestone checkpoint
+
+Five reviewed PRs passed full Python and JavaScript CI at the PR source and after merge to `main`, with fast-forward-only synchronization of development:
+
+| PR | Verified main commit | Successful main Actions |
+| --- | --- | --- |
+| #21 — AI request/response safeguards | `c8a48f359789f0ee63b601c9ba51a3beb74267df` | 43171790537 |
+| #22 — Password invitation redemption | `e24a2b3e46ec924c19a0e8b5e4ea6affd3419dff` | 43172997850 |
+| #23 — Google invitation redemption | `39b3c04f31b8c2fc91b0348bf36d658cf4bcbff7` | 43174049448 |
+| #24 — Disabled-by-default offline WSGI invitation acceptance | `b81430bcd3496d2504a2651534e6fa726eb781a7` | 43174989252 |
+| #25 — Private calendar readiness diagnostics | `427566c610bbbcc03b78b4a436746f9832410638` | 43175777320 |
+
+Older changelog entries that say "CI pending" describe their **at-writing-time** status, superseded by this verified checkpoint. No live publishing, production hosting, email delivery, provider OAuth or paid API was activated.
+
 ## November 12, 2026 — Non-executable calendar readiness digest
 
 - Added tenant-scoped, authenticated `GET /api/v1/calendar-readiness` to display stale-draft and outdated posting-time blockers for held calendar proposals, with bounded counts and no draft edit tokens.
