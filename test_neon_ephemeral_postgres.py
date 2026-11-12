@@ -90,7 +90,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             FROM information_schema.tables
             WHERE table_schema=%s AND table_type='BASE TABLE'""",
             (_SCHEMA,)).fetchall()
-        self.assertEqual({name for (name,) in rows},set(TABLE_NAMES))
+        self.assertEqual({name for (name,) in rows},
+                         set(TABLE_NAMES+COLLABORATION_NAMES))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
             WHERE table_schema=%s AND table_name='bam_password_credentials'
