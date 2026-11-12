@@ -4,6 +4,11 @@
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active branch:** `development/phase-3-5-account-directory`.
 
+## Current milestone — projected AI budget containment (offline, not actual billing)
+
+The previously verified social-connection/analytics revocation milestone was merged via PR #14 and passed `main` [Actions 43137518752](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43137518752) at `c37b5c90941a03aa545518d70b73d448603ac8b0`; development was fast-forwarded. The new projected-micro-USD sponsored AI quota code at `5dee209bb2df1c9b6bb3afe1470cdd2f69798aea` **passed** [Actions 43138168968](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43138168968). This docs-only checkpoint is still awaiting CI, reviewed PR, merged-main CI and development synchronization. Existing request-count quota policy is preserved; projected dollar values are arbitrary **operator-configured conservative estimates**, not prices, provider usage, or verified invoices. No real paid service or publishing enabled.
+
+
 ## Current milestone — offline social permission fail-closed integration
 
 The last synchronized `main` source checkpoint was `77b5ec718dbc47f9380031e86ab7d5206e1218ee` and is fully green ([Actions 43128287935](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43128287935)). Development has implemented explicit read-only registry scopes, stale-state protection and revocation-aware analytics transaction guards. **Code checkpoint `2bf15248172ed56d78b98ad8d84250b45c6749a3` is verified green** ([Actions 43136954406](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43136954406)); the documentation-only follow-up is pending its own exact-SHA verification and PR. No external Meta/OAuth connection was initiated, and neither publishing nor paid AI is enabled. Resume from actual GitHub branch SHA, not older status notes below. Maintain milestone PR merges and main/dev fast-forward synchronization.

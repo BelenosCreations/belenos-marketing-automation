@@ -187,3 +187,7 @@ The local Alpha test suite verifies SQLite's online backup/restore consistency, 
 ### Offline read-only connection hardening (November 11, 2026)
 
 The disconnected Alpha metadata registry now rejects permission markers other than the internal `read_insights` label and prevents delayed updates from reviving a revoked connection. Read-only fake analytics imports revalidate connection status under the SQLite write lock, with two-client revocation-in-flight regression tests. These are safety foundations only; they neither verify Meta scopes nor connect real Pages or authorize a network call. Future credential reauthorization requires a new trusted OAuth workflow and fresh user permission.
+
+### Projected sponsored AI micro-USD accounting, not paid billing (November 11, 2026)
+
+The offline sponsored request-count quota ledger now optionally reserves operator-configured **estimated micro-USD** against per-user, business and overall operator monthly limits as one atomic transaction. It accounts for earlier count-only reservations as **unpriced** and fails closed if a new dollar projection ceiling could omit their history. This is an accounting safety prototype; actual provider prices/usage, guaranteed token bounds, budget reconciliation, vault credentials and an approved operator spend ceiling remain necessary before real API traffic. No new fee or paid service was introduced.
