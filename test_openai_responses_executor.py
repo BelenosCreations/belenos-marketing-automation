@@ -1,4 +1,8 @@
 import json
+import hashlib
+import sqlite3
+from decimal import Decimal
+from ai_cost_ledger import AICostLedger,AITokenPricing
 import unittest
 from openai_responses_executor import OpenAIResponsesExecutor
 
@@ -71,6 +75,7 @@ class OpenAIResponsesExecutorTests(unittest.TestCase):
     def test_usage_observer_receives_scoped_provider_counts(self):
         observed=[]
         raw=response()
+        raw['id']='resp_example_abcdefghijklmnop'
         raw['usage']={'input_tokens':300,'output_tokens':100}
         executor=OpenAIResponsesExecutor(
             transport=lambda payload:raw,
@@ -79,10 +84,74 @@ class OpenAIResponsesExecutorTests(unittest.TestCase):
         self.assertEqual(observed[0]['tenant_id'],'shop')
         self.assertEqual(observed[0]['input_tokens'],300)
         self.assertEqual(observed[0]['output_tokens'],100)
+        self.assertEqual(observed[0]['usage_ref'],hashlib.sha256(
+            raw['id'].encode('ascii')).hexdigest()[:32])
         del raw['usage']
         with self.assertRaises(ValueError):
             executor(request=request(),max_output_tokens=500)
         self.assertEqual(len(observed),1)
+
+    def test_response_id_deduplicates_trusted_usage_estimates(self):
+        db=sqlite3.connect(':memory:')
+        ledger=AICostLedger(db)
+        pricing=AITokenPricing(Decimal('0.15'),Decimal('0.60'))
+        raw=response()
+        raw['id']='resp_offline_1234567890abcdef'
+        raw['usage']={'input_tokens':300,'output_tokens':100}
+        executor=OpenAIResponsesExecutor(
+            transport=lambda payload:raw,
+            usage_observer=lambda **counts:ledger.record_trusted(
+                **counts,pricing=pricing,now=103))
+        for _ in range(2):
+            self.assertEqual(executor(
+                request=request(),max_output_tokens=500)['post_text'],
+                'Custom tumblers')
+        summary=ledger.summary_trusted(tenant_id='shop',subject_id='owner')
+        self.assertEqual(summary['events'],1)
+        self.assertEqual(summary['estimated_micro_usd'],105)
+        # A purported replay of the same response with different usage is
+        # rejected, not silently charged again or accepted as a new bill.
+        raw['usage']['output_tokens']=101
+        with self.assertRaisesRegex(ValueError,
+                'reference reused with different data'):
+            executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],1)
+        # The same externally returned ID is still scoped independently to
+        # different businesses and users.
+        raw['usage']['output_tokens']=100
+        executor(request={**request(),'tenant_id':'other'},
+                 max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='other',subject_id='owner')['events'],1)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],1)
+        raw['id']='resp_second_1234567890abcdef'
+        executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],2)
+        stored=db.execute(
+            'SELECT trusted_usage_hash FROM bam_ai_cost_events').fetchall()
+        self.assertTrue(all(row[0] is not None for row in stored))
+        self.assertNotIn('resp_offline_',str(stored))
+        db.close()
+
+    def test_usage_observer_fails_closed_on_missing_or_bad_provider_id(self):
+        raw=response()
+        raw['usage']={'input_tokens':300,'output_tokens':100}
+        observed=[]
+        executor=OpenAIResponsesExecutor(
+            transport=lambda payload:raw,
+            usage_observer=lambda **kwargs:observed.append(kwargs))
+        for bad_id in (None,True,100,'x'*100,'resp_bad id',
+                       'sk-a-secret-is-not-an-id'):
+            if bad_id is None:
+                raw.pop('id',None)
+            else:
+                raw['id']=bad_id
+            with self.assertRaises(ValueError):
+                executor(request=request(),max_output_tokens=500)
+        self.assertEqual(observed,[])
 
     def test_model_allowlist(self):
         with self.assertRaises(ValueError):

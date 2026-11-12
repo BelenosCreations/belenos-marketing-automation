@@ -31,7 +31,8 @@ class EndToEndAIGenerationTests(unittest.TestCase):
         captured=[]
         def fake_transport(payload):
             captured.append(payload)
-            return {'status':'completed','error':None,'incomplete_details':None,
+            return {'id':'resp_offline_e2e_1234567890abcd',
+                    'status':'completed','error':None,'incomplete_details':None,
                 'usage':{'input_tokens':1000,'output_tokens':200},
                 'output':[{'type':'message','role':'assistant',
                     'status':'completed','content':[{'type':'output_text',
@@ -64,6 +65,11 @@ class EndToEndAIGenerationTests(unittest.TestCase):
         self.assertEqual(summary['events'],1)
         self.assertEqual(summary['estimated_micro_usd'],1800)
         self.assertFalse(summary['actual_billing_verified'])
+        receipt=db.execute("""SELECT trusted_usage_hash FROM
+            bam_ai_cost_events WHERE tenant_id='shop'""").fetchone()[0]
+        self.assertIsNotNone(receipt)
+        self.assertEqual(len(receipt),64)
+        self.assertNotIn('resp_offline_e2e',receipt)
         self.assertIs(captured[0]['store'],False)
         self.assertEqual(captured[0]['tools'],[])
         self.assertEqual(len(drafts.list_mine(

@@ -5,11 +5,14 @@ requests by itself. A production-only trusted transport supplies credentials,
 TLS verification, timeouts, request IDs, retries and cost accounting.
 """
 import json
+import hashlib
+import re
 
 DEFAULT_MODEL='gpt-4.1-mini'
 _ALLOWED_MODELS=frozenset(('gpt-4.1-mini','gpt-4.1','gpt-5-mini'))
 _MAX_INPUT_BYTES=32768
 _MAX_RESPONSE_BYTES=65536
+_PROVIDER_ID=re.compile(r'resp_[A-Za-z0-9_-]{8,200}\Z')
 
 class OpenAIResponsesExecutor:
     """Callable adapter accepted by AIDraftGenerationWorkflow."""
@@ -74,6 +77,15 @@ class OpenAIResponsesExecutor:
         if self.usage_observer is not None:
             if type(response) is not dict:
                 raise ValueError('Structured provider usage required')
+            provider_id=response.get('id')
+            if (type(provider_id) is not str or
+                    _PROVIDER_ID.fullmatch(provider_id) is None):
+                raise ValueError('Trusted provider response identifier required')
+            # A stable 128-bit truncated SHA-256 reference is sufficient for
+            # local deduplication; the raw provider ID is not exposed to the
+            # ledger or the response. No claim of verified billing is made.
+            usage_ref=hashlib.sha256(
+                provider_id.encode('ascii')).hexdigest()[:32]
             usage=response.get('usage')
             if type(usage) is not dict or any(
                 type(usage.get(key)) is not int or
@@ -83,7 +95,8 @@ class OpenAIResponsesExecutor:
             self.usage_observer(tenant_id=request['tenant_id'],
                 subject_id=request['subject_id'],model=self.model,
                 input_tokens=usage['input_tokens'],
-                output_tokens=usage['output_tokens'])
+                output_tokens=usage['output_tokens'],
+                usage_ref=usage_ref)
         return parsed
 
     @staticmethod
