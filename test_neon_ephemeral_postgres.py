@@ -1333,5 +1333,187 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
 
 
+    def test_pg_review_feedback_removal_and_private_history(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        owner='Synthetic_PG_Feedback_History_Owner_12345678'
+        manager='Synthetic_PG_Feedback_History_Manager_1234567'
+        viewer='Synthetic_PG_Feedback_History_Viewer_12345678'
+        self.conn.execute("""INSERT INTO bam_identities
+            (subject_id,email,email_verified,active,created_at)
+            VALUES ('historyManager','historymanager@example.test',1,1,100)""")
+        self.conn.execute("""INSERT INTO members
+            (tenant_id,subject_id,role,active,revision)
+            VALUES ('shop-a','historyManager','marketing_manager',1,1)""")
+        for token,subject,role in (
+            (owner,self.a,'owner'),
+            (manager,'historyManager','marketing_manager'),
+            (viewer,self.viewer,'viewer')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (hashlib.sha256(token.encode('ascii')).hexdigest(),
+                 subject,role))
+        app=EphemeralSessionPostgres(self.conn)
+        opts={'raw_session_token':owner,'tenant_id':'shop-a',
+              'request_id':self.rid_a,'expected_revision':1,
+              'expected_feedback_token':None,'note':'Check photo rights',
+              'server_now':101}
+        created=app.save_review_feedback(**opts)
+        edited=app.save_review_feedback(
+            **(opts|{'raw_session_token':manager,
+                     'expected_feedback_token':created['feedback_token'],
+                     'note':'Rights still need owner review',
+                     'server_now':102}))
+        self.assertEqual(app.read_review_feedback_history(
+            raw_session_token=viewer,tenant_id='shop-a',
+            server_now=103)['events'],[])
+        self.assertEqual(app.read_review_feedback_history(
+            raw_session_token=owner,tenant_id='shop-b',
+            server_now=103)['events'],[])
+        with self.assertRaises(PermissionError):
+            app.remove_review_feedback(
+                raw_session_token=viewer,tenant_id='shop-a',
+                request_id=self.rid_a,
+                expected_feedback_token=edited['feedback_token'],
+                server_now=103)
+        with self.assertRaises(PermissionError):
+            app.remove_review_feedback(
+                raw_session_token=owner,tenant_id='shop-b',
+                request_id=self.rid_a,
+                expected_feedback_token=edited['feedback_token'],
+                server_now=103)
+        with self.assertRaises(PermissionError):
+            app.remove_review_feedback(
+                raw_session_token=owner,tenant_id='shop-a',
+                request_id=self.rid_a,
+                expected_feedback_token=created['feedback_token'],
+                server_now=103)
+        result=app.remove_review_feedback(
+            raw_session_token=manager,tenant_id='shop-a',
+            request_id=self.rid_a,
+            expected_feedback_token=edited['feedback_token'],
+            server_now=103)
+        self.assertEqual(result['removed'],1)
+        self.assertFalse(result['approval_granted'])
+        self.assertFalse(result['publishing_enabled'])
+        self.assertEqual(app.read_review_feedback(
+            raw_session_token=viewer,tenant_id='shop-a',
+            server_now=103)['items'],[])
+        history=app.read_review_feedback_history(
+            raw_session_token=owner,tenant_id='shop-a',server_now=103)
+        self.assertEqual([e['action'] for e in history['events']],
+                         ['removed','updated','created'])
+        self.assertFalse(history['truncated'])
+        self.assertFalse(history['approval_granted'])
+        self.assertFalse(history['publishing_enabled'])
+        self.assertNotIn('Rights still need owner review',str(history))
+        self.assertEqual(self.conn.execute("""SELECT status,revision,
+            draft_text FROM content_requests WHERE request_id=%s""",
+            (self.rid_a,)).fetchone(),
+            ('needs_content',1,'private tenant A copy'))
+        self.assertEqual(self.conn.execute(
+            'SELECT COUNT(*) FROM bam_calendar_proposals').fetchone()[0],0)
+        with self.assertRaises(PermissionError):
+            app.remove_review_feedback(
+                raw_session_token=owner,tenant_id='shop-a',
+                request_id=self.rid_a,
+                expected_feedback_token=edited['feedback_token'],
+                server_now=104)
+
+    def test_pg_feedback_remove_audit_failure_rolls_back(self):
+        import hashlib
+        from unittest.mock import patch
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Feedback_Rollback_Owner_12345678'
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (hashlib.sha256(token.encode()).hexdigest(),self.a))
+        app=EphemeralSessionPostgres(self.conn)
+        original=app.save_review_feedback(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=self.rid_a,expected_revision=1,
+            expected_feedback_token=None,note='Keep review note',
+            server_now=101)
+        with patch('neon_ci_session_adapter.prepare_session_feedback_removal_event',
+                   return_value=('SELECT %s::text WHERE FALSE',
+                                 ('f'*32,))):
+            with self.assertRaises(PermissionError):
+                app.remove_review_feedback(
+                    raw_session_token=token,tenant_id='shop-a',
+                    request_id=self.rid_a,
+                    expected_feedback_token=original['feedback_token'],
+                    server_now=102)
+        self.assertEqual(self.conn.execute(
+            'SELECT note FROM bam_review_feedback').fetchone()[0],
+            'Keep review note')
+        self.assertEqual(self.conn.execute(
+            'SELECT COUNT(*) FROM bam_review_feedback_events').fetchone()[0],1)
+        self.conn.execute("""UPDATE sessions SET revoked_at=102
+            WHERE token_hash=%s""",
+            (hashlib.sha256(token.encode()).hexdigest(),))
+        with self.assertRaises(PermissionError):
+            app.remove_review_feedback(
+                raw_session_token=token,tenant_id='shop-a',
+                request_id=self.rid_a,
+                expected_feedback_token=original['feedback_token'],
+                server_now=103)
+        self.assertEqual(app.read_review_feedback_history(
+            raw_session_token=token,tenant_id='shop-a',
+            server_now=103)['events'],[])
+
+    def test_pg_two_clients_only_one_feedback_removal_wins(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Concurrent_Feedback_Delete_1234567'
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (hashlib.sha256(token.encode()).hexdigest(),self.a))
+        app=EphemeralSessionPostgres(self.conn)
+        saved=app.save_review_feedback(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=self.rid_a,expected_revision=1,
+            expected_feedback_token=None,note='One original review',
+            server_now=101)
+        gate=threading.Barrier(2)
+        successes=[]
+        denials=[]
+        errors=[]
+        def delete_note():
+            connection=self._connect()
+            try:
+                client=EphemeralSessionPostgres(connection)
+                gate.wait(timeout=15)
+                try:
+                    result=client.remove_review_feedback(
+                        raw_session_token=token,tenant_id='shop-a',
+                        request_id=self.rid_a,
+                        expected_feedback_token=saved['feedback_token'],
+                        server_now=102)
+                    successes.append(result['removed'])
+                except PermissionError:
+                    denials.append('stale')
+            except Exception as exc:
+                errors.append(type(exc).__name__)
+            finally:
+                connection.close()
+        threads=[threading.Thread(target=delete_note) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=20)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertEqual(errors,[])
+        self.assertEqual(successes,[1])
+        self.assertEqual(denials,['stale'])
+        self.assertEqual(self.conn.execute(
+            'SELECT COUNT(*) FROM bam_review_feedback').fetchone()[0],0)
+        actions=self.conn.execute("""SELECT action
+            FROM bam_review_feedback_events ORDER BY occurred_at""").fetchall()
+        self.assertEqual(actions,[('created',),('removed',)])
+
+
 if __name__=='__main__':
     unittest.main()

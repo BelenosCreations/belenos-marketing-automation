@@ -26,7 +26,10 @@ from neon_session_draft_write_contract import (
 from neon_session_feedback_contract import (
     prepare_session_feedback_list,summarize_session_feedback_list,
     prepare_session_feedback_save,summarize_session_feedback_save,
-    prepare_session_feedback_event,assert_feedback_event_saved)
+    prepare_session_feedback_event,assert_feedback_event_saved,
+    prepare_session_feedback_remove,summarize_session_feedback_remove,
+    prepare_session_feedback_removal_event,
+    prepare_session_feedback_history,summarize_session_feedback_history)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -161,6 +164,32 @@ class EphemeralSessionPostgres:
             # A simultaneous new note already exists: never overwrite it.
             raise PermissionError(
                 'Private feedback changed; refresh required') from exc
+
+    def remove_review_feedback(self,*,raw_session_token,tenant_id,request_id,
+                               expected_feedback_token,server_now):
+        sql,params=prepare_session_feedback_remove(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            request_id=request_id,expected_feedback_token=expected_feedback_token,
+            server_now=server_now)
+        with self._conn.transaction():
+            row=self._conn.execute(sql,params).fetchone()
+            receipt,revision=summarize_session_feedback_remove(
+                row,tenant_id=tenant_id,request_id=request_id)
+            event_sql,event_params=prepare_session_feedback_removal_event(
+                raw_session_token=raw_session_token,tenant_id=tenant_id,
+                request_id=request_id,draft_revision=revision,
+                server_now=server_now)
+            event=self._conn.execute(event_sql,event_params).fetchone()
+            assert_feedback_event_saved(event,expected_event_id=event_params[0])
+            return receipt
+
+    def read_review_feedback_history(self,*,raw_session_token,tenant_id,
+                                     server_now):
+        sql,params=prepare_session_feedback_history(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            server_now=server_now)
+        rows=self._conn.execute(sql,params).fetchall()
+        return summarize_session_feedback_history(rows,tenant_id=tenant_id)
 
     def update_draft_priority(self,*,raw_session_token,tenant_id,request_id,
                               expected_priority_token,priority,server_now):

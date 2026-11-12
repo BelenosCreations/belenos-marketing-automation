@@ -1,6 +1,13 @@
 # Changelog
 
-## November 12, 2026 — PostgreSQL private feedback and atomic audit trail (candidate)
+## November 12, 2026 — Owner-reviewed feedback removal and metadata-only history (candidate)
+
+- Add token-hash-bound, same-statement verified role/membership/tenant checks to versioned feedback DELETE. Its successful receipt returns only a non-approval, non-publishing removal status.
+- Add a separate live-authorized, metadata-only `removed` event in **the same disposable PostgreSQL transaction**, failing and rolling back the DELETE if the audit insert fails. Add a bounded 50-event owner/marketing-manager history view, retaining audit records after the note itself has been removed without exposing historical note bodies.
+- Add SQLite SQL parity and ephemeral PostgreSQL tests for denial of cross-business/viewer/revoked-session actions, wrong versions, concurrent deletion, event rollback and history order/limits. Existing draft review, priority and publication states remain untouched.
+- Last fully verified checkpoint: PR #53 merged as `25a99947`, [merged-main Actions 43326407161](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43326407161) succeeded, branches safely synchronized. This candidate still requires PR and main CI. **$0 new costs**, no paid API, public hosting, Neon provisioning or social publication.
+
+## November 12, 2026 — PostgreSQL private feedback and atomic audit trail (verified PR #53)
 
 - Add session-bound business-specific feedback list, new-note creation and compare-and-swap note revision SQL with current identity, membership, role and expiry/revocation checked against the same PostgreSQL statement. Owners and marketing managers can write; other current members can only read.
 - Integrate feedback note creation/update with a matching event-history insertion inside a single disposable-CI PostgreSQL transaction; failed event recording rolls back the note. Compare-and-swap version tokens and draft revision checks reject stale concurrent review edits.
