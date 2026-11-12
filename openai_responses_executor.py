@@ -73,7 +73,10 @@ class OpenAIResponsesExecutor:
             'tools':[],
             'parallel_tool_calls':False}
         response=self.transport(payload)
-        parsed=self._extract(response)
+        # Meter a trusted provider's reported token usage BEFORE checking
+        # whether its text is suitable for staging. A refused, incomplete
+        # or malformed generated draft may still represent costly tokens;
+        # don't silently undercount those attempts in the local ledger.
         if self.usage_observer is not None:
             if type(response) is not dict:
                 raise ValueError('Structured provider usage required')
@@ -97,7 +100,7 @@ class OpenAIResponsesExecutor:
                 input_tokens=usage['input_tokens'],
                 output_tokens=usage['output_tokens'],
                 usage_ref=usage_ref)
-        return parsed
+        return self._extract(response)
 
     @staticmethod
     def _extract(response):

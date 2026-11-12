@@ -136,6 +136,43 @@ class OpenAIResponsesExecutorTests(unittest.TestCase):
         self.assertNotIn('resp_offline_',str(stored))
         db.close()
 
+    def test_failed_content_still_records_trusted_usage_once(self):
+        db=sqlite3.connect(':memory:')
+        ledger=AICostLedger(db)
+        pricing=AITokenPricing(Decimal('0.20'),Decimal('0.80'))
+        raw=response('{"post_text":"Hi","image_prompt":null,"published":true}')
+        raw['id']='resp_invalid_copy_1234567890abcdef'
+        raw['usage']={'input_tokens':300,'output_tokens':100}
+        executor=OpenAIResponsesExecutor(
+            transport=lambda payload:raw,
+            usage_observer=lambda **usage:ledger.record_trusted(
+                **usage,pricing=pricing,now=103))
+        for _ in range(2):
+            with self.assertRaises(ValueError):
+                executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],1)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')[
+                'estimated_micro_usd'],140)
+        # An explicitly incomplete response with valid usage is also
+        # accounted for before being held out of the draft pipeline.
+        raw['id']='resp_incomplete_1234567890abcdef'
+        raw['status']='incomplete'
+        with self.assertRaises(ValueError):
+            executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],2)
+        # Missing provider usage is an unresolved accounting event, NOT
+        # evidence that no tokens were billed. It still cannot stage copy.
+        raw['id']='resp_unknown_usage_1234567890abcdef'
+        raw.pop('usage')
+        with self.assertRaises(ValueError):
+            executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],2)
+        db.close()
+
     def test_usage_observer_fails_closed_on_missing_or_bad_provider_id(self):
         raw=response()
         raw['usage']={'input_tokens':300,'output_tokens':100}
