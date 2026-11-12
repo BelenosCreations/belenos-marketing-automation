@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Collaboration schema preview candidate — November 12, 2026
+
+**Last fully verified starting point:** PR #36 merged at `f898bdf903d66b06620793651426cf4009c09cfa` and full merged-main [Actions 43240922531](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43240922531) **success**. Development safely fast-forwarded to same SHA.
+
+**Current unverified source:** five more explicit PostgreSQL DDL preview tables for private team invitations/activity/role audit/review notes and history (total 14), owner-scoped invitation metadata read, PostgreSQL integration tests and documentation. Require exact PR CI, merge green, verify merged-main CI and fast-forward dev. No new paid service or actual Neon/Render deployment. Production database still incomplete.
+
 ## Public repository / real PostgreSQL CI candidate — November 12, 2026
 
 - Owner confirmed GitHub repository is **PUBLIC** after PR #35 merged at `5c283175df06c77a529df2ed1ab62a1beb6e98ba`. Post-merge GitHub Actions `43225430354` passed; active development branch was safely fast-forwarded to main without force.

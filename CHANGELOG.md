@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Team and invitation PostgreSQL schema parity (candidate)
+
+- Add five additional explicit PostgreSQL DDL preview tables: business invitations, invitation activity, team role-change audit, private review feedback and review history. Convert SQLite autoincrement to PostgreSQL identity columns while retaining explicit legacy unique/index behavior.
+- Add metadata-only SQLite parity checks, pure owner-scoped pending-invite read SQL, and new live **ephemeral container** PostgreSQL tests for unique invitation IDs, invalid review-event actions, owner/read-role separation, invitation consumption and role revocation.
+- Expansion grows the reviewed schema preview from 9 to **14 tables**; still no Neon account, production migration or paid provisioning. Exact PR/main CI needed.
+
 ## November 12, 2026 — Public runner real PostgreSQL CI (candidate)
 
 - After owner-confirmed public repository PR #35, fast-forwarded development safely from the verified public main commit `5c283175`.

@@ -46,6 +46,10 @@ The current Alpha remains fully SQLite-backed. All Neon DDL, query and integrity
 
 After PR #35, the **source repository is public**, while the BAM product remains unhosted/offline Alpha. GitHub Actions now uses standard free public-repository runners to start a **temporary PostgreSQL 16 container** during the existing unit-test workflow. It runs the nine-table schema preview and tenant-scoped draft/calendar read and priority-write contracts against *real PostgreSQL*, including a two-client stale-write race test. This does **not** create a Neon database, copy customer data, or enable a production DB adapter. Development-branch pushes no longer duplicate the pull-request test run; tests execute on PRs and merged `main`. CI permissions remain read-only and Actions uploads no artifacts. The chosen one-service $7 Render Starter + separate Neon Free design remains **unprovisioned and charge-gated**.
 
+### Team collaboration and invitation tables on PostgreSQL (CI)
+
+The next offline migration slice adds **five more PostgreSQL table definitions** covering team invitation issuance/activity, role-change audit, private draft review notes and review event history. The preview preserves constrained event actions, one-use invitation identifiers and PostgreSQL identity columns for former SQLite autoincrement IDs. Real PostgreSQL CI tests check unique-token metadata, current-owner-only invitation visibility, role changes and no invitation bearer secrets in the returned rows. The source now has **14 PostgreSQL schema-preview tables**, but still lacks many other tables and a production migration service. Hosting, invitation delivery and social publishing remain disabled.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:
