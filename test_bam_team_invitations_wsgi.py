@@ -9,6 +9,8 @@ class Stub:
         self.denied=False
         self.extra=False
         self.history_extra=False
+        self.issued=False
+        self.invalid_issue=False
     def pending_current(self,**kwargs):
         self.calls.append(('list',kwargs))
         if self.denied: raise PermissionError('Not owner')
@@ -26,6 +28,17 @@ class Stub:
         if self.history_extra:item['token_hash']='secret'
         return {'tenant_id':'shop','status':'private_invitation_activity',
                 'events':[item],'publishing_enabled':False}
+
+    def invite_current(self,**kwargs):
+        self.calls.append(('issue',kwargs))
+        if self.denied: raise PermissionError('Not owner')
+        if self.issued: raise ValueError(
+            'Active invitation or existing membership for business')
+        result={'tenant_id':'shop','invitation_created':True,
+                'invitation_id':'b'*32,'expires_at':604901,
+                'publishing_enabled':False}
+        if self.invalid_issue: result['token']='secret'
+        return result
 
     def cancel_current(self,**kwargs):
         self.calls.append(('cancel',kwargs))
@@ -106,6 +119,48 @@ class InviteWSGITests(unittest.TestCase):
         self.assertEqual(self.call(path='/api/v1/team/invitations/cancel',
             method='GET')[0]['status'],'405 Method Not Allowed')
 
+    def test_issue_is_separately_opted_in_and_never_exposes_token(self):
+        path='/api/v1/team/invitations/create'
+        payload={'email':'new@example.com','role':'viewer'}
+        self.assertEqual(self.call(path=path,method='POST',
+            body=payload)[0]['status'],'404 Not Found')
+        allowed=BAMTeamInvitationsWSGI(self.svc,enabled=True,
+            allow_issue=True,clock=lambda:101)
+        meta,issued=self.call(path=path,method='POST',body=payload,app=allowed)
+        self.assertEqual(meta['status'],'201 Created')
+        self.assertEqual(issued['tenant_id'],'shop')
+        self.assertEqual(issued['invitation_id'],'b'*32)
+        self.assertFalse(issued['publishing_enabled'])
+        self.assertNotIn('token',str(issued))
+        self.assertEqual(self.svc.calls[-1],
+                         ('issue',{'owner_session':'a'*43,'now':101,
+                                   'email':'new@example.com','role':'viewer'}))
+        for invalid in (
+            {'email':'new@example.com','role':'owner'},
+            {'email':'new@example.com','role':'viewer','tenant_id':'other'},
+            {'email':'new@example.com','role':'viewer','token':'secret'},
+            {'email':'new@example.com','role':'viewer','extra':True},
+            {'email':'not an email','role':'viewer'},
+            {'email':'new@example.com','role':True},
+        ):
+            self.assertEqual(self.call(path=path,method='POST',
+                body=invalid,app=allowed)[0]['status'],
+                '400 Bad Request')
+        self.svc.issued=True
+        self.assertEqual(self.call(path=path,method='POST',
+            body=payload,app=allowed)[0]['status'],'409 Conflict')
+        self.svc.issued=False
+        self.svc.invalid_issue=True
+        self.assertEqual(self.call(path=path,method='POST',
+            body=payload,app=allowed)[0]['status'],
+            '503 Service Unavailable')
+        self.svc.invalid_issue=False
+        self.svc.denied=True
+        self.assertEqual(self.call(path=path,method='POST',
+            body=payload,app=allowed)[0]['status'],'401 Unauthorized')
+        self.assertEqual(self.call(path=path,method='GET',
+            app=allowed)[0]['status'],'405 Method Not Allowed')
+
     def test_auth_validation_and_forged_data(self):
         for opts,status in (
             ({'wsgi.url_scheme':'http',
@@ -124,6 +179,8 @@ class InviteWSGITests(unittest.TestCase):
                          '503 Service Unavailable')
         with self.assertRaises(ValueError):
             BAMTeamInvitationsWSGI(self.svc,enabled=1)
+        with self.assertRaises(ValueError):
+            BAMTeamInvitationsWSGI(self.svc,allow_issue=1)
 
 if __name__=='__main__':
     unittest.main()
