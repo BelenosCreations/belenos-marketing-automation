@@ -121,6 +121,48 @@ class SponsoredAIConcurrentBudgetTests(unittest.TestCase):
         self.assertEqual(self.db1.execute('SELECT reserved_micro_usd FROM '
             'bam_ai_operator_usage').fetchone()[0],1500)
 
+    def test_role_revocation_while_reservation_waits_for_lock(self):
+        ready=threading.Event()
+        proceed=threading.Event()
+        first=self.quota1.policy_store._editor
+        def delayed_check(token,now):
+            resolved=first(token,now)
+            if token==self.shop_writer and not ready.is_set():
+                ready.set()
+                if not proceed.wait(timeout=8):
+                    raise TimeoutError('Role-race pause not released')
+            return resolved
+        self.quota1.policy_store._editor=delayed_check
+        output=[]
+        plan=SponsorshipPlan('invited',10,300,
+            max_request_estimated_micro_usd=250,
+            tenant_monthly_estimated_micro_usd=500,
+            operator_monthly_estimated_micro_usd=500)
+        def worker():
+            try:
+                output.append(self.reserve(
+                    self.quota1,self.shop_writer,plan))
+            except Exception as exc:
+                output.append(exc)
+        thread=threading.Thread(target=worker,daemon=True)
+        thread.start()
+        try:
+            self.assertTrue(ready.wait(timeout=8))
+            other_directory=AccountDirectory(self.db2)
+            other_directory.set_member(
+                Principal('owner','shop',Role.OWNER),
+                'writer',Role.VIEWER)
+        finally:
+            proceed.set()
+        thread.join(timeout=12)
+        self.assertFalse(thread.is_alive(),'AI role-race did not finish')
+        self.assertEqual(len(output),1)
+        self.assertIsInstance(output[0],PermissionError)
+        for table in ('bam_ai_usage','bam_ai_tenant_usage',
+                      'bam_ai_operator_usage'):
+            self.assertEqual(self.db1.execute(
+                'SELECT COUNT(*) FROM '+table).fetchone()[0],0)
+
     def test_operator_budget_shared_between_independent_businesses(self):
         plan=SponsorshipPlan('owner',10,300,
             tenant_monthly_requests=10,operator_monthly_requests=1)

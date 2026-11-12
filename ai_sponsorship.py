@@ -117,11 +117,19 @@ class SponsoredAIQuota:
         micro=plan.max_request_estimated_micro_usd or 0
         unpriced=int(plan.max_request_estimated_micro_usd is None)
         remaining_micro=[]
-        # First INSERT acquires SQLite's writer lock. All three count and
-        # estimated spend reservations succeed or roll back together. A
-        # projected cap never uses client-supplied provider/billing usage.
+        # Revalidate role and funding mode under SQLite's write lock. A
+        # demoted writer or a user who switched to a personal key between
+        # the initial check and lock acquisition cannot spend BAM quota.
+        # Every count/cost tier succeeds or rolls back as one transaction.
         try:
             with self.db:
+                self.db.execute('BEGIN IMMEDIATE')
+                current=self.policy_store._editor(token,now)
+                if current!=principal:
+                    raise PermissionError('Current business role changed')
+                if self.policy_store.get_mode(token=token,now=now)[
+                        'mode']!='bam_sponsored':
+                    raise PermissionError('Sponsored mode changed')
                 self.db.execute("""INSERT OR IGNORE INTO bam_ai_usage
                     (tenant_id,subject_id,month,accepted)
                     VALUES(?,?,?,0)""",
