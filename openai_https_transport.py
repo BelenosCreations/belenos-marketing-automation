@@ -66,6 +66,15 @@ class OpenAITransport:
             'Authorization':'Bearer '+secret,
             'Content-Type':'application/json',
             'Accept':'application/json'})
+        # A slow key-vault resolution must not bypass a newly activated
+        # operator pause. Recheck immediately before the network opener.
+        # This is still a point-in-time check, NOT atomic with the HTTP send.
+        try:
+            if self._dispatch_guard() is not True:
+                raise PermissionError('OpenAI dispatch authorization unavailable')
+        except Exception:
+            raise PermissionError(
+                'OpenAI dispatch authorization unavailable') from None
         # Never log the Request object: it contains the Authorization header.
         try:
             with self._open(request,timeout=self._timeout) as response:

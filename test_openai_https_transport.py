@@ -75,6 +75,21 @@ class OpenAITransportTests(unittest.TestCase):
         self.assertEqual(observed,['key','network'])
         db.close()
 
+    def test_pause_during_key_resolution_prevents_network_dispatch(self):
+        state={'paused':False}
+        calls=[]
+        def key_resolver():
+            calls.append('vault')
+            state['paused']=True
+            return 'sk-'+'a'*30
+        transport=OpenAITransport(
+            key_resolver=key_resolver,
+            opener=lambda *args,**kwargs:calls.append('network'),
+            dispatch_guard=lambda:not state['paused'],enabled=True)
+        with self.assertRaises(PermissionError):
+            transport(payload())
+        self.assertEqual(calls,['vault'])
+
     def test_enabled_transport_uses_only_server_secret(self):
         seen=[]
         def opener(request,*,timeout):
