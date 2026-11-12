@@ -221,6 +221,21 @@ class BusinessInvitations:
             tenant_id=principal.tenant_id,email=email,role=role,now=timestamp)
         return {'tenant_id':principal.tenant_id,**result}
 
+    def accept_password_trusted(self,*,email,password,token,now=None):
+        """Redeem for an already verified BAM password identity.
+
+        Internal composition only, NOT a public HTTP or email-verification
+        route. Any future network caller MUST add trusted password rate
+        limiting, anti-abuse protection and an approved enrollment flow.
+        The token never appears in a response and cannot choose a tenant.
+        """
+        if type(token) is not str or not 20<=len(token)<=256:
+            raise PermissionError('Invalid invitation')
+        subject=self.auth.verify_password_identity_trusted(
+            email=email,password=password)
+        return self.accept_trusted(
+            verified_subject_id=subject,token=token,now=now)
+
     def accept_trusted(self,*,verified_subject_id,token,now=None):
         """One-use redemption after caller-proven identity; never a web route.
 

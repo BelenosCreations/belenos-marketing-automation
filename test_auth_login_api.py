@@ -7,6 +7,8 @@ from google_token_verifier import GoogleTokenVerifier
 from google_login_challenges import GoogleLoginChallenges
 from auth_login_api import AuthLoginAPI
 from login_throttle import LoginThrottle
+from business_invitations import BusinessInvitations
+from access_policy import Role
 
 class AuthLoginAPITests(unittest.TestCase):
     def setUp(self):
@@ -37,6 +39,59 @@ class AuthLoginAPITests(unittest.TestCase):
         return self.api.password_login(email='owner@example.com',
             password='correct horse battery staple',tenant_id='shop',
             server_now=102)['session_token']
+
+    def test_opt_in_password_invite_redemption_requires_shared_throttle(self):
+        owner_session=self.password()
+        guest=self.auth.register_password(email='guest@example.com',
+            password='guest password phrase 123',now=100)
+        self.auth.set_email_verified_trusted(subject_id=guest,verified=True)
+        delivered=[]
+        invites=BusinessInvitations(db=self.db,sessions=self.sessions,
+            directory=self.directory,auth=self.auth,
+            deliver=lambda email,tenant,secret:delivered.append(secret))
+        invites.invite(owner_session=owner_session,tenant_id='shop',
+            email='guest@example.com',role=Role.VIEWER,now=103)
+        self.assertIsNone(self.directory.resolve('shop',guest))
+        with self.assertRaises(PermissionError):
+            self.api.redeem_invitation_password(
+                email='guest@example.com',password='guest password phrase 123',
+                token=delivered[-1],server_now=104)
+        with self.assertRaises(ValueError):
+            AuthLoginAPI(auth=self.auth,google_verifier=self.verifier,
+                challenges=self.challenges,invitations=invites,
+                allow_invitation_redemption=True)
+        with self.assertRaises(ValueError):
+            AuthLoginAPI(auth=self.auth,google_verifier=self.verifier,
+                challenges=self.challenges,allow_invitation_redemption=1)
+        gate=AuthLoginAPI(auth=self.auth,google_verifier=self.verifier,
+            challenges=self.challenges,invitations=invites,
+            throttle=LoginThrottle(self.db,max_failures=2,window_seconds=60),
+            allow_invitation_redemption=True)
+        for t in (104,105):
+            with self.assertRaises(PermissionError):
+                gate.redeem_invitation_password(email='guest@example.com',
+                    password='wrong password phrase 123',
+                    token=delivered[-1],server_now=t)
+        with self.assertRaises(PermissionError):
+            gate.redeem_invitation_password(email='guest@example.com',
+                password='guest password phrase 123',
+                token=delivered[-1],server_now=106)
+        self.assertIsNone(self.directory.resolve('shop',guest))
+        accepted=gate.redeem_invitation_password(
+            email='guest@example.com',password='guest password phrase 123',
+            token=delivered[-1],server_now=167)
+        self.assertTrue(accepted['membership_created'])
+        self.assertIsNone(accepted['session_token'])
+        self.assertNotIn(delivered[-1],str(accepted))
+        self.assertEqual(self.directory.resolve('shop',guest).role,Role.VIEWER)
+        self.assertIsNone(self.directory.resolve('other',guest))
+        self.assertIsNotNone(self.auth.login_password(
+            email='guest@example.com',password='guest password phrase 123',
+            tenant_id='shop',now=168))
+        with self.assertRaises(PermissionError):
+            gate.redeem_invitation_password(
+                email='guest@example.com',password='guest password phrase 123',
+                token=delivered[-1],server_now=169)
 
     def test_password_login_throttles_failures(self):
         self.api.throttle=LoginThrottle(self.db,max_failures=2,window_seconds=60)

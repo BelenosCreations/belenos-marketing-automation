@@ -196,3 +196,13 @@ With a server-owned usage observer configured, the Responses execution adapter n
 The disabled-by-default sponsored Responses adapter now validates trusted business and user scope **before** an injected transport could send a request. Provider/generated JSON with duplicate keys, invalid component types, blank posts or oversized copy/image prompts is held out of the unpublished draft pipeline. If the optional trusted usage observer is configured, valid provider-reported tokens are accounted for **before** rejecting unusable generated text.
 
 The HTTPS adapter allowlists the outgoing request fields, strict JSON-schema output and user-only text input. Unapproved background requests, previous-conversation linkage, implicit tools, parallel tool calls and extra API parameters are refused. This is offline fake-transport code and regression coverage; it is **not** live OpenAI access, verified billing, a deployed application, image creation or posting authorization.
+
+### New verified member invitation acceptance primitive (offline Alpha)
+
+An existing, email-verified BAM password identity can now be authenticated **without already belonging to a business**, solely for trusted invitation redemption. A correct password and valid, delivered, unexpired, one-use invitation matching that identity are required. Business membership is created transactionally; only **after** acceptance can the person obtain a normal role-scoped business session. Rejected attempts create no membership or session and do not spend the invitation. No cross-business permissions are granted.
+
+This is an **internal offline backend method only**: there is still no public invite-acceptance page, self-service registration, email-verification delivery, or hosted employee collaboration. An external acceptance endpoint must have approved identity enrollment and rate limiting before exposure.
+
+### Rate-limited internal invitation acceptance gate (offline Alpha)
+
+The internal authentication service now requires an **explicit opt-in** and a shared persistent password throttle before it can invoke trusted invitation redemption. Failed credential/token claims consume the throttle allowance; successful acceptance clears the credential failures, creates the membership through the transactional invitation service and **returns no logged-in session**. A separate normal login is required afterward. No HTTP route is mounted for this action. Production still needs verified enrollment, IP/global anti-abuse controls, secure delivery, and hosted multi-user testing.

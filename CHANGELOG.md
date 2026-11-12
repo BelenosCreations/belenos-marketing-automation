@@ -1,5 +1,22 @@
 # Changelog
 
+## November 12, 2026 — Internal invitation redemption admission gate
+
+- Added explicit, disabled-by-default AuthLoginAPI admission for invitation password redemption. Turning it on requires both a trusted invitation service and a shared LoginThrottle.
+- Failed email/password or token verification increments the existing hashed-email throttle. A successful one-time redemption clears failures but **never issues a login session**.
+- Added tests for off-by-default behavior, missing throttle, lockout timing, accepted membership, token non-disclosure, cross-business isolation and subsequent ordinary login.
+- **Verification:** new code awaiting exact-head full CI. There is no HTTP invitation-acceptance endpoint; production enrollment, email transport, IP/global abuse limits, hosted access and posting remain disabled.
+
+
+## November 12, 2026 — Trusted offline invitation redemption for new team members
+
+- Extracted the existing password-KDF verification into an internal verified-identity check that does not require existing business membership, issue a login session or change permissions. Normal member logins still require current business membership.
+- Added a trusted invitation password-redemption entry point for previously email-verified BAM identities. It verifies password first, then reuses the existing atomic, one-time tenant-scoped acceptance checks and audit.
+- Added negative tests for wrong password, wrong identity, unverified identity, malformed token, token replay and business isolation. Successful redemption permits the new member's normal session afterward.
+- **CI status:** exact-head Actions must pass before merging. No public acceptance endpoint, unauthenticated signup, invitation email provider or production rate-limiting service is present.
+- **Activation:** offline-only, no paid AI, hosted beta or live publishing.
+
+
 ## November 12, 2026 — Strict offline OpenAI draft and request boundaries
 
 - Refuse missing/malformed tenant or user scopes before invoking any sponsored Responses transport. Reject duplicate JSON keys at the provider-envelope or generated-copy level, blank/non-string posts, and oversized copy or image prompts before any draft can be staged.

@@ -121,23 +121,34 @@ class IdentityAuth:
             raise PermissionError('Business membership required')
         return self.sessions.issue(member,now=now)
 
-    def login_password(self,*,email,password,tenant_id,now=None):
-        """Require verified email and active tenant membership before session."""
-        timestamp=int(time.time()) if now is None else now
+    def verify_password_identity_trusted(self,*,email,password):
+        """Verify an existing email-verified identity without any membership.
+
+        Internal backend primitive for invitation redemption. Callers MUST
+        enforce trusted login-rate limits before accepting untrusted password
+        attempts. It issues no BAM session and grants no business access.
+        """
         email=normalize_email(email)
         encoded=_password_bytes(password)
         row=self.db.execute("""SELECT i.subject_id,i.active,i.email_verified,
                 p.salt,p.digest,p.iterations
                 FROM bam_identities i LEFT JOIN bam_password_credentials p
                 ON p.subject_id=i.subject_id WHERE i.email=?""",(email,)).fetchone()
-        # A constant dummy KDF avoids obvious timing differences for missing email.
+        # Use the same dummy KDF for a missing email as normal password login.
         salt=row[3] if row and row[3] is not None else b'\0'*32
         actual=_hash_password(encoded,salt)
         expected=row[4] if row and row[4] is not None else b'\0'*32
         if (not hmac.compare_digest(actual,expected) or row is None
                 or row[1]!=1 or row[2]!=1 or row[5]!=_ITERATIONS):
             raise PermissionError('Invalid credentials or account not verified')
-        return self._issue_for_member(row[0],tenant_id,timestamp)
+        return row[0]
+
+    def login_password(self,*,email,password,tenant_id,now=None):
+        """Require verified email and active tenant membership before session."""
+        timestamp=int(time.time()) if now is None else now
+        subject=self.verify_password_identity_trusted(
+            email=email,password=password)
+        return self._issue_for_member(subject,tenant_id,timestamp)
 
     def link_google_verified(self,*,subject_id,google_sub,email,email_verified):
         """Trusted, explicit account linking after independent identity proof.

@@ -181,6 +181,51 @@ class InvitationTests(unittest.TestCase):
             owner_session=self.owner_token,now=105)['events']],
             ['accepted','delivered'])
 
+    def test_password_verified_new_member_redemption_without_existing_membership(self):
+        self.invite()
+        token=self.outbox[-1][2]
+        self.assertIsNone(self.directory.resolve('shop',self.guest))
+        with self.assertRaises(PermissionError):
+            self.auth.login_password(email='guest@example.com',
+                password='guest password phrase 123',tenant_id='shop',now=103)
+        for email,password in (
+            ('guest@example.com','wrong password phrase 123'),
+            ('owner@example.com','owner password phrase 123'),
+            ('stranger@example.com','guest password phrase 123'),
+        ):
+            with self.assertRaises(PermissionError):
+                self.invites.accept_password_trusted(
+                    email=email,password=password,token=token,now=103)
+            self.assertIsNone(self.directory.resolve('shop',self.guest))
+        with self.assertRaises(PermissionError):
+            self.invites.accept_password_trusted(
+                email='guest@example.com',password='guest password phrase 123',
+                token='bad-token',now=103)
+        self.auth.set_email_verified_trusted(
+            subject_id=self.guest,verified=False)
+        with self.assertRaises(PermissionError):
+            self.invites.accept_password_trusted(
+                email='guest@example.com',password='guest password phrase 123',
+                token=token,now=103)
+        self.auth.set_email_verified_trusted(
+            subject_id=self.guest,verified=True)
+        result=self.invites.accept_password_trusted(
+            email='guest@example.com',password='guest password phrase 123',
+            token=token,now=104)
+        self.assertTrue(result['membership_created'])
+        self.assertEqual(result['role'],'content_creator')
+        self.assertNotIn(token,str(result))
+        self.assertIsNone(self.directory.resolve('other',self.guest))
+        session=self.auth.login_password(email='guest@example.com',
+            password='guest password phrase 123',tenant_id='shop',now=105)
+        self.assertEqual(self.sessions.resolve_current(
+            session,directory=self.directory,now=106
+        ).principal.subject_id,self.guest)
+        with self.assertRaises(PermissionError):
+            self.invites.accept_password_trusted(
+                email='guest@example.com',password='guest password phrase 123',
+                token=token,now=106)
+
     def test_invite_and_accept(self):
         self.invite()
         token=self.outbox[-1][2]

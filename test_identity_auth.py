@@ -38,6 +38,31 @@ class IdentityAuthTests(unittest.TestCase):
                 self.auth.login_password(email=email,password=password,
                                          tenant_id='shop',now=101)
 
+    def test_trusted_password_verification_without_membership_creates_no_session(self):
+        guest=self.auth.register_password(email='guest@example.com',
+            password='guest password phrase 123',now=101)
+        self.auth.set_email_verified_trusted(subject_id=guest,verified=True)
+        self.assertEqual(self.auth.verify_password_identity_trusted(
+            email='GUEST@example.com',password='guest password phrase 123'),guest)
+        self.assertEqual(self.db.execute('SELECT COUNT(*) FROM sessions')
+                         .fetchone()[0],0)
+        with self.assertRaises(PermissionError):
+            self.auth.login_password(email='guest@example.com',
+                password='guest password phrase 123',tenant_id='shop',now=102)
+        for email,password in (
+            ('guest@example.com','incorrect phrase 12345'),
+            ('another@example.com','guest password phrase 123')
+        ):
+            with self.assertRaises(PermissionError):
+                self.auth.verify_password_identity_trusted(
+                    email=email,password=password)
+        self.auth.set_email_verified_trusted(subject_id=guest,verified=False)
+        with self.assertRaises(PermissionError):
+            self.auth.verify_password_identity_trusted(
+                email='guest@example.com',password='guest password phrase 123')
+        self.assertEqual(self.db.execute('SELECT COUNT(*) FROM sessions')
+                         .fetchone()[0],0)
+
     def test_no_cross_tenant_membership(self):
         self.verify()
         with self.assertRaises(PermissionError):

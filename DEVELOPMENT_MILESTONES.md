@@ -998,3 +998,11 @@ The trusted-attestation editorial source recheck now resolves the **current** me
 ## November 12, 2026 — AI request and response strictness (offline Alpha)
 
 The synthetic Responses executor enforces tenant/user scope before a potential paid transport call. It rejects duplicate keys throughout JSON provider responses and generated content, along with non-string/empty/oversized draft components. The offline HTTPS adapter rejects unexpected top-level API fields (including background execution and previous conversation linkage), parallel tool calls, untrusted message roles and non-text parts. Trusted provider usage, if present and observed, is still counted before generated-content validation. Added negative regressions; code at `93caf1ab`, exact-head GitHub Actions pending. No paid OpenAI access, deployed transport, invoice reconciliation or publishing has been enabled.
+
+## November 12, 2026 — Internal invitation redemption for a new workspace member
+
+A trusted password-identity verification method now supports confirmed existing BAM identities with no business memberships, without granting them a session. The BusinessInvitations backend can use this proof to redeem a previously delivered one-use invitation through its existing transactional identity, inviter, token, membership and audit checks. Tests cover wrong credentials, email mismatches, verification removal, token replay and tenant isolation. This is a backend-only offline milestone, pending full exact-commit CI. Public invitation endpoints, email transport, anti-abuse throttling and hosted enrollment remain unimplemented and unauthorized.
+
+## November 12, 2026 — Offline invitation password admission throttling
+
+The trusted AuthLoginAPI offers a disabled-by-default password invitation redemption method, requiring explicit constructor opt-in, a trusted invitation service and a shared LoginThrottle. Failed secret/password claims increase hashed-email throttling; successful redemption clears failures, creates one-use tenant membership and does not issue a session. Tests demonstrate lockout followed by safe retry and later ordinary login. No HTTP handler, trusted email verification delivery, IP/global rate-limit layer, production hosted collaboration or social publishing is configured. Exact candidate CI pending.
