@@ -1180,5 +1180,158 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(row,(successes[0],2,'needs_content'))
 
 
+    def test_pg_authenticated_review_feedback_and_audit(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        owner='Synthetic_PG_Feedback_Owner_123456789012345678'
+        manager='Synthetic_PG_Feedback_Manager_12345678901234567'
+        viewer='Synthetic_PG_Feedback_Viewer_123456789012345678'
+        self.conn.execute("""INSERT INTO bam_identities
+            (subject_id,email,email_verified,active,created_at)
+            VALUES ('managerX','managerx@example.test',1,1,100)""")
+        self.conn.execute("""INSERT INTO members
+            (tenant_id,subject_id,role,active,revision)
+            VALUES ('shop-a','managerX','marketing_manager',1,1)""")
+        for bearer,actor,role in (
+            (owner,self.a,'owner'),
+            (manager,'managerX','marketing_manager'),
+            (viewer,self.viewer,'viewer')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (hashlib.sha256(bearer.encode()).hexdigest(),actor,role))
+        gateway=EphemeralSessionPostgres(self.conn)
+        opts={'raw_session_token':owner,'tenant_id':'shop-a',
+              'request_id':self.rid_a,'expected_revision':1,
+              'expected_feedback_token':None,
+              'note':'Check image rights before publication.',
+              'server_now':101}
+        with self.assertRaises(PermissionError):
+            gateway.save_review_feedback(
+                **(opts|{'raw_session_token':viewer}))
+        with self.assertRaises(PermissionError):
+            gateway.save_review_feedback(
+                **(opts|{'tenant_id':'shop-b'}))
+        receipt=gateway.save_review_feedback(**opts)
+        self.assertEqual(receipt['status'],'feedback_only')
+        self.assertFalse(receipt['approval_granted'])
+        self.assertFalse(receipt['publishing_enabled'])
+        read=gateway.read_review_feedback(
+            raw_session_token=viewer,tenant_id='shop-a',server_now=102)
+        self.assertEqual(len(read['items']),1)
+        self.assertFalse(read['items'][0]['stale'])
+        self.assertEqual(read['items'][0]['note'],
+                         'Check image rights before publication.')
+        self.assertFalse(read['approval_granted'])
+        self.assertEqual(gateway.read_review_feedback(
+            raw_session_token=owner,tenant_id='shop-b',
+            server_now=102)['items'],[])
+        with self.assertRaises(PermissionError):
+            gateway.save_review_feedback(
+                **(opts|{'raw_session_token':manager,
+                         'expected_feedback_token':'f'*32}))
+        updated=gateway.save_review_feedback(
+            **(opts|{'raw_session_token':manager,
+                     'expected_feedback_token':receipt['feedback_token'],
+                     'note':'Permission verified, needs final owner review.',
+                     'server_now':103}))
+        self.assertNotEqual(updated['feedback_token'],
+                            receipt['feedback_token'])
+        events=self.conn.execute("""SELECT action,actor_id
+            FROM bam_review_feedback_events
+            WHERE tenant_id='shop-a' ORDER BY occurred_at""").fetchall()
+        self.assertEqual(events,[('created',self.a),
+                                 ('updated','managerX')])
+        self.assertEqual(self.conn.execute("""SELECT status,revision,draft_text
+            FROM content_requests WHERE request_id=%s""",
+            (self.rid_a,)).fetchone(),
+            ('needs_content',1,'private tenant A copy'))
+        self.assertEqual(self.conn.execute(
+            'SELECT COUNT(*) FROM bam_calendar_proposals').fetchone()[0],0)
+        self.conn.execute("""UPDATE content_requests SET revision=2
+            WHERE request_id=%s""",(self.rid_a,))
+        read=gateway.read_review_feedback(
+            raw_session_token=owner,tenant_id='shop-a',server_now=104)
+        self.assertTrue(read['items'][0]['stale'])
+        self.assertEqual(read['items'][0]['current_revision'],2)
+        with self.assertRaises(PermissionError):
+            gateway.save_review_feedback(
+                **(opts|{'expected_feedback_token':updated['feedback_token'],
+                         'server_now':104}))
+
+    def test_pg_feedback_concurrency_and_live_revocation(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Concurrent_Feedback_12345678901234'
+        digest=hashlib.sha256(token.encode()).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",(digest,self.a))
+        gate=threading.Barrier(2)
+        successes=[]
+        failures=[]
+        errors=[]
+        def save(note):
+            conn=self._connect()
+            try:
+                app=EphemeralSessionPostgres(conn)
+                gate.wait(timeout=15)
+                try:
+                    result=app.save_review_feedback(
+                        raw_session_token=token,tenant_id='shop-a',
+                        request_id=self.rid_a,expected_revision=1,
+                        expected_feedback_token=None,note=note,
+                        server_now=101)
+                    successes.append(result)
+                except PermissionError:
+                    failures.append('already exists')
+            except Exception as error:
+                errors.append(type(error).__name__)
+            finally:
+                conn.close()
+        threads=[threading.Thread(target=save,args=(note,))
+                 for note in ('Editor one review','Editor two review')]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=20)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertEqual(errors,[])
+        self.assertEqual(len(successes),1)
+        self.assertEqual(failures,['already exists'])
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM bam_review_feedback_events""").fetchone()[0],1)
+        self.assertFalse(successes[0]['publishing_enabled'])
+        second=self._connect()
+        try:
+            app=EphemeralSessionPostgres(second)
+            self.conn.execute("""UPDATE members SET role='viewer'
+                WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+            with self.assertRaises(PermissionError):
+                app.save_review_feedback(
+                    raw_session_token=token,tenant_id='shop-a',
+                    request_id=self.rid_a,expected_revision=1,
+                    expected_feedback_token=successes[0]['feedback_token'],
+                    note='Unauthorized edit',server_now=102)
+            self.conn.execute("""UPDATE members SET role='owner'
+                WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+            self.conn.execute("""UPDATE sessions SET revoked_at=102
+                WHERE token_hash=%s""",(digest,))
+            with self.assertRaises(PermissionError):
+                app.save_review_feedback(
+                    raw_session_token=token,tenant_id='shop-a',
+                    request_id=self.rid_a,expected_revision=1,
+                    expected_feedback_token=successes[0]['feedback_token'],
+                    note='Revoked edit',server_now=103)
+            self.assertEqual(app.read_review_feedback(
+                raw_session_token=token,tenant_id='shop-a',
+                server_now=103)['items'],[])
+        finally:
+            second.close()
+        self.assertEqual(self.conn.execute(
+            "SELECT COUNT(*) FROM bam_review_feedback_events").fetchone()[0],1)
+
+
+
 if __name__=='__main__':
     unittest.main()

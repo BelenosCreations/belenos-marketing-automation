@@ -23,6 +23,10 @@ from neon_session_team_contract import (
 from neon_session_draft_write_contract import (
     prepare_session_held_draft_create,summarize_held_draft_create,
     prepare_session_held_draft_revision,summarize_held_draft_revision)
+from neon_session_feedback_contract import (
+    prepare_session_feedback_list,summarize_session_feedback_list,
+    prepare_session_feedback_save,summarize_session_feedback_save,
+    prepare_session_feedback_event,assert_feedback_event_saved)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -120,6 +124,43 @@ class EphemeralSessionPostgres:
             row=self._conn.execute(sql,params).fetchone()
             return summarize_held_draft_revision(
                 row,request_id=request_id,expected_revision=expected_revision)
+
+    def read_review_feedback(self,*,raw_session_token,tenant_id,
+                             server_now):
+        sql,params=prepare_session_feedback_list(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            server_now=server_now)
+        rows=self._conn.execute(sql,params).fetchall()
+        return summarize_session_feedback_list(rows,tenant_id=tenant_id)
+
+    def save_review_feedback(self,*,raw_session_token,tenant_id,request_id,
+                             expected_revision,expected_feedback_token,
+                             note,server_now):
+        sql,params,action,version=prepare_session_feedback_save(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            request_id=request_id,expected_revision=expected_revision,
+            expected_feedback_token=expected_feedback_token,note=note,
+            server_now=server_now)
+        import psycopg
+        try:
+            with self._conn.transaction():
+                row=self._conn.execute(sql,params).fetchone()
+                receipt=summarize_session_feedback_save(
+                    row,tenant_id=tenant_id,request_id=request_id,
+                    expected_revision=expected_revision,
+                    expected_new_token=version)
+                audit_sql,audit_params=prepare_session_feedback_event(
+                    raw_session_token=raw_session_token,tenant_id=tenant_id,
+                    request_id=request_id,current_feedback_token=version,
+                    action=action,server_now=server_now)
+                event=self._conn.execute(audit_sql,audit_params).fetchone()
+                assert_feedback_event_saved(
+                    event,expected_event_id=audit_params[0])
+                return receipt
+        except psycopg.errors.UniqueViolation as exc:
+            # A simultaneous new note already exists: never overwrite it.
+            raise PermissionError(
+                'Private feedback changed; refresh required') from exc
 
     def update_draft_priority(self,*,raw_session_token,tenant_id,request_id,
                               expected_priority_token,priority,server_now):
