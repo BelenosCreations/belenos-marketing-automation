@@ -6,7 +6,8 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
-| Tenant-safe attachment metadata PostgreSQL schema + status read | **Eighth constraint-only hardening migration for the existing media table, plus session-bound status query candidate; CI pending** | Prove composite tenant/draft FK, private storage-key/hash redaction and role/revocation isolation with disposable real PostgreSQL; no uploads or verification worker |
+| Verified attachment reference binding to held drafts | **New session-bound, revision-CAS, CI-only PostgreSQL candidate** | Verify pending/rejected/foreign registry denial, reviewed-required item rules, live editor role/revocation, concurrent CAS and nonpublishing result; production scanner/storage still absent |
+| Tenant-safe attachment metadata PostgreSQL schema + status read | **Verified PR #56; post-merge Actions 43332328800 passed; CI-only** | Prove composite tenant/draft FK, private storage-key/hash redaction and role/revocation isolation with disposable real PostgreSQL; no uploads or verification worker |
 | Session-backed scheduling settings + revision CAS | **Verified PR #55, merged-main Actions 43329651094 passed; CI-only** | Verify live role, tenant, revocation, IANA timezone, validated time sets and two-client revision behavior before implementing real background jobs |
 | Private feedback removal + owner audit history in PostgreSQL | **Verified PR #54, merged-main Actions 43328713423 passed; CI-only** | Prove one-event/one-deletion, rollback on audit failure, 50-event cap, role/revocation denial and two-client race in actual disposable PostgreSQL |
 | Private review feedback + atomic audit on PostgreSQL | **Verified PR #53; merged-main Actions 43326407161 passed; CI-only** | Validate roles, revocation, stale note/draft version denial, cross-tenant privacy and one-event-per-save in real PG before any production gateway |
