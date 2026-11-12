@@ -61,7 +61,7 @@ class AnalyticsPageAdapter:
                 'publishing_enabled':False}
 
     def import_page(self, *, tenant_id, platform, account_id,
-                    import_secret, now):
+                    import_secret, now, admission_guard=None):
         preview=self.preview_import(
             tenant_id=tenant_id,platform=platform,account_id=account_id,
             import_secret=import_secret,now=now)
@@ -70,4 +70,5 @@ class AnalyticsPageAdapter:
             import_secret=import_secret,now=now,
             expected_cursor=preview['expected_cursor'],
             next_cursor=preview['next_cursor'],
-            observations=preview['observations'])
+            observations=preview['observations'],
+            admission_guard=admission_guard)

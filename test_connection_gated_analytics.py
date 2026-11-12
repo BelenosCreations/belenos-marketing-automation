@@ -96,6 +96,28 @@ class ConnectionGateTests(unittest.TestCase):
             self.gate.preview_import(**self.args)
         self.assertEqual(self.fetcher.calls,0)
 
+    def test_revocation_during_fetch_aborts_atomic_import(self):
+        self.registry.register_trusted(**self.metadata)
+        def revoke_before_return(**kwargs):
+            self.fetcher.calls+=1
+            self.registry.register_trusted(**dict(self.metadata,
+                state='revoked',now=50))
+            return dict(next_cursor='cursor',posts=[
+                dict(post_id='p1',published_at=50,
+                     engagement_count=1,impression_count=10)])
+        self.fetcher.fetch_page=revoke_before_return
+        with self.assertRaises(PermissionError):
+            self.gate.import_page(**self.args)
+        self.assertEqual(self.fetcher.calls,1)
+        self.assertEqual(self.registry.status(tenant_id='shop',
+            platform='facebook',account_id='page',now=100)['status'],
+            'revoked')
+        self.assertIsNone(self.gate.adapter.coordinator.checkpoint(
+            tenant_id='shop',platform='facebook',account_id='page'))
+        stored=self.gate.adapter.coordinator.importer.store.db.execute(
+            'SELECT count(*) FROM audience_observations').fetchone()[0]
+        self.assertEqual(stored,0)
+
     def test_cross_tenant_denied(self):
         self.registry.register_trusted(**self.metadata)
         with self.assertRaises(PermissionError):
