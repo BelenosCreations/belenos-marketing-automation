@@ -198,3 +198,120 @@ def assert_feedback_event_saved(row,*,expected_event_id):
         raise PermissionError("Feedback event not authorized; rollback")
     if row!=(expected_event_id,):
         raise ValueError("Unexpected private feedback audit result")
+
+
+# Feedback removal is a versioned DELETE, never an approval transition.
+_DELETE="""DELETE FROM bam_review_feedback AS f
+    WHERE f.tenant_id=%s AND f.request_id=%s AND f.feedback_token=%s
+      AND EXISTS (
+        SELECT 1 FROM sessions s
+        JOIN members m ON m.tenant_id=s.tenant_id
+             AND m.subject_id=s.subject_id
+        JOIN bam_identities i ON i.subject_id=s.subject_id
+        WHERE s.token_hash=%s AND s.tenant_id=f.tenant_id
+          AND s.revoked_at IS NULL AND s.expires_at>%s
+          AND m.active=1 AND m.role=s.role
+          AND i.active=1 AND i.email_verified=1
+          AND m.role IN ('owner','marketing_manager')
+      )
+    RETURNING tenant_id,request_id,draft_revision"""
+
+_REMOVAL_EVENT="""INSERT INTO bam_review_feedback_events
+    (event_id,tenant_id,request_id,action,draft_revision,occurred_at,actor_id)
+    SELECT %s,%s,%s,'removed',%s,%s,s.subject_id
+    FROM sessions s
+    JOIN members m ON m.tenant_id=s.tenant_id
+         AND m.subject_id=s.subject_id
+    JOIN bam_identities i ON i.subject_id=s.subject_id
+    WHERE s.token_hash=%s AND s.tenant_id=%s
+      AND s.revoked_at IS NULL AND s.expires_at>%s
+      AND m.active=1 AND m.role=s.role
+      AND i.active=1 AND i.email_verified=1
+      AND m.role IN ('owner','marketing_manager')
+    RETURNING event_id"""
+
+_HISTORY="""SELECT e.event_id,e.request_id,e.action,e.draft_revision,
+           e.occurred_at
+    FROM bam_review_feedback_events e
+    WHERE e.tenant_id=%s
+      AND EXISTS (
+        SELECT 1 FROM sessions s
+        JOIN members m ON m.tenant_id=s.tenant_id
+             AND m.subject_id=s.subject_id
+        JOIN bam_identities i ON i.subject_id=s.subject_id
+        WHERE s.token_hash=%s AND s.tenant_id=e.tenant_id
+          AND s.revoked_at IS NULL AND s.expires_at>%s
+          AND m.active=1 AND m.role=s.role
+          AND i.active=1 AND i.email_verified=1
+          AND m.role IN ('owner','marketing_manager')
+      )
+    ORDER BY e.occurred_at DESC,e.event_id DESC LIMIT 51"""
+
+
+def prepare_session_feedback_remove(*,raw_session_token,tenant_id,request_id,
+                                    expected_feedback_token,server_now):
+    digest=_context(raw_session_token,tenant_id,server_now)
+    if (type(request_id) is not str or _ID.fullmatch(request_id) is None
+            or type(expected_feedback_token) is not str
+            or _ID.fullmatch(expected_feedback_token) is None):
+        raise ValueError("Current private feedback version required")
+    return _DELETE,(tenant_id,request_id,expected_feedback_token,
+                    digest,server_now)
+
+
+def summarize_session_feedback_remove(row,*,tenant_id,request_id):
+    if row is None:
+        raise PermissionError("Current reviewer and feedback version required")
+    if (type(row) not in (tuple,list) or len(row)!=3
+            or row[0]!=tenant_id or row[1]!=request_id
+            or type(row[2]) is not int or row[2]<1):
+        raise ValueError("Unexpected private feedback removal")
+    return {"tenant_id":tenant_id,"request_id":request_id,"removed":1,
+            "status":"feedback_only","approval_granted":False,
+            "publishing_enabled":False},row[2]
+
+
+def prepare_session_feedback_removal_event(*,raw_session_token,tenant_id,
+                                           request_id,draft_revision,server_now):
+    digest=_context(raw_session_token,tenant_id,server_now)
+    if (type(request_id) is not str or _ID.fullmatch(request_id) is None
+            or type(draft_revision) is not int or draft_revision<1):
+        raise ValueError("Valid removed feedback revision required")
+    event_id=uuid.uuid4().hex
+    return _REMOVAL_EVENT,(event_id,tenant_id,request_id,draft_revision,
+                           server_now,digest,tenant_id,server_now)
+
+
+def prepare_session_feedback_history(*,raw_session_token,tenant_id,server_now):
+    digest=_context(raw_session_token,tenant_id,server_now)
+    return _HISTORY,(tenant_id,digest,server_now)
+
+
+def summarize_session_feedback_history(rows,*,tenant_id):
+    if (type(tenant_id) is not str or _TENANT.fullmatch(tenant_id) is None
+            or type(rows) not in (tuple,list) or len(rows)>51):
+        raise ValueError("Unexpected private feedback history")
+    events=[]
+    seen=set()
+    previous=None
+    for row in rows:
+        if (type(row) not in (tuple,list) or len(row)!=5
+                or type(row[0]) is not str or _ID.fullmatch(row[0]) is None
+                or row[0] in seen
+                or type(row[1]) is not str or _ID.fullmatch(row[1]) is None
+                or row[2] not in ("created","updated","removed")
+                or type(row[3]) is not int or row[3]<1
+                or type(row[4]) is not int or row[4]<0):
+            raise ValueError("Invalid private feedback event metadata")
+        key=(row[4],row[0])
+        if previous is not None and key>=previous:
+            raise ValueError("Private feedback history out of order")
+        previous=key
+        seen.add(row[0])
+        if len(events)<50:
+            events.append({"event_id":row[0],"request_id":row[1],
+                           "action":row[2],"draft_revision":row[3],
+                           "occurred_at":row[4]})
+    return {"tenant_id":tenant_id,"status":"feedback_history_only",
+            "events":events,"truncated":len(rows)>50,
+            "approval_granted":False,"publishing_enabled":False}

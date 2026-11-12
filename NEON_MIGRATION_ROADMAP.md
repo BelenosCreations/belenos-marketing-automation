@@ -1,5 +1,9 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Review feedback deletion/history parity (candidate — November 12, 2026)
+
+Build on verified PR #53 (`25a99947`, full merged-main Actions 43326407161 passed). The CI-only PostgreSQL adapter now needs to match the source offline feedback's remaining versioned deletion and private owner/manager event-history read: scoped token-hash-checked DELETE by exact feedback version, followed by an independently authorized `removed` audit event in one atomic transaction. Audit events must remain after note removal and must carry **no prior note copy**. A bounded 50-event history checks role, active identity, tenant, session expiration/revocation on the SELECT. Denial, conflict, audit failure or duplicate action must fail closed and never touch publication state. Verify actual disposable PostgreSQL concurrency and SQLite parity. Production APIs, real Neon migration, encrypted backups, media storage and paid integrations remain separate unapproved work.
+
 ## Private review feedback SQL and audit in disposable PostgreSQL (November 12, 2026 candidate)
 
 Starting from verified PR #52 (`ada3ee5b`, main CI 43325036530 passed), add role- and tenant-scoped read of private editorial notes and versioned owner/marketing-manager note writes. Every write checks the exact current held draft revision and expected feedback token, and an event describing the write must be inserted by the same live-authorized actor **within the same database transaction**. Missing event, stale version, bad role, expired/revoked session or duplicate note rolls back the write. Viewer/employee access is read-only, and feedback is explicitly not approval, scheduling or publish authority. These are synthetic disposable PostgreSQL and SQLite-source tests only; production database connections, public routes, email/social integrations, backup/restore and user data migration are out of scope until separate approval.

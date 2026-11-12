@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Versioned private review feedback removal and owner audit history candidate — November 12, 2026
+
+**Verified baseline:** PR #53 merged as `25a99947829121b792f9d74d5542a9638d847fb9`. Full [merged-main Actions 43326407161](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43326407161) passed and the development branch was safely fast-forwarded to match `main`. Prior candidate descriptions below are historical, not active PRs.
+
+**Current unverified work:** Extend `neon_session_feedback_contract.py` and CI-only `EphemeralSessionPostgres` with bounded metadata-only owner/manager feedback history and role/tenant/expiry/revocation-validated, compare-and-delete feedback removal. The event insert must occur in the same transaction as the deletion. Include SQLite parity + actual disposable PostgreSQL tests for retained history after removal, stale version denial, cross-tenant privacy, viewer denial, two concurrent deletions, revocation and forced audit rollback. It is not a public or production database feature.
+
+**Next:** Exact-head PR tests; repair failures on development only; merge verified PR; verify exact merged-main Actions; safely fast-forward development without force. Subsequent stage: additional collaboration/database parity, verified production gateway and migration/restore planning before any private beta.
+
+**Always enforce:** $0 added costs; no Render/Neon provisioning, paid OpenAI, EdgePilot infrastructure reuse, automated social posts, or third-party tokens. Continue maintaining README, CHANGELOG and continuity files for frozen-chat recovery.
+
 ## Session-bound editorial feedback + atomic audit candidate — November 12, 2026
 
 **Last verified merged checkpoint:** PR #52 merged into `main` at `ada3ee5b9650de948764780bf4fba2b9627fd825`. Full [merged-main GitHub Actions 43325036530](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43325036530) passed; `development/phase-3-5-account-directory` safely fast-forwarded without force. Older "candidate" sections below document past work and are not current unmerged PRs.
