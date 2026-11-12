@@ -1044,3 +1044,7 @@ New `neon_schema_blueprint.py` defines nine explicit PostgreSQL DDL preview stat
 ## November 12, 2026 — Schema-wide portability audit (offline)
 
 Add deterministic all-table SQLite metadata inventory, isolate the nine reviewed foundational tables from all unported tables, and mark DDL-specific review signals. Reproducible ephemeral CLI report and privacy/schema-drift regression tests; no user records or actual SQL DDL returned, no PostgreSQL connection, no migrations, external charges or publishing. Full CI pending.
+
+## November 12, 2026 — Postgres prepared read-query contract seam (offline)
+
+Pure parameterized SQL builder for held drafts and non-executable calendar proposals. Each SQL statement joins active verified identities and current business memberships to avoid stale cross-tenant read checks; tests run query shape against SQLite fixtures with an explicit test-only placeholder adapter. No provider connection, actual Neon driver, session authentication, migration, paid hosting or social publish. Pending exact-SHA CI.

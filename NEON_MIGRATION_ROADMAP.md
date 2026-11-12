@@ -12,6 +12,10 @@ BAM's current alpha instantiates multiple SQLite-first service modules with `CRE
 
 Run `python -m neon_schema_inventory` for a no-data, ephemeral initialized schema report. The inventory includes every non-internal SQLite table, the mapped nine-table subset, unported table names, counts of columns/indexes/foreign keys and review markers for autoincrement, BLOB conversion, foreign keys, CHECK semantics and TEXT columns. It never includes row data or SQL text. When new module tables are added, the schema digest and unmapped list change. Treat every unmapped table and query path as an open migration work item; index names and absence of markers do **not** mean SQL is PostgreSQL-compatible. Do not use this report to export or migrate user data.
 
+## Prepared read-query seam (offline-only)
+
+`neon_scoped_queries.py` defines placeholder-bound PostgreSQL SELECTs for held drafts and manual calendar proposals. Both queries join current membership and active/verified BAM identity in the **same statement** and return no social publishing capability. Their shapes are regression-tested with local SQLite data via a test-only `%s`→`?` placeholder adapter, not a real PostgreSQL connection. The module never executes queries; a future independently authenticated server and DB layer must validate session proof, data types, transaction isolation and performance under real Neon.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

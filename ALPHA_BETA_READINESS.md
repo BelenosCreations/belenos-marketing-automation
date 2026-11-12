@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Postgres tenant read-query seam | **Parameterized SQL contract and local shape tests, pending CI** | Requires independently authenticated production caller and real Neon transaction/tenant isolation tests; no actual Postgres connection verified |
 | Complete local table portability inventory | **Offline metadata-only inventory, pending CI** | Manual PostgreSQL mapping and production-tested transactions for **all** tables; inventory alone is not migration evidence |
 | Neon schema portability start | **Partial nine-table PostgreSQL DDL review preview, offline only; pending CI** | Port every additional table, build tested PostgreSQL data adapter/migrations, verify row parity and isolation, encrypted backups and actual hosted restore; no live migration performed |
 | Initial hosting design chosen (without provisioning) | **Planned: separate $7 Render Starter plus free Neon; no charge or deployment authorized** | Verify billing workspace/region, safe PostgreSQL migration, encrypted backups/restore, staging identity and tenant isolation; explicitly approve actual service creation and any other costs |

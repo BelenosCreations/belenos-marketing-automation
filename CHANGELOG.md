@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Prepared tenant-scoped Postgres read contracts (offline)
+
+- Define pure parameterized draft/calendar SELECT templates that recheck active/verified identity and tenant membership in the same read statement; no SQL identifier interpolation from clients.
+- Offline SQLite compatibility tests exercise cross-business denial, current member deactivation, identity deactivation/unverified status, invalid identifiers, and the permanent no-publishing state.
+- No PostgreSQL driver, Neon query execution, real social API, migration or host activation. The tests do not establish real Postgres transaction semantics; CI pending.
+
 ## November 12, 2026 — Complete local SQLite table inventory (offline)
 
 - Add `neon_schema_inventory.py` for deterministic, privacy-safe metadata inventory across all initialized alpha tables, with explicit nine-table blueprint mapping and unmapped backlog.

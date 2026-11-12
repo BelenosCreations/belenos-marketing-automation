@@ -26,6 +26,10 @@ The first database-portability milestone introduces a review-only PostgreSQL DDL
 
 Beyond the nine-table blueprint, `neon_schema_inventory.py` enumerates **all** initialized BAM SQLite tables, distinguishes previewed versus unported tables, and flags SQLite-specific DDL concepts that require manual PostgreSQL translation. It exposes only schema metadata and a fingerprint—not SQL source, customer rows or secrets—and has no PostgreSQL connectivity. `python -m neon_schema_inventory` prints an ephemeral in-memory inventory for development review. This is a prerequisite assessment, **not an actual migration or hosted-readiness claim**.
 
+### Parameterized Postgres read-contract preview (offline)
+
+The next portability slice defines **parameterized, read-only SQL** for private drafts and non-executable calendar proposals that rechecks a verified, active identity and current tenant membership **inside the same SELECT**. Tests adapt the query syntax to SQLite fixtures to verify current-business isolation and revocation behavior. This is *not* a Neon connection, full Postgres test, identity/session verifier, automatic publisher or production API. A trusted caller must establish the identity before using any future database adapter.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:
