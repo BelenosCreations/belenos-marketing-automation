@@ -32,6 +32,25 @@ class NeonSchemaInventoryTests(unittest.TestCase):
         self.assertFalse(report['contains_customer_records'])
         self.assertFalse(report['contains_raw_schema_ddl'])
 
+    def test_all_seven_postgres_preview_stages_are_counted_honestly(self):
+        report=inventory_sqlite_for_neon(self.db)
+        self.assertEqual(report['reviewed_pg_stage_counts'],
+                         [9,5,7,8,7,4,6])
+        self.assertEqual(report['reviewed_pg_preview_count'],46)
+        self.assertEqual(len(report['reviewed_pg_preview_table_names']),46)
+        self.assertEqual(report['all_table_count'],
+            report['reviewed_pg_preview_count']+
+            report['unreviewed_pg_preview_count'])
+        self.assertNotIn('bam_ai_preferences',
+                         report['unreviewed_pg_preview_table_names'])
+        self.assertIn('bam_ai_preferences',
+                      report['reviewed_pg_preview_table_names'])
+        self.assertEqual(sum(item['reviewed_in_postgresql_preview']
+            for item in report['tables']),46)
+        self.assertFalse(report['postgres_data_migrated'])
+        self.assertFalse(report['postgres_production_ready'])
+        self.assertEqual(report['mapped_subset_count'],9)
+
     def test_inventory_never_exposes_user_draft_or_session(self):
         # Test-only direct storage: values must not be returned by inventory.
         from access_policy import Principal,Role
