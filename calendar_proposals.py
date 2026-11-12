@@ -173,6 +173,39 @@ class CalendarProposals:
                 'status':'proposal_only',
                 'posts_scheduled':0,'publishing_enabled':False}
 
+    def readiness_digest(self,*,token,now):
+        """Private, read-only blockers for held proposals, never a job queue.
+
+        Draft consistency and current manual preference slots are observable;
+        final publication approval, media publication checks and social
+        write-capable integrations are NOT implemented. Never imply a
+        proposal is cleared to publish solely because its draft is current.
+        """
+        proposals=self.list_mine_business(token=token,now=now)
+        entries=[]
+        for item in proposals['items']:
+            blockers=[]
+            if item['content_changed']:
+                blockers.append('draft_requires_refresh')
+            if not item['slot_current']:
+                blockers.append('posting_time_requires_refresh')
+            blockers.extend(('final_publication_review_unavailable',
+                             'social_publishing_unavailable'))
+            entries.append({'request_id':item['request_id'],
+                'draft_revision':item['draft_revision'],
+                'utc_at':item['utc_at'],'status':'held',
+                'blockers':blockers,'publishing_enabled':False})
+        return {'tenant_id':proposals['tenant_id'],
+            'status':'readiness_preview_only',
+            'proposal_count':len(entries),
+            'draft_refresh_count':sum(
+                'draft_requires_refresh' in row['blockers'] for row in entries),
+            'time_refresh_count':sum(
+                'posting_time_requires_refresh' in row['blockers']
+                for row in entries),
+            'items':entries,'posts_scheduled':0,
+            'publishing_enabled':False}
+
     def suggest_unassigned(self, *, token, now):
         """Read-only, draft-only options; never persist or schedule a post.
 

@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+**Fourth verified merge November 12:** PR #24 merged at `b81430bcd3496d2504a2651534e6fa726eb781a7`; full merged main Actions `43174989252` passed, and development was fast-forwarded without force.
+
+**New unverified development batch:** Private held-calendar readiness digest, authenticated GET-only, with real draft/time consistency indicators but permanent no-publication blockers. New code/test/docs require exact-head CI and reviewed PR; no real schedule worker or provider publishing.
+
+
 **Third verified merge November 12:** Google-only invitation API groundwork PR #23 merged to main at `39b3c04f31b8c2fc91b0348bf36d658cf4bcbff7`. Full Actions `43174049448` passed; development fast-forwarded to the exact merge commit.
 
 **Unverified current feature batch:** `BAMInvitationAcceptWSGI`, independent offline gateway acceptance opt-in, and direct-call HTTP-style e2e regressions. Source plus README/CHANGELOG/milestones are staged in a new development commit requiring exact-head GitHub CI and reviewed PR. No production HTTP enrollment, email delivery, hosted service or publishing has been enabled.

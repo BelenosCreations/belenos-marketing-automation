@@ -101,6 +101,24 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         self.assertEqual(meta['status'],'200 OK')
         self.assertIn(b'<svg',icon)
 
+    def test_private_calendar_readiness_does_not_create_jobs(self):
+        owner=self.login('shop')
+        meta,digest=self.call('/api/v1/calendar-readiness',token=owner)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(digest['status'],'readiness_preview_only')
+        self.assertEqual(digest['tenant_id'],'shop')
+        self.assertEqual(digest['proposal_count'],0)
+        self.assertEqual(digest['items'],[])
+        self.assertEqual(digest['posts_scheduled'],0)
+        self.assertFalse(digest['publishing_enabled'])
+        self.assertEqual(self.call('/api/v1/calendar-readiness',
+            method='POST',body={},token=owner)[0]['status'],
+            '405 Method Not Allowed')
+        self.assertEqual(self.call('/api/v1/calendar-readiness',
+            token='invalid')[0]['status'],'401 Unauthorized')
+        self.assertEqual(self.call('/api/v1/calendar-readiness',
+            token=self.login('other'))[1]['tenant_id'],'other')
+
     def test_real_identity_to_dashboard_and_ai_panels(self):
         token=self.login()
         meta,dashboard=self.call('/api/v1/dashboard',token=token)
