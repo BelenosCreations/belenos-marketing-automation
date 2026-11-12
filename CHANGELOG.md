@@ -1,6 +1,14 @@
 # Changelog
 
-## November 12, 2026 — Tenant-private held-draft PostgreSQL inbox pagination (candidate)
+## November 12, 2026 — Owner-private team roster PostgreSQL read (candidate)
+
+- Add signed-in, PostgreSQL session-hash-bound owner-only member roster SELECT with live session/identity/membership authorization and strict business scoping. Match existing offline roster fields for active and inactive members, current owner identity, revision, role and optional verified email.
+- Redact target email when target identity is disabled/unverified; refuse missing self-owner, malformed rows or teams larger than the current 200-member preview cap rather than silently truncating.
+- Test via synthetic SQLite and actual disposable PostgreSQL, including cross-business, viewer, stale-role, expiry and revocation denial; no mutation API or external provider operation.
+- Previous PR #50 passed exact-head and [merged-main Actions 43316746266](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43316746266) on `dd0b3210`. This candidate remains unverified until its own PR/main checks pass. New costs remain $0; no hosted Neon/Render, paid AI or publishing.
+
+
+## November 12, 2026 — Tenant-private held-draft PostgreSQL inbox pagination (verified PR #50)
 
 - Introduce SQL-only signed-in held-draft inbox SELECT with per-statement current identity/member/session checks, strict business scope, optional validated status and bounded stable (created_at, request_id) keyset pagination.
 - Extend the disposable CI-only psycopg session facade to execute inbox reads without opening external connections, scheduling, approving, publishing or changing content.

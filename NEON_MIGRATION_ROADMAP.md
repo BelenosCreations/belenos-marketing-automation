@@ -1,5 +1,10 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Owner-private collaboration roster read (candidate — November 12, 2026)
+
+PR #50 is verified on merged main `dd0b3210`, Actions 43316746266 successful, with development synchronized. Add a read-only owner roster SQL contract to the disposable PostgreSQL CI adapter, compatible with the offline team roster's public fields. Same-statement current owner-session/membership checks protect member emails; unverified or disabled target email values remain redacted, and inactive membership remains visible to the owner for management. Current offline team-management mutations are **not** ported or enabled against Postgres. Validate local SQLite and ephemeral PostgreSQL role/tenant/revocation denial before PR/main merge. No customer data migration, provider API, public gateway or spending authorization.
+
+
 ## Held-draft inbox execution seam (candidate — November 12, 2026)
 
 Starting from verified merged PR #49 (`e8b696cb`, main CI 43312549398 successful), add a tenant-bound list of held drafts to the **disposable CI-only** psycopg adapter. The query takes the hash of a validated session bearer, checks current active membership, session role, verified identity, expiry and revocation in the SELECT, and exposes a capped keyset page using stable creation-time/request-ID ordering. Filter values are allowlisted and parameterized; no customer credentials or draft data are exported. Real ephemeral PostgreSQL and offline SQLite tests are required before merging. This does not deliver a production query adapter, Neon migration, public API, media storage, publication or an authorization to spend money.

@@ -946,5 +946,68 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             separate.close()
 
 
+    def test_ci_psycopg_owner_team_roster_authentication_and_privacy(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        owner_token='Synthetic_PG_Owner_Team_Roster_123456789012345'
+        viewer_token='Synthetic_PG_Viewer_Team_Roster_12345678901234'
+        owner_digest=hashlib.sha256(owner_token.encode('ascii')).hexdigest()
+        viewer_digest=hashlib.sha256(viewer_token.encode('ascii')).hexdigest()
+        for digest,subject,role in (
+            (owner_digest,self.a,'owner'),
+            (viewer_digest,self.viewer,'viewer')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (digest,subject,role))
+        separate=self._connect()
+        try:
+            adapter=EphemeralSessionPostgres(separate)
+            args={'raw_session_token':owner_token,'tenant_id':'shop-a',
+                  'server_now':101}
+            roster=adapter.read_owner_team_roster(**args)
+            self.assertEqual(roster['status'],'private_team_preview')
+            self.assertEqual([m['member_id'] for m in roster['members']],
+                             [self.a,self.viewer])
+            self.assertTrue(roster['members'][0]['is_self'])
+            self.assertEqual(roster['members'][0]['role'],'owner')
+            self.assertTrue(roster['members'][1]['active'])
+            self.assertFalse(roster['members'][1]['is_self'])
+            self.assertFalse(roster['publishing_enabled'])
+            self.assertNotIn(self.b,str(roster))
+            with self.assertRaises(PermissionError):
+                adapter.read_owner_team_roster(
+                    raw_session_token=owner_token,
+                    tenant_id='shop-b',server_now=101)
+            with self.assertRaises(PermissionError):
+                adapter.read_owner_team_roster(
+                    raw_session_token=viewer_token,
+                    tenant_id='shop-a',server_now=101)
+            self.conn.execute("""UPDATE bam_identities SET email_verified=0
+                WHERE subject_id=%s""",(self.viewer,))
+            self.assertIsNone(
+                adapter.read_owner_team_roster(**args)['members'][1]['email'])
+            self.conn.execute("""UPDATE members SET active=0,revision=2
+                WHERE subject_id=%s AND tenant_id='shop-a'""",
+                (self.viewer,))
+            inactive=adapter.read_owner_team_roster(**args)['members'][1]
+            self.assertFalse(inactive['active'])
+            self.assertEqual(inactive['revision'],2)
+            self.conn.execute("""UPDATE members SET role='viewer'
+                WHERE subject_id=%s AND tenant_id='shop-a'""",
+                (self.a,))
+            with self.assertRaises(PermissionError):
+                adapter.read_owner_team_roster(**args)
+            self.conn.execute("""UPDATE members SET role='owner'
+                WHERE subject_id=%s AND tenant_id='shop-a'""",
+                (self.a,))
+            self.conn.execute("""UPDATE sessions SET revoked_at=101
+                WHERE token_hash=%s""",(owner_digest,))
+            with self.assertRaises(PermissionError):
+                adapter.read_owner_team_roster(**args)
+        finally:
+            separate.close()
+
+
 if __name__=='__main__':
     unittest.main()
