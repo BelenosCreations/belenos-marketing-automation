@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Local migration integrity preflight | **Aggregate-only orphan/role/token/calendar audit, pending CI** | Must pass on an approved staging migration from encrypted backup and then real Neon referential/transaction tests; no user data migrated |
 | Postgres tenant read-query seam | **Parameterized SQL contract and local shape tests, pending CI** | Requires independently authenticated production caller and real Neon transaction/tenant isolation tests; no actual Postgres connection verified |
 | Complete local table portability inventory | **Offline metadata-only inventory, pending CI** | Manual PostgreSQL mapping and production-tested transactions for **all** tables; inventory alone is not migration evidence |
 | Neon schema portability start | **Partial nine-table PostgreSQL DDL review preview, offline only; pending CI** | Port every additional table, build tested PostgreSQL data adapter/migrations, verify row parity and isolation, encrypted backups and actual hosted restore; no live migration performed |

@@ -2,6 +2,10 @@
 
 **Unverified additional Neon portability slice:** `neon_scoped_queries.py` adds pure parameterized SQL for tenant-scoped held drafts and calendar proposals with same-statement active identity/member checks and test-only SQLite query execution. Requires exact-head CI. These are not hosted API endpoints, no real Neon DB driver and no live publishing.
 
+**New verified starting baseline:** PR #31 merged at `2615a0ac18bb70177a971f23a09a9bf0abb01e51`, [merged-main CI 43216601082](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43216601082) **success**, and development fast-forwarded without force.
+
+**Current unverified work:** private offline Neon relational/integrity preflight with no data export. Must pass exact branch and PR CI and merge to main with successful merged-main CI before development sync. No hosted PostgreSQL, app deployment, invoice or authorized paid services.
+
 **Verified previous milestone:** PR #30 merged at `1934a4dd183a261cf2561da025fa383087acc852` and [merged-main GitHub Actions 43215433909](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43215433909) **success**. Development synchronized without force.
 
 **New unverified work:** all-table local SQLite metadata inventory for Neon migration backlog, no user data or SQL text. Resume by checking exact SHA CI and merging via PR. Additional PostgreSQL read/query adaptation, transactional and identity tests are still needed. No hosted services have been created or paid.

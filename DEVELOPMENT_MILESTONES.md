@@ -1048,3 +1048,7 @@ Add deterministic all-table SQLite metadata inventory, isolate the nine reviewed
 ## November 12, 2026 — Postgres prepared read-query contract seam (offline)
 
 Pure parameterized SQL builder for held drafts and non-executable calendar proposals. Each SQL statement joins active verified identities and current business memberships to avoid stale cross-tenant read checks; tests run query shape against SQLite fixtures with an explicit test-only placeholder adapter. No provider connection, actual Neon driver, session authentication, migration, paid hosting or social publish. Pending exact-SHA CI.
+
+## November 12, 2026 — Neon migration read-only integrity preflight (offline)
+
+Audit SQLite relational integrity and aggregate-only anomalies in hashed sessions, verified identities, role revocation, cross-table orphan rows, case-insensitive duplicate emails and calendar references. Tests on synthetic offline fixtures enforce that no user rows, raw credentials or draft text ever leave the preflight, and that even a clean result does not imply hosted migration readiness. No database mutation, provider/network call, billable service or publishing. Exact GitHub CI pending.

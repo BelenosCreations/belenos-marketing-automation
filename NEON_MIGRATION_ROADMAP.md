@@ -16,6 +16,10 @@ Run `python -m neon_schema_inventory` for a no-data, ephemeral initialized schem
 
 `neon_scoped_queries.py` defines placeholder-bound PostgreSQL SELECTs for held drafts and manual calendar proposals. Both queries join current membership and active/verified BAM identity in the **same statement** and return no social publishing capability. Their shapes are regression-tested with local SQLite data via a test-only `%s`→`?` placeholder adapter, not a real PostgreSQL connection. The module never executes queries; a future independently authenticated server and DB layer must validate session proof, data types, transaction isolation and performance under real Neon.
 
+## Offline integrity and privacy preflight
+
+`neon_integrity_preflight.py` performs read-only `PRAGMA integrity_check`/`foreign_key_check` and aggregate-only cross-table checks for membership, identities, credentials, sessions, normalized email collisions, role/tokens and held calendar pointers. The strict fixture helper raises on findings but still refuses to declare production readiness. Run it **only on trusted offline synthetic test data** in this phase. It exports no customer rows or secrets, does not connect to Postgres and does not validate production restore, privacy or independent transaction isolation. Some existing offline bootstrapped identities may intentionally have no verified identity record; those conditions appropriately appear as future migration blockers.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.
