@@ -88,7 +88,9 @@ class BAMCalendarProposalsWSGI:
                 not result['tenant_id'].strip() or
                 len(result['tenant_id'])>128 or
                 result.get('status')!=('suggestion_preview_only'
-                    if method=='SUGGESTIONS' else 'proposal_only') or
+                    if method=='SUGGESTIONS' else
+                    'readiness_preview_only' if method=='READINESS'
+                    else 'proposal_only') or
                 result.get('posts_scheduled')!=0 or
                 result.get('publishing_enabled') is not False):
             raise RuntimeError('Unsafe calendar proposal result')
