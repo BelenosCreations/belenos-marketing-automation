@@ -12,3 +12,15 @@ venv/
 .coverage
 dist/
 build/
+# Private credentials, signing and recovery material.
+*.pem
+*.key
+*.p8
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.gpg
+*.asc
+**/recovery-key.b64
+**/recovery_key.b64
