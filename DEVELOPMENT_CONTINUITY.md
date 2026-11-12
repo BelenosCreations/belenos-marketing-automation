@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+**Verified starting point (November 12, 2026):** `main` `a443097752586f9835086668fdb0eb89b48eeaa2` passed [Actions 43145414577](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43145414577), and development `6506d8ca84d53e2a1aa6013064c65dabf6237ceb` passed [Actions 43145613961](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43145613961). Main was only one commit behind development before this batch.
+
+**New code milestone, awaiting exact-head verification:** `93caf1ab18a6adf299ccffc42da1012699b91e3c` tightens offline sponsored-AI request/response boundaries and adds regressions. The subsequent documentation commit needs its own full CI. Develop only on `development/phase-3-5-account-directory`; merge green milestones to `main` through a PR and fast-forward development after successful main CI. Do not enable paid OpenAI, external OAuth, public deployment or publishing.
+
+
 **Date:** November 11, 2026 (America/New_York).
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
 **Active development:** `development/phase-3-5-account-directory`.

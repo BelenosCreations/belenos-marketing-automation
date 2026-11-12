@@ -44,7 +44,9 @@ class OpenAIResponsesExecutorTests(unittest.TestCase):
         for patch in ({'mode':'own_openai_key'},
                       {'publishing_enabled':True},
                       {'provider':'third_party'},
-                      {'input_json':'not json'}):
+                      {'input_json':'not json'},
+                      {'tenant_id':None},{'subject_id':''},
+                      {'tenant_id':True},{'subject_id':'s'*129}):
             with self.assertRaises((ValueError,PermissionError)):
                 executor(request={**request(),**patch},max_output_tokens=100)
         with self.assertRaises(ValueError):
@@ -71,6 +73,38 @@ class OpenAIResponsesExecutorTests(unittest.TestCase):
         refusal['output'][0]['content']=[{'type':'refusal','refusal':'No'}]
         with self.assertRaises(ValueError):
             OpenAIResponsesExecutor._extract(refusal)
+
+    def test_untrusted_provider_json_and_component_fields_fail_closed(self):
+        for text in (
+            '{"post_text":"First","post_text":"Override","image_prompt":null}',
+            '{"post_text":"Hi","image_prompt":null,"image_prompt":"Oops"}',
+            '{"post_text":[],"image_prompt":null}',
+            '{"post_text":" ","image_prompt":null}',
+            '{"post_text":"Hi","image_prompt":123}',
+            '{"post_text":"Hi","image_prompt":" "}',
+            json.dumps({'post_text':'P'*4001,'image_prompt':None}),
+            json.dumps({'post_text':'OK','image_prompt':'I'*2001}),
+        ):
+            with self.subTest(text=text[:70]),self.assertRaises(ValueError):
+                OpenAIResponsesExecutor._extract(response(text))
+        raw=json.dumps(response())
+        top_duplicate=raw.replace('"status": "completed"',
+            '"status": "completed", "status": "completed"',1)
+        with self.assertRaisesRegex(ValueError,'Duplicate provider JSON field'):
+            OpenAIResponsesExecutor._extract(top_duplicate)
+
+    def test_usage_is_observed_even_if_duplicate_generated_fields_are_rejected(self):
+        raw=response('{"post_text":"A","post_text":"B","image_prompt":null}')
+        raw['id']='resp_duplicate_output_12345678'
+        raw['usage']={'input_tokens':45,'output_tokens':15}
+        seen=[]
+        executor=OpenAIResponsesExecutor(
+            transport=lambda payload:raw,
+            usage_observer=lambda **kwargs:seen.append(kwargs))
+        with self.assertRaisesRegex(ValueError,'Duplicate provider JSON field'):
+            executor(request=request(),max_output_tokens=250)
+        self.assertEqual(len(seen),1)
+        self.assertEqual(seen[0]['tenant_id'],'shop')
 
     def test_usage_observer_receives_scoped_provider_counts(self):
         observed=[]
@@ -134,6 +168,43 @@ class OpenAIResponsesExecutorTests(unittest.TestCase):
             'SELECT trusted_usage_hash FROM bam_ai_cost_events').fetchall()
         self.assertTrue(all(row[0] is not None for row in stored))
         self.assertNotIn('resp_offline_',str(stored))
+        db.close()
+
+    def test_failed_content_still_records_trusted_usage_once(self):
+        db=sqlite3.connect(':memory:')
+        ledger=AICostLedger(db)
+        pricing=AITokenPricing(Decimal('0.20'),Decimal('0.80'))
+        raw=response('{"post_text":"Hi","image_prompt":null,"published":true}')
+        raw['id']='resp_invalid_copy_1234567890abcdef'
+        raw['usage']={'input_tokens':300,'output_tokens':100}
+        executor=OpenAIResponsesExecutor(
+            transport=lambda payload:raw,
+            usage_observer=lambda **usage:ledger.record_trusted(
+                **usage,pricing=pricing,now=103))
+        for _ in range(2):
+            with self.assertRaises(ValueError):
+                executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],1)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')[
+                'estimated_micro_usd'],140)
+        # An explicitly incomplete response with valid usage is also
+        # accounted for before being held out of the draft pipeline.
+        raw['id']='resp_incomplete_1234567890abcdef'
+        raw['status']='incomplete'
+        with self.assertRaises(ValueError):
+            executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],2)
+        # Missing provider usage is an unresolved accounting event, NOT
+        # evidence that no tokens were billed. It still cannot stage copy.
+        raw['id']='resp_unknown_usage_1234567890abcdef'
+        raw.pop('usage')
+        with self.assertRaises(ValueError):
+            executor(request=request(),max_output_tokens=500)
+        self.assertEqual(ledger.summary_trusted(
+            tenant_id='shop',subject_id='owner')['events'],2)
         db.close()
 
     def test_usage_observer_fails_closed_on_missing_or_bad_provider_id(self):

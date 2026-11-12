@@ -14,6 +14,15 @@ _MAX_INPUT_BYTES=32768
 _MAX_RESPONSE_BYTES=65536
 _PROVIDER_ID=re.compile(r'resp_[A-Za-z0-9_-]{8,200}\Z')
 
+def _reject_duplicate_json_fields(pairs):
+    """Refuse last-wins provider and generated-text JSON parsing."""
+    value={}
+    for key,part in pairs:
+        if key in value:
+            raise ValueError('Duplicate provider JSON field')
+        value[key]=part
+    return value
+
 class OpenAIResponsesExecutor:
     """Callable adapter accepted by AIDraftGenerationWorkflow."""
 
@@ -38,6 +47,12 @@ class OpenAIResponsesExecutor:
             raise PermissionError('Personal-key mode requires separate executor')
         if type(max_output_tokens) is not int or not 1<=max_output_tokens<=16384:
             raise ValueError('Invalid reserved token limit')
+        # A missing trusted scope must fail BEFORE any possible paid dispatch;
+        # otherwise a response could incur usage without a safe ledger owner.
+        if any(type(request.get(field)) is not str or
+               not request[field].strip() or len(request[field])>128
+               for field in ('tenant_id','subject_id')):
+            raise ValueError('Trusted business and user scope required')
         instructions=request.get('instructions')
         input_json=request.get('input_json')
         if (type(instructions) is not str or not instructions.strip() or
@@ -73,7 +88,10 @@ class OpenAIResponsesExecutor:
             'tools':[],
             'parallel_tool_calls':False}
         response=self.transport(payload)
-        parsed=self._extract(response)
+        # Meter a trusted provider's reported token usage BEFORE checking
+        # whether its text is suitable for staging. A refused, incomplete
+        # or malformed generated draft may still represent costly tokens;
+        # don't silently undercount those attempts in the local ledger.
         if self.usage_observer is not None:
             if type(response) is not dict:
                 raise ValueError('Structured provider usage required')
@@ -97,7 +115,7 @@ class OpenAIResponsesExecutor:
                 input_tokens=usage['input_tokens'],
                 output_tokens=usage['output_tokens'],
                 usage_ref=usage_ref)
-        return parsed
+        return self._extract(response)
 
     @staticmethod
     def _extract(response):
@@ -105,7 +123,8 @@ class OpenAIResponsesExecutor:
             if len(response.encode('utf-8'))>_MAX_RESPONSE_BYTES:
                 raise ValueError('Provider response too large')
             try:
-                response=json.loads(response)
+                response=json.loads(response,
+                    object_pairs_hook=_reject_duplicate_json_fields)
             except json.JSONDecodeError as exc:
                 raise ValueError('Invalid provider JSON') from exc
         if type(response) is not dict:
@@ -132,9 +151,17 @@ class OpenAIResponsesExecutor:
         if len(texts)!=1 or len(texts[0].encode('utf-8'))>_MAX_RESPONSE_BYTES:
             raise ValueError('Expected exactly one structured response')
         try:
-            parsed=json.loads(texts[0])
+            parsed=json.loads(texts[0],
+                object_pairs_hook=_reject_duplicate_json_fields)
         except json.JSONDecodeError as exc:
             raise ValueError('Invalid generated JSON') from exc
         if type(parsed) is not dict or set(parsed)!={'post_text','image_prompt'}:
             raise ValueError('Invalid structured draft fields')
+        post=parsed['post_text']
+        image=parsed['image_prompt']
+        if type(post) is not str or not post.strip() or len(post)>4000:
+            raise ValueError('Invalid generated post')
+        if image is not None and (
+                type(image) is not str or not image.strip() or len(image)>2000):
+            raise ValueError('Invalid generated image prompt')
         return parsed
