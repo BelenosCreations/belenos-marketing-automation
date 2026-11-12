@@ -1,5 +1,7 @@
 import io
 import json
+import sqlite3
+from ai_sponsorship import SponsoredAIQuota
 import unittest
 from openai_https_transport import OpenAITransport
 
@@ -30,6 +32,49 @@ class OpenAITransportTests(unittest.TestCase):
             transport(payload())
         self.assertEqual(calls,[])
 
+    def test_enabled_transport_requires_independent_dispatch_authority(self):
+        calls=[]
+        kwargs={'key_resolver':lambda:calls.append('key'),
+                'opener':lambda *a,**kw:calls.append('network'),
+                'enabled':True}
+        with self.assertRaises(ValueError):
+            OpenAITransport(**kwargs)
+        for invalid in (False,0,1,'true',None):
+            if invalid is None:continue
+            if callable(invalid):continue
+            with self.assertRaises(ValueError):
+                OpenAITransport(**kwargs,dispatch_guard=invalid)
+        for guard in (lambda:False,lambda:1,
+                      lambda:(_ for _ in ()).throw(
+                          RuntimeError('secret operator details'))):
+            transport=OpenAITransport(**kwargs,dispatch_guard=guard)
+            with self.assertRaisesRegex(
+                    PermissionError,'OpenAI dispatch authorization unavailable'
+                    ) as cm:
+                transport(payload())
+            self.assertNotIn('secret',str(cm.exception))
+        self.assertEqual(calls,[])
+
+    def test_trusted_quota_pause_is_rechecked_before_key_resolution(self):
+        db=sqlite3.connect(':memory:')
+        quota=SponsoredAIQuota(db=db,policy_store=None)
+        observed=[]
+        transport=OpenAITransport(
+            key_resolver=lambda:(observed.append('key') or 'sk-'+'a'*30),
+            opener=lambda request,**kwargs:(
+                observed.append('network') or FakeResponse(
+                    json.dumps({'status':'completed'}).encode())),
+            enabled=True,
+            dispatch_guard=quota.authorize_new_dispatch_trusted)
+        quota.set_operator_paused_trusted(paused=True,now=100)
+        with self.assertRaises(PermissionError):
+            transport(payload())
+        self.assertEqual(observed,[])
+        quota.set_operator_paused_trusted(paused=False,now=101)
+        self.assertEqual(transport(payload())['status'],'completed')
+        self.assertEqual(observed,['key','network'])
+        db.close()
+
     def test_enabled_transport_uses_only_server_secret(self):
         seen=[]
         def opener(request,*,timeout):
@@ -38,7 +83,8 @@ class OpenAITransportTests(unittest.TestCase):
                 'output':[]}).encode())
         transport=OpenAITransport(
             key_resolver=lambda:'sk-'+'a'*30,
-            opener=opener,enabled=True,timeout_seconds=8)
+            opener=opener,enabled=True,timeout_seconds=8,
+            dispatch_guard=lambda:True)
         result=transport(payload())
         self.assertEqual(result['status'],'completed')
         request,timeout=seen[0]
@@ -53,7 +99,8 @@ class OpenAITransportTests(unittest.TestCase):
         calls=[]
         transport=OpenAITransport(
             key_resolver=lambda:calls.append('key'),
-            opener=lambda *a,**kw:None,enabled=True)
+            opener=lambda *a,**kw:None,enabled=True,
+            dispatch_guard=lambda:True)
         for change in ({'store':True},{'tools':[{'type':'web_search'}]},
                        {'text':{}},{'max_output_tokens':'bad'},
                        {'model':'unapproved'}):
@@ -66,7 +113,8 @@ class OpenAITransportTests(unittest.TestCase):
             raise OSError('secret network diagnostics')
         transport=OpenAITransport(
             key_resolver=lambda:'sk-'+'a'*30,
-            opener=failing,enabled=True)
+            opener=failing,enabled=True,
+            dispatch_guard=lambda:True)
         with self.assertRaisesRegex(RuntimeError,'OpenAI request unavailable') as cm:
             transport(payload())
         self.assertNotIn('secret',str(cm.exception))

@@ -18,6 +18,14 @@ class SponsoredAITests(unittest.TestCase):
         self.policy=AIPolicyStore(db=self.db,sessions=self.sessions,directory=directory)
         self.quota=SponsoredAIQuota(db=self.db,policy_store=self.policy)
 
+    def test_trusted_dispatch_authorization_is_separate_from_quota(self):
+        self.assertIs(self.quota.authorize_new_dispatch_trusted(),True)
+        self.quota.set_operator_paused_trusted(paused=True,now=101)
+        with self.assertRaises(PermissionError):
+            self.quota.authorize_new_dispatch_trusted()
+        self.quota.set_operator_paused_trusted(paused=False,now=102)
+        self.assertIs(self.quota.authorize_new_dispatch_trusted(),True)
+
     def test_operator_pause_blocks_new_sponsored_quota_without_refunds(self):
         plan=SponsorshipPlan('owner',5,400,
             max_request_estimated_micro_usd=100,
