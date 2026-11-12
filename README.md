@@ -10,6 +10,10 @@
 
 The offline BAM WSGI composition now checks for loopback-only network context: requests advertising public origins or reverse proxies are denied before any route. This is an **offline defense-in-depth regression**, not production hosting or an endorsed public server. A separate hardened production runtime and explicit budget/hosting decision remain prerequisites. See [private beta infrastructure proposal](PRIVATE_BETA_INFRASTRUCTURE.md).
 
+### Atomic account login-failure accounting (offline Alpha)
+
+The persistent account-level login throttle now records failures in one SQLite UPSERT instead of a separate read/write, preventing lost increments across independent application/database clients. Trusted timestamps are strictly validated and stale events cannot reset an active lockout window. Concurrent two-connection regression coverage is included. This is **not yet a production distributed rate limiter**: checking the throttle and performing authentication remain separate operations, and trusted per-IP/device/global limits are still required.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

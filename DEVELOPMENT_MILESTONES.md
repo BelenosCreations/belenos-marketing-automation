@@ -1028,3 +1028,7 @@ Production hosting, verified enrollment, secure vault, direct Meta connection, p
 ## November 12, 2026 — Offline network-exposure guard and architecture planning
 
 Hardening `BAMOfflineGateway` against public network and proxy metadata while preserving direct-call alpha tests. The guard runs before any route and is **not** production-grade hosting isolation. Add tests for DNS rebinding-like Host values, public client IPs, forwarded headers, private team routes and assets. Document the shared-backend beta path with separate production application factory, transactional database, media quarantine, secure credential vault, backup/restore and approved budget. Exact GitHub CI pending; no external activation.
+
+## November 12, 2026 — Atomic multi-client login failure counters (offline)
+
+The existing SQLite email-hash throttle now writes failures atomically via UPSERT, across two independent clients. Strict, non-negative trusted timestamps reject malformed clocks; out-of-order events cannot reset the current window. Tests cover a concurrent two-thread/two-connection attempt burst, lockout, reset and no plaintext identifiers. This is a shared-state safety foundation **only**, not atomic admission, an IP/global rate limiter, or permission to expose authentication publicly. Exact-head GitHub CI and reviewed PR pending.

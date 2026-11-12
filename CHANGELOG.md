@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Atomic shared-account login throttling groundwork
+
+- Replace the offline throttle's read-then-write count updates with a single SQLite UPSERT, preventing lost increments when independent app/database clients log failures simultaneously.
+- Validate trusted timestamps and prevent an older failure event from rewinding the current lockout window.
+- Add independent two-connection concurrent tests, window-reset and malformed-clock regressions.
+- **Source code CI pending** on the exact new branch head; this checkpoint is not production-ready authentication. Rate-limit check and credential verification remain separate operations, and per-IP/device/global protections are still missing. No hosting, paid AI or social publishing is activated.
+
 ## November 12, 2026 — Offline gateway network isolation and beta architecture plan
 
 - Add a fail-closed test-gateway guard for public remote IPs, non-loopback Host/ServerName and forwarded-proxy metadata. Enforce it before sign-in, team invitations or UI assets.
