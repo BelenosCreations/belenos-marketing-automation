@@ -17,6 +17,8 @@ from neon_business_analytics_schema import (BUSINESS_ANALYTICS_TABLES,
     business_analytics_ddl_preview)
 from neon_tenant_content_schema import (TENANT_CONTENT_TABLES,
     tenant_content_ddl_preview)
+from neon_review_security_schema import (REVIEW_SECURITY_TABLES,
+    review_security_ddl_preview)
 
 _CI_SCHEMA='bam_ci_integration'
 _PLANS=(
@@ -26,6 +28,7 @@ _PLANS=(
     (4,ai_budget_ddl_preview()),
     (5,business_analytics_ddl_preview()),
     (6,tenant_content_ddl_preview()),
+    (7,review_security_ddl_preview()),
 )
 _JOURNAL='bam_ci_migration_journal'
 
@@ -83,7 +86,7 @@ def apply_ephemeral_ci_migrations(conn):
             (_CI_SCHEMA,)).fetchall()}
         required=set(TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
                      BUDGET_TABLE_NAMES+BUSINESS_ANALYTICS_TABLES+
-                     TENANT_CONTENT_TABLES+(_JOURNAL,))
+                     TENANT_CONTENT_TABLES+REVIEW_SECURITY_TABLES+(_JOURNAL,))
         if names!=required:
             raise ValueError('Disposable PostgreSQL schema drift detected')
     return {'status':'ephemeral_ci_schema_verified',

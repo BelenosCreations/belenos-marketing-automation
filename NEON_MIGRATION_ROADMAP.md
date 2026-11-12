@@ -54,6 +54,10 @@ The public repository can now run standard GitHub-hosted runners with temporary 
 
 `neon_tenant_content_schema.py` previews four legacy tenant_posts, tenant_approvals, tenant_events and scheduling_settings tables, bringing the reviewed subset to **40 tables**. Explicit tenant/post composite foreign keys keep decisions attached to the correct business, while `neon_scoped_tenant_content.py` builds non-executing, active identity/membership checked review and scheduling read queries. The source `approved` value is an **offline editorial decision**, never a publishing authorization. No actual scheduling dispatcher, social-provider connection or hosted service exists.
 
+## Seventh disposable CI stage: editorial provenance, approved facts and email actions
+
+`neon_review_security_schema.py` adds six source-compatible PostgreSQL DDL previews (46 total) for editorial source/identity attestations, nonpublishing inbox, signed owner approval intents, revoked/expiring TruthGuard facts, creator account screening and hashed email verify/reset purposes. `neon_scoped_review_facts.py` generates a parameterized owner/manager read guarded by active verified member and expiration/revocation constraints. Temporary PostgreSQL tests verify denial of cross-business facts and invalid publish-like statuses; no actual email delivery, provider OAuth, provider posting or customer data migration.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

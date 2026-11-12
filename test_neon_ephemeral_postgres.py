@@ -15,6 +15,8 @@ from neon_identity_provider_schema import EXTRA_TABLE_NAMES
 from neon_ai_budget_schema import BUDGET_TABLE_NAMES,ai_budget_ddl_preview
 from neon_business_analytics_schema import BUSINESS_ANALYTICS_TABLES
 from neon_tenant_content_schema import TENANT_CONTENT_TABLES
+from neon_review_security_schema import REVIEW_SECURITY_TABLES
+from neon_scoped_review_facts import prepare_current_private_facts
 from neon_scoped_tenant_content import (prepare_tenant_post_review,
     prepare_tenant_schedule_read)
 from neon_scoped_business_analytics import (prepare_business_sources_read,
@@ -70,7 +72,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
             tuple(name for name in BUDGET_TABLE_NAMES if
                 name!='bam_ai_operator_control')+
-            BUSINESS_ANALYTICS_TABLES+TENANT_CONTENT_TABLES)+' CASCADE')
+            BUSINESS_ANALYTICS_TABLES+TENANT_CONTENT_TABLES+
+            REVIEW_SECURITY_TABLES)+' CASCADE')
         self.conn.execute("""UPDATE bam_ai_operator_control
             SET paused=1,updated_at=0 WHERE control_id=1""")
         self.a='identityA'
@@ -102,8 +105,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
     def test_ci_schema_migration_journal_is_idempotent(self):
-        self.assertEqual(self.migration_result['versions_present'],6)
-        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5,6])
+        self.assertEqual(self.migration_result['versions_present'],7)
+        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5,6,7])
         reread=apply_ephemeral_ci_migrations(self.conn)
         self.assertEqual(reread['versions_applied'],[])
         self.assertFalse(reread['migration_production_ready'])
@@ -111,7 +114,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertFalse(reread['neon_connected'])
         self.assertFalse(reread['social_publishing_enabled'])
         self.assertEqual(self.conn.execute(
-            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],6)
+            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],7)
 
     def test_schema_digest_tamper_is_refused_without_changing_data(self):
         old=self.conn.execute('SELECT checksum FROM bam_ci_migration_journal '
@@ -160,7 +163,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual({name for (name,) in rows},
                          set(TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
                              BUDGET_TABLE_NAMES+BUSINESS_ANALYTICS_TABLES+
-                             TENANT_CONTENT_TABLES+
+                             TENANT_CONTENT_TABLES+REVIEW_SECURITY_TABLES+
                              ('bam_ci_migration_journal',)))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
@@ -282,6 +285,59 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute("""SELECT paused
             FROM bam_ai_operator_control WHERE control_id=1"""
             ).fetchone()[0],1)
+
+    def test_private_approved_facts_do_not_leak_to_other_tenants(self):
+        self.conn.execute("""INSERT INTO truthguard_facts
+            (tenant_id,fact_id,claim_key,value,source,approved_by,
+             approved_at,expires_at)
+            VALUES ('shop-a','fact-1','hours','Synthetic test fact',
+                    'internal-fixture',%s,101,150)""",(self.a,))
+        self.conn.execute("""INSERT INTO truthguard_facts
+            (tenant_id,fact_id,claim_key,value,source,approved_by,
+             approved_at,expires_at)
+            VALUES ('shop-b','fact-1','hours','Other business private fact',
+                    'internal-fixture',%s,101,150)""",(self.b,))
+        sql,params=prepare_current_private_facts(
+            tenant_id='shop-a',verified_subject_id=self.a,server_now=120)
+        rows=self.conn.execute(sql,params).fetchall()
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0][2],'Synthetic test fact')
+        for tenant,actor in (
+            ('shop-a',self.viewer),('shop-b',self.a)):
+            sql,params=prepare_current_private_facts(
+                tenant_id=tenant,verified_subject_id=actor,server_now=120)
+            self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+        sql,params=prepare_current_private_facts(
+            tenant_id='shop-a',verified_subject_id=self.a,server_now=151)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+        self.conn.execute("""UPDATE truthguard_facts SET revoked_at=110
+            WHERE tenant_id='shop-a' AND fact_id='fact-1'""")
+        sql,params=prepare_current_private_facts(
+            tenant_id='shop-a',verified_subject_id=self.a,server_now=120)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+
+    def test_editorial_and_email_states_do_not_authorize_publishing(self):
+        self.conn.execute("""INSERT INTO editorial_inbox
+            (tenant_id,platform,account_id,original_url,topic,summary,
+             status,reason,candidate_digest)
+            VALUES ('shop-a','facebook','page','https://example.invalid/x',
+                    'events','synthetic item','review','needs-review',%s)""",
+                    ('a'*64,))
+        with self.assertRaises(self.psycopg.errors.CheckViolation):
+            self.conn.execute("""UPDATE editorial_inbox SET status='published'
+                WHERE tenant_id='shop-a'""")
+        with self.assertRaises(self.psycopg.errors.CheckViolation):
+            self.conn.execute("""INSERT INTO creator_identities
+                (tenant_id,platform,account_id,status,reason)
+                VALUES ('shop-a','facebook','page','published','bad')""")
+        with self.assertRaises(self.psycopg.errors.CheckViolation):
+            self.conn.execute("""INSERT INTO bam_email_actions
+                (token_hash,subject_id,purpose,expires_at)
+                VALUES (%s,%s,'send_marketing',200)""",
+                ('f'*64,self.a))
+        self.assertEqual(self.conn.execute("""SELECT status
+            FROM editorial_inbox WHERE tenant_id='shop-a'""").fetchone(),
+            ('review',))
 
     def test_manual_tenant_post_approval_fk_does_not_publish(self):
         for tenant in ('shop-a','shop-b'):

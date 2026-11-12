@@ -1092,3 +1092,7 @@ Add seven schema-preview tables, source SQLite metadata parity and prepared owne
 ## November 12, 2026 — Legacy tenant-content and scheduling PostgreSQL stage six
 
 Preview four legacy source tables: tenant_posts, tenant_approvals, tenant_events and scheduling_settings. Source SQLite parity, owner-scoped read contracts and disposable PostgreSQL tests for cross-business denial and composite FK constraints, plus a hard rejection of publishing status. Reviewed table coverage 40; no runnable posting queue or third-party provider. Full PR/main CI pending, $0 extra-cost policy preserved.
+
+## November 12, 2026 — Private editorial/TruthGuard/email security schema stage seven
+
+Add six reviewed table previews and a strict no-data-export SQLite shape check. Stage 7 disposable Postgres tests verify tenant-scoped approved-fact visibility, revoked/expired fact denial, editorial state constraints, creator status constraints and hashed recovery purpose restrictions. Reviewed preview reaches 46 tables. No actual email, provider publishing, hosted services or extra spend. README, CHANGELOG and continuity updated; CI pending.

@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Editorial and sensitive-security PostgreSQL stage seven (candidate)
+
+- Review six more source schema tables (46 PostgreSQL CI previews total): editorial identity/competitor attestations, private editorial inbox with candidate fingerprint, owner approval intents with content digest, TruthGuard business facts, creator account risk status and hashed credential recovery actions.
+- Retain offline status constraints and TruthGuard tenant/revocation index; prepared current-member private fact queries exclude expired/revoked values and cross-business access.
+- Test local source parity/no secret export plus real temporary PostgreSQL status checks. No real email delivery, user credentials, provider approval, live publishing or extra costs. Exact PR/main CI pending.
+
 ## November 12, 2026 — Nonpublishing tenant post/review/scheduling PostgreSQL stage six (candidate)
 
 - Add four Postgres DDL previews for tenant posts, review decisions, events and manual scheduling preferences (40 reviewed tables total).
