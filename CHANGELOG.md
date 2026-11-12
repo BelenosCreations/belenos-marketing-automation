@@ -1,5 +1,14 @@
 # Changelog
 
+## November 12, 2026 — Trusted offline invitation redemption for new team members
+
+- Extracted the existing password-KDF verification into an internal verified-identity check that does not require existing business membership, issue a login session or change permissions. Normal member logins still require current business membership.
+- Added a trusted invitation password-redemption entry point for previously email-verified BAM identities. It verifies password first, then reuses the existing atomic, one-time tenant-scoped acceptance checks and audit.
+- Added negative tests for wrong password, wrong identity, unverified identity, malformed token, token replay and business isolation. Successful redemption permits the new member's normal session afterward.
+- **CI status:** exact-head Actions must pass before merging. No public acceptance endpoint, unauthenticated signup, invitation email provider or production rate-limiting service is present.
+- **Activation:** offline-only, no paid AI, hosted beta or live publishing.
+
+
 ## November 12, 2026 — Strict offline OpenAI draft and request boundaries
 
 - Refuse missing/malformed tenant or user scopes before invoking any sponsored Responses transport. Reject duplicate JSON keys at the provider-envelope or generated-copy level, blank/non-string posts, and oversized copy or image prompts before any draft can be staged.
