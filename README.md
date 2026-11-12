@@ -4,89 +4,13 @@
 
 **Database portability inventory (November 12):** The local no-data inventory now distinguishes **46 source tables with reviewed PostgreSQL DDL previews across seven disposable CI stages** from initialized source tables still without preview coverage, while showing which reviewed optional tables are not yet initialized. These are *not* migrated data or a working PostgreSQL application. PR #46 merged at bc037ded, and [full main CI 43268647305](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43268647305) passed. This new inventory candidate still requires its own CI. Hosting and all additional spend remain unapproved.
 
+**Current new security milestone (November 12, 2026):** Owner-private team invitation previews now have a SQL-only token-hash-authenticated PostgreSQL read contract, with source SQLite and disposable PostgreSQL isolation tests; no outbound invitation delivery or hosted team enrollment is enabled. Previous verified main: PR #47 merged at `5176238e` and [Actions 43270187751](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43270187751) passed. This candidate needs its own CI.
+
 **BAM is an AI-assisted marketing planning, creation, collaboration, scheduling, and analytics platform for businesses.** It is intended to replace the need for a separate marketing scheduler such as Metricool for its core supported workflows. Each business has its own workspace, brand voice, content, social connections, team permissions, and reporting. BAM is the product name; it is **not limited to Belenos Creations or any particular industry**.
 
 > **Current status — November 12, 2026:** **Offline Alpha, not a deployed commercial service. The source repository is public; the app is not.** A responsive, authenticated local web interface and extensive Python/JavaScript backend foundations exist on the active development branch. Real social-account OAuth, live analytics, executable post scheduling/publishing, paid OpenAI calls, production hosting, and an Android APK are **not yet active**. Publishing remains **disabled** and requires separate, explicit authorization. See [alpha readiness](ALPHA_BETA_READINESS.md) and [development continuity](DEVELOPMENT_CONTINUITY.md).
 
 **Last fully verified code checkpoint before this authenticated-read candidate (November 12, 2026):** `main` and `development/phase-3-5-account-directory` synchronized at `3f41a028ae96ef681724bf4642cf290af97e5c04`, [full merged-main CI 43260833020](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43260833020) **success** after PR #44. PRs #36–#44 test **46 schema-preview tables in seven disposable PostgreSQL CI versions**. This remains an offline Alpha, **not** a Neon deployment, production PostgreSQL adapter or public hosted application. No new spending, paid AI, provider publishing or Android release is authorized.
-
-### Private beta preparation (November 12)
-
-The offline BAM WSGI composition now checks for loopback-only network context: requests advertising public origins or reverse proxies are denied before any route. This is an **offline defense-in-depth regression**, not production hosting or an endorsed public server. A separate hardened production runtime, explicit authorization to create the selected Render/Neon services, and approvals for any other costs remain prerequisites. See [private beta infrastructure proposal](PRIVATE_BETA_INFRASTRUCTURE.md).
-
-### Atomic account login-failure accounting (offline Alpha)
-
-The persistent account-level login throttle now records failures in one SQLite UPSERT instead of a separate read/write, preventing lost increments across independent application/database clients. Trusted timestamps are strictly validated and stale events cannot reset an active lockout window. Concurrent two-connection regression coverage is included. This is **not yet a production distributed rate limiter**: checking the throttle and performing authentication remain separate operations, and trusted per-IP/device/global limits are still required.
-
-### Active development cost policy — $0 additional spending (November 12, 2026)
-
-**Official current authorization: $0 in new monthly or one-time charges for BAM.** Continue development using free standard GitHub-hosted runners, disposable PostgreSQL CI containers and other free local/offline tools. Avoid extra workflows, CI artifacts, paid storage, background workers or any account service that might bill through overages. A free service may be considered for later hands-on testing, **but it is not authorized for provisioning by this decision**, and any potentially chargeable overage requires separate approval and provider-side usage safeguards. Do not host BAM inside EdgePilot's existing paid service, share its credentials or database, or modify its deployment.
-
-**Budget reconsideration trigger:** only when a functioning BAM application is ready to justify hosting **or** a concrete development blocker genuinely cannot be addressed with free tools. At that point, present specific options, expected costs, risks and recommended limits for owner approval; reaching a trigger never automatically authorizes any charge or service. Preserve full multi-user functionality and commercial architecture, rather than scaling down the project to fit a temporary free tier. The previously selected **separate $7/month Render Starter + Neon Free** setup is a *deferred design*, not an active expense. See [hosting contract](BAM_HOSTING_PLAN.json) and [infrastructure gates](PRIVATE_BETA_INFRASTRUCTURE.md).
-
-### Deferred $7 hosting design — not activated
-
-BAM's intended first hosted setup is **its own Render Starter web service ($7/month base)** and **its own Neon Free PostgreSQL project ($0/month within free quotas)**. This replaces an open-ended hosting-provider choice, but **does not authorize creating either service, incurring charges or deploying the app**. BAM remains separate from EdgePilot. A standalone server does not imply a separate paid team instance for each user/business. Database migration away from SQLite, verified identity, durable media, encrypted backups and supported scheduling/worker operations are still required. The $7 is **not a guaranteed total or provider hard cap**. No other recurring charges, paid AI or publishing are approved. See [private beta hosting plan](PRIVATE_BETA_INFRASTRUCTURE.md) and [CI-checked planning record](BAM_HOSTING_PLAN.json).
-
-### Neon migration foundation (offline preview)
-
-The first database-portability milestone introduces a review-only PostgreSQL DDL blueprint for **nine** foundational BAM tables plus live SQLite schema parity checks, deterministic schema fingerprinting and privacy-safe row counts. No user records, credentials, or draft text are exported; no PostgreSQL driver, Neon service, Render deployment or paid integration is invoked. This is explicitly **incomplete** and cannot operate BAM on Neon yet. See [Neon migration roadmap](NEON_MIGRATION_ROADMAP.md).
-
-### Complete local schema inventory before PostgreSQL port (offline)
-
-Beyond the nine-table blueprint, `neon_schema_inventory.py` enumerates **all** initialized BAM SQLite tables, distinguishes previewed versus unported tables, and flags SQLite-specific DDL concepts that require manual PostgreSQL translation. It exposes only schema metadata and a fingerprint—not SQL source, customer rows or secrets—and has no PostgreSQL connectivity. `python -m neon_schema_inventory` prints an ephemeral in-memory inventory for development review. This is a prerequisite assessment, **not an actual migration or hosted-readiness claim**.
-
-### Parameterized Postgres read-contract preview (offline)
-
-The next portability slice defines **parameterized, read-only SQL** for private drafts and non-executable calendar proposals that rechecks a verified, active identity and current tenant membership **inside the same SELECT**. Tests adapt the query syntax to SQLite fixtures to verify current-business isolation and revocation behavior. This is *not* a Neon connection, full Postgres test, identity/session verifier, automatic publisher or production API. A trusted caller must establish the identity before using any future database adapter.
-
-### Offline migration integrity preflight
-
-A migration safety audit now checks synthetic/local SQLite data for **orphan identities or sessions, stale membership roles, malformed session hashes, duplicate normalized emails, and orphan draft-calendar links**. The report contains only aggregate counts and boolean readiness indicators—never email addresses, session tokens, password digests or draft text. It is read-only and permanently marks production readiness false; a passing local audit is **not** proof that Neon can host BAM. See [Neon migration roadmap](NEON_MIGRATION_ROADMAP.md).
-
-### Guarded PostgreSQL-style priority write preview (offline)
-
-BAM now has a **non-executing** SQL contract for editing a held draft's priority on PostgreSQL. It combines current active/verified identity, editable team role, tenant scope and `priority_token` compare-and-swap within one `UPDATE ... RETURNING` statement. Separate synthetic SQLite tests verify that stale editors, viewers, revoked members and other businesses cannot change priority. This does not approve, schedule or publish a post, and it is **not yet tested on Neon**. It is not wired into a production application or exposed as an API.
-
-### Database transition checkpoint and next release gate
-
-The current Alpha remains fully SQLite-backed. All Neon DDL, query and integrity additions are offline **planning/tests only**; no PostgreSQL connection is implemented or running. The first nine-table schema preview is incomplete, and the full inventory still lists unmapped tables. A useful hosted private beta will require complete schema and data migration, correctly authenticated PostgreSQL transactions, private durable media, encrypted backup/restore, and verified live cross-business isolation. The owner-selected **separate $7/month Render Starter + free Neon** design is recorded but **not authorized for provisioning or billing**. See [Neon roadmap](NEON_MIGRATION_ROADMAP.md), [hosting gates](PRIVATE_BETA_INFRASTRUCTURE.md), and [readiness evidence](ALPHA_BETA_READINESS.md).
-
-### Public GitHub CI: actual ephemeral PostgreSQL validation (November 12, 2026)
-
-After PR #35, the **source repository is public**, while the BAM product remains unhosted/offline Alpha. GitHub Actions now uses standard free public-repository runners to start a **temporary PostgreSQL 16 container** during the existing unit-test workflow. It runs the nine-table schema preview and tenant-scoped draft/calendar read and priority-write contracts against *real PostgreSQL*, including a two-client stale-write race test. This does **not** create a Neon database, copy customer data, or enable a production DB adapter. Development-branch pushes no longer duplicate the pull-request test run; tests execute on PRs and merged `main`. CI permissions remain read-only and Actions uploads no artifacts. The chosen one-service $7 Render Starter + separate Neon Free design remains **unprovisioned and charge-gated**.
-
-### Team collaboration and invitation tables on PostgreSQL (CI)
-
-The next offline migration slice adds **five more PostgreSQL table definitions** covering team invitation issuance/activity, role-change audit, private draft review notes and review event history. The preview preserves constrained event actions, one-use invitation identifiers and PostgreSQL identity columns for former SQLite autoincrement IDs. Real PostgreSQL CI tests check unique-token metadata, current-owner-only invitation visibility, role changes and no invitation bearer secrets in the returned rows. The source now has **14 PostgreSQL schema-preview tables**, but still lacks many other tables and a production migration service. Hosting, invitation delivery and social publishing remain disabled.
-
-### Versioned migration safety in disposable PostgreSQL CI
-
-The first two synthetic PostgreSQL schema stages (nine core tables, then five private collaboration tables) now run through a **transactional, versioned CI-only migration loader** with database advisory locking and SHA-256 script checksums. CI verifies repeat runs are no-ops and rejects tampered migration history, unknown future versions or missing tables. The loader *refuses non-loopback databases* and has no deployed entrypoint. A dedicated production migration framework, full table coverage, data conversion, encrypted backup/restore and explicit Neon/Render approval are still prerequisites.
-
-### Provider/AI/authentication metadata PostgreSQL parity (offline)
-
-Seven additional table definitions now have **actual disposable PostgreSQL CI coverage**, expanding the reviewed schema from 14 to **21 tables**. They cover each user's AI mode/memory/usage, *vault-reference-only* read-capable social connection metadata, Google nonce and OAuth PKCE attempt ledgers, and private content-attachment metadata. The new prepared read queries recheck current membership and business scope for connection metadata and each user's own AI usage. The query never returns vault references or provider tokens and does **not** establish live provider access. The CI-only migration journal now has a third version; many other tables and production work remain.
-
-### PostgreSQL AI budget and held content schema safety (offline)
-
-The fourth **ephemeral CI migration stage** now models AI business facts, independently editable post/image draft components and their verified-media references, projected AI cost receipts, generation idempotency, and tenant/operator spending counters. The reviewed subset expands to **29 tables**. It adds the reserved-cost/unpriced-request columns required by BAM's existing sponsorship logic, and starts staged PostgreSQL operator AI control **paused by default**. Real PostgreSQL CI verifies estimated-cost receipt deduplication and the pause invariant. This is a data-model safeguard, **not permission to call OpenAI or charge users**.
-
-### Free PostgreSQL CI: business research and analytics metadata (offline)
-
-A fifth versioned, disposable GitHub CI PostgreSQL stage now previews seven more source tables: per-business profiles, topics, approved research sources and competitor blocks, tenant-owned legacy resource labels, authorized analytics checkpoints, and audience observations. The reviewed schema grows from **29 to 36 tables**. New prepared read-contract tests confirm that an active owner can read only their business's synthetic analytics, and another business or deactivated identity cannot read that data; source classifications have real PostgreSQL foreign-key checks. This **does not fetch real analytics or scrape competitors**, and is not a hosted application or production migration. The $0 additional-cost policy remains active.
-
-### Tenant post, review-decision and scheduling schema (offline)
-
-Version six of the disposable PostgreSQL test schema now models four more legacy multi-business tables: **tenant posts, tenant review decisions, unconfirmed events, and per-business scheduling preferences**—bringing the reviewed test subset to **40 tables**. PostgreSQL tests enforce composite tenant/post foreign keys, deny cross-business reads and revoked roles, and explicitly reject a `published` status in the local-only approval schema. A stored review decision or preference does **not** schedule or publish any social post; there is no production queue, Meta connection or paid service.
-
-### Editorial, verified-facts and credential-recovery schema (offline)
-
-A seventh PostgreSQL CI schema stage covers six more private review/security tables: vetted editorial inbox, identity/competitor attestations, offline owner approval intents, TruthGuard verified business facts, creator identity status and hashed email recovery actions. The reviewed subset now contains **46 tables**, with protected PostgreSQL checks denying a `published` editorial state or marketing emails, and current owner/manager-scoped verified-fact reads excluding revoked and expired facts. This stage does **not** deliver email, publish posts, or run a production identity service. Development remains $0 additional spend.
-
-### Session-backed PostgreSQL read contracts (offline security prototype)
-
-Beyond earlier caller-subject SQL previews, `neon_authenticated_read_contract.py` builds read-only **session-token-hash-bound** PostgreSQL queries for held drafts and non-executable calendar proposals. It hashes the server-presented bearer token, verifies session expiration/revocation and current identity, tenant membership and matching role **within the same SELECT**, and refuses malformed scope or time values. Synthetic SQLite and real disposable PostgreSQL CI tests exercise cross-business denial, stale-role denial, session revocation, expiration and disabled identity. This is a more realistic authentication-to-data seam, but still **not a production HTTP gateway, token transport, PostgreSQL persistence adapter or live hosted app**.
 
 ## Product experience
 
@@ -193,6 +117,86 @@ The [current product and implementation plan](PRODUCT_PLAN.md) records direct so
 - [GitHub Actions tests](.github/workflows/tests.yml)
 
 Development and documentation updates do not activate a paid API, launch a hosted service, connect Facebook, schedule a post or grant publication permission. **Publishing remains off until separately authorized, implemented and verified.**
+
+## Offline engineering and migration checkpoints
+
+### Private beta preparation (November 12)
+
+The offline BAM WSGI composition now checks for loopback-only network context: requests advertising public origins or reverse proxies are denied before any route. This is an **offline defense-in-depth regression**, not production hosting or an endorsed public server. A separate hardened production runtime, explicit authorization to create the selected Render/Neon services, and approvals for any other costs remain prerequisites. See [private beta infrastructure proposal](PRIVATE_BETA_INFRASTRUCTURE.md).
+
+### Atomic account login-failure accounting (offline Alpha)
+
+The persistent account-level login throttle now records failures in one SQLite UPSERT instead of a separate read/write, preventing lost increments across independent application/database clients. Trusted timestamps are strictly validated and stale events cannot reset an active lockout window. Concurrent two-connection regression coverage is included. This is **not yet a production distributed rate limiter**: checking the throttle and performing authentication remain separate operations, and trusted per-IP/device/global limits are still required.
+
+### Active development cost policy — $0 additional spending (November 12, 2026)
+
+**Official current authorization: $0 in new monthly or one-time charges for BAM.** Continue development using free standard GitHub-hosted runners, disposable PostgreSQL CI containers and other free local/offline tools. Avoid extra workflows, CI artifacts, paid storage, background workers or any account service that might bill through overages. A free service may be considered for later hands-on testing, **but it is not authorized for provisioning by this decision**, and any potentially chargeable overage requires separate approval and provider-side usage safeguards. Do not host BAM inside EdgePilot's existing paid service, share its credentials or database, or modify its deployment.
+
+**Budget reconsideration trigger:** only when a functioning BAM application is ready to justify hosting **or** a concrete development blocker genuinely cannot be addressed with free tools. At that point, present specific options, expected costs, risks and recommended limits for owner approval; reaching a trigger never automatically authorizes any charge or service. Preserve full multi-user functionality and commercial architecture, rather than scaling down the project to fit a temporary free tier. The previously selected **separate $7/month Render Starter + Neon Free** setup is a *deferred design*, not an active expense. See [hosting contract](BAM_HOSTING_PLAN.json) and [infrastructure gates](PRIVATE_BETA_INFRASTRUCTURE.md).
+
+### Deferred $7 hosting design — not activated
+
+BAM's intended first hosted setup is **its own Render Starter web service ($7/month base)** and **its own Neon Free PostgreSQL project ($0/month within free quotas)**. This replaces an open-ended hosting-provider choice, but **does not authorize creating either service, incurring charges or deploying the app**. BAM remains separate from EdgePilot. A standalone server does not imply a separate paid team instance for each user/business. Database migration away from SQLite, verified identity, durable media, encrypted backups and supported scheduling/worker operations are still required. The $7 is **not a guaranteed total or provider hard cap**. No other recurring charges, paid AI or publishing are approved. See [private beta hosting plan](PRIVATE_BETA_INFRASTRUCTURE.md) and [CI-checked planning record](BAM_HOSTING_PLAN.json).
+
+### Neon migration foundation (offline preview)
+
+The first database-portability milestone introduces a review-only PostgreSQL DDL blueprint for **nine** foundational BAM tables plus live SQLite schema parity checks, deterministic schema fingerprinting and privacy-safe row counts. No user records, credentials, or draft text are exported; no PostgreSQL driver, Neon service, Render deployment or paid integration is invoked. This is explicitly **incomplete** and cannot operate BAM on Neon yet. See [Neon migration roadmap](NEON_MIGRATION_ROADMAP.md).
+
+### Complete local schema inventory before PostgreSQL port (offline)
+
+Beyond the nine-table blueprint, `neon_schema_inventory.py` enumerates **all** initialized BAM SQLite tables, distinguishes previewed versus unported tables, and flags SQLite-specific DDL concepts that require manual PostgreSQL translation. It exposes only schema metadata and a fingerprint—not SQL source, customer rows or secrets—and has no PostgreSQL connectivity. `python -m neon_schema_inventory` prints an ephemeral in-memory inventory for development review. This is a prerequisite assessment, **not an actual migration or hosted-readiness claim**.
+
+### Parameterized Postgres read-contract preview (offline)
+
+The next portability slice defines **parameterized, read-only SQL** for private drafts and non-executable calendar proposals that rechecks a verified, active identity and current tenant membership **inside the same SELECT**. Tests adapt the query syntax to SQLite fixtures to verify current-business isolation and revocation behavior. This is *not* a Neon connection, full Postgres test, identity/session verifier, automatic publisher or production API. A trusted caller must establish the identity before using any future database adapter.
+
+### Offline migration integrity preflight
+
+A migration safety audit now checks synthetic/local SQLite data for **orphan identities or sessions, stale membership roles, malformed session hashes, duplicate normalized emails, and orphan draft-calendar links**. The report contains only aggregate counts and boolean readiness indicators—never email addresses, session tokens, password digests or draft text. It is read-only and permanently marks production readiness false; a passing local audit is **not** proof that Neon can host BAM. See [Neon migration roadmap](NEON_MIGRATION_ROADMAP.md).
+
+### Guarded PostgreSQL-style priority write preview (offline)
+
+BAM now has a **non-executing** SQL contract for editing a held draft's priority on PostgreSQL. It combines current active/verified identity, editable team role, tenant scope and `priority_token` compare-and-swap within one `UPDATE ... RETURNING` statement. Separate synthetic SQLite tests verify that stale editors, viewers, revoked members and other businesses cannot change priority. This does not approve, schedule or publish a post, and it is **not yet tested on Neon**. It is not wired into a production application or exposed as an API.
+
+### Database transition checkpoint and next release gate
+
+The current Alpha remains fully SQLite-backed. All Neon DDL, query and integrity additions are offline **planning/tests only**; no PostgreSQL connection is implemented or running. The first nine-table schema preview is incomplete, and the full inventory still lists unmapped tables. A useful hosted private beta will require complete schema and data migration, correctly authenticated PostgreSQL transactions, private durable media, encrypted backup/restore, and verified live cross-business isolation. The owner-selected **separate $7/month Render Starter + free Neon** design is recorded but **not authorized for provisioning or billing**. See [Neon roadmap](NEON_MIGRATION_ROADMAP.md), [hosting gates](PRIVATE_BETA_INFRASTRUCTURE.md), and [readiness evidence](ALPHA_BETA_READINESS.md).
+
+### Public GitHub CI: actual ephemeral PostgreSQL validation (November 12, 2026)
+
+After PR #35, the **source repository is public**, while the BAM product remains unhosted/offline Alpha. GitHub Actions now uses standard free public-repository runners to start a **temporary PostgreSQL 16 container** during the existing unit-test workflow. It runs the nine-table schema preview and tenant-scoped draft/calendar read and priority-write contracts against *real PostgreSQL*, including a two-client stale-write race test. This does **not** create a Neon database, copy customer data, or enable a production DB adapter. Development-branch pushes no longer duplicate the pull-request test run; tests execute on PRs and merged `main`. CI permissions remain read-only and Actions uploads no artifacts. The chosen one-service $7 Render Starter + separate Neon Free design remains **unprovisioned and charge-gated**.
+
+### Team collaboration and invitation tables on PostgreSQL (CI)
+
+The next offline migration slice adds **five more PostgreSQL table definitions** covering team invitation issuance/activity, role-change audit, private draft review notes and review event history. The preview preserves constrained event actions, one-use invitation identifiers and PostgreSQL identity columns for former SQLite autoincrement IDs. Real PostgreSQL CI tests check unique-token metadata, current-owner-only invitation visibility, role changes and no invitation bearer secrets in the returned rows. The source now has **14 PostgreSQL schema-preview tables**, but still lacks many other tables and a production migration service. Hosting, invitation delivery and social publishing remain disabled.
+
+### Versioned migration safety in disposable PostgreSQL CI
+
+The first two synthetic PostgreSQL schema stages (nine core tables, then five private collaboration tables) now run through a **transactional, versioned CI-only migration loader** with database advisory locking and SHA-256 script checksums. CI verifies repeat runs are no-ops and rejects tampered migration history, unknown future versions or missing tables. The loader *refuses non-loopback databases* and has no deployed entrypoint. A dedicated production migration framework, full table coverage, data conversion, encrypted backup/restore and explicit Neon/Render approval are still prerequisites.
+
+### Provider/AI/authentication metadata PostgreSQL parity (offline)
+
+Seven additional table definitions now have **actual disposable PostgreSQL CI coverage**, expanding the reviewed schema from 14 to **21 tables**. They cover each user's AI mode/memory/usage, *vault-reference-only* read-capable social connection metadata, Google nonce and OAuth PKCE attempt ledgers, and private content-attachment metadata. The new prepared read queries recheck current membership and business scope for connection metadata and each user's own AI usage. The query never returns vault references or provider tokens and does **not** establish live provider access. The CI-only migration journal now has a third version; many other tables and production work remain.
+
+### PostgreSQL AI budget and held content schema safety (offline)
+
+The fourth **ephemeral CI migration stage** now models AI business facts, independently editable post/image draft components and their verified-media references, projected AI cost receipts, generation idempotency, and tenant/operator spending counters. The reviewed subset expands to **29 tables**. It adds the reserved-cost/unpriced-request columns required by BAM's existing sponsorship logic, and starts staged PostgreSQL operator AI control **paused by default**. Real PostgreSQL CI verifies estimated-cost receipt deduplication and the pause invariant. This is a data-model safeguard, **not permission to call OpenAI or charge users**.
+
+### Free PostgreSQL CI: business research and analytics metadata (offline)
+
+A fifth versioned, disposable GitHub CI PostgreSQL stage now previews seven more source tables: per-business profiles, topics, approved research sources and competitor blocks, tenant-owned legacy resource labels, authorized analytics checkpoints, and audience observations. The reviewed schema grows from **29 to 36 tables**. New prepared read-contract tests confirm that an active owner can read only their business's synthetic analytics, and another business or deactivated identity cannot read that data; source classifications have real PostgreSQL foreign-key checks. This **does not fetch real analytics or scrape competitors**, and is not a hosted application or production migration. The $0 additional-cost policy remains active.
+
+### Tenant post, review-decision and scheduling schema (offline)
+
+Version six of the disposable PostgreSQL test schema now models four more legacy multi-business tables: **tenant posts, tenant review decisions, unconfirmed events, and per-business scheduling preferences**—bringing the reviewed test subset to **40 tables**. PostgreSQL tests enforce composite tenant/post foreign keys, deny cross-business reads and revoked roles, and explicitly reject a `published` status in the local-only approval schema. A stored review decision or preference does **not** schedule or publish any social post; there is no production queue, Meta connection or paid service.
+
+### Editorial, verified-facts and credential-recovery schema (offline)
+
+A seventh PostgreSQL CI schema stage covers six more private review/security tables: vetted editorial inbox, identity/competitor attestations, offline owner approval intents, TruthGuard verified business facts, creator identity status and hashed email recovery actions. The reviewed subset now contains **46 tables**, with protected PostgreSQL checks denying a `published` editorial state or marketing emails, and current owner/manager-scoped verified-fact reads excluding revoked and expired facts. This stage does **not** deliver email, publish posts, or run a production identity service. Development remains $0 additional spend.
+
+### Session-backed PostgreSQL read contracts (offline security prototype)
+
+Beyond earlier caller-subject SQL previews, `neon_authenticated_read_contract.py` builds read-only **session-token-hash-bound** PostgreSQL queries for held drafts and non-executable calendar proposals. It hashes the server-presented bearer token, verifies session expiration/revocation and current identity, tenant membership and matching role **within the same SELECT**, and refuses malformed scope or time values. Synthetic SQLite and real disposable PostgreSQL CI tests exercise cross-business denial, stale-role denial, session revocation, expiration and disabled identity. This is a more realistic authentication-to-data seam, but still **not a production HTTP gateway, token transport, PostgreSQL persistence adapter or live hosted app**.
 
 ## GitHub branches, recovery and release discipline
 

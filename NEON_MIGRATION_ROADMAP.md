@@ -83,3 +83,8 @@ The non-executing neon_session_write_contract SQL builder hashes the server-pres
 ## All-stage preview inventory (November 12, 2026 candidate)
 
 The local no-data schema inventory now tracks all seven PostgreSQL DDL preview groups (9+5+7+8+7+4+6 = **46 source tables reviewed**), the remaining initialized local tables that do not yet have previews, a per-table review flag, and previewed optional tables absent from a fresh gateway. Legacy nine-table subset fields remain for compatibility. This improves roadmap visibility **without** moving records, connecting to Neon, proving a PostgreSQL production adapter or enabling a live hosted application. Source parity, full migration, transaction semantics, backup/restore and approval are still required.
+
+
+## Current owner-only invitation SQL security (November 12, 2026 candidate)
+
+A new SQL-only `neon_session_collaboration_contract.py` builds a limited owner-only pending invitation metadata SELECT, deriving the current owner from a verified hashed session token and checking membership, role, identity validity and expiration/revocation in the same SQL statement. This does not expose bearer invite token hashes, issue or send invitations, or add a production PostgreSQL adapter, gateway or deployment. Validate against disposable PostgreSQL and repeat production authentication/transaction testing only after explicit separate deployment approval.

@@ -735,5 +735,49 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
 
 
+    def test_pg_session_bound_owner_invite_read_excludes_other_business(self):
+        import hashlib
+        from neon_session_collaboration_contract import (
+            prepare_session_pending_owner_invitations)
+        token='Synthetic_Postgres_Owner_Invitation_Session_1234'
+        digest=hashlib.sha256(token.encode()).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",(digest,self.a))
+        for tenant,actor,email,iid in (
+            ('shop-a',self.a,'guest@private.test','c'*32),
+            ('shop-b',self.b,'other@private.test','d'*32)):
+            self.conn.execute("""INSERT INTO bam_business_invitations
+                (token_hash,tenant_id,email,role,expires_at,
+                 created_by,invitation_id,delivery_state)
+                VALUES (%s,%s,%s,'viewer',500,%s,%s,'delivered')""",
+                (('a' if tenant=='shop-a' else 'b')*64,
+                 tenant,email,actor,iid))
+        def query(tenant='shop-a',now=101):
+            sql,params=prepare_session_pending_owner_invitations(
+                raw_session_token=token,tenant_id=tenant,server_now=now)
+            self.assertNotIn(token,sql+str(params))
+            self.assertNotIn('v.token_hash',sql)
+            return self.conn.execute(sql,params).fetchall()
+        self.assertEqual(query(),
+            [('c'*32,'guest@private.test','viewer',500)])
+        self.assertEqual(query('shop-b'),[])
+        self.assertEqual(query(now=500),[])
+        self.conn.execute("""UPDATE members SET role='viewer'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.assertEqual(query(),[])
+        self.conn.execute("""UPDATE members SET role='owner'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.conn.execute("""UPDATE bam_identities SET active=0
+            WHERE subject_id=%s""",(self.a,))
+        self.assertEqual(query(),[])
+        self.conn.execute("""UPDATE bam_identities SET active=1
+            WHERE subject_id=%s""",(self.a,))
+        self.conn.execute("""UPDATE sessions SET revoked_at=101
+            WHERE token_hash=%s""",(digest,))
+        self.assertEqual(query(),[])
+
+
+
 if __name__=='__main__':
     unittest.main()
