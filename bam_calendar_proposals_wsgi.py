@@ -88,7 +88,9 @@ class BAMCalendarProposalsWSGI:
                 not result['tenant_id'].strip() or
                 len(result['tenant_id'])>128 or
                 result.get('status')!=('suggestion_preview_only'
-                    if method=='SUGGESTIONS' else 'proposal_only') or
+                    if method=='SUGGESTIONS' else
+                    'readiness_preview_only' if method=='READINESS'
+                    else 'proposal_only') or
                 result.get('posts_scheduled')!=0 or
                 result.get('publishing_enabled') is not False):
             raise RuntimeError('Unsafe calendar proposal result')
@@ -129,6 +131,50 @@ class BAMCalendarProposalsWSGI:
                     or (previous is not None and previous>item['utc_at'])):
                     raise RuntimeError('Unsafe proposal item')
                 previous=item['utc_at']
+        elif method=='READINESS':
+            if (set(result)!={'tenant_id','status','proposal_count',
+                 'draft_refresh_count','time_refresh_count','items',
+                 'posts_scheduled','publishing_enabled'}
+                 or result['status']!='readiness_preview_only'
+                 or type(result['proposal_count']) is not int
+                 or not 0<=result['proposal_count']<=200
+                 or type(result['draft_refresh_count']) is not int
+                 or type(result['time_refresh_count']) is not int
+                 or type(result['items']) is not list
+                 or len(result['items'])!=result['proposal_count']
+                 or not 0<=result['draft_refresh_count']<=result['proposal_count']
+                 or not 0<=result['time_refresh_count']<=result['proposal_count']):
+                raise RuntimeError('Unsafe readiness digest')
+            expected={'final_publication_review_unavailable',
+                      'social_publishing_unavailable'}
+            draft_count=time_count=0
+            seen=set()
+            for item in result['items']:
+                if (type(item) is not dict or set(item)!={'request_id',
+                     'draft_revision','utc_at','status','blockers',
+                     'publishing_enabled'}
+                     or type(item['request_id']) is not str
+                     or _ID.fullmatch(item['request_id']) is None
+                     or item['request_id'] in seen
+                     or type(item['draft_revision']) is not int
+                     or item['draft_revision']<1
+                     or type(item['utc_at']) is not str
+                     or _UTC.fullmatch(item['utc_at']) is None
+                     or item['status']!='held'
+                     or type(item['blockers']) is not list
+                     or len(item['blockers'])!=len(set(item['blockers']))
+                     or not expected.issubset(item['blockers'])
+                     or not set(item['blockers']).issubset(expected|{
+                         'draft_requires_refresh',
+                         'posting_time_requires_refresh'})
+                     or item['publishing_enabled'] is not False):
+                    raise RuntimeError('Invalid readiness entry')
+                seen.add(item['request_id'])
+                draft_count+=('draft_requires_refresh' in item['blockers'])
+                time_count+=('posting_time_requires_refresh' in item['blockers'])
+            if (result['draft_refresh_count']!=draft_count
+                or result['time_refresh_count']!=time_count):
+                raise RuntimeError('Invalid readiness totals')
         elif method=='SUGGESTIONS':
             if (set(result)!={'tenant_id','status','preference_status',
                               'unassigned_held_count','available_slot_count',
@@ -199,11 +245,13 @@ class BAMCalendarProposalsWSGI:
             return reply('403 Forbidden',{'error':'HTTPS required'})
         path=environ.get('PATH_INFO')
         if path not in ('/api/v1/calendar-proposals',
-                        '/api/v1/calendar-suggestions'):
+                        '/api/v1/calendar-suggestions',
+                        '/api/v1/calendar-readiness'):
             return reply('404 Not Found',{'error':'Not found'})
         suggestions=path=='/api/v1/calendar-suggestions'
+        readiness=path=='/api/v1/calendar-readiness'
         method=environ.get('REQUEST_METHOD')
-        if method not in (('GET',) if suggestions else
+        if method not in (('GET',) if suggestions or readiness else
                           ('GET','POST','DELETE')):
             return reply('405 Method Not Allowed',
                          {'error':'Method not allowed'})
@@ -221,7 +269,10 @@ class BAMCalendarProposalsWSGI:
             if now<0:
                 raise RuntimeError('Invalid server time')
             data=self._parse(environ,method) if method!='GET' else None
-            if suggestions:
+            if readiness:
+                answer=self.service.readiness_digest(
+                    token=bearer[7:],now=now)
+            elif suggestions:
                 answer=self.service.suggest_unassigned(
                     token=bearer[7:],now=now)
             elif method=='GET':
@@ -232,7 +283,8 @@ class BAMCalendarProposalsWSGI:
             else:
                 answer=self.service.discard(token=bearer[7:],now=now,**data)
             return reply('201 Created' if method=='POST' else '200 OK',
-                         self._safe(answer,'SUGGESTIONS' if suggestions else
+                         self._safe(answer,'READINESS' if readiness else
+                                    'SUGGESTIONS' if suggestions else
                                     method,data))
         except PermissionError:
             return reply('401 Unauthorized',{'error':'Calendar unavailable'})

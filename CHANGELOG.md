@@ -1,5 +1,13 @@
 # Changelog
 
+## November 12, 2026 — Non-executable calendar readiness digest
+
+- Added tenant-scoped, authenticated `GET /api/v1/calendar-readiness` to display stale-draft and outdated posting-time blockers for held calendar proposals, with bounded counts and no draft edit tokens.
+- The digest always reports missing final publication review and unavailable social publishing, even when the draft and configured time are current. It never schedules a job, approves a post or calls any social API.
+- Added offline service, WSGI, negative schema/permission and full gateway tests for role/business isolation, stale revision, changed manual schedules, unsafe responses and disallowed writes.
+- **Full exact-source GitHub Actions pending.** No production hosting, publishing, OAuth, paid OpenAI or scheduler worker was activated.
+
+
 ## November 12, 2026 — Offline HTTPS-style invitation acceptance integration
 
 - Added `BAMInvitationAcceptWSGI`, an offline-only, disabled-by-default acceptance adapter with separate password and Google paths, HTTPS and exact-field parsing, strict output redaction and no session grant.

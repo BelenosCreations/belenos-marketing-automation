@@ -134,6 +134,43 @@ class CalendarProposalTests(unittest.TestCase):
         self.assertEqual(self.calendar.list_mine_business(
             token=self.other,now=NOW)['items'],[])
 
+    def test_readiness_digest_is_tenant_private_and_always_held(self):
+        self.propose()
+        current=self.calendar.readiness_digest(token=self.owner,now=NOW)
+        self.assertEqual(current['status'],'readiness_preview_only')
+        self.assertEqual(current['proposal_count'],1)
+        self.assertEqual(current['draft_refresh_count'],0)
+        self.assertEqual(current['time_refresh_count'],0)
+        self.assertEqual(current['posts_scheduled'],0)
+        self.assertFalse(current['publishing_enabled'])
+        self.assertEqual(current['items'][0]['status'],'held')
+        self.assertEqual(current['items'][0]['blockers'],[
+            'final_publication_review_unavailable',
+            'social_publishing_unavailable'])
+        self.assertNotIn('proposal_token',str(current))
+        self.assertEqual(self.calendar.readiness_digest(
+            token=self.viewer,now=NOW)['items'],current['items'])
+        self.assertEqual(self.calendar.readiness_digest(
+            token=self.other,now=NOW)['items'],[])
+        with self.assertRaises(PermissionError):
+            self.calendar.readiness_digest(token='not-a-session',now=NOW)
+        self.service.revise(token=self.creator,tenant_id='shop',
+            request_id=self.draft,target='draft_text',
+            revised_text='Updated product details',expected_revision=1,now=NOW+1)
+        self.prefs.set(token=self.owner,tenant_id='shop',
+            mode='manual',timezone='America/New_York',
+            manual_times=['18:30'],now=NOW+1)
+        stale=self.calendar.readiness_digest(token=self.owner,now=NOW+2)
+        self.assertEqual(stale['draft_refresh_count'],1)
+        self.assertEqual(stale['time_refresh_count'],1)
+        self.assertEqual(stale['items'][0]['blockers'],[
+            'draft_requires_refresh','posting_time_requires_refresh',
+            'final_publication_review_unavailable',
+            'social_publishing_unavailable'])
+        self.assertEqual(stale['posts_scheduled'],0)
+        self.assertEqual(self.db.execute(
+            'SELECT COUNT(*) FROM bam_calendar_proposals').fetchone()[0],1)
+
     def test_collision_and_draft_revision_safeguards(self):
         self.propose()
         another=self.service.create(

@@ -27,6 +27,21 @@ class FakeService:
                     'publishing_enabled':False}],
                 'posts_scheduled':1 if self.unsafe else 0,
                 'publishing_enabled':False}
+    def readiness_digest(self,**kwargs):
+        self.calls.append(('readiness',kwargs))
+        if self.denied:
+            raise PermissionError('private account')
+        item={'request_id':RID,'draft_revision':1,'utc_at':UTC,
+            'status':'held','blockers':[
+            'final_publication_review_unavailable',
+            'social_publishing_unavailable'],
+            'publishing_enabled':False}
+        return {'tenant_id':'shop','status':'readiness_preview_only',
+            'proposal_count':1,'draft_refresh_count':0,
+            'time_refresh_count':0,'items':[item],
+            'posts_scheduled':1 if self.unsafe else 0,
+            'publishing_enabled':False}
+
     def suggest_unassigned(self,**kwargs):
         self.calls.append(('suggest',kwargs))
         if self.denied:
@@ -123,6 +138,39 @@ class CalendarProposalTransportTests(unittest.TestCase):
                          '401 Unauthorized')
         self.service.denied=False
         self.service.unsafe=True
+        self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
+                         '503 Service Unavailable')
+
+    def test_readiness_is_read_only_held_and_strictly_validated(self):
+        path='/api/v1/calendar-readiness'
+        meta,report=self.call(PATH_INFO=path)
+        self.assertEqual(meta['status'],'200 OK')
+        self.assertEqual(report['status'],'readiness_preview_only')
+        self.assertEqual(report['proposal_count'],1)
+        self.assertEqual(report['posts_scheduled'],0)
+        self.assertEqual(report['items'][0]['blockers'],[
+            'final_publication_review_unavailable',
+            'social_publishing_unavailable'])
+        self.assertEqual(self.service.calls[-1],
+            ('readiness',{'token':'t'*43,'now':101}))
+        self.assertEqual(self.call(PATH_INFO=path,REQUEST_METHOD='POST')
+                         [0]['status'],'405 Method Not Allowed')
+        self.assertEqual(self.call(PATH_INFO=path,
+            QUERY_STRING='tenant_id=other')[0]['status'],'400 Bad Request')
+        self.service.unsafe=True
+        self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
+                         '503 Service Unavailable')
+        self.service.unsafe=False
+        self.service.denied=True
+        self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
+                         '401 Unauthorized')
+        self.service.denied=False
+        original=self.service.readiness_digest
+        def fake(**kwargs):
+            value=original(**kwargs)
+            value['items'][0]['blockers']=['all_clear']
+            return value
+        self.service.readiness_digest=fake
         self.assertEqual(self.call(PATH_INFO=path)[0]['status'],
                          '503 Service Unavailable')
 
