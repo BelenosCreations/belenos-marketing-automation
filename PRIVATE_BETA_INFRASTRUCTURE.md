@@ -26,3 +26,7 @@ Approve provider/account, maximum additional recurring monthly spend, private be
 - Actual resource use, costs and data protection are measured rather than inferred from offline green CI.
 
 **Next work before authorization:** independent production-runtime design and offline threat/regression tests. **No new paid service is added by this milestone.**
+
+## Account-throttle shared-state hardening (offline)
+
+The alpha login-failure counter uses one SQLite write per failed attempt and tests independent concurrent clients; this prevents an avoidable lost-update issue. The next hosted admission layer must still enforce atomic request attempt reservation, trusted client IP/device and global quotas, distributed or database-backed consistent enforcement, safe account enumeration responses and rollback/monitoring. Neither these offline tests nor a passing CI run constitute production identity security or owner authorization to deploy.

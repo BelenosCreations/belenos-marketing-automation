@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+**Verified starting state (November 12, 2026):** `main` and `development/phase-3-5-account-directory` were synchronized at `f0f8c9d71e81f4b32e69c065ed81850e5001e363`; [merged-main Actions 43209573560](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43209573560) completed **success**, after PR #27.
+
+**Active candidate, not yet merged:** Atomic shared-account login failure UPSERT, timestamp hardening and two-client concurrency regressions at `dbd5b7fb135d00bbcccdae63db4965c1dc43b395`, followed by this documentation commit. Exact-head CI, reviewed PR, merged-main CI and safe non-force fast-forward of development are required. Resume from last verified commit if interrupted.
+
+**Important limit:** This prevents lost failed-attempt counts but not a check/authentication race, brute-force traffic across many IPs/accounts, or credential stuffing at a hosted ingress. Separate production runtime/abuse controls and explicit owner hosting approval remain mandatory. No external services, live social publishing or paid AI authorized.
+
 **Verified start, November 12:** `main` and `development/phase-3-5-account-directory` both `a6dd63bf3af1d2940090594df35fddab1c14489c`; [merged-main CI 43176450765](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43176450765) passed, after reviewed PR #26.
 
 **Current milestone pending verification:** loopback-only offline WSGI network-context guard, tests and `PRIVATE_BETA_INFRASTRUCTURE.md`. Verify exact SHA CI, PR merge, merged-main CI, then fast-forward development without force. Stop before any hosted service purchase, social publishing or paid AI; seek owner approval and budget.
