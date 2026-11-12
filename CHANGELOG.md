@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Token-bound PostgreSQL draft priority edit (candidate)
+
+- Add a pure PostgreSQL SQL builder for a priority-only draft CAS update. Derive the actor from the presented session token hash, rechecking same-tenant role, active/verified identity, expiry, revocation and the expected priority token in the update statement.
+- Add offline SQLite parity and real ephemeral PostgreSQL integration/concurrent writer tests. No draft copy, approval state, schedule or publishing action is changed.
+- Previous baseline: PR #45 merged at 1bfedc0e, merged-main Actions 43262031729 successful. Candidate PR/main CI still required. No Render/Neon creation or additional costs.
+
 ## November 12, 2026 — Session-hash-bound draft/calendar PostgreSQL reads (candidate)
 
 - Add prepared read-only PostgreSQL SQL contracts deriving identity from a stored **hashed bearer session**, not from a caller-supplied subject ID. Each query checks active verified identity, current same-business membership, matching live role, expiry and revocation in one statement.

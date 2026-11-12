@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Session-authenticated PostgreSQL priority CAS candidate — November 12, 2026
+
+**Last verified merged baseline:** PR #45 at 1bfedc0e6f359294895692688da130a3297e6ddd, [full main Actions 43262031729](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43262031729) success; development safely synchronized. **Candidate:** SQL-only token-hash-backed priority CAS with same-statement session, current-role, verified-identity and tenant checks plus two-writer disposable PostgreSQL race tests. Must pass exact PR CI, merge, main CI, and non-force development sync. No production adapter, hosted service, external calls, paid AI or publishing. $0 additional spend; defer separate Render Starter and Neon, never share EdgePilot resources.
+
 ## Authenticated PostgreSQL draft/calendar read seam — November 12, 2026
 
 **Last verified merged baseline:** PR #44 merged at `3f41a028ae96ef681724bf4642cf290af97e5c04`, full [merged-main Actions 43260833020](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43260833020) **success**. Both `main` and active development branch safely synchronized.
