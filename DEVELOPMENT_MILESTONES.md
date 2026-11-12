@@ -1064,3 +1064,7 @@ Repository public per owner after PR #35, with successful post-merge Actions. Co
 ## November 12, 2026 — Verified Neon groundwork and release-continuity reconciliation
 
 PRs #30–#33 have passed exact GitHub Actions after merge to `main`: commits `1934a4dd` (43215433909), `2615a0ac` (43216601082), `d054d67a` (43217385358), and `1c4ab9b7` (43218122644). Source and tests remain **offline-only** with no real Neon connection. This document/release-status consolidation updates current README, roadmap, product plan, CHANGELOG, alpha readiness and continuity to prevent historical “CI pending” entries misleading recovery. It requires separate CI; no hosted services, charges or posting are authorized.
+
+## November 12, 2026 — Team collaboration schema/permission parity on ephemeral Postgres
+
+Extend the nine-table SQL preview with five collaboration/invite/review tables, including identity columns replacing SQLite autoincrement, explicit unique invitation ID and tenant/time indexes. Add owner-only private invitation metadata SQL; verify in local GitHub runner Postgres with role changes, cross-business read denial, consumption, constrained actions and uniqueness. Source tests and README/CHANGELOG/continuity updated. No actual Neon migration, invitation transport, live social publishing or paid deployment.

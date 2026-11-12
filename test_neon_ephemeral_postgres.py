@@ -9,6 +9,9 @@ import threading
 import unittest
 
 from neon_schema_blueprint import ddl_preview,TABLE_NAMES
+from neon_collaboration_schema import (
+    COLLABORATION_NAMES,collaboration_ddl_preview)
+from neon_scoped_collaboration_queries import prepare_pending_owner_invitations
 from neon_scoped_queries import (draft_select_for_verified_member,
     calendar_select_for_verified_member)
 from neon_scoped_writes import (
@@ -34,7 +37,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
              'password':os.environ['PGPASSWORD'],'connect_timeout':5}
         cls.conn=cls._connect()
         cls.conn.execute('CREATE SCHEMA IF NOT EXISTS '+_SCHEMA)
-        for ddl in ddl_preview():
+        for ddl in ddl_preview()+collaboration_ddl_preview():
             cls.conn.execute(ddl)
 
     @classmethod
@@ -52,7 +55,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         return connection
 
     def setUp(self):
-        self.conn.execute('TRUNCATE TABLE '+','.join(TABLE_NAMES)+' CASCADE')
+        self.conn.execute('TRUNCATE TABLE '+','.join(
+            TABLE_NAMES+COLLABORATION_NAMES)+' CASCADE')
         self.a='identityA'
         self.b='identityB'
         self.viewer='viewerC'
@@ -169,6 +173,66 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             WHERE subject_id=%s""",(self.a,))
         self.assertIsNone(self.conn.execute(*statement(
             self.a,self.priority_token)).fetchone())
+
+    def test_collaboration_schema_and_owner_invitation_privacy(self):
+        columns=self.conn.execute("""SELECT column_name,data_type
+            FROM information_schema.columns
+            WHERE table_schema=%s AND table_name='bam_business_invitation_events'
+            ORDER BY ordinal_position""",(_SCHEMA,)).fetchall()
+        self.assertIn(('event_id','bigint'),columns)
+        self.conn.execute("""INSERT INTO bam_business_invitations
+            (token_hash,tenant_id,email,role,expires_at,created_by,
+             invitation_id,delivery_state)
+            VALUES (%s,'shop-a','guest@private.test','viewer',500,%s,%s,
+                    'delivered')""",('1'*64,self.a,'e'*32))
+        sql,params=prepare_pending_owner_invitations(tenant_id='shop-a',
+            verified_subject_id=self.a,server_now=101)
+        row=self.conn.execute(sql,params).fetchone()
+        self.assertEqual(row[0],'e'*32)
+        self.assertEqual(row[1],'guest@private.test')
+        self.assertEqual(len(row),4)
+        self.assertNotIn('1'*64,str(row))
+        for actor,tenant in (
+            (self.viewer,'shop-a'),(self.b,'shop-a'),(self.a,'shop-b')):
+            sql,params=prepare_pending_owner_invitations(tenant_id=tenant,
+                verified_subject_id=actor,server_now=101)
+            self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+        self.conn.execute("""UPDATE members SET role='viewer'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        sql,params=prepare_pending_owner_invitations(tenant_id='shop-a',
+            verified_subject_id=self.a,server_now=101)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+        self.conn.execute("""UPDATE members SET role='owner'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.conn.execute("""UPDATE bam_business_invitations SET consumed_at=101
+            WHERE invitation_id=%s""",('e'*32,))
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+
+    def test_collaboration_indexes_and_constraints(self):
+        self.conn.execute("""INSERT INTO bam_business_invitations
+            (token_hash,tenant_id,email,role,expires_at,created_by,
+             invitation_id,delivery_state)
+            VALUES (%s,'shop-a','guest@private.test','viewer',500,%s,%s,
+                   'delivered')""",('2'*64,self.a,'f'*32))
+        with self.assertRaises(self.psycopg.errors.UniqueViolation):
+            self.conn.execute("""INSERT INTO bam_business_invitations
+                (token_hash,tenant_id,email,role,expires_at,created_by,
+                 invitation_id,delivery_state)
+                VALUES (%s,'shop-b','guest2@private.test','viewer',500,%s,%s,
+                        'delivered')""",('3'*64,self.b,'f'*32))
+        self.conn.execute("""INSERT INTO bam_business_invitation_events
+            (tenant_id,invitation_id,action,actor_id,occurred_at)
+            VALUES ('shop-a',%s,'delivered',%s,100)""",
+            ('f'*32,self.a))
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM bam_business_invitation_events
+            WHERE tenant_id='shop-a'""").fetchone()[0],1)
+        with self.assertRaises(self.psycopg.errors.CheckViolation):
+            self.conn.execute("""INSERT INTO bam_review_feedback_events
+                (event_id,tenant_id,request_id,action,draft_revision,
+                 occurred_at,actor_id) VALUES (%s,'shop-a',%s,
+                 'published',1,101,%s)""",
+                ('e'*32,self.rid_a,self.a))
 
     def test_two_independent_postgres_clients_cannot_both_write_stale_token(self):
         barrier=threading.Barrier(2)
