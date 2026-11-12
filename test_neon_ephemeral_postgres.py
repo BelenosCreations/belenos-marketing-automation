@@ -1437,7 +1437,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             expected_feedback_token=None,note='Keep review note',
             server_now=101)
         with patch('neon_ci_session_adapter.prepare_session_feedback_removal_event',
-                   return_value=('SELECT NULL WHERE %s IS NOT NULL AND FALSE',
+                   return_value=('SELECT %s::text WHERE FALSE',
                                  ('f'*32,))):
             with self.assertRaises(PermissionError):
                 app.remove_review_feedback(
