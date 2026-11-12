@@ -119,6 +119,25 @@ class TargetedRevisionTests(unittest.TestCase):
         self.assertIsNone(self.db.execute(
             'SELECT accepted FROM bam_ai_usage LIMIT 1').fetchone())
 
+    def test_operator_pause_prevents_targeted_revision_executor(self):
+        self.quota.set_operator_paused_trusted(paused=True,now=102)
+        stopped=self.revise()
+        self.assertFalse(stopped['revised'])
+        self.assertEqual(stopped['reason'],'operator_paused')
+        self.assertFalse(stopped['publishing_enabled'])
+        self.assertEqual(self.calls,[])
+        self.assertEqual(self.drafts.get(
+            token=self.token,now=102,
+            draft_id=self.draft['draft_id'])['revision'],1)
+        self.quota.set_operator_paused_trusted(paused=False,now=103)
+        # Failed request keys stay failed; no silent retry.
+        retried=self.revise()
+        self.assertFalse(retried['revised'])
+        self.assertEqual(retried['reason'],'already_failed')
+        result=self.revise(request_key='c'*32)
+        self.assertTrue(result['revised'])
+        self.assertEqual(len(self.calls),1)
+
     def test_personal_key_never_consumes_sponsored_quota(self):
         self.policy.set_mode(token=self.token,now=101,
             mode='own_openai_key',

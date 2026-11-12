@@ -38,10 +38,11 @@ class AIHTTPIntegrationTests(unittest.TestCase):
                     'text':json.dumps({'post_text':'Example Shop tumblers',
                         'image_prompt':'A tumbler on a plain background'})}]}]}
         drafts=AIContentDraftStore(db=db,policy_store=policy)
+        quota=SponsoredAIQuota(db=db,policy_store=policy)
         workflow=AIDraftGenerationWorkflow(
             plan=AIContentPlan(request_builder=AIDraftRequestBuilder(
                 policy_store=policy)),facts=facts,
-            quota=SponsoredAIQuota(db=db,policy_store=policy),
+            quota=quota,
             drafts=drafts,executor=OpenAIResponsesExecutor(
                 transport=fake_openai),
             idempotency=AIGenerationIdempotency(
@@ -51,12 +52,12 @@ class AIHTTPIntegrationTests(unittest.TestCase):
             enabled=True,clock=lambda:now)
         body=json.dumps({'topic':'Tumblers','platform':'facebook',
             'needs_media':True,'include_image_prompt':True}).encode()
-        def call():
+        def call(request_key='a'*32):
             env={'wsgi.url_scheme':'https',
                  'PATH_INFO':'/api/v1/ai-generate',
                  'REQUEST_METHOD':'POST',
                  'HTTP_AUTHORIZATION':'Bearer '+token,
-                 'HTTP_IDEMPOTENCY_KEY':'a'*32,
+                 'HTTP_IDEMPOTENCY_KEY':request_key,
                  'CONTENT_TYPE':'application/json',
                  'CONTENT_LENGTH':str(len(body)),
                  'wsgi.input':io.BytesIO(body)}
@@ -75,6 +76,27 @@ class AIHTTPIntegrationTests(unittest.TestCase):
         self.assertEqual(len(drafts.list_mine(
             token=token,now=now)['drafts']),1)
         self.assertFalse(first['publishing_enabled'])
+        # Operator pause is durable for quota admission and prevents an
+        # otherwise valid new request from reaching the trusted executor.
+        quota.set_operator_paused_trusted(paused=True,now=now)
+        stopped_status,stopped=call('b'*32)
+        self.assertEqual(stopped_status,'200 OK')
+        self.assertEqual(stopped['reason'],'operator_paused')
+        self.assertFalse(stopped['publishing_enabled'])
+        self.assertEqual(len(requests),1)
+        self.assertEqual(len(drafts.list_mine(
+            token=token,now=now)['drafts']),1)
+        # A failed idempotency key cannot auto-retry after resuming.
+        quota.set_operator_paused_trusted(paused=False,now=now+1)
+        replay_status,replay=call('b'*32)
+        self.assertEqual(replay_status,'200 OK')
+        self.assertEqual(replay['reason'],'already_failed')
+        next_status,next_draft=call('c'*32)
+        self.assertEqual(next_status,'201 Created')
+        self.assertTrue(next_draft['created'])
+        self.assertEqual(len(requests),2)
+        self.assertEqual(db.execute("SELECT accepted FROM "
+            "bam_ai_operator_usage WHERE month='2026-11'").fetchone()[0],2)
 
 if __name__=='__main__':
     unittest.main()
