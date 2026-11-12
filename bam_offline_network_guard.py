@@ -32,7 +32,8 @@ def offline_gateway_request_allowed(environ):
     if type(environ) is not dict or any(k in environ for k in _FORWARDING):
         return False
     address=environ.get('REMOTE_ADDR')
-    if address is not None and address not in ('127.0.0.1','::1'):
+    if 'REMOTE_ADDR' in environ and (type(address) is not str or
+            address not in ('127.0.0.1','::1')):
         return False
     for key in ('HTTP_HOST','SERVER_NAME'):
         if key in environ and not _local_host(environ[key],
