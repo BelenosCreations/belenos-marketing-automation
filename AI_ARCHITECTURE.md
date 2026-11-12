@@ -100,3 +100,7 @@ Per-user/per-business writing guidance can be changed by an authenticated creato
 ### Cost-free advance topic planning (not generation)
 
 The offline `AIBatchPreview` validates 1–14 future per-post ideas against owner-confirmed business facts and the requester's actual AI mode, then returns a scoped planning summary. The authenticated browser interface clearly displays **zero** provider requests made, **zero** drafts created, and **no** calculated bill, reservation or scheduling. This is a preflight planning aid. It does not execute an OpenAI provider Batch job, guarantee discounted pricing, assemble final published posts or authorize paid generation.
+
+### Trusted pre-dispatch OpenAI guard (offline Alpha)
+
+Enabling an injected `OpenAITransport` now requires a server-owned dispatch callback. It is consulted before any provider credential is resolved and once more before the HTTPS opener. Wiring it to `SponsoredAIQuota.authorize_new_dispatch_trusted` can prevent new dispatch when the operator has paused sponsorship after earlier quota reservation. A false/nonboolean/exceptional guard fails closed, and the normal offline factory leaves the transport disabled. CI on `d14bbd3f` passed [GitHub Actions 43144166053](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144166053). The check is not atomic with the outbound network send, is not a full worker lease/cancel system, and does not constitute owner authorization for real paid OpenAI use.

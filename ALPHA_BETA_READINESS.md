@@ -70,3 +70,7 @@ An internal persistent operator pause now blocks new BAM-sponsored reservation a
 ## Trusted usage-event idempotency (offline Alpha)
 
 An optionally keyed AI cost ledger can now reject duplicate or conflicting trusted usage events, with per-business isolation and lossless migration of earlier events. `9765961f` passed [GitHub Actions 43143316508](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43143316508). Real Beta still requires consistent provider request identity wiring, signed/trusted usage, reconciliation of all reservations against real receipts, provider pricing verification and safe limits on paid traffic. No actual provider invoices have been reconciled.
+
+## Mandatory pre-dispatch OpenAI guard (offline Alpha)
+
+An enabled transport now requires a trusted operator guard, checked before resolving a key and again before the HTTPS opener; negative/missing/error states deny dispatch. The offline `SponsoredAIQuota` exposes a trusted guard reflecting the durable operator pause. Code `d14bbd3f` passed [GitHub Actions 43144166053](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144166053). This is **not** a guarantee of atomic network cancellation or actual billed-spend enforcement. Private beta still requires operator-approved provider access, worker fencing, credential vault, verified prices, billing reconciliation and deployment security tests.

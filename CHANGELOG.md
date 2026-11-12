@@ -1,5 +1,13 @@
 # Changelog
 
+## November 11, 2026 — Mandatory pre-dispatch OpenAI pause checks
+
+- The *injected* `OpenAITransport` now requires a **trusted server-side dispatch guard whenever explicitly enabled**; an absent, noncallable, false, nonboolean or exception-raising guard fails closed before resolving an API key or using the network opener.
+- The offline sponsorship quota exposes `authorize_new_dispatch_trusted`, which reads the persisted operator pause and denies dispatch when paused or when the control row is missing. The transport checks the guard before secret lookup **and again immediately before HTTPS opener execution**, so a pause during slow vault resolution also stops dispatch.
+- Added disabled/default, strict-guard, pause/resume, callback-error sanitization, before-key and during-key-resolution tests. No actual OpenAI network call was made.
+- **Verified code:** `d14bbd3f1857d73777a6ec8b958ac0b474a2a1d6` passed [GitHub Actions 43144166053](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144166053), including full offline Python/JS/compilation suites. This documentation-only follow-up requires its own CI.
+- **Boundary:** These checks are point-in-time. They do **not** atomically fence the network send or cancel already-running requests. Production needs trusted worker fencing, vault handling, approved pricing and explicit operator consent before enabled transports may be deployed.
+
 ## November 11, 2026 — Deduplicated trusted AI usage ledger
 
 - Added an **optional, trusted server-owned 32-hex usage reference** to `AICostLedger.record_trusted`. When supplied, its SHA-256 digest is stored in a new nullable column and uniquely scoped to the business and subject. Replaying the same reference with identical model, token counts and operator-estimated cost returns the original event rather than double-counting it; reusing the reference with different data fails closed.

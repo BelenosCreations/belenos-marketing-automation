@@ -135,6 +135,19 @@ class SponsoredAIQuota:
                 'publishing_enabled':False,
                 'provider_execution_enabled':False}
 
+    def authorize_new_dispatch_trusted(self):
+        """Second offline pause check before an injected provider transport.
+
+        A write-lock reservation may have succeeded before an operator
+        paused new work. This checkpoint denies later dispatch but cannot
+        prevent a race *after* it returns, or cancel an already-started call.
+        A production dispatcher still needs worker fencing and approval.
+        """
+        status=self.operator_pause_status_trusted()
+        if status['operator_paused']:
+            raise PermissionError('Operator paused sponsored AI dispatch')
+        return True
+
     def operator_pause_status_trusted(self):
         """Internal diagnostics only; not a token-authenticated web route."""
         row=self.db.execute("""SELECT paused,updated_at

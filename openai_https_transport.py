@@ -14,16 +14,23 @@ _MAX_BODY=65536
 
 class OpenAITransport:
     def __init__(self, *, key_resolver, opener, enabled=False,
-                 timeout_seconds=20):
+                 timeout_seconds=20,dispatch_guard=None):
         if not callable(key_resolver) or not callable(opener):
             raise TypeError('Trusted credential resolver and HTTPS opener required')
         if type(enabled) is not bool or type(timeout_seconds) is not int or (
             not 1<=timeout_seconds<=60):
             raise ValueError('Invalid transport configuration')
+        # Merely setting enabled=True can never bypass the operator
+        # authorization guard. No implicit permissive default.
+        if enabled and not callable(dispatch_guard):
+            raise ValueError('Trusted operator dispatch guard required')
+        if dispatch_guard is not None and not callable(dispatch_guard):
+            raise ValueError('Trusted dispatch guard must be callable')
         self._resolve=key_resolver
         self._open=opener
         self._enabled=enabled
         self._timeout=timeout_seconds
+        self._dispatch_guard=dispatch_guard
 
     def __call__(self,payload):
         if not self._enabled:
@@ -40,6 +47,16 @@ class OpenAITransport:
         body=json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf-8')
         if len(body)>32768:
             raise ValueError('OpenAI request too large')
+        # Check again *immediately* before credential access. An operator
+        # pause can happen after quota admission while a request is queued.
+        # The callback must be trusted server code, never a client flag.
+        try:
+            allowed=self._dispatch_guard()
+        except Exception:
+            raise PermissionError(
+                'OpenAI dispatch authorization unavailable') from None
+        if allowed is not True:
+            raise PermissionError('OpenAI dispatch authorization unavailable')
         # Only the trusted server-side resolver can return the secret.
         secret=self._resolve()
         if type(secret) is not str or not re.fullmatch(
@@ -49,6 +66,15 @@ class OpenAITransport:
             'Authorization':'Bearer '+secret,
             'Content-Type':'application/json',
             'Accept':'application/json'})
+        # A slow key-vault resolution must not bypass a newly activated
+        # operator pause. Recheck immediately before the network opener.
+        # This is still a point-in-time check, NOT atomic with the HTTP send.
+        try:
+            if self._dispatch_guard() is not True:
+                raise PermissionError('OpenAI dispatch authorization unavailable')
+        except Exception:
+            raise PermissionError(
+                'OpenAI dispatch authorization unavailable') from None
         # Never log the Request object: it contains the Authorization header.
         try:
             with self._open(request,timeout=self._timeout) as response:
