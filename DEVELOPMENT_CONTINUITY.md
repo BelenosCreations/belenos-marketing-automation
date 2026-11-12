@@ -1,5 +1,13 @@
 # BAM development continuity checkpoint
 
+## Session-bound editorial feedback + atomic audit candidate — November 12, 2026
+
+**Last verified merged checkpoint:** PR #52 merged into `main` at `ada3ee5b9650de948764780bf4fba2b9627fd825`. Full [merged-main GitHub Actions 43325036530](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43325036530) passed; `development/phase-3-5-account-directory` safely fast-forwarded without force. Older "candidate" sections below document past work and are not current unmerged PRs.
+
+**Current candidate (unverified):** `neon_session_feedback_contract.py`, SQLite parity tests and disposable PostgreSQL real-client tests for owner/marketing-manager private feedback creation/revision, business-scoped note reads, stale revision and version denial, and event audit in the **same transaction**. `EphemeralSessionPostgres` remains loopback-test-only and cannot host a gateway or make external calls. Feedback never authorizes approval, executable scheduling or publication.
+
+**Recovery sequence:** verify current GitHub head, exact-head PR CI, safe green PR merge, full merged-main exact SHA CI, non-force fast-forward development branch. Keep README, CHANGELOG, and continuity current. Next large gates: complete trusted production PostgreSQL adapter, migration/restore tests, authorized authentication ingress, and explicit owner-controlled provider activation. **No paid services or hosting without separate approval.**
+
 ## Authenticated PostgreSQL held draft creation / revision candidate — November 12, 2026
 
 **Last fully verified repository state:** PR #51 merged into `main` at `386efe5ff56f2d1f9d9e5646fc7728ca13ccf4d2`, full [merged-main Actions 43317840660](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43317840660) **success**, and `development/phase-3-5-account-directory` safely fast-forwarded, now identical to main. Previous candidate sections are historical records, not current blockers.

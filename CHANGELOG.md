@@ -1,6 +1,13 @@
 # Changelog
 
-## November 12, 2026 — Authenticated held-draft creation and conflict-safe revision on disposable PostgreSQL (candidate)
+## November 12, 2026 — PostgreSQL private feedback and atomic audit trail (candidate)
+
+- Add session-bound business-specific feedback list, new-note creation and compare-and-swap note revision SQL with current identity, membership, role and expiry/revocation checked against the same PostgreSQL statement. Owners and marketing managers can write; other current members can only read.
+- Integrate feedback note creation/update with a matching event-history insertion inside a single disposable-CI PostgreSQL transaction; failed event recording rolls back the note. Compare-and-swap version tokens and draft revision checks reject stale concurrent review edits.
+- Add SQLite SQL-parity and ephemeral PostgreSQL tests for audit atomicity, cross-business isolation, viewer denial, token revocation, stale note visibility and racing writers. No note can approve or schedule a post.
+- Verified baseline: PR #52 merged `ada3ee5b`, [merged-main Actions 43325036530](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43325036530) passed; development safely synchronized. This candidate still needs its own PR and main CI. **$0** new costs, no Render/Neon creation, EdgePilot reuse or paid OpenAI/provider activity.
+
+## November 12, 2026 — Authenticated held-draft creation and conflict-safe revision on disposable PostgreSQL (verified PR #52)
 
 - Prepare session-token-hash-bound INSERT for new held drafts and single-column UPDATE for draft copy/guidance. Both recheck active, verified same-tenant editor permissions in the SQL statement; request ID and version token are server-generated. Status remains `needs_content` at creation and all mutations remain non-publishing.
 - Extend the strictly CI-only psycopg adapter with transaction-scoped create and revise methods. Match existing offline ContentRequests semantics without granting approval, schedule or provider calls.
