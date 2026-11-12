@@ -46,6 +46,10 @@ The public repository can now run standard GitHub-hosted runners with temporary 
 
 `neon_ai_budget_schema.py` adds eight SQL preview tables, bringing the reviewed test subset to **29 tables**. The stage also adds `reserved_micro_usd` and `unpriced_requests` to stage-3 user AI usage, mirroring the actual local sponsorship initializer's post-upgrade columns. Cost ledger schema preserves the tenant/user-scoped unique trusted-usage hash, while stage-only operator control starts `paused=1` rather than silently allowing sponsored provider calls. GitHub Actions uses its disposable PostgreSQL container to verify deduplication and pause rules. Values remain **estimates**, not real provider invoices; no automatic OpenAI permission, production Postgres adapter or approved Neon deployment exists.
 
+## Fifth CI-only PostgreSQL stage: business research and analytic imports
+
+`neon_business_analytics_schema.py` adds seven further Postgres DDL previews: business profiles/topics/sources/competitor blocks, audience observation records, analytics cursors, and legacy tenant ownership metadata. `neon_scoped_business_analytics.py` offers *non-executing* parameterized tenant/current-owner research and synthetic audience read contracts, each joining verified active identity and current membership. Stage 5 of temporary CI-only Postgres now covers **36 tables** and tests cross-business isolation and composite foreign keys. It is not a production database driver, real insights feed, hosted app or scraped source ingestion.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

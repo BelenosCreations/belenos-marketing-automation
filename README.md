@@ -68,6 +68,10 @@ Seven additional table definitions now have **actual disposable PostgreSQL CI co
 
 The fourth **ephemeral CI migration stage** now models AI business facts, independently editable post/image draft components and their verified-media references, projected AI cost receipts, generation idempotency, and tenant/operator spending counters. The reviewed subset expands to **29 tables**. It adds the reserved-cost/unpriced-request columns required by BAM's existing sponsorship logic, and starts staged PostgreSQL operator AI control **paused by default**. Real PostgreSQL CI verifies estimated-cost receipt deduplication and the pause invariant. This is a data-model safeguard, **not permission to call OpenAI or charge users**.
 
+### Free PostgreSQL CI: business research and analytics metadata (offline)
+
+A fifth versioned, disposable GitHub CI PostgreSQL stage now previews seven more source tables: per-business profiles, topics, approved research sources and competitor blocks, tenant-owned legacy resource labels, authorized analytics checkpoints, and audience observations. The reviewed schema grows from **29 to 36 tables**. New prepared read-contract tests confirm that an active owner can read only their business's synthetic analytics, and another business or deactivated identity cannot read that data; source classifications have real PostgreSQL foreign-key checks. This **does not fetch real analytics or scrape competitors**, and is not a hosted application or production migration. The $0 additional-cost policy remains active.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:
