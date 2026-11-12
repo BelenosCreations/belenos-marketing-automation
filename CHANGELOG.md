@@ -1,5 +1,14 @@
 # Changelog
 
+## November 11, 2026 — BAM-sponsored AI operator pause and safe budget holds
+
+- Added persistent **operator-only** offline pause controls to `SponsoredAIQuota`: `set_operator_paused_trusted` and `operator_pause_status_trusted`. Pause blocks **new** sponsored reservations for all businesses, users and UTC months after revalidation under the SQLite write lock; no counters or estimated charges are added for refused requests.
+- Added an independent two-SQLite-client race test in which an operator pause wins after a writer's initial policy check but before reservation commit. A missing control row fails closed, and invalid non-boolean or untrusted-time settings are rejected.
+- Whitelisted explicit, non-sensitive quota refusal reasons across both HTTPS generation and targeted-revision routes and strict JavaScript clients, including `operator_paused`, historical-unpriced blockers and per-user/business/operator projected-cost ceilings. Unknown hold reasons cannot leak to the browser.
+- Added offline HTTPS end-to-end coverage proving the pause prevents draft-generation and targeted-revision executors, consumes no additional quota while paused and does **not automatically retry** a failed request key when subsequently resumed.
+- **Verified code:** `cb23ebbd212986e72e6351b34c834fc3fd43a12c` passed [GitHub Actions 43142566744](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43142566744), covering Python compilation, the complete offline Python suite, JavaScript syntax checks and UI tests. This documentation-only follow-up requires its own exact-SHA verification.
+- **Limitations:** This is a **trusted operator configuration primitive**, not an authenticated customer-accessible pause UI, not a provider-level emergency stop, and **cannot cancel already-reserved or in-flight provider requests**. It does not enable or authorize paid OpenAI traffic. Real pricing, input token enforcement, provider usage reconciliation, billing safeguards and a production dispatch circuit breaker remain separate gates.
+
 ## November 11, 2026 — Final preflight recheck and trusted sponsored AI projection input
 
 - Sponsored quota admission now revalidates the current role and funding mode under `BEGIN IMMEDIATE` before writing any user/business/operator count or projected-cost counters. A membership demotion or own-key switch after the initial preflight can no longer pass the transaction boundary.

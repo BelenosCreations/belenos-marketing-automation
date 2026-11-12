@@ -8,6 +8,10 @@
 **Activation status:** Offline private Alpha. No live Meta OAuth, social scheduling/publishing, production hosting, real email invitation delivery, actual OpenAI API calls, paid AI, or public Android APK.
 **Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`, `checkpoint/alpha-team-invitations-2026-11-11`. These are GitHub refs, not enforced branch protection or off-GitHub backups.
 
+**Most recent verified merged baseline:** `ebf71f4cd4afa937a4b1fdc680e4da5d6d2b9c9f` on `main` and development, [Actions 43139924986](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43139924986) and [43140139936](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43140139936) **passed**.
+**New verified development code:** `cb23ebbd212986e72e6351b34c834fc3fd43a12c`, [GitHub Actions 43142566744](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43142566744) **passed**. This operator pause/budget-hold milestone has **not yet been merged into main**. The documentation-only checkpoint requires its own exact-SHA CI before a reviewed PR.
+**Recovery and safety:** Continue on `development/phase-3-5-account-directory`, never force push, merge green milestones through PR and fast-forward development after green main CI. Paid OpenAI, direct social publishing, public hosting and deployed subscription billing remain disabled.
+
 ## Most recent development milestone
 
 - Sponsored request-count and operator-estimated micro-USD quotas are atomic across the individual, business, and BAM operator. Unpriced historical requests prevent accidental mid-month cost undercounting.
