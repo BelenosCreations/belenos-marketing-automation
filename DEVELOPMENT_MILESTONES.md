@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Sponsored AI authorization at commit and conservative cost projection — November 11, 2026
+
+Budget tests now pause after the initial sponsor role/funding check, change an employee's business role or mode on a second SQLite connection, then prove that `SponsoredAIQuota.reserve` refuses the write after revalidation under `BEGIN IMMEDIATE`. A pure pricing helper produces upward-rounded estimated micro-USD from operator-supplied token prices and bounded assumed input/output tokens; it does not assert provider price accuracy or actual token usage. An internal `reserve_current_utc_month` method derives month from trusted server time. Legacy fixture-only explicit-month paths must never accept client-supplied billing month in production.
+
+**Verification:** code `5d80f58c7896fa73965ff6e8c3081af07410188f` passed [GitHub Actions 43139361336](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43139361336). Documentation-only follow-up must pass its own exact-SHA CI. No external paid API or live publication.
+
+
+
 ## Sponsored AI projected spend reservations and legacy migration — November 11, 2026
 
 The offline sponsorship plan can now optionally carry a conservative operator-estimated per-request micro-USD reservation and explicit user/tenant/operator monthly projected-cost ceilings. During `SponsoredAIQuota.reserve`, the three count and three projected-cost counters are updated together under the same SQLite write lock. Denial at any layer rolls back the entire request; simultaneous clients cannot overspend a shared projection cap. A migration marks historical count-only reservations `unpriced_requests`, and a mid-month dollar projection cap refuses to ignore that unknown history. No actual token usage or provider bill is inferred, and actual paid calls remain disabled.

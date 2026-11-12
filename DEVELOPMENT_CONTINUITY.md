@@ -1,46 +1,30 @@
 # BAM development continuity checkpoint
 
-**Date:** 2026-11-11, America/New_York.
+**Date:** November 11, 2026 (America/New_York).
 **Repository:** `BelenosCreations/belenos-marketing-automation` (private).
-**Active branch:** `development/phase-3-5-account-directory`.
+**Active development:** `development/phase-3-5-account-directory`.
+**Most recent verified `main` commit:** `75abc83000655a37dd234b026bb606c4415d5a3d`, [full CI 43138740119](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43138740119) **success**, merged [PR #15](https://github.com/BelenosCreations/belenos-marketing-automation/pull/15).
+**Most recent verified development code:** `5d80f58c7896fa73965ff6e8c3081af07410188f`, [full CI 43139361336](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43139361336) **success**. This documentation-only checkpoint is a newer commit requiring its own run before PR merge.
+**Activation status:** Offline private Alpha. No live Meta OAuth, social scheduling/publishing, production hosting, real email invitation delivery, actual OpenAI API calls, paid AI, or public Android APK.
+**Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`, `checkpoint/alpha-team-invitations-2026-11-11`. These are GitHub refs, not enforced branch protection or off-GitHub backups.
 
-## Current milestone — projected AI budget containment (offline, not actual billing)
+## Most recent development milestone
 
-The previously verified social-connection/analytics revocation milestone was merged via PR #14 and passed `main` [Actions 43137518752](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43137518752) at `c37b5c90941a03aa545518d70b73d448603ac8b0`; development was fast-forwarded. The new projected-micro-USD sponsored AI quota code at `5dee209bb2df1c9b6bb3afe1470cdd2f69798aea` **passed** [Actions 43138168968](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43138168968). This docs-only checkpoint is still awaiting CI, reviewed PR, merged-main CI and development synchronization. Existing request-count quota policy is preserved; projected dollar values are arbitrary **operator-configured conservative estimates**, not prices, provider usage, or verified invoices. No real paid service or publishing enabled.
+- Sponsored request-count and operator-estimated micro-USD quotas are atomic across the individual, business, and BAM operator. Unpriced historical requests prevent accidental mid-month cost undercounting.
+- After initial preflight, funding mode and active role are **rechecked under the SQLite writer lock**; business-role demotion and switching to personal-key mode cannot slip through a sponsored quota write.
+- `conservative_request_cost_micro_usd` calculates upward-rounded projections **only** from operator-configured pricing and assumed input/output token ceilings. It does not verify model pricing, actual token usage, or provider charges.
+- Future trusted composition can use `reserve_current_utc_month` to derive billing month from server time. The legacy explicit-month reservation interface remains **internal/offline**; never let a browser choose its funding month.
+- Code at `5d80f58c` passed full [Actions 43139361336](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43139361336). Complete exact-head CI, reviewed milestone PR, green `main` CI, then fast-forward development.
 
+## Safe resume and synchronization procedure
 
-## Current milestone — offline social permission fail-closed integration
+1. Read current `main` and development GitHub HEADs and Actions. Do not assume an interrupted commit or CI run succeeded.
+2. Continue work on the development branch with expected-SHA, non-force updates. Keep all data tenant-scoped and fail closed on stale sessions, approvals, and revisions.
+3. Update README for current product/implementation, CHANGELOG for changes, DEVELOPMENT_MILESTONES for technical history, and this file for the current recovery checkpoint.
+4. Merge at significant **green** milestones (or before ~50 commits of divergence), through a reviewed PR. Verify the exact PR commit, recheck branch heads, merge, verify `main` CI, then fast-forward development to the verified merge.
+5. Never activate deployment, provider OAuth, invitation email, paid OpenAI, live scheduling, social publication, or external file transfer without the separate owner-approved production gate.
 
-The last synchronized `main` source checkpoint was `77b5ec718dbc47f9380031e86ab7d5206e1218ee` and is fully green ([Actions 43128287935](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43128287935)). Development has implemented explicit read-only registry scopes, stale-state protection and revocation-aware analytics transaction guards. **Code checkpoint `2bf15248172ed56d78b98ad8d84250b45c6749a3` is verified green** ([Actions 43136954406](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43136954406)); the documentation-only follow-up is pending its own exact-SHA verification and PR. No external Meta/OAuth connection was initiated, and neither publishing nor paid AI is enabled. Resume from actual GitHub branch SHA, not older status notes below. Maintain milestone PR merges and main/dev fast-forward synchronization.
-
-**Most recent verified main code:** `0d91198f1550bd6dcb3b6a03ab74d2df9429b526` ([Actions 43127125367](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43127125367) successful; [PR #12](https://github.com/BelenosCreations/belenos-marketing-automation/pull/12) merged offline calendar proposal concurrency protection).
-**Most recent verified development code:** `7d18e5ed789d353416236beb934de08ce334957f` ([Actions 43127670375](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43127670375) passed, includes sponsored quota layers and independent-client race tests). The later mid-month metering change `ef3e3509f273e621d0ad26663d02dd36cba650fa` and this documentation are pending final exact-head verification.
-**Verification:** Full GitHub Actions [run 43100795231](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100795231) completed successfully on the exact merged commit. Integration candidate `748c3a1a` also passed [push run 43100505574](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100505574) and [PR run 43100515217](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43100515217).
-**Merge:** [PR #2](https://github.com/BelenosCreations/belenos-marketing-automation/pull/2) reconciled `main` with development; a two-parent integration history preserved both sets of changes. Development was fast-forwarded to main once the merged commit passed.
-**Recovery refs:** `checkpoint/alpha-last-green-2026-11-11`, `checkpoint/alpha-ci-green-2026-11-11`, `checkpoint/alpha-pre-merge-2026-11-11`. These are not off-site backups or enforced protection.
-
-**Source-code status:** The previously pending editorial, draft-concurrency, invitation/scheduling and TruthGuard security tests are included in this verified integration. No production features are thereby authorized. This documentation-only follow-up should be independently checked before declaring its own final SHA verified.
-
-
-**Latest confirmed development source:** `92d172552a5e63cf48f8ed9ef99bebb1f5114e88` passed [Actions 43120560150](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120560150), including JavaScript syntax validation, UI regressions, and offline Python tests. [Actions 43120107192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43120107192) separately passed the repaired invitation workspace syntax. Follow-up logout-race test/documentation is pending exact-SHA verification. `main` remains distinct and the new checkpoint is not yet merged. No hosting or social publishing was enabled.
-
-**Latest verified main checkpoint:** `7662dd2976e6420b73cf6ec825eb7aba1dbdb9ac` ([Actions 43121324700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43121324700)). **Most recent verified development checkpoint:** `538bb79d874821e406b2521384d3feaad0297c33`, [Actions 43122286878](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43122286878) **passed** all offline tests. This documentation-only status update has not yet been separately verified, and the audit milestone still requires a reviewed merge to main. Recovery checkpoint `checkpoint/alpha-team-invitations-2026-11-11` preserves the preceding verified main milestone.
-
-## Current work — sponsored AI request ceilings (offline)
-
-After synchronizing development to verified main `0d91198f`, the code now supports optional server-controlled **individual, business and operator monthly sponsored request ceilings** using an atomic SQLite reservation, and tracks aggregate usage even before their limits are activated. Privileged draft-creation authorization is required. Offline two-client races verify that concurrent reservations cannot overspend a shared *request-count* ceiling. These protections are not billing, dollar limits, usage-priced invoices, hosted enforcement, model API authorization or live AI. Merge only when exact-head CI is green, then verify main and fast-forward development.
-
-## Current work — concurrent-safe held calendar proposals (offline)
-
-Development has advanced past the verified `main` invitation-issuance merge `9b358717` to strengthen calendar proposals. Proposal creation now verifies the current draft revision/status at SQL write time; an edit requires the exact random proposal token and can never overwrite a concurrent update or draft change. Independent SQLite-client races exercise competing edits and double-booking; the separate work remains a **non-executable dry run**. Merge only after exact-sha green CI and review; then verify `main` and synchronize development.
-
-## Current work — optional invitation issuance (offline)
-
-The owner-confirmed issue route, two explicit server/browser feature switches, and strict request/response contracts are added to the development branch only. They are **disabled by default**, require a callback intentionally provided by trusted offline fixtures, never expose tokens, and still do not implement public acceptance or live email. New WSGI, gateway and browser tests include a two-step confirmation and logout race. Exact-head GitHub CI is required before review/merge. No paid services or publishing activated.
-
-## Current work — transactional invitation acceptance (November 11, 2026)
-
-`main` and development were synchronized at `8945577d4b` after PR #9 and successful main CI. Development then added a single-transaction invitation acceptance flow, followed by independent-file-connection duplicate issuance, double-redemption, cancel-versus-redeem races and audit-failure rollback regressions. **Preserve the separate development branch until exact-head CI passes and the reviewed PR merge succeeds.** No external services have been enabled.
+Older technical milestones and historical run evidence remain in [DEVELOPMENT_MILESTONES.md](DEVELOPMENT_MILESTONES.md) and [CHANGELOG.md](CHANGELOG.md); those are not claims that any earlier pending step is still pending now.
 
 ## Product-direction checkpoint — 2026-11-11 (documentation only)
 

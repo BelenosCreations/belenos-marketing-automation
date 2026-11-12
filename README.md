@@ -167,3 +167,10 @@ The existing sponsored OpenAI request-count quotas now also support **operator-c
 
 To avoid misleading accounting, historical sponsored requests with **unknown estimated costs** are marked unpriced during schema migration; enabling an estimated-dollar ceiling partway through such a month fails closed rather than ignoring earlier requests. A server plan must explicitly supply a nonzero conservative per-request estimated amount before dollar-denominated projected caps can be used. The estimates are operator assumptions, **not provider token usage, an actual invoice, a guarantee about final spend, or permission for paid AI calls**. Before any live AI activation, the chosen model's current pricing, actual input token ceilings, receipts, reconciliation, circuit breakers, and operator-approved dollar spending policy must be verified and integrated.
 
+
+### Trusted AI budget admission and conservative cost projection (offline Alpha)
+
+The sponsored request budget now **rechecks the current business role and sponsored-versus-personal funding choice while holding SQLite's write lock**, after preliminary authentication. If an employee loses editing permission or switches funding modes during an in-progress request, no new BAM-sponsored count or projected-cost reservation is committed. Separate SQLite-client race tests simulate permission changes at that boundary.
+
+A **pure pricing calculator** can estimate a conservative micro-USD request reservation from operator-supplied input/output token ceilings and explicit operator-configured token prices, rounding fractions upward. It is **not** verified pricing, actual tokenization, a bill, or evidence that the executor enforces the input limit. A separate internal `reserve_current_utc_month` entry point derives the accounting month from a trusted server timestamp; older explicit-month test fixtures remain and **must not be exposed to untrusted clients**. No live OpenAI traffic or payment capability was enabled.
+

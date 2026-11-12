@@ -1,5 +1,14 @@
 # Changelog
 
+## November 11, 2026 — Final preflight recheck and trusted sponsored AI projection input
+
+- Sponsored quota admission now revalidates the current role and funding mode under `BEGIN IMMEDIATE` before writing any user/business/operator count or projected-cost counters. A membership demotion or own-key switch after the initial preflight can no longer pass the transaction boundary.
+- Added separate SQLite-client regression tests that pause precisely **after** the initial role/funding preflight, change the membership on a second connection, and verify that no reservation is committed. Added corresponding same-connection mode-switch coverage.
+- Added `conservative_request_cost_micro_usd` with **explicit operator-provided** `AITokenPricing`, bounded input/output token assumptions and upward micro-USD rounding; no current model pricing is hard-coded and token ceilings are not yet enforced against a real provider request.
+- Added `reserve_current_utc_month` for future trusted composition, deriving the billing month from the server clock instead of trusting a user-supplied month. Existing legacy `reserve(month=...)` is a fixture/internal path that **must not** be exposed as a production client argument.
+- **Verification:** [Actions 43139361336](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43139361336) **passed** exact source `5d80f58c7896fa73965ff6e8c3081af07410188f`, with full offline regression suite, Python compile and JavaScript UI tests. This documentation follow-up still requires exact-head CI.
+- No hosted billing, paid OpenAI request, actual usage receipt, guaranteed final cost, password/token exposure, external hosting or publication activation.
+
 ## November 11, 2026 — Atomic projected micro-USD AI reservation ceilings
 
 - Expanded the existing disabled-by-default sponsored OpenAI quota primitive with optional **per-user, per-business and overall-operator estimated micro-USD ceilings**, alongside existing monthly request-count limits.
