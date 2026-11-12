@@ -30,6 +30,11 @@ from neon_session_feedback_contract import (
     prepare_session_feedback_remove,summarize_session_feedback_remove,
     prepare_session_feedback_removal_event,
     prepare_session_feedback_history,summarize_session_feedback_history)
+from neon_session_schedule_settings_contract import (
+    prepare_session_schedule_settings_read,
+    summarize_session_schedule_settings,
+    prepare_session_schedule_settings_save,
+    summarize_session_schedule_settings_save)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -190,6 +195,26 @@ class EphemeralSessionPostgres:
             server_now=server_now)
         rows=self._conn.execute(sql,params).fetchall()
         return summarize_session_feedback_history(rows,tenant_id=tenant_id)
+
+    def read_scheduling_settings(self,*,raw_session_token,tenant_id,
+                                server_now):
+        sql,params=prepare_session_schedule_settings_read(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            server_now=server_now)
+        row=self._conn.execute(sql,params).fetchone()
+        return summarize_session_schedule_settings(row,tenant_id=tenant_id)
+
+    def save_scheduling_settings(self,*,raw_session_token,tenant_id,
+                                preferences,expected_revision,server_now):
+        sql,params=prepare_session_schedule_settings_save(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            preferences=preferences,expected_revision=expected_revision,
+            server_now=server_now)
+        with self._conn.transaction():
+            row=self._conn.execute(sql,params).fetchone()
+            return summarize_session_schedule_settings_save(
+                row,tenant_id=tenant_id,
+                expected_revision=expected_revision)
 
     def update_draft_priority(self,*,raw_session_token,tenant_id,request_id,
                               expected_priority_token,priority,server_now):

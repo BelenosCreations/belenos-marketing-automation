@@ -1515,5 +1515,148 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(actions,[('created',),('removed',)])
 
 
+    def test_pg_session_scheduling_preferences_roundtrip(self):
+        import hashlib
+        from posting_schedule_policy import SchedulePreferences
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        owner='Synthetic_PG_Scheduling_Owner_Session_12345678'
+        viewer='Synthetic_PG_Scheduling_Viewer_Session_1234567'
+        manager='Synthetic_PG_Scheduling_Manager_Session_123456'
+        self.conn.execute("""INSERT INTO bam_identities
+            (subject_id,email,email_verified,active,created_at)
+            VALUES ('scheduleManager','schedulemanager@example.test',1,1,100)""")
+        self.conn.execute("""INSERT INTO members
+            (tenant_id,subject_id,role,active,revision)
+            VALUES ('shop-a','scheduleManager','marketing_manager',1,1)""")
+        for token,subject,role in (
+            (owner,self.a,'owner'),
+            (viewer,self.viewer,'viewer'),
+            (manager,'scheduleManager','marketing_manager')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (hashlib.sha256(token.encode()).hexdigest(),subject,role))
+        app=EphemeralSessionPostgres(self.conn)
+        manual=SchedulePreferences(
+            'manual','America/New_York',
+            {1:['10:00','11:17'],4:['18:30']},
+            preferred_hours=(9,12,17,19))
+        self.assertIsNone(app.read_scheduling_settings(
+            raw_session_token=owner,tenant_id='shop-a',server_now=101))
+        with self.assertRaises(PermissionError):
+            app.save_scheduling_settings(
+                raw_session_token=viewer,tenant_id='shop-a',
+                preferences=manual,expected_revision=0,server_now=101)
+        with self.assertRaises(PermissionError):
+            app.save_scheduling_settings(
+                raw_session_token=owner,tenant_id='shop-b',
+                preferences=manual,expected_revision=0,server_now=101)
+        receipt=app.save_scheduling_settings(
+            raw_session_token=owner,tenant_id='shop-a',
+            preferences=manual,expected_revision=0,server_now=101)
+        self.assertEqual(receipt['revision'],1)
+        self.assertFalse(receipt['publishing_enabled'])
+        self.assertEqual(receipt['posts_scheduled'],0)
+        owner_result=app.read_scheduling_settings(
+            raw_session_token=owner,tenant_id='shop-a',server_now=102)
+        viewer_result=app.read_scheduling_settings(
+            raw_session_token=viewer,tenant_id='shop-a',server_now=102)
+        self.assertEqual(viewer_result,owner_result)
+        self.assertEqual(owner_result['preferences'].manual_weekly,
+                         manual.manual_weekly)
+        self.assertIsNone(app.read_scheduling_settings(
+            raw_session_token=owner,tenant_id='shop-b',server_now=102))
+        smart=SchedulePreferences('smart','America/Chicago',{},
+                                  preferred_hours=(9,15,20))
+        update=app.save_scheduling_settings(
+            raw_session_token=manager,tenant_id='shop-a',
+            preferences=smart,expected_revision=1,server_now=103)
+        self.assertEqual(update['revision'],2)
+        self.assertEqual(app.read_scheduling_settings(
+            raw_session_token=owner,tenant_id='shop-a',
+            server_now=103)['preferences'],smart)
+        with self.assertRaises(PermissionError):
+            app.save_scheduling_settings(
+                raw_session_token=owner,tenant_id='shop-a',
+                preferences=manual,expected_revision=1,server_now=104)
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM bam_calendar_proposals""").fetchone()[0],0)
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM tenant_posts""").fetchone()[0],0)
+
+    def test_pg_scheduling_settings_concurrent_edits_and_revocation(self):
+        import hashlib
+        from posting_schedule_policy import SchedulePreferences
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Concurrent_Scheduling_Session_12345'
+        digest=hashlib.sha256(token.encode()).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (digest,self.a))
+        app=EphemeralSessionPostgres(self.conn)
+        original=SchedulePreferences('smart','America/New_York',{},
+                                      preferred_hours=(9,12))
+        app.save_scheduling_settings(
+            raw_session_token=token,tenant_id='shop-a',
+            preferences=original,expected_revision=0,server_now=101)
+        barrier=threading.Barrier(2)
+        successes=[]
+        denials=[]
+        errors=[]
+        def writer(zone):
+            conn=self._connect()
+            try:
+                client=EphemeralSessionPostgres(conn)
+                prefs=SchedulePreferences('smart',zone,{},
+                                          preferred_hours=(10,18))
+                barrier.wait(timeout=15)
+                try:
+                    result=client.save_scheduling_settings(
+                        raw_session_token=token,tenant_id='shop-a',
+                        preferences=prefs,expected_revision=1,
+                        server_now=102)
+                    successes.append((result['revision'],zone))
+                except PermissionError:
+                    denials.append(zone)
+            except Exception as exc:
+                errors.append(type(exc).__name__)
+            finally:
+                conn.close()
+        threads=[threading.Thread(target=writer,args=(z,))
+                 for z in ('America/Chicago','America/Denver')]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=20)
+        self.assertTrue(all(not t.is_alive() for t in threads))
+        self.assertEqual(errors,[])
+        self.assertEqual(len(successes),1)
+        self.assertEqual(successes[0][0],2)
+        self.assertEqual(len(denials),1)
+        self.assertEqual(app.read_scheduling_settings(
+            raw_session_token=token,tenant_id='shop-a',
+            server_now=103)['preferences'].timezone_name,
+            successes[0][1])
+        self.conn.execute("""UPDATE members SET role='viewer'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        with self.assertRaises(PermissionError):
+            app.save_scheduling_settings(
+                raw_session_token=token,tenant_id='shop-a',
+                preferences=original,expected_revision=2,server_now=103)
+        self.conn.execute("""UPDATE members SET role='owner'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.conn.execute("""UPDATE sessions SET revoked_at=104
+            WHERE token_hash=%s""",(digest,))
+        with self.assertRaises(PermissionError):
+            app.save_scheduling_settings(
+                raw_session_token=token,tenant_id='shop-a',
+                preferences=original,expected_revision=2,server_now=105)
+        self.assertIsNone(app.read_scheduling_settings(
+            raw_session_token=token,tenant_id='shop-a',server_now=105))
+        self.assertEqual(self.conn.execute(
+            "SELECT revision FROM scheduling_settings").fetchone()[0],2)
+
+
 if __name__=='__main__':
     unittest.main()
