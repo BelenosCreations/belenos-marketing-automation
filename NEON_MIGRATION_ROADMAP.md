@@ -88,3 +88,8 @@ The local no-data schema inventory now tracks all seven PostgreSQL DDL preview g
 ## Current owner-only invitation SQL security (November 12, 2026 candidate)
 
 A new SQL-only `neon_session_collaboration_contract.py` builds a limited owner-only pending invitation metadata SELECT, deriving the current owner from a verified hashed session token and checking membership, role, identity validity and expiration/revocation in the same SQL statement. This does not expose bearer invite token hashes, issue or send invitations, or add a production PostgreSQL adapter, gateway or deployment. Validate against disposable PostgreSQL and repeat production authentication/transaction testing only after explicit separate deployment approval.
+
+
+## First executable disposable-only PostgreSQL session facade (November 12, 2026 candidate)
+
+`neon_ci_session_adapter.EphemeralSessionPostgres` consumes an *already-created* psycopg connection restricted to the known GitHub CI PostgreSQL loopback database/schema/user. It executes session-hash-authenticated held draft/calendar read, owner invitation metadata read and atomic priority CAS using existing audited SQL contracts. Synthetic real-PostgreSQL integration tests check cross-tenant denial, stale writes and cross-connection session revocation. It deliberately refuses production databases, Neon and arbitrary TCP hosts; it cannot open a new connection, accept web traffic, publish or schedule. Next engineering gates remain an independent production adapter/pool, atomic transaction design, full table port, actual data migration/restore tests and explicitly authorized secure hosting.

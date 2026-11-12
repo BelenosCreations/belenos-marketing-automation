@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Disposable PostgreSQL authenticated read/CAS execution facade (candidate)
+
+- Add a strictly CI-loopback PostgreSQL psycopg facade to execute existing token-hash-bound held draft, non-executable calendar, owner invitation and draft-priority CAS SQL against synthetic data. It opens no connections and refuses unknown host, database, user or schema.
+- Add actual temporary PostgreSQL end-to-end tests for expired/revoked sessions, cross-tenant reads, stale priority writes, unchanged draft copy/revision, separate-client revocation and owner-private invitations; fail closed when PostgreSQL context is not the known CI fixture.
+- Last verified baseline: PR #48 merged at 7baf3be0, full main Actions 43271490619 green. This candidate is not a production adapter, public gateway, customer data migration, Neon integration, live publishing or an authorized expense.
+
 ## November 12, 2026 — Live-session-bound owner invitation reads (candidate)
 
 - Add SQL-only PostgreSQL pending-invitation metadata read, accepting a server-presented session bearer, not a caller-supplied member ID. Recheck current business membership and owner role, verification, session expiration and revocation in one statement.

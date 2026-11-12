@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Disposable PostgreSQL session I/O candidate — November 12, 2026
+
+**Verified baseline:** PR #48 merged at `7baf3be09f8b8dfba92e44e628d6d8efd6e3f22a`; full [merged-main Actions 43271490619](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43271490619) **success**, development fast-forwarded safely. **Current unverified candidate:** strictly test-only psycopg execution facade for hashed-session draft/calendar reads, owner invitation preview and priority CAS. It accepts only a disposable loopback CI connection and executes no live provider operations; check against temporary PostgreSQL transactions and separate-client revocation. PR green → main merge → exact merged-main green → non-force development sync. **$0** incremental cost, no new Render/Neon or paid AI, no production/public API.
+
 ## Owner invitation private read security candidate — November 12, 2026
 
 **Last verified baseline:** PR #47 merged into main at `5176238ed109d77f7270f62d25961583a2ac5342`, full [merged-main CI 43270187751](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43270187751) success, and development safely synchronized. **Current candidate:** separate SQL-only, session-hash-bound PostgreSQL read of owner-private pending invite metadata; SQLite and ephemeral PostgreSQL tests for viewer/tenant/revocation/role denial, no invitation token digest disclosure. Reorder README to show product experience before historic implementation notes. Verify exact PR/main CI and fast-forward without force. All $0 development and nonactivation boundaries remain in force.
