@@ -16,6 +16,10 @@
 **Most recent verified development source:** `9765961fc8a63433863c91c9700f80891a9544fb`, [GitHub Actions 43143316508](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43143316508) **passed**. Optional hash-based AI usage report deduplication is committed but **not yet merged into main**. This document-only follow-up must pass CI on its own SHA.
 **Persistent protections:** Main and development remain GitHub-backed with recovery refs. The new AI operator pause is quota-admission only; cost-event deduplication remains internal and is not billing-provider reconciliation, a paid dispatch switch or production hosting.
 
+**Most recent verified merged `main` commit:** `03484424884a378976dc6cc0d44ff69f0aa75d5d`, [GitHub Actions 43143688135](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43143688135) **passed**. Development was fast-forwarded to the merge before starting this milestone.
+**New verified development code:** `d14bbd3f1857d73777a6ec8b958ac0b474a2a1d6` passed [GitHub Actions 43144166053](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144166053). Mandatory offline OpenAI dispatch guard checks are committed but **not yet merged into main**. This docs-only checkpoint must pass its own CI.
+**Safety:** Even with a quota pause and transport preflight, a newly activated pause cannot atomically cancel a concurrent network send already past its final check. Production provider transport remains disabled by default; no paid OpenAI, social publishing or hosting was activated.
+
 ## Most recent development milestone
 
 - Sponsored request-count and operator-estimated micro-USD quotas are atomic across the individual, business, and BAM operator. Unpriced historical requests prevent accidental mid-month cost undercounting.

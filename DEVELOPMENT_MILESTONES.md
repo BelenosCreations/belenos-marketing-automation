@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Mandatory trusted OpenAI transport dispatch guard — November 11, 2026
+
+An explicitly enabled `OpenAITransport` now requires a trusted injected `dispatch_guard`; absent or invalid callbacks fail closed and the disabled offline bundle remains disabled. After strict payload validation it checks authorization *before* secret resolution, then checks again just before the injected opener. `SponsoredAIQuota.authorize_new_dispatch_trusted` can enforce the persisted operator pause for this guard. Tests verify key and network dependencies are untouched during a pause, invalid or exception-raising callbacks are sanitized, pause/resume works and a pause during key lookup denies the request before transport. This remains a **point-in-time check** and cannot atomically fence a concurrent pause after the check or cancel in-flight HTTP.
+
+**Verified:** `d14bbd3f1857d73777a6ec8b958ac0b474a2a1d6` passed [GitHub Actions 43144166053](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43144166053). Documentation follow-up requires its own exact-SHA run. No paid API, live credential or HTTPS external connection was activated.
+
 ## Trusted AI cost event deduplication — November 11, 2026
 
 A nullable, uniquely indexed `trusted_usage_hash` was added to `bam_ai_cost_events` with an idempotent migration; existing rows keep NULL without an invented usage reference. An optional exact 32-hex trusted server-owned `usage_ref` is hashed and scoped to `tenant_id` and `subject_id`; a duplicate with matching model/token/estimate returns the original event ID and `replayed:true`, whereas a changed payload with the same reference is rejected. Legacy unkeyed events remain append-only. Two independent SQLite-connection workers and migration/replay/tenant-isolation regressions prove the deduplication behavior locally.
