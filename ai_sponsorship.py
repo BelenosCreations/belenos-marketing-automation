@@ -44,6 +44,11 @@ class SponsorshipPlan:
                (type(value) is not int or not 0<=value<=10**12)
                for value in values):
             raise ValueError('Trusted estimated micro-USD ceilings required')
+        # Bound the aggregate integer math: at most 10 million operator
+        # reservations times 1 billion micro-USD each fits SQLite int64.
+        if (self.max_request_estimated_micro_usd is not None and
+            self.max_request_estimated_micro_usd>10**9):
+            raise ValueError('Per-request estimate exceeds safe maximum')
         if (self.max_request_estimated_micro_usd==0 or
             (any(value is not None for value in estimated_caps) and
              self.max_request_estimated_micro_usd is None)):
