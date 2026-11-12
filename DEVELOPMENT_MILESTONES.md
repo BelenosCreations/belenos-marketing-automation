@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## OpenAI Responses identity to private cost event deduplication — November 11, 2026
+
+`OpenAIResponsesExecutor` validates a bounded `resp_...` ID whenever a trusted `usage_observer` is provided. It computes a SHA-256-based 32-hex `usage_ref` and forwards this alongside server-controlled tenant/subject, model and reported token counts. `AICostLedger` stores a unique hash of that reference scoped to tenant+subject. Its already-tested compare-and-set behavior returns the previous event for a matching replay and rejects different model/usage/cost. Tests with fake Responses exercise missing/invalid IDs, repeated and contradictory usage, tenant isolation and unchanged unpublished held drafts. This integration is internal-only; it does not verify actual OpenAI receipts, real current pricing, invoices, whether a provider request was billed after a failed parse, or reserved-versus-actual spending.
+
+**Verified:** `f95f0820080ac77600257e0ea072a0d0c0af3fa3`, [GitHub Actions 43145005354](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43145005354), full offline tests. This documentation commit has its own pending CI. No outbound paid AI or publishing.
+
 ## Mandatory trusted OpenAI transport dispatch guard — November 11, 2026
 
 An explicitly enabled `OpenAITransport` now requires a trusted injected `dispatch_guard`; absent or invalid callbacks fail closed and the disabled offline bundle remains disabled. After strict payload validation it checks authorization *before* secret resolution, then checks again just before the injected opener. `SponsoredAIQuota.authorize_new_dispatch_trusted` can enforce the persisted operator pause for this guard. Tests verify key and network dependencies are untouched during a pause, invalid or exception-raising callbacks are sanitized, pause/resume works and a pause during key lookup denies the request before transport. This remains a **point-in-time check** and cannot atomically fence a concurrent pause after the check or cancel in-flight HTTP.
