@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Full seven-stage PostgreSQL preview coverage inventory (candidate)
+
+- Extend metadata-only local schema inventory beyond its original nine-table subset, explicitly counting all 46 reviewed table DDL previews in seven groups and showing remaining unreviewed table names/counts without exposing data.
+- Preserve original nine-table fields for compatibility; add per-table reviewed flag and separately report optional preview tables not initialized in the current local database.
+- Add regression tests for stage counts, private data exclusion and non-production flags. PR #46 successfully merged to main at bc037ded and passed merged-main Actions 43268647305. This candidate needs exact-SHA PR/main CI. No customer migration, hosted resources or additional expense.
+
 ## November 12, 2026 — Token-bound PostgreSQL draft priority edit (candidate)
 
 - Add a pure PostgreSQL SQL builder for a priority-only draft CAS update. Derive the actor from the presented session token hash, rechecking same-tenant role, active/verified identity, expiry, revocation and the expected priority token in the update statement.

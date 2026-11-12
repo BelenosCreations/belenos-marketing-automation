@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Verified token-authenticated priority edits; PostgreSQL preview inventory candidate — November 12, 2026
+
+PR #46 is **fully verified** on merged main at bc037deda62f1402e0c1ba2468391dec1f4d54d2; [full main CI 43268647305](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43268647305) passed, and the existing development branch was safely fast-forwarded. All external effects remain disabled.
+
+**Current next candidate:** accurate metadata-only source inventory for all seven ephemeral PostgreSQL DDL stages (46 reviewed tables, not production migrations), plus remaining unreviewed initialized source tables, lazily uninitialized reviewed tables and stage counts. Full PR/main CI and safe non-force development sync still required. Budget unchanged: **$0 new costs**, no Render/Neon activation, no shared EdgePilot services, no paid AI or social posting.
+
 ## Session-authenticated PostgreSQL priority CAS candidate — November 12, 2026
 
 **Last verified merged baseline:** PR #45 at 1bfedc0e6f359294895692688da130a3297e6ddd, [full main Actions 43262031729](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43262031729) success; development safely synchronized. **Candidate:** SQL-only token-hash-backed priority CAS with same-statement session, current-role, verified-identity and tenant checks plus two-writer disposable PostgreSQL race tests. Must pass exact PR CI, merge, main CI, and non-force development sync. No production adapter, hosted service, external calls, paid AI or publishing. $0 additional spend; defer separate Render Starter and Neon, never share EdgePilot resources.

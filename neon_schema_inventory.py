@@ -10,6 +10,23 @@ import re
 import sqlite3
 
 from neon_schema_blueprint import TABLE_NAMES
+from neon_collaboration_schema import COLLABORATION_NAMES
+from neon_identity_provider_schema import EXTRA_TABLE_NAMES
+from neon_ai_budget_schema import BUDGET_TABLE_NAMES
+from neon_business_analytics_schema import BUSINESS_ANALYTICS_TABLES
+from neon_tenant_content_schema import TENANT_CONTENT_TABLES
+from neon_review_security_schema import REVIEW_SECURITY_TABLES
+
+# Stage definitions are DDL *previews*, never a claim of production migration.
+_REVIEWED_GROUPS = (
+    TABLE_NAMES, COLLABORATION_NAMES, EXTRA_TABLE_NAMES,
+    BUDGET_TABLE_NAMES, BUSINESS_ANALYTICS_TABLES,
+    TENANT_CONTENT_TABLES, REVIEW_SECURITY_TABLES,
+)
+REVIEWED_PREVIEW_NAMES = tuple(name for group in _REVIEWED_GROUPS
+                               for name in group)
+if len(REVIEWED_PREVIEW_NAMES) != len(set(REVIEWED_PREVIEW_NAMES)):
+    raise RuntimeError('PostgreSQL preview table declared in multiple stages')
 
 _SAFE_TABLE = re.compile(r'[a-z][a-z0-9_]*\Z')
 _SIGNALS = (
@@ -49,6 +66,7 @@ def inventory_sqlite_for_neon(db):
         shape.append([name,ddl])
         entries.append({
             'table':name,'mapped_in_initial_subset':name in TABLE_NAMES,
+            'reviewed_in_postgresql_preview':name in REVIEWED_PREVIEW_NAMES,
             'column_count':len(columns),'index_count':len(indexed),
             'foreign_key_count':len(foreign),
             'review_signals':sorted(markers)
@@ -56,7 +74,12 @@ def inventory_sqlite_for_neon(db):
     names={entry['table'] for entry in entries}
     if not names.issuperset(TABLE_NAMES):
         raise ValueError('Core BAM identity/draft tables missing')
+    # Some source tables are lazily initialized by optional Alpha features.
+    # A reviewed DDL declaration is not proof the table exists in this DB.
+    uninitialized=sorted(set(REVIEWED_PREVIEW_NAMES)-names)
+    present=sorted(names.intersection(REVIEWED_PREVIEW_NAMES))
     missing=sorted(names-set(TABLE_NAMES))
+    pending=sorted(names-set(REVIEWED_PREVIEW_NAMES))
     digest=hashlib.sha256(json.dumps(shape,
         separators=(',',':')).encode('utf-8')).hexdigest()
     return {'status':'sqlite_schema_inventory_only',
@@ -65,6 +88,15 @@ def inventory_sqlite_for_neon(db):
             'mapped_subset_count':len(TABLE_NAMES),
             'unmapped_table_count':len(missing),
             'unmapped_table_names':missing,
+            'reviewed_pg_preview_count':len(REVIEWED_PREVIEW_NAMES),
+            'reviewed_pg_preview_present_count':len(present),
+            'reviewed_pg_preview_uninitialized_names':uninitialized,
+            'reviewed_pg_preview_table_names':sorted(REVIEWED_PREVIEW_NAMES),
+            'reviewed_pg_stage_counts':[len(group) for group in _REVIEWED_GROUPS],
+            'unreviewed_pg_preview_count':len(pending),
+            'unreviewed_pg_preview_table_names':pending,
+            'postgres_data_migrated':False,
+            'postgres_production_ready':False,
             'schema_digest':digest,
             'tables':entries,
             'contains_customer_records':False,
