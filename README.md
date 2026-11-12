@@ -8,6 +8,8 @@
 
 **Verification and current work:** PR #47 merged to `main` at `5176238e`; its full [merged-main CI passed](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43270187751), and development was safely synchronized. PR #48 is the current **unverified candidate** for session-bound owner-private invitation reads plus this product-first README reorganization. The 46 reviewed PostgreSQL schema definitions across seven ephemeral CI stages are **previews, not a production data migration**. See [Alpha readiness](ALPHA_BETA_READINESS.md), [development continuity](DEVELOPMENT_CONTINUITY.md) and [changelog](CHANGELOG.md) for detailed verification status.
 
+**Executable disposable PostgreSQL test milestone (November 12):** A strictly loopback/test-database-only psycopg adapter can now execute session-authenticated held-draft/calendar reads, owner-private invitation reads, and atomic draft priority edits inside temporary CI PostgreSQL. This is an offline development test, **not** production hosting or a Neon connection; PR/main CI remains required for this candidate. Last fully verified checkpoint: PR #48 merged at `7baf3be0` with [successful main Actions 43271490619](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43271490619).
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

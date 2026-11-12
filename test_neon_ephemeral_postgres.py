@@ -779,5 +779,85 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
 
 
+    def test_ci_psycopg_session_facade_executes_real_nonpublishing_io(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_CI_Psycopg_Adapter_Authenticated_Session_1234'
+        digest=hashlib.sha256(token.encode()).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",(digest,self.a))
+        owner=EphemeralSessionPostgres(self.conn)
+        args={'raw_session_token':token,'tenant_id':'shop-a',
+              'request_id':self.rid_a,'server_now':101}
+        draft=owner.read_held_draft(**args)
+        self.assertEqual(draft['draft_text'],'private tenant A copy')
+        self.assertFalse(draft['publishing_enabled'])
+        self.assertEqual(draft['posts_scheduled'],0)
+        self.assertIsNone(owner.read_held_draft(
+            raw_session_token=token,tenant_id='shop-b',
+            request_id=self.rid_b,server_now=101))
+        self.assertIsNone(owner.read_calendar_proposal(**args))
+        with self.assertRaises(PermissionError):
+            owner.update_draft_priority(
+                **args,expected_priority_token='f'*32,priority=6)
+        receipt=owner.update_draft_priority(
+            **args,expected_priority_token=self.priority_token,priority=6)
+        self.assertEqual(receipt['priority'],6)
+        self.assertFalse(receipt['publishing_enabled'])
+        self.assertEqual(receipt['draft_revision'],1)
+        self.assertEqual(self.conn.execute("""SELECT draft_text,revision
+            FROM content_requests WHERE tenant_id='shop-a'
+            AND request_id=%s""",(self.rid_a,)
+            ).fetchone(),('private tenant A copy',1))
+        with self.assertRaises(PermissionError):
+            owner.update_draft_priority(
+                **args,expected_priority_token=self.priority_token,priority=9)
+        self.conn.execute("""INSERT INTO bam_business_invitations
+            (token_hash,tenant_id,email,role,expires_at,
+             created_by,invitation_id,delivery_state)
+            VALUES (%s,'shop-a','guest@private.test','viewer',
+                    500,%s,%s,'delivered')""",('a'*64,self.a,'c'*32))
+        invitations=owner.read_owner_pending_invitations(
+            raw_session_token=token,tenant_id='shop-a',server_now=101)
+        self.assertEqual(invitations['items'],[{
+            'invitation_id':'c'*32,'email':'guest@private.test',
+            'role':'viewer','expires_at':500}])
+        self.assertNotIn('a'*64,str(invitations))
+        self.assertFalse(invitations['publishing_enabled'])
+        second=self._connect()
+        try:
+            separate=EphemeralSessionPostgres(second)
+            self.conn.execute("""UPDATE sessions SET revoked_at=102
+                WHERE token_hash=%s""",(digest,))
+            self.assertIsNone(separate.read_held_draft(
+                raw_session_token=token,tenant_id='shop-a',
+                request_id=self.rid_a,server_now=103))
+            self.assertEqual(separate.read_owner_pending_invitations(
+                raw_session_token=token,tenant_id='shop-a',
+                server_now=103)['items'],[])
+            with self.assertRaises(PermissionError):
+                separate.update_draft_priority(
+                    raw_session_token=token,tenant_id='shop-a',
+                    request_id=self.rid_a,
+                    expected_priority_token=receipt['priority_token'],
+                    priority=2,server_now=103)
+        finally:
+            second.close()
+
+    def test_ci_psycopg_session_facade_refuses_untrusted_connection(self):
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        with self.assertRaises(TypeError):
+            EphemeralSessionPostgres(object())
+        second=self._connect()
+        try:
+            second.execute('SET search_path TO public')
+            with self.assertRaises(PermissionError):
+                EphemeralSessionPostgres(second)
+        finally:
+            second.close()
+
+
+
 if __name__=='__main__':
     unittest.main()
