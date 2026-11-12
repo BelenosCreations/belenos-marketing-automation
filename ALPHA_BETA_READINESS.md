@@ -66,3 +66,7 @@ Earlier 'CI pending' statements elsewhere in this document record historical pre
 ## Operator pause and budget holds (offline Alpha)
 
 An internal persistent operator pause now blocks new BAM-sponsored reservation attempts across SQLite clients, with generic, validated hold messages through the explicit-action draft interfaces. Code `cb23ebbd` passed [GitHub Actions 43142566744](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43142566744). It **does not interrupt in-flight provider execution**, trigger a payment/usage alert, or constitute a production emergency stop. Private beta approval still requires an independently enforced provider-dispatch halt, vault/credential controls, operator-approved spending and billing reconciliation.
+
+## Trusted usage-event idempotency (offline Alpha)
+
+An optionally keyed AI cost ledger can now reject duplicate or conflicting trusted usage events, with per-business isolation and lossless migration of earlier events. `9765961f` passed [GitHub Actions 43143316508](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43143316508). Real Beta still requires consistent provider request identity wiring, signed/trusted usage, reconciliation of all reservations against real receipts, provider pricing verification and safe limits on paid traffic. No actual provider invoices have been reconciled.

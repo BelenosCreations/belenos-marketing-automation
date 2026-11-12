@@ -5,6 +5,8 @@ Provider usage is accepted only through a trusted server-side caller. Estimates
 are not invoices, real OpenAI bills or proof of payment.
 """
 import sqlite3
+import hashlib
+import re
 import uuid
 from dataclasses import dataclass
 from decimal import Decimal,ROUND_HALF_UP,ROUND_CEILING
@@ -54,10 +56,23 @@ class AICostLedger:
             occurred_at INTEGER NOT NULL)""")
         db.execute("""CREATE INDEX IF NOT EXISTS bam_ai_cost_scope
             ON bam_ai_cost_events(tenant_id,subject_id,occurred_at)""")
+        # Migration: original ledger rows have no trusted usage reference.
+        # Never infer historical provider request IDs or backfill invented
+        # deduplication claims.
+        columns={row[1] for row in
+                 db.execute('PRAGMA table_info(bam_ai_cost_events)')}
+        if 'trusted_usage_hash' not in columns:
+            db.execute("""ALTER TABLE bam_ai_cost_events
+                ADD COLUMN trusted_usage_hash TEXT""")
+        db.execute("""CREATE UNIQUE INDEX IF NOT EXISTS
+            bam_ai_cost_trusted_ref
+            ON bam_ai_cost_events(tenant_id,subject_id,trusted_usage_hash)
+            WHERE trusted_usage_hash IS NOT NULL""")
         db.commit()
 
     def record_trusted(self, *, tenant_id,subject_id,model,
-                       input_tokens,output_tokens,pricing,now):
+                       input_tokens,output_tokens,pricing,now,
+                       usage_ref=None):
         if not all(type(x) is str and x.strip() and len(x)<=128
                    for x in (tenant_id,subject_id,model)):
             raise ValueError('Valid trusted scope and model required')
@@ -68,17 +83,51 @@ class AICostLedger:
             raise ValueError('Invalid provider token counts')
         if type(now) is not int or now<0:
             raise ValueError('Server timestamp required')
+        if (usage_ref is not None and (
+                type(usage_ref) is not str or
+                re.fullmatch(r'[0-9a-f]{32}',usage_ref) is None)):
+            raise ValueError('Trusted server-owned usage reference required')
+        usage_hash=(hashlib.sha256(usage_ref.encode('ascii')).hexdigest()
+                    if usage_ref is not None else None)
         # micro-USD = tokens * dollars-per-million (rounded to integer).
         micro=(Decimal(input_tokens)*pricing.input_per_million_usd+
                Decimal(output_tokens)*pricing.output_per_million_usd)
         micro=int(micro.quantize(Decimal('1'),rounding=ROUND_HALF_UP))
         event_id=uuid.uuid4().hex
         with self.db:
-            self.db.execute("""INSERT INTO bam_ai_cost_events
-                VALUES(?,?,?,?,?,?,?,?,?)""",
-                (event_id,tenant_id,subject_id,'openai',model,
-                 input_tokens,output_tokens,micro,now))
+            fields=(event_id,tenant_id,subject_id,'openai',model,
+                    input_tokens,output_tokens,micro,now,usage_hash)
+            if usage_hash is None:
+                # Legacy callers are supported, but have no deduplication
+                # guarantee until they provide a stable trusted reference.
+                self.db.execute("""INSERT INTO bam_ai_cost_events
+                    (event_id,tenant_id,subject_id,provider,model,
+                     input_tokens,output_tokens,estimated_micro_usd,
+                     occurred_at,trusted_usage_hash)
+                     VALUES(?,?,?,?,?,?,?,?,?,?)""",fields)
+                replayed=False
+            else:
+                inserted=self.db.execute("""INSERT OR IGNORE INTO
+                    bam_ai_cost_events
+                    (event_id,tenant_id,subject_id,provider,model,
+                     input_tokens,output_tokens,estimated_micro_usd,
+                     occurred_at,trusted_usage_hash)
+                     VALUES(?,?,?,?,?,?,?,?,?,?)""",fields)
+                replayed=inserted.rowcount==0
+                if replayed:
+                    existing=self.db.execute("""SELECT event_id,model,
+                        input_tokens,output_tokens,estimated_micro_usd
+                        FROM bam_ai_cost_events
+                        WHERE tenant_id=? AND subject_id=?
+                        AND trusted_usage_hash=?""",
+                        (tenant_id,subject_id,usage_hash)).fetchone()
+                    if existing is None or existing[1:]!=(
+                            model,input_tokens,output_tokens,micro):
+                        raise ValueError(
+                            'Trusted usage reference reused with different data')
+                    event_id=existing[0]
         return {'event_id':event_id,'estimated_micro_usd':micro,
+                'replayed':replayed,
                 'pricing_basis':'operator_configured',
                 'actual_billing_verified':False}
 

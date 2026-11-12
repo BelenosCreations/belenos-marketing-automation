@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Trusted AI cost event deduplication — November 11, 2026
+
+A nullable, uniquely indexed `trusted_usage_hash` was added to `bam_ai_cost_events` with an idempotent migration; existing rows keep NULL without an invented usage reference. An optional exact 32-hex trusted server-owned `usage_ref` is hashed and scoped to `tenant_id` and `subject_id`; a duplicate with matching model/token/estimate returns the original event ID and `replayed:true`, whereas a changed payload with the same reference is rejected. Legacy unkeyed events remain append-only. Two independent SQLite-connection workers and migration/replay/tenant-isolation regressions prove the deduplication behavior locally.
+
+**Verified:** `9765961fc8a63433863c91c9700f80891a9544fb` passed [GitHub Actions 43143316508](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43143316508). Documentation follow-up requires its own CI. Not yet wired to actual provider IDs, invoice reconciliation or paid API calls.
+
 ## Operator pause and sponsored-budget hold propagation — November 11, 2026
 
 The SQLite sponsorship ledger gained one trusted operator control row, an internal pause configuration method and a read-only diagnostic. During reservation, current-role and funding checks still execute under `BEGIN IMMEDIATE`; the pause is then read under that same lock **before** any user/tenant/operator count or estimated micro-USD is written. A separate-connection test pauses at the precise post-preflight boundary and proves no reservation can slip through. Tests also cover durable pause state, malformed settings, missing-row fail-closed behavior and resumed reservations with counters preserved. The disabled-by-default HTTPS draft generation/revision pathways and strict browser clients recognize only approved, generic budget/pause hold reasons. Additional end-to-end tests prove no executor is invoked during a pause and failed idempotency keys cannot silently retry on resume.
