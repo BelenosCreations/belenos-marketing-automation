@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Authenticated PostgreSQL draft/calendar read seam — November 12, 2026
+
+**Last verified merged baseline:** PR #44 merged at `3f41a028ae96ef681724bf4642cf290af97e5c04`, full [merged-main Actions 43260833020](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43260833020) **success**. Both `main` and active development branch safely synchronized.
+
+**Current candidate unverified:** new session-hash-bound tenant draft/calendar read SQL and local/real disposable PostgreSQL tests. No caller-claimed subject, one-statement session/membership/identity checks, role/revocation/expiry denial. This remains *pure SQL preparation*, not a production auth gateway, public app or actual Neon connection. Full PR CI, merge, merged-main CI, non-force dev sync required. Preserve $0 incremental-cost policy and deferred $7 Render design.
+
 ## Private editorial/fact and credential-recovery schema stage-seven candidate — November 12, 2026
 
 **Last fully verified baseline:** PR #43 merged at `cdec5896190421fcc001ce56aef58110e2167143`; [merged-main Actions 43259735453](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43259735453) **success**; development synchronized without force.

@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Session-hash-bound draft/calendar PostgreSQL reads (candidate)
+
+- Add prepared read-only PostgreSQL SQL contracts deriving identity from a stored **hashed bearer session**, not from a caller-supplied subject ID. Each query checks active verified identity, current same-business membership, matching live role, expiry and revocation in one statement.
+- Add offline local-fixture and actual temporary PostgreSQL security tests against cross-business, expired, revoked, disabled-identity and stale-role requests, without revealing bearer tokens in SQL parameter sets.
+- Update README verified baseline to PR #44 merged at `3f41a028` and Actions `43260833020` passed; maintain full development continuity/roadmap. No new paid or free service, provider login, real social posting or hosting. Exact PR/main CI pending.
+
 ## November 12, 2026 — Editorial and sensitive-security PostgreSQL stage seven (candidate)
 
 - Review six more source schema tables (46 PostgreSQL CI previews total): editorial identity/competitor attestations, private editorial inbox with candidate fingerprint, owner approval intents with content digest, TruthGuard business facts, creator account risk status and hashed credential recovery actions.

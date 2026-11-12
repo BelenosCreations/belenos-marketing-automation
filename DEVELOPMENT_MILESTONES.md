@@ -1096,3 +1096,7 @@ Preview four legacy source tables: tenant_posts, tenant_approvals, tenant_events
 ## November 12, 2026 — Private editorial/TruthGuard/email security schema stage seven
 
 Add six reviewed table previews and a strict no-data-export SQLite shape check. Stage 7 disposable Postgres tests verify tenant-scoped approved-fact visibility, revoked/expired fact denial, editorial state constraints, creator status constraints and hashed recovery purpose restrictions. Reviewed preview reaches 46 tables. No actual email, provider publishing, hosted services or extra spend. README, CHANGELOG and continuity updated; CI pending.
+
+## November 12, 2026 — Session-backed PostgreSQL private draft/calendar read seam
+
+Move beyond caller-claimed verified subject previews by deriving current business and identity from a stored SHA-256 bearer token inside SQL. Single PostgreSQL SELECT includes session expiry/revocation, tenant, current member role, active verified identity checks. Add synthetic SQLite and real disposable Postgres tests for cross-business, stale-role, expiry, revocation and identity disable. Still no trusted external HTTPS gateway or production database driver. Exact PR/main CI pending; $0 development costs unchanged.
