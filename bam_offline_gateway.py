@@ -57,6 +57,7 @@ from team_membership_admin import TeamMembershipAdmin
 from bam_team_membership_wsgi import BAMTeamMembershipWSGI
 from business_invitations import BusinessInvitations
 from bam_team_invitations_wsgi import BAMTeamInvitationsWSGI
+from bam_invitation_accept_wsgi import BAMInvitationAcceptWSGI
 
 _AUTH_PATHS = frozenset((
     '/api/v1/auth/password', '/api/v1/auth/google-challenge',
@@ -85,7 +86,8 @@ class BAMOfflineGateway:
     def __init__(self, db, *, enabled=False, clock=None, google_verifier=None,
                  serve_browser_assets=False,pending_media_dir=None,
                  trusted_invitation_delivery=None,
-                 enable_invitation_issuing=False):
+                 enable_invitation_issuing=False,
+                 enable_invitation_acceptance=False):
         if type(enabled) is not bool:
             raise ValueError('Boolean integration switch required')
         if type(serve_browser_assets) is not bool:
@@ -110,6 +112,10 @@ class BAMOfflineGateway:
             raise ValueError('Trusted invitation callback must be callable')
         if type(enable_invitation_issuing) is not bool:
             raise ValueError('Boolean invitation issuance switch required')
+        if type(enable_invitation_acceptance) is not bool:
+            raise ValueError('Boolean invitation acceptance switch required')
+        if enable_invitation_acceptance and trusted_invitation_delivery is None:
+            raise ValueError('Invitation acceptance requires trusted delivery')
         if enable_invitation_issuing and trusted_invitation_delivery is None:
             raise ValueError('Issuing invitations requires trusted delivery')
         self.business_invitations=(BusinessInvitations(
@@ -170,7 +176,12 @@ class BAMOfflineGateway:
             auth=self.identities, challenges=GoogleLoginChallenges(db),
             google_verifier=(google_verifier if google_verifier is not None
                              else _DisabledGoogleVerifier()),
-            throttle=LoginThrottle(db))
+            throttle=LoginThrottle(db),
+            invitations=self.business_invitations,
+            allow_invitation_redemption=enabled and enable_invitation_acceptance)
+        self.invitation_accept_wsgi=BAMInvitationAcceptWSGI(
+            self.login_api,enabled=enabled and enable_invitation_acceptance,
+            clock=self.clock)
         self.auth_wsgi = BAMAuthWSGI(
             self.login_api, enabled=enabled, clock=self.clock,
             logout_api=self.read_api)
@@ -241,6 +252,9 @@ class BAMOfflineGateway:
             return self.assets_wsgi(environ, start_response)
         if path in _AUTH_PATHS:
             return self.auth_wsgi(environ, start_response)
+        if path in ('/api/v1/team/invitations/accept-password',
+                    '/api/v1/team/invitations/accept-google'):
+            return self.invitation_accept_wsgi(environ,start_response)
         if path in ('/api/v1/team/invitations',
                     '/api/v1/team/invitations/activity',
                     '/api/v1/team/invitations/cancel',

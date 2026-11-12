@@ -1,5 +1,14 @@
 # Changelog
 
+## November 12, 2026 — Offline HTTPS-style invitation acceptance integration
+
+- Added `BAMInvitationAcceptWSGI`, an offline-only, disabled-by-default acceptance adapter with separate password and Google paths, HTTPS and exact-field parsing, strict output redaction and no session grant.
+- Added an independent gateway `enable_invitation_acceptance` switch requiring trusted invitation-delivery composition. Neither issuing invitations nor acceptance becomes active just because the other has been enabled.
+- Integrated the existing current identity proof, throttle, one-use invite claim, business role checks and audit through a single offline application route.
+- Added WSGI end-to-end regressions for disabled paths, invalid/duplicate fields, client tenant spoofing, wrong credentials, Google nonce and subject verification, single-use and no session leaks.
+- **CI pending at new exact branch HEAD**; no public endpoint was deployed, no external invitation email was sent, and no paid OpenAI, OAuth browser flow or social publishing was enabled.
+
+
 ## November 12, 2026 — Internal Google-only invitation redemption
 
 - Added an internal verified Google identity lookup that can validate a known, registered Google-only BAM subject without implicitly granting membership or a login session. Ordinary Google login still requires current business membership.
