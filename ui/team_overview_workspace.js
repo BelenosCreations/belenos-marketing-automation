@@ -17,26 +17,32 @@
  }
  function create({document,container,fetchImpl,origin,onError,onNotice,
                   enableMemberManagement=false,
-                  enableInvitationPreview=false}){
+                  enableInvitationPreview=false,
+                  enableInvitationIssuing=false}){
    if(!document||!container||typeof container.replaceChildren!=='function'||
       typeof fetchImpl!=='function'||typeof origin!=='string')
       throw new TypeError('Team workspace requires DOM and authenticated transport');
    if(typeof enableMemberManagement!=='boolean'||
-      typeof enableInvitationPreview!=='boolean')
+      typeof enableInvitationPreview!=='boolean'||
+      typeof enableInvitationIssuing!=='boolean')
      throw new TypeError('Explicit team preview switches required');
    if(enableInvitationPreview&&!enableMemberManagement)
      throw new TypeError('Pending invitations require owner team controls');
+   if(enableInvitationIssuing&&!enableInvitationPreview)
+     throw new TypeError('Issuing requires enabled invitation preview');
    let active=null,epoch=0,requestVersion=0,owner=false,summary=null,failed=false;
    let memberData=null,memberError=false,memberPending=false,confirming=null;
    let auditData=null,auditError=false;
    let inviteData=null,inviteError=false,invitePending=false,confirmingInvite=null;
    let inviteHistory=null,inviteHistoryError=false;
+   let issuePending=false,confirmingIssue=null;
    function clear(){
      epoch++;requestVersion++;active=null;owner=false;summary=null;failed=false;
      memberData=null;memberError=false;memberPending=false;confirming=null;
      auditData=null;auditError=false;
      inviteData=null;inviteError=false;invitePending=false;confirmingInvite=null;
      inviteHistory=null;inviteHistoryError=false;
+     issuePending=false;confirmingIssue=null;
      container.replaceChildren();
    }
    function activate({token,tenantId}){
@@ -53,7 +59,8 @@
        memberData=null;memberError=false;memberPending=false;confirming=null;
        auditData=null;auditError=false;
        inviteData=null;inviteError=false;invitePending=false;confirmingInvite=null;
-     inviteHistory=null;inviteHistoryError=false;
+       inviteHistory=null;inviteHistoryError=false;
+       issuePending=false;confirmingIssue=null;
      }
      render();
    }
@@ -74,7 +81,9 @@
          section.append(element(document,'p',
            label+': '+summary.roles[key]));
        section.append(element(document,'p',enableInvitationPreview
-         ?'Pending invitations can be reviewed and cancelled when a trusted delivery callback is configured. This page cannot send invitations.'
+         ?(enableInvitationIssuing
+           ?'Invitation issuance is available only in this explicitly enabled offline trusted-delivery preview; no hosted email service is configured here.'
+           :'Pending invitations can be reviewed and cancelled when a trusted delivery callback is configured. This page cannot send invitations.')
          :'Team invitation previews are not enabled in this development workspace.'));
        section.append(element(document,'p',
          'These counts do not enable invitations, permission changes or publication.')); 
@@ -165,6 +174,67 @@
                  }
                  section.append(article);
                }
+             }
+           }
+           if(enableInvitationIssuing){
+             section.append(element(document,'h3','Issue business invitation'));
+             section.append(element(document,'p',
+               'Explicit offline trusted delivery only. Confirm the email and access role; this does not grant owner access or publish content.'));
+             const emailLabel=element(document,'label','Invitee email');
+             const emailInput=element(document,'input','');
+             emailInput.type='email';
+             emailInput.maxLength=254;
+             emailInput.setAttribute('aria-label','Invitee email');
+             emailLabel.append(emailInput);
+             const roleLabel=element(document,'label','Invitation role');
+             const roleSelect=element(document,'select','');
+             roleSelect.setAttribute('aria-label','Invitation role');
+             for(const role of ['viewer','employee','content_creator',
+                                'marketing_manager']){
+               const item=element(document,'option',role.replace(/_/g,' '));
+               item.value=role;roleSelect.append(item);
+             }
+             roleSelect.value='viewer';
+             roleLabel.append(roleSelect);
+             const review=element(document,'button','Review invitation');
+             review.type='button';
+             review.disabled=issuePending;
+             review.addEventListener('click',()=>{
+               if(!owner||active!==mine||epoch!==version||issuePending||
+                  !inviteData||inviteError)return;
+               const email=emailInput.value.trim().toLowerCase();
+               if(email.length<3||email.length>254||
+                  !/^[^\\s@]+@[^\\s@]+$/.test(email)||
+                  !['viewer','employee','content_creator',
+                    'marketing_manager'].includes(roleSelect.value)){
+                 if(onError)onError('Valid recipient email and non-owner role required');
+                 return;
+               }
+               confirmingIssue={email,role:roleSelect.value};
+               render();
+             });
+             section.append(emailLabel,roleLabel,review);
+             if(confirmingIssue){
+               const planned=confirmingIssue;
+               section.append(element(document,'p',
+                 'Confirm invitation for '+planned.email+' with '+
+                 planned.role.replace(/_/g,' ')+' access. The configured trusted delivery callback will receive a one-use link.'));
+               const yes=element(document,'button','Confirm invitation issue');
+               yes.type='button';yes.disabled=issuePending;
+               yes.addEventListener('click',()=>{
+                 if(owner&&active===mine&&epoch===version&&
+                    confirmingIssue===planned&&!issuePending)
+                   void issueInvite(planned);
+               });
+               const no=element(document,'button','Cancel invitation issue');
+               no.type='button';
+               no.addEventListener('click',()=>{
+                 if(owner&&active===mine&&epoch===version&&
+                    confirmingIssue===planned&&!issuePending){
+                   confirmingIssue=null;render();
+                 }
+               });
+               section.append(yes,no);
              }
            }
            if(enableInvitationPreview){
@@ -392,6 +462,35 @@
        return {error:true};
      }finally{
        if(active===mine&&epoch===version){memberPending=false;render();}
+     }
+   }
+   async function issueInvite(planned){
+     if(!enableInvitationIssuing||!owner||!active||!inviteData||
+        inviteError||issuePending||confirmingIssue!==planned)
+       return {restricted:true};
+     const mine=active,version=epoch;
+     issuePending=true;confirmingIssue=null;render();
+     try{
+       const receipt=await invitesClient.issue({
+         origin,fetchImpl,token:mine.token,
+         expectedTenantId:mine.tenantId,
+         email:planned.email,role:planned.role});
+       if(active!==mine||epoch!==version)return {stale:true};
+       const latest=await refresh();
+       if(active!==mine||epoch!==version)return {stale:true};
+       if(latest.error||latest.stale||inviteError)return {error:true};
+       if(onNotice)onNotice('Invitation handed to trusted delivery. No recipient access is granted until verified acceptance.');
+       return receipt;
+     }catch(error){
+       if(active!==mine||epoch!==version)return {stale:true};
+       try{await refresh();}catch(readError){
+         inviteData=null;inviteError=true;
+       }
+       if(active!==mine||epoch!==version)return {stale:true};
+       if(onError)onError('Invitation not confirmed. Review active team access and retry only when safe.');
+       return {error:true};
+     }finally{
+       if(active===mine&&epoch===version){issuePending=false;render();}
      }
    }
    async function cancelInvite(pending){
