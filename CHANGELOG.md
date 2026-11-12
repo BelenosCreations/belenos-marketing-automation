@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Live-session-bound owner invitation reads (candidate)
+
+- Add SQL-only PostgreSQL pending-invitation metadata read, accepting a server-presented session bearer, not a caller-supplied member ID. Recheck current business membership and owner role, verification, session expiration and revocation in one statement.
+- Add SQLite source and real disposable PostgreSQL privacy tests for cross-business denial, viewer exclusion, expired/revoked invitation status, stale roles and disabled identities; no bearer tokens are selected or exposed.
+- Move README's product experience to the top before extensive historical engineering checkpoints for easier onboarding while preserving details. Previous PR #47 at 5176238e passed merged-main Actions 43270187751. No hosted provider, delivery, publishing, paid OpenAI or incremental charges.
+
 ## November 12, 2026 — Full seven-stage PostgreSQL preview coverage inventory (candidate)
 
 - Extend metadata-only local schema inventory beyond its original nine-table subset, explicitly counting all 46 reviewed table DDL previews in seven groups and showing remaining unreviewed table names/counts without exposing data.

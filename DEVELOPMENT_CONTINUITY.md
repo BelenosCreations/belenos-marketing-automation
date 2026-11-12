@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Owner invitation private read security candidate — November 12, 2026
+
+**Last verified baseline:** PR #47 merged into main at `5176238ed109d77f7270f62d25961583a2ac5342`, full [merged-main CI 43270187751](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43270187751) success, and development safely synchronized. **Current candidate:** separate SQL-only, session-hash-bound PostgreSQL read of owner-private pending invite metadata; SQLite and ephemeral PostgreSQL tests for viewer/tenant/revocation/role denial, no invitation token digest disclosure. Reorder README to show product experience before historic implementation notes. Verify exact PR/main CI and fast-forward without force. All $0 development and nonactivation boundaries remain in force.
+
 ## Verified token-authenticated priority edits; PostgreSQL preview inventory candidate — November 12, 2026
 
 PR #46 is **fully verified** on merged main at bc037deda62f1402e0c1ba2468391dec1f4d54d2; [full main CI 43268647305](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43268647305) passed, and the existing development branch was safely fast-forwarded. All external effects remain disabled.
