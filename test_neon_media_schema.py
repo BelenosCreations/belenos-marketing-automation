@@ -4,7 +4,8 @@ import unittest
 
 from content_attachments import AttachmentRegistry
 from neon_media_schema import (
-    MEDIA_TABLE_NAMES,media_ddl_preview,inspect_media_sqlite)
+    MEDIA_TABLE_NAMES,MEDIA_HARDENED_TABLES,
+    media_ddl_preview,inspect_media_sqlite)
 
 
 class MediaSchemaPreviewTests(unittest.TestCase):
@@ -15,12 +16,16 @@ class MediaSchemaPreviewTests(unittest.TestCase):
         self.db.close()
 
     def test_schema_matches_source_and_exposes_only_counts(self):
-        self.assertEqual(MEDIA_TABLE_NAMES,("content_attachments",))
+        self.assertEqual(MEDIA_TABLE_NAMES,())
+        self.assertEqual(MEDIA_HARDENED_TABLES,("content_attachments",))
         ddl=media_ddl_preview()
-        self.assertEqual(len(ddl),3)
+        self.assertEqual(len(ddl),9)
         self.assertIn("UNIQUE INDEX content_requests_tenant_request_key",ddl[0])
         self.assertIn("FOREIGN KEY(tenant_id,request_id)",ddl[1])
-        self.assertIn("CHECK(status IN",ddl[1])
+        self.assertIn("ADD CONSTRAINT content_attachments_id_shape",ddl[2])
+        self.assertIn("media_type IN",ddl[4])
+        self.assertFalse(any("CREATE TABLE content_attachments" in x
+                             for x in ddl))
         before=inspect_media_sqlite(self.db)
         self.assertEqual(before["table_count"],1)
         self.assertEqual(before["columns"],9)

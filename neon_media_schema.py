@@ -1,35 +1,43 @@
-"""Reviewed attachment-metadata schema for disposable BAM PostgreSQL CI.
+"""Eighth, constraint-only hardening stage for existing attachment metadata.
 
-This mirrors the existing offline registry's nine fields while tightening
-cross-business ownership and metadata integrity. It stores only references:
-NO file bytes, object storage, scanner, upload endpoint, public media URLs,
-real credential access or publication permission.
+'content_attachments' is already created in the version-3 identity/provider
+preview. This stage adds constraints and a tenant/request foreign key to that
+existing table; it MUST NOT create or recount the table. Disposable CI only:
+no actual media bytes, scanner, upload, storage or production migration.
 """
 import sqlite3
 
-MEDIA_TABLE_NAMES=("content_attachments",)
+# Stage 8 intentionally defines NO new tables. Preserve stage 3 checksum.
+MEDIA_TABLE_NAMES=()
+MEDIA_HARDENED_TABLES=("content_attachments",)
 
 _DDL=(
     """CREATE UNIQUE INDEX content_requests_tenant_request_key
         ON content_requests(tenant_id,request_id)""",
-    """CREATE TABLE content_attachments (
-        attachment_id TEXT PRIMARY KEY
-            CHECK(attachment_id ~ '^[0-9a-f]{32}$'),
-        tenant_id TEXT NOT NULL,
-        request_id TEXT NOT NULL,
-        item TEXT NOT NULL,
-        media_type TEXT NOT NULL CHECK(media_type IN
-            ('image/jpeg','image/png','image/webp','video/mp4',
-             'text/plain','application/pdf')),
-        sha256 TEXT NOT NULL CHECK(sha256 ~ '^[0-9a-f]{64}$'),
-        storage_key TEXT NOT NULL CHECK(length(storage_key)>0),
-        status TEXT NOT NULL CHECK(status IN
-            ('pending','verified','rejected')),
-        created_at BIGINT NOT NULL CHECK(created_at>=0),
-        UNIQUE(tenant_id,request_id,item,attachment_id),
+    """ALTER TABLE content_attachments
+        ADD CONSTRAINT content_attachments_tenant_request_fkey
         FOREIGN KEY(tenant_id,request_id)
-            REFERENCES content_requests(tenant_id,request_id)
-    )""",
+        REFERENCES content_requests(tenant_id,request_id)""",
+    """ALTER TABLE content_attachments
+        ADD CONSTRAINT content_attachments_id_shape
+        CHECK(attachment_id ~ '^[0-9a-f]{32}$')""",
+    """ALTER TABLE content_attachments
+        ADD CONSTRAINT content_attachments_item_shape
+        CHECK(item ~ '^[a-z][a-z0-9_-]{0,63}$')""",
+    """ALTER TABLE content_attachments
+        ADD CONSTRAINT content_attachments_media_type_check
+        CHECK(media_type IN
+            ('image/jpeg','image/png','image/webp','video/mp4',
+             'text/plain','application/pdf'))""",
+    """ALTER TABLE content_attachments
+        ADD CONSTRAINT content_attachments_sha256_shape
+        CHECK(sha256 ~ '^[0-9a-f]{64}$')""",
+    """ALTER TABLE content_attachments
+        ADD CONSTRAINT content_attachments_private_key_check
+        CHECK(length(storage_key)>0)""",
+    """ALTER TABLE content_attachments
+        ADD CONSTRAINT content_attachments_timestamp_check
+        CHECK(created_at>=0)""",
     """CREATE INDEX content_attachments_private_state
         ON content_attachments(tenant_id,request_id,item,status)""",
 )
@@ -41,12 +49,12 @@ _SOURCE_COLUMNS=(
 
 
 def media_ddl_preview():
-    """DDL for ephemeral CI migrations only, not a production migration."""
+    """Constraint-only statements; stage 3 creates the existing table."""
     return _DDL
 
 
 def inspect_media_sqlite(db):
-    """Metadata-only source schema inspection, never private media fields."""
+    """Metadata-only source inspection, never private media fields."""
     if not isinstance(db,sqlite3.Connection):
         raise TypeError("Trusted offline SQLite required")
     actual=tuple(row[1] for row in db.execute(
