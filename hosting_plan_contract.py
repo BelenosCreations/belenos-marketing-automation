@@ -1,4 +1,4 @@
-"""Offline CI guard for BAM's owner-selected *unprovisioned* hosting design.
+"""Offline CI guard for BAM's owner-selected $0 incremental-cost phase.
 
 This module validates the tracked planning artifact only. It cannot create,
 stop or govern an actual Render/Neon account. True operational cost ceilings
@@ -23,7 +23,7 @@ def verify_planning_only_contract(plan):
     if type(plan) is not dict or set(plan)!={
             'schema_version','decision_date','status','project',
             'web_service','database','cost_and_approval','activation',
-            'deployment'}:
+            'deployment','development_policy'}:
         raise ValueError('Invalid BAM hosting plan schema')
     if (plan['schema_version']!=1 or
             plan['decision_date']!='2026-11-12' or
@@ -53,6 +53,22 @@ def verify_planning_only_contract(plan):
             'credit_card_charges_authorized':False,
             'free_tier_overages_guaranteed_capped':False}:
         raise ValueError('Cost approval exceeds selected planning-only scope')
+    zero_cost=plan['development_policy']
+    if type(zero_cost) is not dict or zero_cost != {
+            'mode':'zero_additional_costs',
+            'effective_date':'2026-11-12',
+            'monthly_new_spend_authorized_usd':0,
+            'free_standard_github_runners_preferred':True,
+            'disposable_postgresql_ci_only':True,
+            'render_starter_plan_deferred':True,
+            'render_free_provisioning_authorized':False,
+            'neon_free_provisioning_authorized':False,
+            'share_existing_edgepilot_host_authorized':False,
+            'paid_or_overage_services_authorized':False,
+            'budget_review_when':'functioning_app_or_development_blocked_without_cost',
+            'explicit_owner_approval_required_for_any_new_spend':True}:
+        raise ValueError('Current BAM development budget must remain $0')
+
     activation=plan['activation']
     expected_activation={
         'public_access','live_user_enrollment','google_oauth_real',
@@ -80,6 +96,12 @@ def verify_planning_only_contract(plan):
         'live_social_publishing_allowed':False,
         'paid_ai_allowed':False,
         'estimated_base_usd_month':7,
+        'deferred_render_starter_estimate_usd_month':7,
+        'development_budget_additional_usd_month':0,
+        'free_render_provisioning_allowed':False,
+        'free_neon_provisioning_allowed':False,
+        'edgepilot_host_sharing_allowed':False,
+        'explicit_owner_approval_required_for_budget_change':True,
         'additional_costs_approved_usd_month':0,
         'plan_is_automatic_spending_cap':False,
     }

@@ -1080,3 +1080,7 @@ Seven reviewed DDL tables extend three stages of disposable PostgreSQL CI migrat
 ## November 12, 2026 — AI cost containment and held content PostgreSQL schema parity
 
 Eight further tables and two usage columns in disposable PostgreSQL CI migration stage 4 (29 reviewed total). Includes private confirmed facts, independently editable AI copy/image prompts, verified media references, deduplicated estimated AI costs, generation idempotency, tenant/operator quotas and operator pause defaulted ON for staged PostgreSQL. Actual PostgreSQL tests for unique provider usage receipt/hash and pause; source SQLite parity. No real provider execution, billing, production migration or publishing. README/CHANGELOG/continuity updated; CI pending.
+
+## November 12, 2026 — Zero-additional-cost operating policy
+
+Owner makes $0 incremental spend the active BAM development policy until a functioning application justifies hosting or free development is truly blocked; both are **review triggers, never automatic billing or deployment approval**. Preserve the deferred separate $7 Render Starter + Neon Free design, strict isolation from EdgePilot and all existing commercial targets. Extend `BAM_HOSTING_PLAN.json` planning-only contract and CI tamper checks; update README, CHANGELOG, DEVELOPMENT_CONTINUITY, PRODUCT_PLAN, infrastructure and readiness. All external service provisioning—including free services—is still approval-gated. Exact-head CI pending.
