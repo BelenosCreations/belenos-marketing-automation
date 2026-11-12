@@ -16,6 +16,7 @@
 | Two-client collaboration & persistence | **File-backed local integration verified, not hosted** | Two authenticated independent gateways, shared drafts, stale writes and role-revocation after restart tested; still requires actual hosted multi-device and backup/restore exercises |
 | Local SQLite snapshot/restore | **Ephemeral offline regression verified; not a backup service** | Consistent temporary snapshots and SQLite integrity checked; requires encrypted off-site production backups, retention and a deployment-specific restore drill |
 | Held draft creation and copy revisions | **Implemented offline** | Create/edit/resume/review with two simultaneous editors and stale-revision conflict |
+| Concurrent held calendar proposal writes | **SQL-level CAS code tested; expanded races pending CI** | Current draft revision and held status checked atomically with proposal update; version token and unique business/UTC slot enforced across separate SQLite clients, never executable post jobs |
 | Draft priority and read-only calendar proposals | **Implemented offline** | No duplicate slots, cross-business separation, timezone/DST correction and no accidental scheduling |
 | Private review-feedback notes, change history, readiness summaries | **Implemented offline** | Audit metadata consistency, note permissions and unapproved status after every change |
 | Private media preview/receipt | **Pending-only, optional local quarantine** | No storage path exposure, verified file signature and size checks; discarded upload no longer visible |

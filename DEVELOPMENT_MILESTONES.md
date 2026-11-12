@@ -3,6 +3,14 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Atomic proposed calendar slots under simultaneous editors — November 11, 2026
+
+A proposal is not a publish job. `CalendarProposals.propose` now uses SQL-level revision and current-held-status checks in its conditional INSERT/UPDATE. New proposals refuse replacement of an existing request; existing proposals can only be changed with the exact previously displayed proposal token. A second database connection cannot win a race using a stale read, and unique tenant/UTC-slot constraints prevent duplicate slot assignments. Saving does not reclassify draft approval, media, or publishability.
+
+A stale in-memory content snapshot regression ensures the current SQL draft record wins. File-backed separate-client tests exercise simultaneous assignment of one draft, concurrent updates from the same proposal token, and two different drafts fighting over one slot. These are offline local tests, not external scheduling, hosted production collaboration or Facebook publishing.
+
+**Verification:** Initial SQL CAS commit `d8fc324d` passed [Actions 43126412492](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43126412492). The full file-backed race tests and documentation await exact-head CI. No executable jobs were introduced.
+
 ## Owner-confirmed invitation issuance preview — November 11, 2026
 
 The offline gateway now supports **separately gated** invitation issuance using an existing trusted delivery callback. A current-role owner-only HTTP adapter derives the tenant from the authenticated session and accepts a restricted email/non-owner-role request; it is disabled by default even when pending invitation list/cancel is enabled. A second independent browser switch and two-step UI confirmation permit previewing the recipient and role before submitting to the configured callback; the browser never receives the secret token. No live email provider or public invitation acceptance route has been enabled, and attempts cannot grant owner access.
