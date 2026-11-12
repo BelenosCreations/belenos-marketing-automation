@@ -64,7 +64,7 @@ class SponsoredAIQuota:
         if not plan.active or plan.monthly_requests==0:
             return {'reserved':False,'remaining':0,'reason':'not_entitled',
                     'publishing_enabled':False}
-        # Every counter is conditional and saved within one SQLite writer
+        # Every reservation counter is saved within one SQLite writer
         # transaction. A denied tenant/operator cap rolls back the successful
         # per-user increment. Separate connections cannot over-reserve.
         try:
@@ -84,34 +84,39 @@ class SponsoredAIQuota:
                     (principal.tenant_id,principal.subject_id,month)
                     ).fetchone()[0]
                 remaining=[plan.monthly_requests-used]
+                # Always meter aggregate attempts that were admitted, even
+                # when these optional caps are not active. Enabling a trusted
+                # cap mid-month must not forget earlier sponsored requests.
+                self.db.execute("""INSERT OR IGNORE INTO
+                    bam_ai_tenant_usage (tenant_id,month,accepted)
+                    VALUES(?,?,0)""",(principal.tenant_id,month))
+                cursor=self.db.execute("""UPDATE bam_ai_tenant_usage
+                    SET accepted=accepted+1 WHERE tenant_id=? AND month=?
+                    AND (? IS NULL OR accepted<?)""",
+                    (principal.tenant_id,month,
+                     plan.tenant_monthly_requests,
+                     plan.tenant_monthly_requests))
+                if cursor.rowcount!=1:
+                    raise _QuotaExhausted('tenant_limit_reached')
+                tenant_used=self.db.execute("""SELECT accepted FROM
+                    bam_ai_tenant_usage WHERE tenant_id=? AND month=?""",
+                    (principal.tenant_id,month)).fetchone()[0]
                 if plan.tenant_monthly_requests is not None:
-                    self.db.execute("""INSERT OR IGNORE INTO
-                        bam_ai_tenant_usage (tenant_id,month,accepted)
-                        VALUES(?,?,0)""",(principal.tenant_id,month))
-                    cursor=self.db.execute("""UPDATE bam_ai_tenant_usage
-                        SET accepted=accepted+1 WHERE tenant_id=?
-                        AND month=? AND accepted<?""",
-                        (principal.tenant_id,month,
-                         plan.tenant_monthly_requests))
-                    if cursor.rowcount!=1:
-                        raise _QuotaExhausted('tenant_limit_reached')
-                    tenant_used=self.db.execute("""SELECT accepted FROM
-                        bam_ai_tenant_usage WHERE tenant_id=? AND month=?""",
-                        (principal.tenant_id,month)).fetchone()[0]
                     remaining.append(plan.tenant_monthly_requests-tenant_used)
+                self.db.execute("""INSERT OR IGNORE INTO
+                    bam_ai_operator_usage (month,accepted)
+                    VALUES(?,0)""",(month,))
+                cursor=self.db.execute("""UPDATE bam_ai_operator_usage
+                    SET accepted=accepted+1 WHERE month=?
+                    AND (? IS NULL OR accepted<?)""",
+                    (month,plan.operator_monthly_requests,
+                     plan.operator_monthly_requests))
+                if cursor.rowcount!=1:
+                    raise _QuotaExhausted('operator_limit_reached')
+                operator_used=self.db.execute("""SELECT accepted FROM
+                    bam_ai_operator_usage WHERE month=?""",
+                    (month,)).fetchone()[0]
                 if plan.operator_monthly_requests is not None:
-                    self.db.execute("""INSERT OR IGNORE INTO
-                        bam_ai_operator_usage (month,accepted)
-                        VALUES(?,0)""",(month,))
-                    cursor=self.db.execute("""UPDATE bam_ai_operator_usage
-                        SET accepted=accepted+1 WHERE month=?
-                        AND accepted<?""",
-                        (month,plan.operator_monthly_requests))
-                    if cursor.rowcount!=1:
-                        raise _QuotaExhausted('operator_limit_reached')
-                    operator_used=self.db.execute("""SELECT accepted FROM
-                        bam_ai_operator_usage WHERE month=?""",
-                        (month,)).fetchone()[0]
                     remaining.append(plan.operator_monthly_requests-operator_used)
         except _QuotaExhausted as exc:
             return {'reserved':False,'remaining':0,'reason':exc.reason,

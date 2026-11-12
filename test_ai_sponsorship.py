@@ -102,6 +102,31 @@ class SponsoredAITests(unittest.TestCase):
             bam_ai_tenant_usage WHERE tenant_id='shop'
             """).fetchone()[0],1)
 
+    def test_enabling_caps_midmonth_includes_prior_sponsored_requests(self):
+        unrestricted=SponsorshipPlan('owner',10,250)
+        self.assertTrue(self.quota.reserve(token=self.token,now=101,
+            plan=unrestricted,month='2026-11')['reserved'])
+        self.assertEqual(self.db.execute("""SELECT accepted FROM
+            bam_ai_tenant_usage WHERE tenant_id='shop'
+            """).fetchone()[0],1)
+        self.assertEqual(self.db.execute("""SELECT accepted FROM
+            bam_ai_operator_usage WHERE month='2026-11'
+            """).fetchone()[0],1)
+        tenant_limited=SponsorshipPlan('owner',10,250,
+            tenant_monthly_requests=1,operator_monthly_requests=10)
+        self.assertEqual(self.quota.reserve(token=self.token,now=102,
+            plan=tenant_limited,month='2026-11')['reason'],
+            'tenant_limit_reached')
+        operator_limited=SponsorshipPlan('owner',10,250,
+            tenant_monthly_requests=10,operator_monthly_requests=1)
+        self.assertEqual(self.quota.reserve(token=self.token,now=102,
+            plan=operator_limited,month='2026-11')['reason'],
+            'operator_limit_reached')
+        for table in ('bam_ai_usage','bam_ai_tenant_usage',
+                      'bam_ai_operator_usage'):
+            self.assertEqual(self.db.execute(
+                'SELECT SUM(accepted) FROM '+table).fetchone()[0],1)
+
     def test_invalid_caps_and_viewer_cannot_reserve(self):
         for cap in (True,-1,10000001,0.5,'10'):
             with self.assertRaises(ValueError):
