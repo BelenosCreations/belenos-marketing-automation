@@ -192,6 +192,55 @@ class BAMOfflineGatewayTests(unittest.TestCase):
             if x['member_id']==person)['active'])
         self.assertFalse(updated['publishing_enabled'])
 
+    def test_explicitly_enabled_owner_invitation_issuance_never_returns_secret(self):
+        owner=self.login('shop')
+        self.assertEqual(self.call('/api/v1/team/invitations/create',
+            method='POST',token=owner,body={'email':'new@example.com',
+                                             'role':'viewer'})[0]['status'],
+                         '404 Not Found')
+        with self.assertRaises(ValueError):
+            BAMOfflineGateway(self.db,enabled=True,clock=lambda:101,
+                enable_invitation_issuing=True)
+        outbox=[]
+        configured=BAMOfflineGateway(self.db,enabled=True,clock=lambda:101,
+            trusted_invitation_delivery=lambda email,tenant,secret:
+                outbox.append((email,tenant,secret)),
+            enable_invitation_issuing=True)
+        def request(token,body):
+            payload=json.dumps(body).encode()
+            env={'PATH_INFO':'/api/v1/team/invitations/create',
+                'REQUEST_METHOD':'POST','wsgi.url_scheme':'https',
+                'HTTP_AUTHORIZATION':'Bearer '+token,
+                'CONTENT_TYPE':'application/json',
+                'CONTENT_LENGTH':str(len(payload)),
+                'wsgi.input':io.BytesIO(payload)}
+            meta={}
+            data=json.loads(b''.join(configured(env,
+                lambda status,headers:meta.update(status=status,
+                    headers=dict(headers)))))
+            return meta,data
+        body={'email':'new@example.com','role':'viewer'}
+        meta,created=request(owner,body)
+        self.assertEqual(meta['status'],'201 Created')
+        self.assertEqual(created['tenant_id'],'shop')
+        self.assertTrue(created['invitation_created'])
+        self.assertFalse(created['publishing_enabled'])
+        self.assertEqual(len(outbox),1)
+        self.assertEqual(outbox[0][0],'new@example.com')
+        self.assertEqual(outbox[0][1],'shop')
+        self.assertNotIn(outbox[0][2],str(created))
+        self.assertNotIn('token',str(created))
+        self.assertEqual(request(owner,body)[0]['status'],'409 Conflict')
+        self.assertEqual(len(outbox),1)
+        self.assertEqual(request(self.login('other'),body)[0]['status'],
+                         '401 Unauthorized')
+        self.assertEqual(request(owner,{**body,'tenant_id':'other'})
+                         [0]['status'],'400 Bad Request')
+        pending=configured.business_invitations.pending_current(
+            owner_session=owner,now=101)
+        self.assertEqual(pending['items'][0]['invitation_id'],
+                         created['invitation_id'])
+
     def test_explicit_trusted_invitation_adapter_lists_and_cancels(self):
         token=self.login('shop')
         self.assertEqual(self.call('/api/v1/team/invitations',

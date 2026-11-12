@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-11 — Opt-in owner invitation issuing controls (offline only)
+
+- Added server-side `invite_current` to derive the invitation business exclusively from a current owner session. The optional HTTPS `POST /api/v1/team/invitations/create` accepts **only** normalized recipient email and a non-owner role, never a client business ID or bearer token; response is strictly validated and excludes the secret.
+- Added a **second explicit server switch** `enable_invitation_issuing`, disabled by default even when trusted pending-invitation previews are available. The gateway rejects enabling it without a trusted callback; no real outbound email transport is configured.
+- Added a separate, default-off owner-only browser mode with a review → confirm invitation flow, safe error/reload behavior, no owner-grant choice, and logout/race regressions. No controls are exposed to viewers or employees.
+- Added WSGI, real offline gateway, browser client and DOM tests for disabled paths, spoofed tenant fields, duplicate active recipients, token redaction, role checks, and confirmation. A JavaScript regex fix correctly accepts valid emails containing the letter "s".
+- **Verification status:** Full code/UI checkpoint `7f9b34ea3449af64d217e9540a6d66c044e4ad85` is undergoing GitHub Actions review; do not declare the new issuance UI validated until the exact-SHA tests pass. The prior `main` checkpoint `07d4a66b472fa01a68afb4b47067ed2d64d43503` passed [Actions 43124178398](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43124178398).
+- No hosted beta, live email, social publishing, paid AI or deployment activation.
+
 ## 2026-11-11 — Transactional invitation redemption and concurrent-client safety
 
 - Changed `BusinessInvitations.accept_trusted` to claim the one-use token and revalidate the verified recipient, inviting owner's current role, and pre-existing membership **under one SQLite writer transaction**. If any check or audit write fails, the entire attempted redemption rolls back without granting access.

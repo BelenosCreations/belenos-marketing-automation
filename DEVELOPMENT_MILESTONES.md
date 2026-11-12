@@ -3,6 +3,14 @@
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
 
+## Owner-confirmed invitation issuance preview — November 11, 2026
+
+The offline gateway now supports **separately gated** invitation issuance using an existing trusted delivery callback. A current-role owner-only HTTP adapter derives the tenant from the authenticated session and accepts a restricted email/non-owner-role request; it is disabled by default even when pending invitation list/cancel is enabled. A second independent browser switch and two-step UI confirmation permit previewing the recipient and role before submitting to the configured callback; the browser never receives the secret token. No live email provider or public invitation acceptance route has been enabled, and attempts cannot grant owner access.
+
+New end-to-end tests cover default-off behavior, callback prerequisites, duplicate delivery protection, role/tenant forgery, strict response contracts and a logout race. This milestone uses the same business-scoped invitation audit events already implemented.
+
+**Verification:** New code/UI `7f9b34ea` is under GitHub Actions; this documentation update requires its own exact-head green result. Previously merged `main` `07d4a66b` passed [Actions 43124178398](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43124178398). Do not interpret code presence as active email delivery or production enrollment.
+
 ## Atomic invitation redemption and concurrent-client regression — November 11, 2026
 
 To prevent partial invitation enrollment or role-revocation races, the service acquires a SQLite write lock through a conditional one-use token claim, then rechecks the verified identity, current inviting owner, and existing membership and records the accepted event **within one transaction**. Errors roll back the token claim. A forced audit-trigger failure proves that a membership cannot survive without its corresponding audit record.

@@ -208,6 +208,19 @@ class BusinessInvitations:
         return {'invitation_created':True,'expires_at':timestamp+604800,
                 'invitation_id':invitation_id,'publishing_enabled':False}
 
+    def invite_current(self,*,owner_session,email,role,now=None):
+        """Issue only for the tenant bound to a current trusted owner token.
+
+        Called only behind an additional offline endpoint feature switch and
+        a separately configured trusted delivery callback. No bearer invite
+        token is returned to the web caller.
+        """
+        timestamp=int(time.time()) if now is None else now
+        principal=self._owner(owner_session,timestamp)
+        result=self.invite(owner_session=owner_session,
+            tenant_id=principal.tenant_id,email=email,role=role,now=timestamp)
+        return {'tenant_id':principal.tenant_id,**result}
+
     def accept_trusted(self,*,verified_subject_id,token,now=None):
         """One-use redemption after caller-proven identity; never a web route.
 

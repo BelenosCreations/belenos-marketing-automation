@@ -109,5 +109,37 @@
     return Object.freeze({tenantId:body.tenant_id,
       events:Object.freeze(events),publishingEnabled:false});
   }
-  return Object.freeze({list,cancel,history});
+  async function issue(options){
+    context(options);
+    if(typeof options.email!=='string'||
+       options.email.length<3||options.email.length>254||
+       options.email!==options.email.trim()||
+       !/^[^\s@]+@[^\s@]+$/.test(options.email)||
+       !roles.has(options.role))
+      throw new TypeError('Valid invitation recipient and non-owner role required');
+    const res=await options.fetchImpl(
+      options.origin+'/api/v1/team/invitations/create',{
+      method:'POST',mode:'same-origin',credentials:'omit',
+      cache:'no-store',redirect:'error',
+      headers:{Authorization:'Bearer '+options.token,
+               Accept:'application/json',
+               'Content-Type':'application/json'},
+      body:JSON.stringify({email:options.email,role:options.role})
+    });
+    if(!res||!res.ok)
+      throw new Error('Invitation creation not confirmed');
+    const body=await res.json();
+    if(!exact(body,['tenant_id','invitation_created','invitation_id',
+                    'expires_at','publishing_enabled'])||
+       body.tenant_id!==options.expectedTenantId||
+       body.invitation_created!==true||
+       !id.test(body.invitation_id)||
+       !Number.isSafeInteger(body.expires_at)||body.expires_at<0||
+       body.publishing_enabled!==false)
+      throw new TypeError('Untrusted invitation creation receipt');
+    return Object.freeze({tenantId:body.tenant_id,
+      invitationId:body.invitation_id,expiresAt:body.expires_at,
+      issued:true,publishingEnabled:false});
+  }
+  return Object.freeze({list,cancel,history,issue});
 });

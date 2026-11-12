@@ -1,7 +1,8 @@
-"""Owner-only offline read/cancel adapter for existing pending invitations.
+"""Owner-only offline invitation preview, cancel and opt-in issuance.
 
-No invitation creation, external delivery, acceptance, paid or publish route.
-Explicit trusted delivery callback configuration is required by the gateway.
+Issuance is disabled by default and must separately be enabled along with an
+offline trusted delivery callback. No acceptance, public hosting, paid API or
+social publishing route is implemented. Never return a bearer invitation.
 """
 import json
 import re
@@ -20,10 +21,13 @@ def unique(pairs):
     return obj
 
 class BAMTeamInvitationsWSGI:
-    def __init__(self,service=None,*,enabled=False,clock=None):
+    def __init__(self,service=None,*,enabled=False,allow_issue=False,clock=None):
         if type(enabled) is not bool: raise ValueError('Boolean enable required')
+        if type(allow_issue) is not bool:
+            raise ValueError('Boolean invitation issuance switch required')
         self.service=service
         self.enabled=enabled
+        self.allow_issue=allow_issue
         self.clock=time.time if clock is None else clock
         if not callable(self.clock): raise ValueError('Trusted clock required')
 
@@ -41,7 +45,7 @@ class BAMTeamInvitationsWSGI:
         return [raw]
 
     @staticmethod
-    def parse(environ):
+    def parse(environ,*,kind='cancel'):
         if environ.get('CONTENT_TYPE')!='application/json':
             raise ValueError('JSON content type required')
         n=environ.get('CONTENT_LENGTH')
@@ -54,10 +58,21 @@ class BAMTeamInvitationsWSGI:
         if type(raw) is not bytes or len(raw)!=int(n):
             raise ValueError('Incomplete body')
         obj=json.loads(raw.decode('utf-8'),object_pairs_hook=unique)
-        if (type(obj) is not dict or set(obj)!={'invitation_id'}
-                or type(obj['invitation_id']) is not str
-                or IDENT.fullmatch(obj['invitation_id']) is None):
-            raise ValueError('Invalid cancellation')
+        if kind=='issue':
+            if (type(obj) is not dict or set(obj)!={'email','role'}
+                    or type(obj['email']) is not str
+                    or not 3<=len(obj['email'])<=254
+                    or '@' not in obj['email']
+                    or type(obj['role']) is not str
+                    or obj['role'] not in ROLES):
+                raise ValueError('Invalid invitation request')
+        elif kind=='cancel':
+            if (type(obj) is not dict or set(obj)!={'invitation_id'}
+                    or type(obj['invitation_id']) is not str
+                    or IDENT.fullmatch(obj['invitation_id']) is None):
+                raise ValueError('Invalid cancellation')
+        else:
+            raise ValueError('Unexpected invitation action')
         return obj
 
     @staticmethod
@@ -113,6 +128,22 @@ class BAMTeamInvitationsWSGI:
         return obj
 
     @staticmethod
+    def safe_issue(obj):
+        if (type(obj) is not dict or set(obj)!={
+                'tenant_id','invitation_created','expires_at',
+                'invitation_id','publishing_enabled'}
+            or type(obj['tenant_id']) is not str
+            or not obj['tenant_id'].strip() or len(obj['tenant_id'])>128
+            or obj['invitation_created'] is not True
+            or type(obj['expires_at']) is not int
+            or obj['expires_at']<0
+            or type(obj['invitation_id']) is not str
+            or IDENT.fullmatch(obj['invitation_id']) is None
+            or obj['publishing_enabled'] is not False):
+            raise RuntimeError('Unsafe invitation issuance result')
+        return obj
+
+    @staticmethod
     def safe_cancel(obj,request):
         if (type(obj) is not dict or set(obj)!={
                 'tenant_id','invitation_id','status','publishing_enabled'}
@@ -131,12 +162,16 @@ class BAMTeamInvitationsWSGI:
         path=environ.get('PATH_INFO')
         if path not in ('/api/v1/team/invitations',
                         '/api/v1/team/invitations/activity',
-                        '/api/v1/team/invitations/cancel'):
+                        '/api/v1/team/invitations/cancel',
+                        '/api/v1/team/invitations/create'):
+            return reply('404 Not Found',{'error':'Not found'})
+        if path=='/api/v1/team/invitations/create' and not self.allow_issue:
             return reply('404 Not Found',{'error':'Not found'})
         method=environ.get('REQUEST_METHOD')
         if ((path in ('/api/v1/team/invitations',
                       '/api/v1/team/invitations/activity') and method!='GET') or
-            (path=='/api/v1/team/invitations/cancel' and method!='POST')):
+            (path in ('/api/v1/team/invitations/cancel',
+                      '/api/v1/team/invitations/create') and method!='POST')):
             return reply('405 Method Not Allowed',{'error':'Method not allowed'})
         if not self.enabled or self.service is None:
             return reply('503 Service Unavailable',{'error':'Invitation preview disabled'})
@@ -157,6 +192,11 @@ class BAMTeamInvitationsWSGI:
                 return reply('200 OK',self.safe_list(
                     self.service.pending_current(
                         owner_session=header[7:],now=now)))
+            if path=='/api/v1/team/invitations/create':
+                request=self.parse(environ,kind='issue')
+                return reply('201 Created',self.safe_issue(
+                    self.service.invite_current(
+                        owner_session=header[7:],now=now,**request)))
             request=self.parse(environ)
             return reply('200 OK',self.safe_cancel(
                 self.service.cancel_current(
@@ -165,7 +205,12 @@ class BAMTeamInvitationsWSGI:
             return reply('401 Unauthorized',{'error':'Invitation access unavailable'})
         except KeyError:
             return reply('404 Not Found',{'error':'Pending invitation unavailable'})
-        except (ValueError,TypeError,AttributeError,UnicodeError,json.JSONDecodeError):
+        except ValueError as exc:
+            if str(exc)=='Active invitation or existing membership for business':
+                return reply('409 Conflict',
+                    {'error':'Invitation unavailable; review team access'})
+            return reply('400 Bad Request',{'error':'Invalid invitation request'})
+        except (TypeError,AttributeError,UnicodeError,json.JSONDecodeError):
             return reply('400 Bad Request',{'error':'Invalid invitation request'})
         except Exception:
             return reply('503 Service Unavailable',{'error':'Invitation preview unavailable'})
