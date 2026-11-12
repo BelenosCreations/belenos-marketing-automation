@@ -1072,3 +1072,7 @@ Extend the nine-table SQL preview with five collaboration/invite/review tables, 
 ## November 12, 2026 — Transactional versioned ephemeral PostgreSQL schema tests
 
 Review-only two-stage schema loader for disposable GitHub Actions Postgres: version 1 nine core tables, version 2 five collaboration tables/indexes. Transaction/advisory lock, checksum journal, safe rerun and fail-closed tests for drift/unknown versions. Explicit opt-in environment and test-only host/database/schema/user restrictions; no shared Neon credentials, production migration entrypoint or hosting bill. README/CHANGELOG/continuity maintained; exact PR CI pending.
+
+## November 12, 2026 — AI, provider and authentication metadata PostgreSQL CI parity
+
+Seven reviewed DDL tables extend three stages of disposable PostgreSQL CI migration to 21 total: per-user AI settings/memory/usage, vault-reference-only provider metadata, Google challenge nonce, PKCE OAuth attempt, pending content attachments. SQL read contracts join active identity/current membership to prevent cross-business provider-list and personal AI usage leaks, with no secret/vault ref in the response. Real runner PostgreSQL tests, local SQLite parity and README/continuity docs. No real social OAuth, AI usage, hosting or payment; CI pending.

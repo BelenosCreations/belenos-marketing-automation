@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Third ephemeral PostgreSQL schema stage candidate — November 12, 2026
+
+**Last verified baseline:** PR #38 merged at `73d072394ddcf500d81753c1878171e2e5621fbc` and full [merged-main CI 43243478933](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43243478933) **success**, development safely synchronized.
+
+**Current unverified work:** seven provider/AI/auth and private attachment table previews (21 reviewed total), stage 3 of CI-only PostgreSQL schema journal, SQL read contracts for tenant-private social metadata and per-user AI usage, plus tests. No actual Neon project, live provider tokens, paid API or customer data migration. Verify full PR CI before merge, then exact main CI, then safe dev sync.
+
 ## Ephemeral PostgreSQL migration journal candidate — November 12, 2026
 
 **Last verified merged baseline:** PR #37 merged at `beb00e9dda822cf5fb811712ce8b162ee8d3ee5c`, full [main Actions 43242495634](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43242495634) **success**; development synchronized without force.

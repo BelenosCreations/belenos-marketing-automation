@@ -54,6 +54,10 @@ The next offline migration slice adds **five more PostgreSQL table definitions**
 
 The first two synthetic PostgreSQL schema stages (nine core tables, then five private collaboration tables) now run through a **transactional, versioned CI-only migration loader** with database advisory locking and SHA-256 script checksums. CI verifies repeat runs are no-ops and rejects tampered migration history, unknown future versions or missing tables. The loader *refuses non-loopback databases* and has no deployed entrypoint. A dedicated production migration framework, full table coverage, data conversion, encrypted backup/restore and explicit Neon/Render approval are still prerequisites.
 
+### Provider/AI/authentication metadata PostgreSQL parity (offline)
+
+Seven additional table definitions now have **actual disposable PostgreSQL CI coverage**, expanding the reviewed schema from 14 to **21 tables**. They cover each user's AI mode/memory/usage, *vault-reference-only* read-capable social connection metadata, Google nonce and OAuth PKCE attempt ledgers, and private content-attachment metadata. The new prepared read queries recheck current membership and business scope for connection metadata and each user's own AI usage. The query never returns vault references or provider tokens and does **not** establish live provider access. The CI-only migration journal now has a third version; many other tables and production work remain.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

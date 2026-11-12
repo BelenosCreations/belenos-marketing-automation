@@ -38,6 +38,10 @@ The public repository can now run standard GitHub-hosted runners with temporary 
 
 `neon_ephemeral_ci_migrations.py` loads only two fixed known schema stages—nine base tables and five private collaboration tables—under a single PostgreSQL transaction/advisory lock, recording SHA-256 checksums in a disposable CI-only migration journal. Re-execution is a no-op; changed checksums, unknown schema versions and missing tables are denied. It strictly requires loopback `bam_ci_test` PostgreSQL, CI opt-in and a non-production schema. **This is not a deployable production migration runner**, has no data import/export and cannot activate Render, Neon, AI or publishing. Production needs its own reviewed, backup-protected tool, full schema and data migration.
 
+## Third schema stage: provider/AI/identity support metadata
+
+`neon_identity_provider_schema.py` defines a further seven PostgreSQL table previews (total **21**) covering AI mode/memories/request usage, private provider connection vault **references** (not raw OAuth credentials), Google nonce challenges, OAuth attempt PKCE hashes, and attachment metadata. A third CI-only schema migration version replays this stage with journal checksums. `neon_scoped_provider_queries.py` adds current-role tenant-scoped provider metadata reads without selecting a vault ref, and same-identity AI usage queries. Synthetic SQLite and actual temporary PostgreSQL tests confirm isolation and revocation; these are *not* a real OAuth integration, AI billing implementation, content storage provider or Neon deployment.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.
