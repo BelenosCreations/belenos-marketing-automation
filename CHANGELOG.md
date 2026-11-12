@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — Read-only data integrity preflight for future Neon migration
+
+- Add aggregate-only SQLite integrity and foreign key checks plus orphan-identity/membership/session, stale session role, inactive identity, malformed session digest, casefold email collision and orphan calendar proposal diagnostics.
+- Add synthetic-fixture tests for no-record/no-secret output, corrupted relational links, stale permissions, duplicate email and strict clean-fixture gating.
+- This is a local **preflight only**: no data migration, Neon access or production readiness claim. Full CI pending; no deployment or billable operation authorized.
+
 ## November 12, 2026 — Prepared tenant-scoped Postgres read contracts (offline)
 
 - Define pure parameterized draft/calendar SELECT templates that recheck active/verified identity and tenant membership in the same read statement; no SQL identifier interpolation from clients.
