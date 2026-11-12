@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Public repository / real PostgreSQL CI candidate — November 12, 2026
+
+- Owner confirmed GitHub repository is **PUBLIC** after PR #35 merged at `5c283175df06c77a529df2ed1ab62a1beb6e98ba`. Post-merge GitHub Actions `43225430354` passed; active development branch was safely fast-forwarded to main without force.
+- New candidate: within the existing standard-runner workflow, add ephemeral PostgreSQL 16 service and test real (temporary) PostgreSQL DDL and current-member tenant read/draft-priority-CAS behavior, including a two-client race. Remove redundant development push tests; workflow runs on PR and merged main only. Credential persistence disabled, permissions read-only, no artifacts.
+- Verify *exact* PR SHA Actions first; merge only after clean/green; confirm merged main CI and fast-forward development, never force push. No real Neon database, Render web service or paid service created.
+
 ## Authoritative recovery checkpoint — November 12, 2026
 
 - **Private repository:** `BelenosCreations/belenos-marketing-automation`.

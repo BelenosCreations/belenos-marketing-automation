@@ -1,6 +1,6 @@
 # BAM — public repository readiness
 
-Status (2026-11-12): PREPARATION ONLY. Keep repository visibility private until credential history, workflow and log checks are complete. BAM hosting and social publishing remain unprovisioned/disabled.
+Status (2026-11-12): **PUBLIC**, changed by the repository owner after PR #35. PR #35 merged at `5c283175df06c77a529df2ed1ab62a1beb6e98ba`; post-merge Actions `43225430354` succeeded. Earlier steps below are retained as historical review expectations, not an instruction to change visibility back to private. The automated history scan is heuristic; continue manual credential review and rotate any exposed production credentials. BAM hosting and social publishing remain unprovisioned/disabled. BAM hosting and social publishing remain unprovisioned/disabled.
 
 ## Motivation
 GitHub-hosted standard-runner Actions compute is free on public repositories. Private monthly minutes are currently scarce. Public status does not reduce Render, Neon, OpenAI, Meta, bandwidth, or storage expenses, and it does not authorize paid services.

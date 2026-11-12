@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Real PostgreSQL query/DDL verification on public GitHub CI | **New ephemeral PostgreSQL 16 CI integration candidate, not Neon staging** | Verify actual PG isolation and versioned writes under CI, then port all remaining tables, run real hosted multi-user tests, encrypted backup/restore and explicitly authorized deployment |
 | Postgres write-path CAS preview | **Offline contract/SQLite tests passed PR #33 and merged-main CI 43218122644; not exercised on PostgreSQL** | Test same SQL with real Postgres transactions and authenticated server sessions before any hosted edit endpoint; no executable posts |
 | Local migration integrity preflight | **Offline preflight passed PR #32 and merged-main CI 43217385358; not a hosted restore test** | Must pass on an approved staging migration from encrypted backup and then real Neon referential/transaction tests; no user data migrated |
 | Postgres tenant read-query seam | **Offline query-shape tests passed PR #31 and merged-main CI 43216601082; not actual Neon** | Requires independently authenticated production caller and real Neon transaction/tenant isolation tests; no actual Postgres connection verified |

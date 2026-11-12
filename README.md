@@ -42,6 +42,10 @@ BAM now has a **non-executing** SQL contract for editing a held draft's priority
 
 The current Alpha remains fully SQLite-backed. All Neon DDL, query and integrity additions are offline **planning/tests only**; no PostgreSQL connection is implemented or running. The first nine-table schema preview is incomplete, and the full inventory still lists unmapped tables. A useful hosted private beta will require complete schema and data migration, correctly authenticated PostgreSQL transactions, private durable media, encrypted backup/restore, and verified live cross-business isolation. The owner-selected **separate $7/month Render Starter + free Neon** design is recorded but **not authorized for provisioning or billing**. See [Neon roadmap](NEON_MIGRATION_ROADMAP.md), [hosting gates](PRIVATE_BETA_INFRASTRUCTURE.md), and [readiness evidence](ALPHA_BETA_READINESS.md).
 
+### Public GitHub CI: actual ephemeral PostgreSQL validation (November 12, 2026)
+
+After PR #35, the **source repository is public**, while the BAM product remains unhosted/offline Alpha. GitHub Actions now uses standard free public-repository runners to start a **temporary PostgreSQL 16 container** during the existing unit-test workflow. It runs the nine-table schema preview and tenant-scoped draft/calendar read and priority-write contracts against *real PostgreSQL*, including a two-client stale-write race test. This does **not** create a Neon database, copy customer data, or enable a production DB adapter. Development-branch pushes no longer duplicate the pull-request test run; tests execute on PRs and merged `main`. CI permissions remain read-only and Actions uploads no artifacts. The chosen one-service $7 Render Starter + separate Neon Free design remains **unprovisioned and charge-gated**.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

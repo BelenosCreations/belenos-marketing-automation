@@ -1,18 +1,35 @@
-name: Offline unit tests
+name: Offline and ephemeral Postgres tests
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read
 concurrency:
-  group: bam-ci-${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  group: bam-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: bam_ci_test
+          POSTGRES_USER: bam_ci
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bam_ci -d bam_ci_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -21,19 +38,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate JavaScript module and test syntax
+      - name: Validate JavaScript syntax and run UI regressions
         shell: bash
         run: |
           set -euo pipefail
           for source in ui/*.js; do
             node --check "$source"
           done
-      - name: Run all JavaScript UI regression tests
-        shell: bash
-        run: |
-          set -euo pipefail
           for test_file in ui/*_test.js; do
             node "$test_file"
           done
-      - name: Run offline tests
-        run: python -m unittest discover -s . -p 'test_*.py' -v
+      - name: Install ephemeral PostgreSQL test driver
+        run: python -m pip install 'psycopg[binary]==3.2.12'
+      - name: Run all offline tests plus local-container PostgreSQL parity
+        env:
+          BAM_EPHEMERAL_PG_TEST: '1'
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: bam_ci_test
+          PGUSER: bam_ci
+          PGPASSWORD: ci-${{ github.run_id }}
+        run: python -m unittest discover -s . -p 'test_*.py' -q
