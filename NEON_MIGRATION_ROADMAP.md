@@ -26,6 +26,10 @@ Run `python -m neon_schema_inventory` for a no-data, ephemeral initialized schem
 
 `neon_scoped_writes.py` produces a prepared PostgreSQL `UPDATE ... RETURNING` contract for held draft priority only, with a same-statement check of active/verified identity, current eligible team role, tenant and priority-version token. The fixture tests run against SQLite after explicit test-only parameter conversion. No caller can use this module to connect or write to Neon, and it has **no publish/schedule capability**. Before real migration, verify PostgreSQL transaction isolation and rowcount/return values, true authenticated trusted principal resolution, audit events, error mapping and conflict/permission behavior.
 
+## Actual PostgreSQL test container — public GitHub Actions only
+
+The public repository can now run standard GitHub-hosted runners with temporary PostgreSQL 16 in the existing unit-test job. `test_neon_ephemeral_postgres.py` executes the *existing nine-table preview DDL* and tenant-scoped read/priority-CAS SQL against a test-only, loopback PostgreSQL database, including separate simultaneous clients and current membership denial. It refuses unexpected host/database/user settings, uses a run-specific disposable password, drops its test schema, uploads no artifacts, and is skipped without the CI opt-in flag. This is **not** a production Neon connection or BAM PostgreSQL adapter. All other table migrations, production service authentication, durable storage, encrypted backups, and owner approval remain required.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

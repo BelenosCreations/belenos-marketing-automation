@@ -1057,6 +1057,10 @@ Audit SQLite relational integrity and aggregate-only anomalies in hashed session
 
 Pure prepared `UPDATE ... RETURNING` builder for held-draft priority. One statement enforces scoped tenant/request/version with server-verified subject's active identity/membership/editor role; receipt retains nonpublishing state and unchanged content revision. Test-only SQLite parameter adapter verifies cross-tenant isolation, viewer denial, revoked credentials and stale version conflicts. No hosted Postgres, actual SQL execution there, API route, new charge or publishing. Exact GitHub CI pending.
 
+## November 12, 2026 — Public runner Postgres smoke/security milestone
+
+Repository public per owner after PR #35, with successful post-merge Actions. Consolidate Python and JS CI under one workflow per PR and main, no duplicate branch pushes or stored artifacts. Use ephemeral GitHub Actions Postgres 16 container to execute the previously drafted nine-table DDL, tenant/member read checks, same-statement draft priority CAS and two-connection stale-writer race **against actual PostgreSQL**. Tests reject non-loopback connections or unexpected DB names. This is CI-only, not a production DB adapter, Neon project, Render server, auth service or permission to publish.
+
 ## November 12, 2026 — Verified Neon groundwork and release-continuity reconciliation
 
 PRs #30–#33 have passed exact GitHub Actions after merge to `main`: commits `1934a4dd` (43215433909), `2615a0ac` (43216601082), `d054d67a` (43217385358), and `1c4ab9b7` (43218122644). Source and tests remain **offline-only** with no real Neon connection. This document/release-status consolidation updates current README, roadmap, product plan, CHANGELOG, alpha readiness and continuity to prevent historical “CI pending” entries misleading recovery. It requires separate CI; no hosted services, charges or posting are authorized.

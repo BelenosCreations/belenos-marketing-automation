@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Public runner real PostgreSQL CI (candidate)
+
+- After owner-confirmed public repository PR #35, fast-forwarded development safely from the verified public main commit `5c283175`.
+- Updated the existing Python/JS CI workflow to run once for pull requests and merged main rather than duplicated development pushes; retained read-only repo permissions, added checkout credential persistence disable and no artifact uploads.
+- Added an **ephemeral local PostgreSQL 16 service container** on standard GitHub-hosted runners with an in-memory/temporary test-only user/password. Tests execute nine-table DDL, prepared tenant-scoped read queries, guarded draft-priority CAS, concurrent stale-token writes, viewer and revocation denials on real PostgreSQL.
+- These tests require no Neon project, Render service, real credentials or billable database. This candidate needs PR and merged-main CI; public repo history scan remains a separate security gate, not a guarantee.
+
 ## November 12, 2026 — Verified offline Neon migration preparation checkpoint
 
 - PRs [#30](https://github.com/BelenosCreations/belenos-marketing-automation/pull/30), [#31](https://github.com/BelenosCreations/belenos-marketing-automation/pull/31), [#32](https://github.com/BelenosCreations/belenos-marketing-automation/pull/32), [#33](https://github.com/BelenosCreations/belenos-marketing-automation/pull/33) were merged after exact-head CI; merged `main` at each checkpoint passed Actions `43215433909`, `43216601082`, `43217385358`, `43218122644` respectively.
