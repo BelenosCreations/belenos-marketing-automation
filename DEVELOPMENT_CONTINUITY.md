@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Authenticated PostgreSQL held draft creation / revision candidate — November 12, 2026
+
+**Last fully verified repository state:** PR #51 merged into `main` at `386efe5ff56f2d1f9d9e5646fc7728ca13ccf4d2`, full [merged-main Actions 43317840660](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43317840660) **success**, and `development/phase-3-5-account-directory` safely fast-forwarded, now identical to main. Previous candidate sections are historical records, not current blockers.
+
+**Current candidate (not yet verified):** `neon_session_draft_write_contract.py` plus SQLite tests, `EphemeralSessionPostgres.create_held_draft` / `revise_held_draft` methods, and actual disposable PostgreSQL tests for owner/editor authorization, held-only inserts, stale edit rejection, concurrent writes, cross-business isolation and live role/identity/session revocation. No live route or provider operations.
+
+**Next steps:** Verify exact PR head CI including Python and temporary PostgreSQL; fix failing tests without touching main; merge only green PR; verify merged-main exact SHA CI; non-force fast-forward development. Future work: complete PostgreSQL durable editing/review/asset parity, independently secure production ingress and full migration/backup before reconsidering hosting.
+
+**Standing controls:** BAM offline Alpha, $0 incremental development charge; use standard GitHub-hosted runners and synthetic databases. No Render/Neon provision, no paid OpenAI API, no social publishing, no EdgePilot resources, and no cost authorization from a passing test. Keep `README.md`, `CHANGELOG.md`, and this continuity file current at verified milestones.
+
 ## Owner-private PostgreSQL team roster candidate — November 12, 2026
 
 **Last fully verified state:** PR #50 merged as `dd0b3210258bbe3a7200cf0f8540135af827c930`; [full merged-main Actions 43316746266](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43316746266) **success**; both `main` and `development/phase-3-5-account-directory` safely synchronized. Previous PR #50 CI fixture failure (nonhex synthetic ID) was corrected and the final exact-head PR CI passed.

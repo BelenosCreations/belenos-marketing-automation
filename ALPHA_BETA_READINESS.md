@@ -6,7 +6,8 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
-| Owner-private PostgreSQL team roster read | **SQL + disposable psycopg read-only candidate, pending CI** | Match offline 200-member cap, owner-self identity, inactive member visibility, target email redaction and token/role/tenant denial; production gateway and writes remain outstanding |
+| Held draft create + optimistic revision on disposable PostgreSQL | **New token-bound SQL / CI-only adapter candidate, pending exact-head CI** | Validate current-editor role, clean input, server-generated IDs, immutable publication state, cross-tenant denial and two-client CAS; requires separately audited production gateway and full migrations |
+| Owner-private PostgreSQL team roster read | **Verified PR #51, merged-main Actions 43317840660 success; CI-only** | Match offline 200-member cap, owner-self identity, inactive member visibility, target email redaction and token/role/tenant denial; production gateway and writes remain outstanding |
 | Session-authenticated held-draft inbox pages | **Verified PR #50, merged-main Actions 43316746266 passed; CI-only** | Verify local/real PostgreSQL keyset pagination, tenant and stale-role denials; then implement separately audited production gateway, full persistence and secure beta rollout before use |
 | Token-bound PostgreSQL draft priority CAS | **SQL-only priority edit contract and SQLite/disposable PG regression candidate** | Green exact-head PR/main CI; audited production session ingress, PostgreSQL adapter and actual hosted security/transaction tests before use |
 | Full PostgreSQL preview coverage inventory | **46 reviewed DDL preview tables / seven CI stages; metadata-only unreviewed table audit candidate** | Exact SHA CI, then port all remaining tables, full production SQL semantics, safe data migration, backups and dedicated approval |
