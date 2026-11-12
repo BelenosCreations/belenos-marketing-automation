@@ -5,6 +5,7 @@ are supported as separate policies. Production billing/subscriptions and
 actual OpenAI requests are NOT implemented here.
 """
 import re
+from datetime import datetime,timezone
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
@@ -101,6 +102,21 @@ class SponsoredAIQuota:
             raise _QuotaExhausted(reason)
         return cap-(row[1]+delta)
 
+    def reserve_current_utc_month(self, *, token, now, plan):
+        """Trusted production composition should derive month from server time.
+
+        The legacy reserve(...,month=...) entry point remains for explicit
+        offline fixtures only. Never accept a billing month from a browser
+        or mobile client, or a user could switch months to avoid quotas.
+        """
+        if type(now) is not int or now<0:
+            raise ValueError('Trusted UTC timestamp required')
+        try:
+            month=datetime.fromtimestamp(now,tz=timezone.utc).strftime('%Y-%m')
+        except (OverflowError,OSError,ValueError) as exc:
+            raise ValueError('Invalid UTC billing timestamp') from exc
+        return self.reserve(token=token,now=now,plan=plan,month=month)
+
     def reserve(self, *, token, now, plan, month):
         if not isinstance(plan,SponsorshipPlan):
             raise ValueError('Trusted server plan required')
@@ -117,11 +133,19 @@ class SponsoredAIQuota:
         micro=plan.max_request_estimated_micro_usd or 0
         unpriced=int(plan.max_request_estimated_micro_usd is None)
         remaining_micro=[]
-        # First INSERT acquires SQLite's writer lock. All three count and
-        # estimated spend reservations succeed or roll back together. A
-        # projected cap never uses client-supplied provider/billing usage.
+        # Revalidate role and funding mode under SQLite's write lock. A
+        # demoted writer or a user who switched to a personal key between
+        # the initial check and lock acquisition cannot spend BAM quota.
+        # Every count/cost tier succeeds or rolls back as one transaction.
         try:
             with self.db:
+                self.db.execute('BEGIN IMMEDIATE')
+                current=self.policy_store._editor(token,now)
+                if current!=principal:
+                    raise PermissionError('Current business role changed')
+                if self.policy_store.get_mode(token=token,now=now)[
+                        'mode']!='bam_sponsored':
+                    raise PermissionError('Sponsored mode changed')
                 self.db.execute("""INSERT OR IGNORE INTO bam_ai_usage
                     (tenant_id,subject_id,month,accepted)
                     VALUES(?,?,?,0)""",

@@ -1,7 +1,8 @@
 import sqlite3
 import unittest
 from decimal import Decimal
-from ai_cost_ledger import AICostLedger,AITokenPricing
+from ai_cost_ledger import (AICostLedger,AITokenPricing,
+                            conservative_request_cost_micro_usd)
 
 class AICostLedgerTests(unittest.TestCase):
     def setUp(self):
@@ -23,6 +24,31 @@ class AICostLedgerTests(unittest.TestCase):
             tenant_id='other',subject_id='owner')
         self.assertEqual(other['events'],0)
         self.assertEqual(other['estimated_micro_usd'],0)
+
+    def test_conservative_cost_projection_requires_explicit_pricing(self):
+        result=conservative_request_cost_micro_usd(
+            pricing=self.pricing,max_input_tokens=10000,
+            max_output_tokens=500)
+        self.assertEqual(result,1800)
+        # Fractional micro-USD is rounded upward to reserve conservatively,
+        # not rounded down as provider estimates may be.
+        self.assertEqual(conservative_request_cost_micro_usd(
+            pricing=self.pricing,max_input_tokens=1,
+            max_output_tokens=1),1)
+        for bad in (0,-1,True,1.5,'100',1000001):
+            with self.assertRaises(ValueError):
+                conservative_request_cost_micro_usd(
+                    pricing=self.pricing,max_input_tokens=bad,
+                    max_output_tokens=100)
+        for bad in (0,-1,True,16385):
+            with self.assertRaises(ValueError):
+                conservative_request_cost_micro_usd(
+                    pricing=self.pricing,max_input_tokens=100,
+                    max_output_tokens=bad)
+        with self.assertRaises(ValueError):
+            conservative_request_cost_micro_usd(
+                pricing={'input':Decimal('0.15')},
+                max_input_tokens=100,max_output_tokens=100)
 
     def test_invalid_usage_and_pricing_rejected(self):
         with self.assertRaises(ValueError):

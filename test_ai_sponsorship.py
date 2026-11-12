@@ -1,5 +1,7 @@
 import sqlite3
 import unittest
+from decimal import Decimal
+from ai_cost_ledger import AITokenPricing,conservative_request_cost_micro_usd
 from access_policy import Principal,Role
 from accounts import AccountDirectory
 from sessions import SessionStore
@@ -15,6 +17,70 @@ class SponsoredAITests(unittest.TestCase):
         self.token=self.sessions.issue(Principal('owner','shop',Role.OWNER),now=100)
         self.policy=AIPolicyStore(db=self.db,sessions=self.sessions,directory=directory)
         self.quota=SponsoredAIQuota(db=self.db,policy_store=self.policy)
+
+    def test_estimated_projection_must_be_based_on_operator_pricing(self):
+        price=AITokenPricing(Decimal('0.15'),Decimal('0.60'))
+        estimated=conservative_request_cost_micro_usd(
+            pricing=price,max_input_tokens=10000,max_output_tokens=500)
+        self.assertEqual(estimated,1800)
+        plan=SponsorshipPlan('owner',10,500,
+            max_request_estimated_micro_usd=estimated,
+            operator_monthly_estimated_micro_usd=3600)
+        self.assertTrue(self.quota.reserve(token=self.token,now=101,
+            plan=plan,month='2026-11')['reserved'])
+        self.assertTrue(self.quota.reserve(token=self.token,now=101,
+            plan=plan,month='2026-11')['reserved'])
+        self.assertEqual(self.quota.reserve(token=self.token,now=101,
+            plan=plan,month='2026-11')['reason'],
+            'operator_estimated_budget_reached')
+
+    def test_role_demotion_between_auth_and_commit_refuses_sponsorship(self):
+        self.policy.directory.set_member(
+            Principal('owner','shop',Role.OWNER),'writer',Role.CONTENT_CREATOR)
+        writer=self.sessions.issue(
+            Principal('writer','shop',Role.CONTENT_CREATOR),now=100)
+        initial=self.policy.get_mode
+        seen=[0]
+        def demote_after_preflight(*,token,now):
+            mode=initial(token=token,now=now)
+            seen[0]+=1
+            if seen[0]==1:
+                # Authorization and mode preflight have BOTH succeeded;
+                # only the new transaction-time check can stop this writer.
+                self.policy.directory.set_member(
+                    Principal('owner','shop',Role.OWNER),
+                    'writer',Role.VIEWER)
+            return mode
+        self.policy.get_mode=demote_after_preflight
+        with self.assertRaises(PermissionError):
+            self.quota.reserve(token=writer,now=101,
+                plan=SponsorshipPlan('invited',10,500,
+                    max_request_estimated_micro_usd=100,
+                    operator_monthly_estimated_micro_usd=500),
+                month='2026-11')
+        self.assertEqual(self.db.execute(
+            'SELECT COUNT(*) FROM bam_ai_usage').fetchone()[0],0)
+
+    def test_mode_switch_between_preflight_and_transaction_denied(self):
+        original=self.policy.get_mode
+        calls=[0]
+        def switch_after_preflight(*,token,now):
+            mode=original(token=token,now=now)
+            calls[0]+=1
+            if calls[0]==1:
+                self.policy.set_mode(token=token,now=now,
+                    mode='own_openai_key',
+                    credential_ref='vault:abcdefghijklmnop')
+            return mode
+        self.policy.get_mode=switch_after_preflight
+        with self.assertRaises(PermissionError):
+            self.quota.reserve(token=self.token,now=101,
+                plan=SponsorshipPlan('owner',10,400,
+                    max_request_estimated_micro_usd=100,
+                    operator_monthly_estimated_micro_usd=1000),
+                month='2026-11')
+        self.assertEqual(self.db.execute(
+            'SELECT COUNT(*) FROM bam_ai_usage').fetchone()[0],0)
 
     def test_owner_two_daily_posts_can_be_budgeted_without_claiming_unlimited(self):
         plan=SponsorshipPlan('owner',monthly_requests=62,max_output_tokens=600)
@@ -278,6 +344,31 @@ class SponsoredAITests(unittest.TestCase):
                 month='2026-11')
         self.assertEqual(self.db.execute("""SELECT count(*) FROM
             bam_ai_usage""").fetchone()[0],0)
+
+    def test_current_billing_month_is_server_utc_not_client_supplied(self):
+        from datetime import datetime,timezone
+        nov=int(datetime(2026,11,30,23,59,tzinfo=timezone.utc).timestamp())
+        dec=int(datetime(2026,12,1,0,1,tzinfo=timezone.utc).timestamp())
+        november=self.sessions.issue(
+            Principal('owner','shop',Role.OWNER),now=nov)
+        december=self.sessions.issue(
+            Principal('owner','shop',Role.OWNER),now=dec)
+        plan=SponsorshipPlan('owner',1,200,
+            max_request_estimated_micro_usd=100,
+            operator_monthly_estimated_micro_usd=100)
+        self.assertTrue(self.quota.reserve_current_utc_month(
+            token=november,now=nov,plan=plan)['reserved'])
+        self.assertTrue(self.quota.reserve_current_utc_month(
+            token=december,now=dec,plan=plan)['reserved'])
+        self.assertEqual(self.quota.reserve_current_utc_month(
+            token=december,now=dec,plan=plan)['reason'],'limit_reached')
+        rows=self.db.execute("""SELECT month,accepted,reserved_micro_usd
+            FROM bam_ai_operator_usage ORDER BY month""").fetchall()
+        self.assertEqual(rows,[('2026-11',1,100),('2026-12',1,100)])
+        for invalid in (True,-1,'2026-11',10**100):
+            with self.assertRaises(ValueError):
+                self.quota.reserve_current_utc_month(
+                    token=november,now=invalid,plan=plan)
 
     def test_months_are_isolated(self):
         plan=SponsorshipPlan('owner',1,400)

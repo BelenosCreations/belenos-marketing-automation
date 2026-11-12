@@ -191,3 +191,7 @@ The disconnected Alpha metadata registry now rejects permission markers other th
 ### Projected sponsored AI micro-USD accounting, not paid billing (November 11, 2026)
 
 The offline sponsored request-count quota ledger now optionally reserves operator-configured **estimated micro-USD** against per-user, business and overall operator monthly limits as one atomic transaction. It accounts for earlier count-only reservations as **unpriced** and fails closed if a new dollar projection ceiling could omit their history. This is an accounting safety prototype; actual provider prices/usage, guaranteed token bounds, budget reconciliation, vault credentials and an approved operator spend ceiling remain necessary before real API traffic. No new fee or paid service was introduced.
+
+### AI authorization race and pricing-estimate groundwork (November 11, 2026)
+
+Sponsored request and projected-cost admission rechecks a member's current role and sponsored-versus-personal mode **inside** the SQLite write transaction so concurrent removal cannot authorize a new reservation. A pure conservative estimator rounds operator-configured token-price assumptions **up** to a micro-USD reservation. A trusted UTC-month entry point avoids caller-chosen billing months in future integrations. These improvements are not current OpenAI pricing, actual usage charges, an enforced real input-token ceiling, or a green light to make paid model requests. Completion of these production conditions is still a separate authorization and integration gate.

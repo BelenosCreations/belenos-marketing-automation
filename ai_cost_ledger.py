@@ -7,7 +7,7 @@ are not invoices, real OpenAI bills or proof of payment.
 import sqlite3
 import uuid
 from dataclasses import dataclass
-from decimal import Decimal,ROUND_HALF_UP
+from decimal import Decimal,ROUND_HALF_UP,ROUND_CEILING
 
 @dataclass(frozen=True)
 class AITokenPricing:
@@ -20,6 +20,27 @@ class AITokenPricing:
             if type(price) is not Decimal or not price.is_finite() or (
                 price<0 or price>Decimal('10000')):
                 raise ValueError('Operator-configured token prices required')
+
+def conservative_request_cost_micro_usd(*,pricing,
+                                        max_input_tokens,max_output_tokens):
+    """Operator-provided pricing and assumed token ceilings only.
+
+    The caller must independently enforce both token ceilings and verify
+    actual current provider pricing before using this for real paid calls.
+    Ceil, rather than round down, each whole-request micro-USD projection.
+    No API access, invoice, usage measurement or approval occurs here.
+    """
+    if type(pricing) is not AITokenPricing:
+        raise ValueError('Explicit operator pricing required')
+    if (type(max_input_tokens) is not int or
+        not 1<=max_input_tokens<=1000000 or
+        type(max_output_tokens) is not int or
+        not 1<=max_output_tokens<=16384):
+        raise ValueError('Bounded assumed input/output token ceilings required')
+    projected=(Decimal(max_input_tokens)*pricing.input_per_million_usd+
+               Decimal(max_output_tokens)*pricing.output_per_million_usd)
+    return int(projected.quantize(Decimal('1'),rounding=ROUND_CEILING))
+
 
 class AICostLedger:
     def __init__(self, db:sqlite3.Connection):
