@@ -21,6 +21,10 @@ authorizes deployment, Google account access, or social publishing.
 Social account OAuth is a **separate** connection process and never substitutes
 for BAM authentication.
 
+## Planned, unprovisioned hosted target (November 12, 2026)
+
+The selected future environment is an independent **Render Starter** BAM web service backed by an independent **Neon Free PostgreSQL** project, with $7/month *base planned compute* and no approved service creation yet. Authentication and session code still assumes SQLite; migrating SQL semantics, transaction boundaries and concurrent admission to PostgreSQL is required before any hosted identity service. Store future database credentials in trusted Render environment secrets only, enforce TLS, protect connection pools and audit database-level tenant isolation. There is no external token, connection string, Render service or Neon project ID in this repository.
+
 ## Production dependencies requiring configuration
 
 - Google Cloud OAuth consent and platform-specific client IDs, correctly

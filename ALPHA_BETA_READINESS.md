@@ -6,9 +6,10 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
-| Offline WSGI public-exposure boundary | **New defense-in-depth test guard, pending CI; not a production gateway** | Reject public Host/IP/proxy metadata; build a separate hardened production runtime, enforce network isolation and verify hosted tests |
+| Initial hosting design chosen (without provisioning) | **Planned: separate $7 Render Starter plus free Neon; no charge or deployment authorized** | Verify billing workspace/region, safe PostgreSQL migration, encrypted backups/restore, staging identity and tenant isolation; explicitly approve actual service creation and any other costs |
+| Offline WSGI public-exposure boundary | **Offline guard passed merged-main CI #43209573560; not a production gateway** | Reject public Host/IP/proxy metadata; build a separate hardened production runtime, enforce network isolation and verify hosted tests |
 | Responsive signed-in overview with large cards and deeper details | **Implemented in offline alpha**, not production validated | Mobile browser checks at common Android sizes, focus/keyboard accessibility smoke tests, signed-in shell regression |
-| Atomic shared account failure counting | **New offline SQLite UPSERT and two-client tests, pending exact-head CI** | Add production atomic admission, authenticated ingress, device/IP/global abuse controls, shared durable storage and hosted negative tests |
+| Atomic shared account failure counting | **Offline UPSERT passed merged-main CI #43211450362; not production-level abuse protection** | Add production atomic admission, authenticated ingress, device/IP/global abuse controls, shared durable storage and hosted negative tests |
 | Password sign-in, business switching, logout, and role restrictions | **Offline scaffolding and tests** | Correct session expiry, revocation, role-change and current-tenant isolation under an actual hosted trusted identity service |
 | Read-only social connection metadata and analytics revocation | **Verified offline concurrency, not connected to actual social APIs** | Internal read-capability allowlist, monotonic status/revocation, transaction-time permission recheck, separate-client races; still requires trusted OAuth, vault, real platform data, token lifecycle and app review before Beta |
 | Sponsored AI projected spending and request ceilings | **Offline atomic counts/estimated cost reservations, operator pause and stale-role/funding checks verified; no paid provider activation** | Atomic per-user/tenant/operator request-count accounting, denied reservations roll back, role checks and mid-month cap tests; still needs real operator-approved USD spend ceiling, provider-token usage reconciliation and hosted storage before paid AI |
@@ -36,7 +37,7 @@ The private beta should support the full human-supervised workflow for at least 
 
 Before opening a hosted private beta, independently verify:
 
-1. **Trusted identity and persistence:** production-grade credential/session handling, configured Google token verification, TLS/origin restrictions, database migrations, backups/restore and secrets management on an approved hosting setup.
+1. **Trusted identity and persistence:** production-grade credential/session handling, configured Google token verification, TLS/origin restrictions, **SQLite-to-Neon PostgreSQL migration**, backups/restore and secrets management on an approved **separate Render Starter + Neon Free** setup. The selected $7 base target is not a hard cap or a deployment authorization.
 2. **Business isolation:** two live accounts cannot enumerate or mutate each other's drafts, metadata, contacts, AI memories, media or connections; role changes take effect without old-token privilege leakage.
 3. **Real media safety:** private object storage; trusted malware/media scanning; explicit consent and rights checks; no URL or asset may be treated as verified based solely on client claims.
 4. **AI operating policy:** explicit provider/key choice, cost and usage caps approved by the owner, no fallback to an unauthorized paid API, grounded fact checks and user-editable content.

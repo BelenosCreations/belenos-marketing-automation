@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+**Verified development baseline entering the hosting decision (November 12, 2026):** `main` and `development/phase-3-5-account-directory` synchronized at `2321a19bc4f683aa88fa89b115e3df20106ac071`, [full main CI 43211450362](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43211450362) **success**, after PR #28. Prior PR #27 merged at `f0f8c9d7`, [CI 43209573560](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43209573560) **success**.
+
+**Current planning milestone pending GitHub review and exact-head CI:** owner selected new separate $7/month base Render Starter and independent Neon Free PostgreSQL for BAM private-beta *design only*. No Render service, Neon database, key, domain, provider connection, paid subscription or public endpoint was created or activated. The checked-in planning contract and CI tests affirm all activation flags are false; it is not an operational spend cap. Database migration, media, backup, monitoring, authentication and scheduler still require engineering. Continue development branch → green exact-head PR CI → merge main → green main CI → fast-forward development, never force push.
+
 **Verified starting state (November 12, 2026):** `main` and `development/phase-3-5-account-directory` were synchronized at `f0f8c9d71e81f4b32e69c065ed81850e5001e363`; [merged-main Actions 43209573560](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43209573560) completed **success**, after PR #27.
 
 **Active candidate, not yet merged:** Atomic shared-account login failure UPSERT, timestamp hardening and two-client concurrency regressions at `dbd5b7fb135d00bbcccdae63db4965c1dc43b395`, followed by this documentation commit. Exact-head CI, reviewed PR, merged-main CI and safe non-force fast-forward of development are required. Resume from last verified commit if interrupted.

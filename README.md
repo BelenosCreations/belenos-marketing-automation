@@ -4,7 +4,7 @@
 
 > **Current status — November 12, 2026:** **Private offline alpha, not a deployed commercial service.** A responsive, authenticated local web interface and extensive Python/JavaScript backend foundations exist on the active development branch. Real social-account OAuth, live analytics, executable post scheduling/publishing, paid OpenAI calls, production hosting, and an Android APK are **not yet active**. Publishing remains **disabled** and requires separate, explicit authorization. See [alpha readiness](ALPHA_BETA_READINESS.md) and [development continuity](DEVELOPMENT_CONTINUITY.md).
 
-**Verified development baseline (November 12, 2026):** `main` and `development/phase-3-5-account-directory` are synchronized at `427566c610bbbcc03b78b4a436746f9832410638` after successful [main CI 43175777320](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43175777320). Five reviewed and merged milestones ([PR #21](https://github.com/BelenosCreations/belenos-marketing-automation/pull/21) through [PR #25](https://github.com/BelenosCreations/belenos-marketing-automation/pull/25)) added strict offline AI inputs and response checks, password/Google invited-team admission, separately gated offline invitation acceptance testing, and private nonpublishing calendar readiness diagnostics. These are **offline alpha**, not production hosting, provider connections, automatic social publishing, real invitation delivery, customer enrollment, billed AI or an Android release.
+**Latest fully verified GitHub baseline before this planning change (November 12, 2026):** both `main` and `development/phase-3-5-account-directory` at `2321a19bc4f683aa88fa89b115e3df20106ac071`, with [merged-main CI 43211450362](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43211450362) **success** after PR #28. Offline AI input/output hardening, trusted password/Google invitation acceptance, calendar readiness, local-only gateway hardening and concurrent login failure counting have been tested. These do **not** establish production hosting, external provider connections, paid AI, executable scheduling, live publication or Android release.
 
 ### Private beta preparation (November 12)
 
@@ -13,6 +13,10 @@ The offline BAM WSGI composition now checks for loopback-only network context: r
 ### Atomic account login-failure accounting (offline Alpha)
 
 The persistent account-level login throttle now records failures in one SQLite UPSERT instead of a separate read/write, preventing lost increments across independent application/database clients. Trusted timestamps are strictly validated and stale events cannot reset an active lockout window. Concurrent two-connection regression coverage is included. This is **not yet a production distributed rate limiter**: checking the throttle and performing authentication remain separate operations, and trusted per-IP/device/global limits are still required.
+
+### Selected $7 hosting design — planning only (November 12, 2026)
+
+BAM's intended first hosted setup is **its own Render Starter web service ($7/month base)** and **its own Neon Free PostgreSQL project ($0/month within free quotas)**. This replaces an open-ended hosting-provider choice, but **does not authorize creating either service, incurring charges or deploying the app**. BAM remains separate from EdgePilot. A standalone server does not imply a separate paid team instance for each user/business. Database migration away from SQLite, verified identity, durable media, encrypted backups and supported scheduling/worker operations are still required. The $7 is **not a guaranteed total or provider hard cap**. No other recurring charges, paid AI or publishing are approved. See [private beta hosting plan](PRIVATE_BETA_INFRASTRUCTURE.md) and [CI-checked planning record](BAM_HOSTING_PLAN.json).
 
 ## Product experience
 
