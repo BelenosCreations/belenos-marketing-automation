@@ -6,6 +6,10 @@
 
 **Verified development baseline (November 12, 2026):** `main` and `development/phase-3-5-account-directory` are synchronized at `427566c610bbbcc03b78b4a436746f9832410638` after successful [main CI 43175777320](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43175777320). Five reviewed and merged milestones ([PR #21](https://github.com/BelenosCreations/belenos-marketing-automation/pull/21) through [PR #25](https://github.com/BelenosCreations/belenos-marketing-automation/pull/25)) added strict offline AI inputs and response checks, password/Google invited-team admission, separately gated offline invitation acceptance testing, and private nonpublishing calendar readiness diagnostics. These are **offline alpha**, not production hosting, provider connections, automatic social publishing, real invitation delivery, customer enrollment, billed AI or an Android release.
 
+### Private beta preparation (November 12)
+
+The offline BAM WSGI composition now checks for loopback-only network context: requests advertising public origins or reverse proxies are denied before any route. This is an **offline defense-in-depth regression**, not production hosting or an endorsed public server. A separate hardened production runtime and explicit budget/hosting decision remain prerequisites. See [private beta infrastructure proposal](PRIVATE_BETA_INFRASTRUCTURE.md).
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

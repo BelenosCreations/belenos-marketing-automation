@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+**Verified start, November 12:** `main` and `development/phase-3-5-account-directory` both `a6dd63bf3af1d2940090594df35fddab1c14489c`; [merged-main CI 43176450765](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43176450765) passed, after reviewed PR #26.
+
+**Current milestone pending verification:** loopback-only offline WSGI network-context guard, tests and `PRIVATE_BETA_INFRASTRUCTURE.md`. Verify exact SHA CI, PR merge, merged-main CI, then fast-forward development without force. Stop before any hosted service purchase, social publishing or paid AI; seek owner approval and budget.
+
+
 ## Authoritative recovery status — November 12, 2026
 
 - **Private repository:** `BelenosCreations/belenos-marketing-automation`.
