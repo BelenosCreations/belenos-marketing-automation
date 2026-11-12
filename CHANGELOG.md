@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Seven additional provider/AI/auth tables (candidate)
+
+- Expand the reviewed PostgreSQL preview to 21 tables by adding AI preferences, AI private memories/usage, read-only provider connection metadata, Google challenges, OAuth attempts and private attachment metadata.
+- Add strict local SQLite column parity, parameterized current-member/tenant-scoped provider metadata reads (never exposing vault references), personal AI usage reads, and disposable real PostgreSQL security tests.
+- Add migration stage 3 to the *CI-only* checksum journal, with all live AI, real provider connections, social publishing, subscriptions and hosting disabled.
+- README/roadmap/continuity updated. PR and merged-main CI required.
+
 ## November 12, 2026 — Transactional PostgreSQL CI schema versioning (candidate)
 
 - Introduce a fixed, two-version disposable CI migration loader using one PostgreSQL transaction, advisory lock, script checksum journal and strict schema-table parity check.

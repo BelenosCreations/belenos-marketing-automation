@@ -11,6 +11,10 @@ import unittest
 from neon_schema_blueprint import ddl_preview,TABLE_NAMES
 from neon_collaboration_schema import (
     COLLABORATION_NAMES,collaboration_ddl_preview)
+from neon_identity_provider_schema import EXTRA_TABLE_NAMES
+from neon_scoped_provider_queries import (
+    prepare_connections_read,prepare_personal_ai_usage,
+    safe_connection_preview)
 from neon_scoped_collaboration_queries import prepare_pending_owner_invitations
 from neon_ephemeral_ci_migrations import apply_ephemeral_ci_migrations
 from neon_scoped_queries import (draft_select_for_verified_member,
@@ -56,7 +60,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
     def setUp(self):
         self.conn.execute('TRUNCATE TABLE '+','.join(
-            TABLE_NAMES+COLLABORATION_NAMES)+' CASCADE')
+            TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES)+' CASCADE')
         self.a='identityA'
         self.b='identityB'
         self.viewer='viewerC'
@@ -86,8 +90,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
     def test_ci_schema_migration_journal_is_idempotent(self):
-        self.assertEqual(self.migration_result['versions_present'],2)
-        self.assertEqual(self.migration_result['versions_applied'],[1,2])
+        self.assertEqual(self.migration_result['versions_present'],3)
+        self.assertEqual(self.migration_result['versions_applied'],[1,2,3])
         reread=apply_ephemeral_ci_migrations(self.conn)
         self.assertEqual(reread['versions_applied'],[])
         self.assertFalse(reread['migration_production_ready'])
@@ -95,7 +99,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertFalse(reread['neon_connected'])
         self.assertFalse(reread['social_publishing_enabled'])
         self.assertEqual(self.conn.execute(
-            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],2)
+            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],3)
 
     def test_schema_digest_tamper_is_refused_without_changing_data(self):
         old=self.conn.execute('SELECT checksum FROM bam_ci_migration_journal '
@@ -142,7 +146,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             WHERE table_schema=%s AND table_type='BASE TABLE'""",
             (_SCHEMA,)).fetchall()
         self.assertEqual({name for (name,) in rows},
-                         set(TABLE_NAMES+COLLABORATION_NAMES+
+                         set(TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
                              ('bam_ci_migration_journal',)))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
@@ -226,6 +230,53 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             WHERE subject_id=%s""",(self.a,))
         self.assertIsNone(self.conn.execute(*statement(
             self.a,self.priority_token)).fetchone())
+
+    def test_provider_metadata_stays_tenant_private_without_vault_reference(self):
+        self.conn.execute("""INSERT INTO provider_connections
+           (tenant_id,platform,account_id,vault_reference,scope,state,
+            expires_at,updated_at)
+           VALUES ('shop-a','facebook','page-a','vault:synthetic-only',
+             'read_insights','pending',NULL,101)""")
+        self.conn.execute("""INSERT INTO provider_connections
+           (tenant_id,platform,account_id,vault_reference,scope,state,
+            expires_at,updated_at)
+           VALUES ('shop-b','facebook','page-b','vault:other-synthetic',
+             'read_insights','pending',NULL,101)""")
+        sql,params=prepare_connections_read(tenant_id='shop-a',
+            verified_subject_id=self.a)
+        rows=self.conn.execute(sql,params).fetchall()
+        self.assertEqual(len(rows),1)
+        preview=safe_connection_preview(rows[0])
+        self.assertEqual(preview['account_id'],'page-a')
+        self.assertNotIn('vault:synthetic-only',str(preview))
+        self.assertFalse(preview['publishing_enabled'])
+        sql,params=prepare_connections_read(tenant_id='shop-b',
+            verified_subject_id=self.a)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+        self.conn.execute("""UPDATE members SET role='content_creator'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        sql,params=prepare_connections_read(tenant_id='shop-a',
+            verified_subject_id=self.a)
+        self.assertEqual(self.conn.execute(sql,params).fetchall(),[])
+
+    def test_ai_usage_private_by_identity_and_business(self):
+        self.conn.execute("""INSERT INTO bam_ai_usage
+            (tenant_id,subject_id,month,accepted)
+            VALUES ('shop-a',%s,'2026-11',8)""",(self.a,))
+        self.conn.execute("""INSERT INTO bam_ai_usage
+            (tenant_id,subject_id,month,accepted)
+            VALUES ('shop-b',%s,'2026-11',3)""",(self.b,))
+        sql,params=prepare_personal_ai_usage(
+            tenant_id='shop-a',verified_subject_id=self.a,month='2026-11')
+        self.assertEqual(self.conn.execute(sql,params).fetchone(),(8,))
+        sql,params=prepare_personal_ai_usage(
+            tenant_id='shop-b',verified_subject_id=self.a,month='2026-11')
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        self.conn.execute("""UPDATE bam_identities SET active=0
+            WHERE subject_id=%s""",(self.a,))
+        sql,params=prepare_personal_ai_usage(
+            tenant_id='shop-a',verified_subject_id=self.a,month='2026-11')
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
 
     def test_collaboration_schema_and_owner_invitation_privacy(self):
         columns=self.conn.execute("""SELECT column_name,data_type
