@@ -64,6 +64,32 @@ class AuthLoginAPI:
         # newly granted business membership is a separate credential step.
         return {**result,'session_token':None}
 
+    def redeem_invitation_google(self,*,challenge_id,id_token,token,server_now):
+        """Offline internal opt-in Google invitation path; no HTTP route.
+
+        Consume a one-use challenge, verify the Google token and its nonce
+        with the trusted verifier, then bind identity to invitation inside
+        the existing transactional acceptance service. No login session.
+        """
+        if not self.allow_invitation_redemption:
+            raise PermissionError('Invitation redemption unavailable')
+        timestamp=self._now(server_now)
+        nonce=self.challenges.consume(challenge_id=challenge_id,now=timestamp)
+        claims=self.google_verifier.verify(id_token=id_token,
+            expected_nonce=nonce,now=timestamp)
+        # Only verified provider claims may select a throttle identity.
+        email=claims['email']
+        self.throttle.check(email=email,now=timestamp)
+        try:
+            subject=self.auth.verify_google_identity_trusted(**claims)
+            result=self.invitations.accept_trusted(
+                verified_subject_id=subject,token=token,now=timestamp)
+        except (PermissionError,ValueError):
+            self.throttle.failure(email=email,now=timestamp)
+            raise PermissionError('Invitation redemption unavailable') from None
+        self.throttle.success(email=email)
+        return {**result,'session_token':None}
+
     def begin_google(self,*,server_now):
         return self.challenges.begin(now=self._now(server_now))
 

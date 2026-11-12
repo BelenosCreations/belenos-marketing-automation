@@ -168,24 +168,31 @@ class IdentityAuth:
             self.db.execute("""INSERT INTO bam_google_identities
                 (google_sub,subject_id) VALUES (?,?)""",(google_sub,subject_id))
 
-    def login_google_verified(self,*,google_sub,email,email_verified,tenant_id,now=None):
-        """Accept ONLY claims already verified by trusted Google token verifier.
+    def verify_google_identity_trusted(self,*,google_sub,email,email_verified):
+        """Trusted, verified Google claims -> known identity, no membership.
 
-        The caller must check Google signature, issuer, audience, expiration,
-        nonce when used, and email_verified before calling this method.
+        This is not a Google token verifier. A server caller MUST validate
+        provider signature, issuer, audience, expiry and nonce independently.
+        No business membership or session is created here.
         """
         if (not isinstance(google_sub,str) or not google_sub.strip()
                 or len(google_sub)>255 or email_verified is not True):
             raise PermissionError('Google identity not verified')
         email=normalize_email(email)
-        timestamp=int(time.time()) if now is None else now
         row=self.db.execute("""SELECT i.subject_id,i.email,i.active,i.email_verified
             FROM bam_google_identities g JOIN bam_identities i
             ON g.subject_id=i.subject_id WHERE g.google_sub=?""",
             (google_sub,)).fetchone()
         if row is None or row[1]!=email or row[2]!=1 or row[3]!=1:
             raise PermissionError('Google identity not linked or inactive')
-        return self._issue_for_member(row[0],tenant_id,timestamp)
+        return row[0]
+
+    def login_google_verified(self,*,google_sub,email,email_verified,tenant_id,now=None):
+        """Require trusted verified Google claims AND active membership."""
+        timestamp=int(time.time()) if now is None else now
+        subject=self.verify_google_identity_trusted(
+            google_sub=google_sub,email=email,email_verified=email_verified)
+        return self._issue_for_member(subject,tenant_id,timestamp)
 
     def change_password(self,*,session_token,current_password,new_password,now=None):
         """Authenticated password change; revokes all existing BAM sessions."""
