@@ -26,6 +26,7 @@ def epoch(value):
 
 NOW=epoch('2026-11-11T12:00:00+00:00')
 SLOT='2026-11-11T15:00:00+00:00'
+SLOT2='2026-11-11T23:30:00+00:00'
 
 
 class TwoClientCalendarProposalTests(unittest.TestCase):
@@ -117,6 +118,29 @@ class TwoClientCalendarProposalTests(unittest.TestCase):
             if k=='ok':
                 self.assertEqual(result['posts_scheduled'],0)
                 self.assertFalse(result['publishing_enabled'])
+
+    def test_two_editors_cannot_both_replace_one_proposal_token(self):
+        saved=self.propose(self.first,self.draft)
+        def change(calendar):
+            return calendar.propose(
+                token=self.owner,now=NOW,request_id=self.draft,
+                expected_revision=1,utc_at=SLOT2,
+                expected_proposal_token=saved['proposal_token'])
+        results=self.race([
+            lambda:change(self.first),
+            lambda:change(self.second)
+        ])
+        self.assertEqual(sum(k=='ok' for k,_ in results),1,results)
+        self.assertEqual(sum(k=='error' and isinstance(v,ValueError)
+                             for k,v in results),1,results)
+        stored=self.db1.execute("""SELECT utc_at,proposal_token FROM
+            bam_calendar_proposals WHERE tenant_id='shop'
+            AND request_id=?""",(self.draft,)).fetchone()
+        winner=next(value for status,value in results if status=='ok')
+        self.assertEqual(stored,(SLOT2,winner['proposal_token']))
+        self.assertNotEqual(stored[1],saved['proposal_token'])
+        self.assertEqual(winner['posts_scheduled'],0)
+        self.assertFalse(winner['publishing_enabled'])
 
     def test_distinct_drafts_cannot_share_same_manual_slot(self):
         second_draft=self.service1.create(
