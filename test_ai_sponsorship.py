@@ -132,9 +132,12 @@ class SponsoredAITests(unittest.TestCase):
         directory.set_member(Principal('owner','shop',Role.OWNER),
                              'editor',Role.CONTENT_CREATOR)
         directory.bootstrap_owner('other','another_owner')
+        directory.bootstrap_owner('third','third_owner')
         editor=self.sessions.issue(Principal('editor','shop',
             Role.CONTENT_CREATOR),now=100)
         other=self.sessions.issue(Principal('another_owner','other',
+            Role.OWNER),now=100)
+        third=self.sessions.issue(Principal('third_owner','third',
             Role.OWNER),now=100)
         plan=SponsorshipPlan('invited',10,400,
             max_request_estimated_micro_usd=1000,
@@ -152,7 +155,7 @@ class SponsoredAITests(unittest.TestCase):
         self.assertEqual(refused['reason'],'tenant_estimated_budget_reached')
         self.assertTrue(self.quota.reserve(token=other,now=101,
             plan=plan,month='2026-11')['reserved'])
-        final=self.quota.reserve(token=other,now=101,
+        final=self.quota.reserve(token=third,now=101,
             plan=plan,month='2026-11')
         self.assertEqual(final['reason'],'operator_estimated_budget_reached')
         for table,total in [('bam_ai_usage',2),('bam_ai_tenant_usage',2),
