@@ -71,6 +71,8 @@ Use checked local templates for straightforward factual posts with no model API 
 
 **Built now:** owner facts, stored AI draft components, local templates, user preferences, planning previews, targeted revision offline execution boundaries and cost-control primitives. **Not live:** real paid OpenAI calls, a production secret vault, external image generation or hosted entitlement enforcement.
 
+**Aggregate sponsored AI request budgets are now modelled offline:** trusted optional monthly request ceilings per person, business and BAM operator are enforced atomically across independent SQLite clients, with accepted aggregate counts retained even if the optional ceiling was not configured at reservation time. These are *request-count* safeguards, **not** actual USD spend guarantees, billing provider controls or permission to call OpenAI. Model token pricing, actual provider receipts, key vault and an explicitly authorized spend cap still belong to the paid-production gate.
+
 ## 5. User experience
 
 The main BAM screen uses **large, mobile-first summary cards** and a clear active-business identity. Details, charts, queue filters, approval actions, posting-time controls, analytics, connections and AI preferences live inside deeper views. Do not expose business-sensitive data in notifications or stale UI after switching accounts. Support Light/Dark/Auto appearance.
