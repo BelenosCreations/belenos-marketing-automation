@@ -130,41 +130,42 @@ class CalendarProposals:
                    if value['utc_at']==utc_at),None)
         if slot is None:
             raise ValueError('Choose an unambiguous upcoming configured slot')
-        # Record the exact draft revision so later edits invalidate the
-        # proposal. SQLite UNIQUE(tenant_id,utc_at) prevents double-booking.
+        # Enforce the draft revision and proposal version in the same SQL
+        # write operation. A prior Python SELECT is not a write lock and can
+        # go stale between editors using independent SQLite connections.
+        # The proposal remains *non-executable*: zero scheduling or posting.
+        proposal_token=uuid.uuid4().hex
+        guard="""SELECT 1 FROM content_requests
+            WHERE tenant_id=? AND request_id=? AND revision=?
+            AND status IN ('needs_content','ready_for_review')"""
         try:
             with self.db:
-                current=self.content_service.requests.get(
-                    tenant_id=tenant,request_id=request_id)
-                if current is None or current['revision']!=expected_revision:
-                    raise ValueError('Draft changed; refresh before proposing')
-                stored=self.db.execute(
-                    "SELECT proposal_token FROM bam_calendar_proposals "
-                    "WHERE tenant_id=? AND request_id=?",
-                    (tenant,request_id)).fetchone()
-                current_token=stored[0] if stored else None
-                if current_token!=expected_proposal_token:
-                    raise ValueError(
-                        'Proposal changed; refresh before changing date')
-                proposal_token=uuid.uuid4().hex
-                self.db.execute("""INSERT INTO bam_calendar_proposals
-                   (tenant_id,request_id,draft_revision,utc_at,
-                    local_date,local_time,timezone,updated_at,updated_by,
-                    proposal_token)
-                   VALUES (?,?,?,?,?,?,?,?,?,?)
-                   ON CONFLICT(tenant_id,request_id) DO UPDATE SET
-                    draft_revision=excluded.draft_revision,
-                    utc_at=excluded.utc_at,
-                    local_date=excluded.local_date,
-                    local_time=excluded.local_time,
-                    timezone=excluded.timezone,
-                    updated_at=excluded.updated_at,
-                    updated_by=excluded.updated_by,
-                    proposal_token=excluded.proposal_token""",
-                    (tenant,request_id,expected_revision,utc_at,
-                     slot['local_date'],slot['local_time'],
-                     preview['timezone'],now,principal.subject_id,
-                     proposal_token))
+                if expected_proposal_token is None:
+                    changed=self.db.execute("""INSERT INTO bam_calendar_proposals
+                        (tenant_id,request_id,draft_revision,utc_at,
+                         local_date,local_time,timezone,updated_at,updated_by,
+                         proposal_token)
+                        SELECT ?,?,?,?,?,?,?,?,?,?
+                        WHERE EXISTS ("""+guard+""")
+                        ON CONFLICT(tenant_id,request_id) DO NOTHING""",
+                        (tenant,request_id,expected_revision,utc_at,
+                         slot['local_date'],slot['local_time'],
+                         preview['timezone'],now,principal.subject_id,
+                         proposal_token,tenant,request_id,expected_revision))
+                else:
+                    changed=self.db.execute("""UPDATE bam_calendar_proposals
+                        SET draft_revision=?,utc_at=?,local_date=?,
+                            local_time=?,timezone=?,updated_at=?,
+                            updated_by=?,proposal_token=?
+                        WHERE tenant_id=? AND request_id=? AND proposal_token=?
+                        AND EXISTS ("""+guard+""")""",
+                        (expected_revision,utc_at,slot['local_date'],
+                         slot['local_time'],preview['timezone'],now,
+                         principal.subject_id,proposal_token,tenant,request_id,
+                         expected_proposal_token,tenant,request_id,
+                         expected_revision))
+                if changed.rowcount!=1:
+                    raise ValueError('Proposal or draft changed; refresh before proposing')
         except sqlite3.IntegrityError as exc:
             raise ValueError('Proposed time already used by this business') from exc
         return {'tenant_id':tenant,'request_id':request_id,

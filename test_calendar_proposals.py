@@ -62,6 +62,53 @@ class CalendarProposalTests(unittest.TestCase):
         args.update(changes)
         return self.calendar.propose(**args)
 
+    def test_database_guard_rejects_stale_cached_draft_snapshot(self):
+        # A stale in-memory service could return revision 1 even after a
+        # second editor has committed revision 2. Only the current SQL
+        # row is authoritative when a proposal is saved.
+        stale=self.service.get(token=self.owner,tenant_id='shop',
+            request_id=self.draft,now=NOW)
+        self.service.revise(token=self.owner,tenant_id='shop',
+            request_id=self.draft,target='draft_text',
+            revised_text='Changed by other editor',
+            expected_revision=1,now=NOW+1)
+        class StaleRequests:
+            @staticmethod
+            def get(**kwargs):
+                return stale
+        class StaleService:
+            requests=StaleRequests()
+            @staticmethod
+            def get(**kwargs):
+                return stale
+        calendar=CalendarProposals(
+            db=self.db,sessions=self.sessions,directory=self.directory,
+            content_service=StaleService(),preferences=self.prefs)
+        with self.assertRaisesRegex(ValueError,'changed'):
+            calendar.propose(token=self.owner,now=NOW+1,
+                request_id=self.draft,expected_revision=1,
+                utc_at=FIRST,expected_proposal_token=None)
+        self.assertEqual(self.db.execute("""SELECT count(*) FROM
+            bam_calendar_proposals WHERE tenant_id='shop'""").fetchone()[0],0)
+
+    def test_existing_proposal_requires_exact_version_for_update(self):
+        saved=self.propose()
+        with self.assertRaisesRegex(ValueError,'changed'):
+            self.propose(utc_at=SECOND,
+                expected_proposal_token='a'*32)
+        actual=self.calendar.list_mine_business(
+            token=self.owner,now=NOW)['items'][0]
+        self.assertEqual(actual['utc_at'],FIRST)
+        self.assertEqual(actual['proposal_token'],saved['proposal_token'])
+        moved=self.propose(utc_at=SECOND,
+            expected_proposal_token=saved['proposal_token'])
+        self.assertNotEqual(moved['proposal_token'],saved['proposal_token'])
+        with self.assertRaisesRegex(ValueError,'changed'):
+            self.propose(utc_at=FIRST,
+                expected_proposal_token=saved['proposal_token'])
+        self.assertEqual(self.calendar.list_mine_business(
+            token=self.owner,now=NOW)['items'][0]['utc_at'],SECOND)
+
     def test_propose_is_durable_and_never_schedules(self):
         result=self.propose()
         self.assertEqual(result['status'],'proposal_only')

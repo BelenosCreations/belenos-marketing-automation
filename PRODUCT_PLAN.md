@@ -120,6 +120,8 @@ Define per-business/per-user storage and AI quotas; use deduplication/retention 
 
 **Exit evidence:** reviewed OAuth scopes, provider eligibility, secure credential management, live data provenance and explicit **no Metricool dependency**. Remain read-only/no posting until Gate E.
 
+**Current offline calendar proposals now enforce SQL-level draft revision/status and per-proposal version compare-and-swap**, with separate-client race tests for collisions. They remain held draft planning records with no executors, provider tokens or publication authority.
+
 ### Gate D — Reliable internal scheduling and editorial controls
 
 - Build a durable worker/queue with business-scoped idempotency, immutable publication intents, content/media/fact/approval rechecks, timezone safety, retries, failure reconciliation and emergency pause.

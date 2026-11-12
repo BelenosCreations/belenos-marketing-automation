@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-11 — Atomic held-draft calendar proposal updates
+
+- Replaced read-then-upsert updates with a database-guarded conditional insert/compare-and-swap update. The current `content_requests` revision and held status are checked within the same SQLite write as the saved proposal, preventing a stale service snapshot or race from assigning a changed draft.
+- New draft assignments cannot overwrite another editor's existing proposal; updates require its exact current random `proposal_token`. The existing unique business/UTC-slot constraint still prevents double-booking.
+- Added a targeted stale-service-cache regression and independent-file-backed SQLite-client race tests for simultaneous first assignment, conflicting editors updating a common version, and separate drafts competing for one slot.
+- **Verification:** Core SQL CAS implementation `d8fc324d3ece50ed835ef48030ebad403cb78fa5` passed [Actions 43126412492](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43126412492). Expanded race tests through `5a0a4b6984f9815bc1af00531ab88fbf2aa8491e` and these documentation updates still require exact-SHA CI.
+- **Nothing executes**: proposals have no scheduling worker, platform connection or posting authority; `posts_scheduled=0`, `publishing_enabled=false`. No hosting or paid provider activation.
+
 ## 2026-11-11 — Opt-in owner invitation issuing controls (offline only)
 
 - Added server-side `invite_current` to derive the invitation business exclusively from a current owner session. The optional HTTPS `POST /api/v1/team/invitations/create` accepts **only** normalized recipient email and a non-owner role, never a client business ID or bearer token; response is strictly validated and excludes the secret.
