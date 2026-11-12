@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Read-only social metadata revocation and analytics transaction safety — November 11, 2026
+
+Trusted offline provider metadata now requires a narrow internal read-only capability marker and refuses old/future-dated status updates that would incorrectly restore an expired or revoked connection. A revoked record remains terminal until a separately verified OAuth connection lifecycle is designed. The analytics import service rechecks the current grant **inside its SQLite write transaction**, so if another process revokes an authorization while a fake fetch is in flight, no observation or cursor checkpoint is imported. Tests use independent SQLite connections and a deliberately paused fake fetcher. The implementation does not call a social network, prove account ownership, or permit posting.
+
+**Verification:** [Actions 43136954406](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43136954406) passed source `2bf15248172ed56d78b98ad8d84250b45c6749a3`; the later documentation checkpoint needs its own exact-SHA validation. This work stays private Alpha and must not be called a connected Facebook Page.
+
+
+
 
 ## Offline sponsored AI aggregate quotas and simultaneous users — November 11, 2026
 

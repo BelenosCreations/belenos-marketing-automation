@@ -153,3 +153,10 @@ BAM's saved suggested posting times are **only private, non-executable proposals
 BAM's sponsored-AI quota reservation now supports an optional **individual monthly request limit, shared per-business monthly limit, and overall BAM-operator monthly limit**. All three request counters are updated together inside one SQLite transaction, and denial at any layer rolls back the others. Aggregate usage is counted even when its optional ceiling is not enabled yet, so configuring a ceiling partway through a month still accounts for earlier sponsored reservations. Only members with current draft-creation permission may reserve. Two independent SQLite connections compete under the business and operator caps in offline race tests.
 
 These are **request counts, not dollar limits, provider bills, or unlimited free AI**. The operator must configure consistent server-controlled budgets and pricing/cost limits before any real OpenAI API calls. The quota engine does not call OpenAI, hold keys, generate images, activate paid features, or publish.
+
+### Read-only social metadata revocation safety (offline Alpha)
+
+BAM now refuses unknown or posting-capable **internal analytics scope markers** in the test-only social connection registry; `read_insights` is a normalized internal capability label, **not proof that Meta or another provider has granted any actual OAuth permission**. A revoked social connection cannot silently become connected again through a delayed registry update. Older revisions and future-dated or historically unapproved scope records fail closed. Separately verifying reauthorization is a future production prerequisite.
+
+The offline analytics import path checks the connection both before its simulated read-only fetch **and inside the SQLite transaction before writing imported metrics and the synchronization checkpoint**. Independent SQLite-client tests revoke permission during an in-flight fake fetch, confirming no observations or cursor are saved. The same connection-backed store is required for this particular transactional guarantee. No live provider requests, social account linking, publication, or scheduling were enabled.
+

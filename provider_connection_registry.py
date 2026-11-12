@@ -7,6 +7,9 @@ import re
 import sqlite3
 
 _ALLOWED_STATES={'pending','connected','refresh_required','revoked'}
+# Internal capability only; not a claim that a social-provider permission
+# is authorized or connected. Future OAuth scopes need their own verifier.
+_READ_ONLY_SCOPES=frozenset(('read_insights',))
 _REF=re.compile(r'^[A-Za-z0-9_./:-]{1,256}$')
 
 class ProviderConnectionRegistry:
@@ -33,18 +36,25 @@ class ProviderConnectionRegistry:
                 or (expires_at is not None and
                     (type(expires_at) is not int or expires_at<0))):
             raise ValueError('Invalid connection metadata')
-        if 'publish' in scope.lower() or 'write' in scope.lower():
-            raise ValueError('Analytics connector must be read-only')
+        if scope not in _READ_ONLY_SCOPES:
+            raise ValueError('Unapproved internal analytics capability')
+        # An old writer must not revive revoked credentials or overwrite
+        # newer state. Revocation is terminal until a separately verified
+        # re-authorization workflow exists (not implemented in this Alpha).
         with self.db:
-            self.db.execute("""INSERT INTO provider_connections
+            cursor=self.db.execute("""INSERT INTO provider_connections
                 (tenant_id,platform,account_id,vault_reference,scope,state,
-                 expires_at,updated_at) VALUES (?,?,?,?,?,?,?,?)
+                expires_at,updated_at) VALUES (?,?,?,?,?,?,?,?)
                 ON CONFLICT(tenant_id,platform,account_id) DO UPDATE SET
                 vault_reference=excluded.vault_reference,
                 scope=excluded.scope,state=excluded.state,
-                expires_at=excluded.expires_at,updated_at=excluded.updated_at""",
+                expires_at=excluded.expires_at,updated_at=excluded.updated_at
+                WHERE provider_connections.updated_at<excluded.updated_at
+                AND provider_connections.state!='revoked'""",
                 (tenant_id,platform,account_id,vault_reference,scope,state,
                  expires_at,now))
+            if cursor.rowcount!=1:
+                raise ValueError('Stale or revoked provider connection')
         return {'state':state,'publishing_enabled':False}
 
     def status(self, *, tenant_id, platform, account_id, now):
@@ -56,7 +66,12 @@ class ProviderConnectionRegistry:
         if row is None:
             return {'status':'not_connected','publishing_enabled':False}
         scope,state,expiry,updated=row
-        effective=('expired' if state=='connected' and expiry is not None
-                   and expiry<=now else state)
+        # Legacy, unapproved or future-dated metadata is never sufficient
+        # for an active analytics connection even if state says connected.
+        if scope not in _READ_ONLY_SCOPES or updated>now:
+            effective='refresh_required'
+        else:
+            effective=('expired' if state=='connected' and expiry is not None
+                       and expiry<=now else state)
         return {'status':effective,'scope':scope,'updated_at':updated,
                 'expires_at':expiry,'publishing_enabled':False}

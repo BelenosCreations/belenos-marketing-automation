@@ -31,7 +31,16 @@ class ConnectionGatedAnalyticsAdapter:
     def import_page(self, *, tenant_id, platform, account_id, import_secret, now):
         self._authorize(tenant_id=tenant_id,platform=platform,
                         account_id=account_id,import_secret=import_secret,now=now)
-        # The existing adapter delegates to an atomic SQLite import.
+        # The metadata registry and import checkpoint must use one SQLite
+        # transactional store in this offline integration. Otherwise a stale
+        # second connection could observe a different grant state.
+        if self.registry.db is not self.adapter.coordinator.db:
+            raise PermissionError('Shared transactional connection required')
+        def recheck():
+            self._authorize(tenant_id=tenant_id,platform=platform,
+                            account_id=account_id,import_secret=import_secret,
+                            now=now)
         return self.adapter.import_page(
             tenant_id=tenant_id,platform=platform,account_id=account_id,
-            import_secret=import_secret,now=now)
+            import_secret=import_secret,now=now,
+            admission_guard=recheck)

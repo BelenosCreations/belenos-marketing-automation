@@ -1,5 +1,14 @@
 # Changelog
 
+## November 11, 2026 — Read-only social permission lifecycle and atomic analytics import
+
+- Tightened the offline provider metadata registry to accept only the internal `read_insights` capability, not arbitrary strings that happen to lack “publish” or “write.” This is not an authorization claim about real Meta scopes.
+- Enforced monotonic trusted metadata timestamps, terminal offline revocation, and fail-closed status for legacy write-capable scope records and future-dated metadata. Stale workers cannot resurrect a revoked connection.
+- Rechecked the current analytics-connection authorization inside SQLite's write transaction immediately before persisting observations and sync checkpoints; reject mismatched transactional stores.
+- Added in-memory and **two independent SQLite-client** regression tests, including revocation during simulated provider fetch and confirmation that no analytics data or checkpoint is committed afterward.
+- **Verification:** [GitHub Actions 43136954406](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43136954406) **passed** at code commit `2bf15248172ed56d78b98ad8d84250b45c6749a3`, with Python compilation, JS syntax/UI tests and offline Python suite. This documentation follow-up must pass its own exact-SHA CI before merging.
+- **Safety:** No real OAuth grant, vault-managed credential, Meta request, hosted connection, AI spend, live scheduler or publishing action was activated. Reconnecting a revoked account requires an explicitly verified future integration.
+
 ## 2026-11-11 — Offline sponsored AI cost-containment layers
 
 - Extended server-issued `SponsorshipPlan` with optional per-business and BAM-operator **monthly request-count ceilings**, in addition to existing individual request and output-token allowances; all caps are validated with strict integer bounds.

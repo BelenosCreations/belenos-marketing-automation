@@ -23,7 +23,8 @@ class AnalyticsSyncCoordinator:
         return None if row is None else {'cursor':row[0],'updated_at':row[1]}
 
     def apply_batch(self, *, tenant_id, platform, account_id, import_secret,
-                    expected_cursor, next_cursor, observations, now):
+                    expected_cursor, next_cursor, observations, now,
+                    admission_guard=None):
         if (type(now) is not int or now<0 or not isinstance(next_cursor,str)
                 or not next_cursor or len(next_cursor)>512
                 or (expected_cursor is not None and
@@ -36,12 +37,19 @@ class AnalyticsSyncCoordinator:
                 'source_post_id','candidate','engagement_count',
                 'impression_count','measured_at'} for item in observations):
             raise ValueError('Invalid observation fields')
+        if admission_guard is not None and not callable(admission_guard):
+            raise TypeError('Trusted transactional admission guard required')
         # Authorize before reading or writing a checkpoint. Credentials come
         # from a trusted server integration, not from a mobile client.
         self.importer.authorize(tenant_id=tenant_id,platform=platform,
                                 account_id=account_id,import_secret=import_secret)
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
+            # The connection gate must be rechecked after provider fetch and
+            # while this writer holds SQLite's exclusive write reservation.
+            # If permission was revoked mid-fetch, no post or checkpoint lands.
+            if admission_guard is not None:
+                admission_guard()
             current=self.checkpoint(tenant_id=tenant_id,platform=platform,
                                     account_id=account_id)
             if (None if current is None else current['cursor'])!=expected_cursor:

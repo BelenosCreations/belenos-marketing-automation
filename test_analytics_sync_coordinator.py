@@ -59,6 +59,25 @@ class AnalyticsSyncTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.apply(observations=[])
 
+    def test_commit_guard_rejects_and_rolls_back_all_observations(self):
+        checked=[]
+        def revoked():
+            checked.append(True)
+            raise PermissionError('Simulated permission change')
+        with self.assertRaises(PermissionError):
+            self.apply(admission_guard=revoked)
+        self.assertEqual(checked,[True])
+        self.assertIsNone(self.sync.checkpoint(tenant_id='shop',
+            platform='facebook',account_id='page'))
+        self.assertEqual(self.store.for_candidates(tenant_id='shop',
+            platform='facebook',candidates=['morning'],
+            since=0,until=200),[])
+        self.assertEqual(self.apply(admission_guard=lambda:None)['imported'],1)
+
+    def test_invalid_guard_cannot_be_accepted(self):
+        with self.assertRaises(TypeError):
+            self.apply(admission_guard='client supplied')
+
     def test_cross_tenant_denied(self):
         with self.assertRaises(PermissionError):
             self.apply(tenant_id='other')
