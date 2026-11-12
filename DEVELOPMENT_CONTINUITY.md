@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+**Unverified additional Neon portability slice:** `neon_scoped_queries.py` adds pure parameterized SQL for tenant-scoped held drafts and calendar proposals with same-statement active identity/member checks and test-only SQLite query execution. Requires exact-head CI. These are not hosted API endpoints, no real Neon DB driver and no live publishing.
+
+**Verified previous milestone:** PR #30 merged at `1934a4dd183a261cf2561da025fa383087acc852` and [merged-main GitHub Actions 43215433909](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43215433909) **success**. Development synchronized without force.
+
+**New unverified work:** all-table local SQLite metadata inventory for Neon migration backlog, no user data or SQL text. Resume by checking exact SHA CI and merging via PR. Additional PostgreSQL read/query adaptation, transactional and identity tests are still needed. No hosted services have been created or paid.
+
 **Latest verified release before this candidate:** PR #29 merged at `29e4734fd32d5821a7b7cd4d7a8046cd47bcf959`, [merged-main Actions 43213753494](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43213753494) **success**; development was non-force fast-forwarded to the same commit.
 
 **Current offline candidate (unverified):** first nine-table Neon PostgreSQL DDL preview, SQLite compatibility and privacy-safe inventory, roadmap and regressions. Not a data migration, no PostgreSQL driver or schema executor and no hosted database. Need exact-head branch and PR CI; merge green PR; verify merged-main CI; then fast-forward development. After that continue the remaining schema inventory and transactional adaptation without paid service approval.
