@@ -22,12 +22,19 @@ class LoginThrottle:
         db.commit()
 
     @staticmethod
+    def _time(now):
+        timestamp=int(time.time()) if now is None else now
+        if type(timestamp) is not int or timestamp<0 or timestamp>253402300799:
+            raise ValueError('Invalid trusted throttle time')
+        return timestamp
+
+    @staticmethod
     def _key(email):
         from identity_auth import normalize_email
         return hashlib.sha256(normalize_email(email).encode('utf-8')).hexdigest()
 
     def check(self,*,email,now=None):
-        timestamp=int(time.time()) if now is None else now
+        timestamp=self._time(now)
         row=self.db.execute("""SELECT window_start,failures
             FROM bam_login_throttle WHERE identity_hash=?""",
             (self._key(email),)).fetchone()
@@ -35,20 +42,26 @@ class LoginThrottle:
             raise PermissionError('Authentication temporarily unavailable')
 
     def failure(self,*,email,now=None):
-        timestamp=int(time.time()) if now is None else now
+        timestamp=self._time(now)
         key=self._key(email)
+        # One SQL statement avoids lost counts across independent DB clients.
+        # A backdated request cannot rewind a more recent lockout window.
+        # check() + authentication + failure() is NOT an atomic admission
+        # operation; production still requires IP/global abuse controls.
         with self.db:
-            row=self.db.execute("""SELECT window_start,failures
-                FROM bam_login_throttle WHERE identity_hash=?""",(key,)).fetchone()
-            if row is None or timestamp>=row[0]+self.window_seconds:
-                self.db.execute("""INSERT INTO bam_login_throttle
-                    (identity_hash,window_start,failures) VALUES (?,?,1)
-                    ON CONFLICT(identity_hash) DO UPDATE SET
-                    window_start=excluded.window_start,failures=1""",
-                    (key,timestamp))
-            else:
-                self.db.execute("""UPDATE bam_login_throttle SET failures=failures+1
-                    WHERE identity_hash=?""",(key,))
+            self.db.execute("""INSERT INTO bam_login_throttle
+                (identity_hash,window_start,failures) VALUES (?,?,1)
+                ON CONFLICT(identity_hash) DO UPDATE SET
+                failures=CASE
+                  WHEN excluded.window_start>=
+                    bam_login_throttle.window_start+?
+                  THEN 1 ELSE bam_login_throttle.failures+1 END,
+                window_start=CASE
+                  WHEN excluded.window_start>=
+                    bam_login_throttle.window_start+?
+                  THEN excluded.window_start
+                  ELSE bam_login_throttle.window_start END""",
+                (key,timestamp,self.window_seconds,self.window_seconds))
 
     def success(self,*,email):
         with self.db:
