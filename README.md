@@ -4,7 +4,7 @@
 
 > **Current status — November 12, 2026:** **Offline Alpha, not a deployed commercial service. The source repository is public; the app is not.** A responsive, authenticated local web interface and extensive Python/JavaScript backend foundations exist on the active development branch. Real social-account OAuth, live analytics, executable post scheduling/publishing, paid OpenAI calls, production hosting, and an Android APK are **not yet active**. Publishing remains **disabled** and requires separate, explicit authorization. See [alpha readiness](ALPHA_BETA_READINESS.md) and [development continuity](DEVELOPMENT_CONTINUITY.md).
 
-**Last fully verified code checkpoint before this $0 policy change (November 12, 2026):** `main` and `development/phase-3-5-account-directory` synchronized at `babbba517a0a301601d1371dace6e5a0c2161e94`, [full merged-main CI 43246016783](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43246016783) **success** after PR #40. PRs #36–#40 test **29 reviewed schema tables in four versions** against disposable PostgreSQL on public GitHub-hosted runners; the app still runs as local/offline Alpha, not a Neon deployment. There is no approved live hosting, paid AI, social publishing, or Android release.
+**Last fully verified code checkpoint before this authenticated-read candidate (November 12, 2026):** `main` and `development/phase-3-5-account-directory` synchronized at `3f41a028ae96ef681724bf4642cf290af97e5c04`, [full merged-main CI 43260833020](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43260833020) **success** after PR #44. PRs #36–#44 test **46 schema-preview tables in seven disposable PostgreSQL CI versions**. This remains an offline Alpha, **not** a Neon deployment, production PostgreSQL adapter or public hosted application. No new spending, paid AI, provider publishing or Android release is authorized.
 
 ### Private beta preparation (November 12)
 
@@ -79,6 +79,10 @@ Version six of the disposable PostgreSQL test schema now models four more legacy
 ### Editorial, verified-facts and credential-recovery schema (offline)
 
 A seventh PostgreSQL CI schema stage covers six more private review/security tables: vetted editorial inbox, identity/competitor attestations, offline owner approval intents, TruthGuard verified business facts, creator identity status and hashed email recovery actions. The reviewed subset now contains **46 tables**, with protected PostgreSQL checks denying a `published` editorial state or marketing emails, and current owner/manager-scoped verified-fact reads excluding revoked and expired facts. This stage does **not** deliver email, publish posts, or run a production identity service. Development remains $0 additional spend.
+
+### Session-backed PostgreSQL read contracts (offline security prototype)
+
+Beyond earlier caller-subject SQL previews, `neon_authenticated_read_contract.py` builds read-only **session-token-hash-bound** PostgreSQL queries for held drafts and non-executable calendar proposals. It hashes the server-presented bearer token, verifies session expiration/revocation and current identity, tenant membership and matching role **within the same SELECT**, and refuses malformed scope or time values. Synthetic SQLite and real disposable PostgreSQL CI tests exercise cross-business denial, stale-role denial, session revocation, expiration and disabled identity. This is a more realistic authentication-to-data seam, but still **not a production HTTP gateway, token transport, PostgreSQL persistence adapter or live hosted app**.
 
 ## Product experience
 

@@ -17,6 +17,8 @@ from neon_business_analytics_schema import BUSINESS_ANALYTICS_TABLES
 from neon_tenant_content_schema import TENANT_CONTENT_TABLES
 from neon_review_security_schema import REVIEW_SECURITY_TABLES
 from neon_scoped_review_facts import prepare_current_private_facts
+from neon_authenticated_read_contract import (
+    prepare_session_draft_read,prepare_session_calendar_read)
 from neon_scoped_tenant_content import (prepare_tenant_post_review,
     prepare_tenant_schedule_read)
 from neon_scoped_business_analytics import (prepare_business_sources_read,
@@ -285,6 +287,70 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute("""SELECT paused
             FROM bam_ai_operator_control WHERE control_id=1"""
             ).fetchone()[0],1)
+
+    def test_session_backed_draft_read_has_live_authentication_guards(self):
+        import hashlib
+        token='Synthetic_Session_Token_For_One_Business_Only_123'
+        token_hash=hashlib.sha256(token.encode('ascii')).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at,revoked_at)
+            VALUES (%s,%s,'shop-a','owner',3600,NULL)""",
+            (token_hash,self.a))
+        def query(tenant='shop-a',rid=None,now=101):
+            sql,params=prepare_session_draft_read(
+                raw_session_token=token,tenant_id=tenant,
+                request_id=self.rid_a if rid is None else rid,
+                server_now=now)
+            self.assertNotIn(token,sql)
+            self.assertNotIn(token,str(params))
+            return self.conn.execute(sql,params).fetchone()
+        self.assertEqual(query()[2],'private tenant A copy')
+        self.assertIsNone(query(tenant='shop-b',rid=self.rid_b))
+        self.assertIsNone(query(now=3600))
+        self.conn.execute("""UPDATE members SET role='viewer'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.assertIsNone(query())
+        self.conn.execute("""UPDATE members SET role='owner'
+            WHERE tenant_id='shop-a' AND subject_id=%s""",(self.a,))
+        self.conn.execute("""UPDATE sessions SET revoked_at=105
+            WHERE token_hash=%s""",(token_hash,))
+        self.assertIsNone(query())
+        self.conn.execute("""UPDATE sessions SET revoked_at=NULL
+            WHERE token_hash=%s""",(token_hash,))
+        self.conn.execute("""UPDATE bam_identities SET active=0
+            WHERE subject_id=%s""",(self.a,))
+        self.assertIsNone(query())
+
+    def test_session_backed_calendar_stays_a_nonexecuting_proposal(self):
+        import hashlib
+        token='Synthetic_BAM_Calendar_Read_Token_1234567890'
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (hashlib.sha256(token.encode()).hexdigest(),self.a))
+        self.conn.execute("""INSERT INTO bam_calendar_proposals
+            (tenant_id,request_id,draft_revision,utc_at,
+             local_date,local_time,timezone,updated_at,updated_by,
+             proposal_token)
+            VALUES ('shop-a',%s,1,'2026-11-12T16:00:00+00:00',
+             '2026-11-12','11:00','America/New_York',101,%s,%s)""",
+            (self.rid_a,self.a,'f'*32))
+        sql,params=prepare_session_calendar_read(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=self.rid_a,server_now=101)
+        self.assertEqual(self.conn.execute(sql,params).fetchone()[0],
+                         self.rid_a)
+        sql,params=prepare_session_calendar_read(
+            raw_session_token=token,tenant_id='shop-b',
+            request_id=self.rid_b,server_now=101)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
+        self.conn.execute("""UPDATE sessions SET revoked_at=102
+            WHERE token_hash=%s""",(
+                hashlib.sha256(token.encode()).hexdigest(),))
+        sql,params=prepare_session_calendar_read(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=self.rid_a,server_now=103)
+        self.assertIsNone(self.conn.execute(sql,params).fetchone())
 
     def test_private_approved_facts_do_not_leak_to_other_tenants(self):
         self.conn.execute("""INSERT INTO truthguard_facts

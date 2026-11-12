@@ -58,6 +58,10 @@ The public repository can now run standard GitHub-hosted runners with temporary 
 
 `neon_review_security_schema.py` adds six source-compatible PostgreSQL DDL previews (46 total) for editorial source/identity attestations, nonpublishing inbox, signed owner approval intents, revoked/expiring TruthGuard facts, creator account screening and hashed email verify/reset purposes. `neon_scoped_review_facts.py` generates a parameterized owner/manager read guarded by active verified member and expiration/revocation constraints. Temporary PostgreSQL tests verify denial of cross-business facts and invalid publish-like statuses; no actual email delivery, provider OAuth, provider posting or customer data migration.
 
+## Query seam: hashed session token to private draft/calendar read
+
+`neon_authenticated_read_contract.py` prepares read-only PostgreSQL SELECTs bound to the **SHA-256 digest of a server-presented session token** rather than trusting caller-supplied subject IDs. It rechecks session validity, expiration, role change, membership and identity verification with tenant and draft scope in a single statement. Local and disposable PostgreSQL tests deny expired/revoked sessions, stale-role and other-business access. The builder never opens a DB or starts an HTTP listener. Production still requires trusted HTTPS/cookie transport, CSRF, origin checks, admission limits, database pooling, encrypted backups and explicit hosting approval.
+
 ## Exact next steps before hosted private beta
 
 1. Inventory and explicitly port **all remaining tables** (team invitations, audit, AI preferences, cost ledgers, media metadata, provider connections, consent, pending drafts and revision history). The nine-table preview is incomplete by design.

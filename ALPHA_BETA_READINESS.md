@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Session-backed PostgreSQL private read seam | **Token-hash-bound draft/calendar SELECT + SQLite and temporary PG regression candidate, pending CI** | Build separate secure production HTTP authentication and full PostgreSQL persistence before any hosted private beta |
 | Review provenance and email-reset PostgreSQL parity | **Six additional private DDL previews, stage seven, pending CI** | Need real verified email transport, fraud review, authorized owner sessions and complete production migration before any public user enrollment |
 | Tenant content and manual schedule PostgreSQL parity | **Four source-compatible test schema tables, stage six, pending CI** | End-to-end authenticated production content/review state and durable scheduler must be separately built and approved before any real publication |
 | Business research/analytics PostgreSQL parity | **Stage 5 with seven additional DDL previews, pending CI** | Need a production data adapter, real authorized analytics, tenant-scoped writes and backups; CI tests use synthetic local PostgreSQL only |
