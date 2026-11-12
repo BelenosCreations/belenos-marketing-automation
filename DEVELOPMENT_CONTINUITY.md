@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Authoritative recovery checkpoint — November 12, 2026
+
+- **Private repository:** `BelenosCreations/belenos-marketing-automation`.
+- **Verified code baseline:** `main` and `development/phase-3-5-account-directory` are both at `1c4ab9b7cd92e8ffc0984240866447ff66d24c00`, verified by [GitHub Actions 43218122644](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43218122644) **success**. Do not treat any older “CI pending” entries below as current.
+- **Recently merged full-test PRs:** #30 DDL preview ([main CI 43215433909](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43215433909)), #31 full inventory and read-query contracts ([main CI 43216601082](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43216601082)), #32 privacy-safe integrity preflight ([main CI 43217385358](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43217385358)), and #33 priority CAS query contract ([main CI 43218122644](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43218122644)).
+- **Current documentation-only candidate:** reconcile README, product plan, alpha readiness, migration roadmap, CHANGELOG and continuity against the verified #33 baseline. Must pass exact-head GitHub CI, merge as reviewed PR and pass merged-main CI before declaring the docs SHA verified.
+- **Next important branch:** completion and independent PostgreSQL testing of **all** remaining table/query migrations. BAM still lacks a live DB connection, production authentication, hosted backups/media, approved deployment and executing scheduler. The approved design target is one **new separate $7/month Render Starter web service plus one Neon Free PostgreSQL project**, *not* authorization to create them or incur charges. EdgePilot remains fully separate.
+- **Safe sync procedure:** continue on the development branch; verify CI for the exact head, merge green reviewed PR, verify merged-main CI, then fast-forward development to main with expected SHA and no force push. On interruption, resume from the last green main commit.
+- **Never activate** paid AI, real Facebook social publishing, live Google/Meta OAuth, billable hosting/add-ons, cron workers or public signup without a separate explicit owner decision. Historical notes below remain for traceability.
+
 **Unverified additional Neon portability slice:** `neon_scoped_queries.py` adds pure parameterized SQL for tenant-scoped held drafts and calendar proposals with same-statement active identity/member checks and test-only SQLite query execution. Requires exact-head CI. These are not hosted API endpoints, no real Neon DB driver and no live publishing.
 
 **Latest merged release before this candidate:** PR #32 at `d054d67a2b1c3a881d0129fe06a1b758a11430d9`, [merged-main CI 43217385358](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43217385358) **success**; branches synchronized without force.

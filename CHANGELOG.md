@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Verified offline Neon migration preparation checkpoint
+
+- PRs [#30](https://github.com/BelenosCreations/belenos-marketing-automation/pull/30), [#31](https://github.com/BelenosCreations/belenos-marketing-automation/pull/31), [#32](https://github.com/BelenosCreations/belenos-marketing-automation/pull/32), [#33](https://github.com/BelenosCreations/belenos-marketing-automation/pull/33) were merged after exact-head CI; merged `main` at each checkpoint passed Actions `43215433909`, `43216601082`, `43217385358`, `43218122644` respectively.
+- Foundations now include nine-table DDL preview, all-table SQLite portability backlog, prepared tenant/member checked read statements, private aggregate integrity preflight, and versioned held-draft priority update SQL preview; each remains offline-only.
+- README, roadmap, alpha readiness and development continuity synchronized with the verified state. Documentation-only reconciliation itself still needs its exact-commit CI.
+- **Remaining blockers:** port all tables/queries, prove actual PostgreSQL transactions and session/role isolation, production security, encrypted backups, media storage and reliable scheduling. Hosting is only designed ($7 Render Starter + Neon Free); nothing has been bought, created, deployed or published.
+
 ## November 12, 2026 — PostgreSQL-style tenant-safe draft priority CAS (offline)
 
 - Add non-executing `UPDATE ... RETURNING` builder to compare-and-swap private held-draft priority token while checking current verified identity, active membership, editorial role and tenant in the same SQL statement.

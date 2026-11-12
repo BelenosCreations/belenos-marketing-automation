@@ -96,6 +96,10 @@ Define per-business/per-user storage and AI quotas; use deduplication/retention 
 - **Private invited users:** around 5–10 known users, varied activity up to about two posts/day per user, with controlled sponsored costs.
 - **Potential public Google Play product:** subscription or usage pricing considered later, without a pre-approved price, free quota, payment provider or launch date.
 
+### Gate B implementation checkpoint — November 12, 2026 (offline only)
+
+The selected target remains a dedicated BAM **Render Starter ($7/month base)** and independent **Neon Free PostgreSQL** project, neither provisioned nor charge-authorized. Four verified offline PRs (#30–#33) added an initial nine-table DDL preview, full SQLite schema inventory, aggregate integrity audit and parameterized identity/tenant-aware draft/calendar read plus priority-CAS SQL shape. These are **not PostgreSQL runtime code or complete migration**. Gate B cannot exit without porting every table and relevant query, real relational isolation/security testing, production credentials, a separate HTTPS application, safe backups/media and explicit hosting authorization.
+
 ## 7. Phased implementation roadmap
 
 ### Gate A — Preserve and verify offline alpha (current)
