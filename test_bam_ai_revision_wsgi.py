@@ -10,13 +10,14 @@ class FakeWorkflow:
         self.calls=[]
         self.problem=None
         self.result='success'
+        self.hold_reason='already_in_progress'
     def revise_sponsored(self,**args):
         self.calls.append(args)
         if self.problem:
             raise self.problem
         if self.result=='hold':
             return {'revised':False,'tenant_id':'shop',
-                    'reason':'already_in_progress',
+                    'reason':self.hold_reason,
                     'publishing_enabled':False}
         return {'revised':True,'tenant_id':'shop',
                 'draft':{'tenant_id':'shop','draft_id':args['draft_id'],
@@ -73,6 +74,22 @@ class WSGIRevisionTests(unittest.TestCase):
         self.assertEqual(meta['status'],'200 OK')
         self.assertEqual(value['reason'],'already_in_progress')
         self.assertFalse(value['publishing_enabled'])
+
+    def test_budget_hold_and_operator_pause_survive_strict_transport(self):
+        self.workflow.result='hold'
+        for reason in ('operator_paused','tenant_estimated_budget_reached',
+                       'operator_limit_reached','limit_reached',
+                       'historical_estimated_cost_unknown'):
+            self.workflow.hold_reason=reason
+            meta,value=self.call()
+            self.assertEqual(meta['status'],'200 OK')
+            self.assertEqual(value['reason'],reason)
+            self.assertFalse(value['publishing_enabled'])
+        self.workflow.hold_reason='private-vault-token'
+        meta,value=self.call()
+        self.assertEqual(meta['status'],'503 Service Unavailable')
+        self.assertNotIn('vault',str(value))
+        self.workflow.result='success'
 
     def test_transport_and_body_rejections_do_not_resolve_plan(self):
         disabled=BAMAIRevisionWSGI(workflow=self.workflow,

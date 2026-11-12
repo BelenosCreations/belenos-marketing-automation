@@ -8,6 +8,7 @@ import datetime
 import json
 import re
 import time
+from ai_sponsorship import SPONSORSHIP_HOLD_REASONS
 
 def _unique_object(pairs):
     result={}
@@ -117,6 +118,18 @@ class BAMAIWriteWSGI:
                 'created':True,'tenant_id':draft['tenant_id'],
                 'draft_id':draft['draft_id'],'status':draft['status'],
                 'publishing_enabled':False})
+        if (type(result) is not dict or
+            result.get('created') is not False or
+            type(result.get('tenant_id')) is not str or
+            not result['tenant_id'].strip() or
+            len(result['tenant_id'])>128 or
+            result.get('publishing_enabled') is not False or
+            result.get('reason') not in (
+                SPONSORSHIP_HOLD_REASONS |
+                {'already_completed','already_failed',
+                 'already_in_progress'})):
+            return reply('503 Service Unavailable',
+                         {'error':'Untrusted AI generation hold'})
         return reply('200 OK',{'created':False,
             'tenant_id':result['tenant_id'],
             'reason':result['reason'],'publishing_enabled':False})

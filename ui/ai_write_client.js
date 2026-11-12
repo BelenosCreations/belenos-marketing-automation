@@ -60,7 +60,14 @@
         throw new TypeError('Invalid held draft response');
     }else if(result.tenant_id!==expectedTenantId||
        !['already_completed','already_failed','already_in_progress',
-         'limit_reached','not_entitled'].includes(result.reason))
+         'limit_reached','not_entitled',
+         'tenant_limit_reached',
+         'operator_limit_reached',
+         'historical_estimated_cost_unknown',
+         'user_estimated_budget_reached',
+         'tenant_estimated_budget_reached',
+         'operator_estimated_budget_reached',
+         'operator_paused'].includes(result.reason))
       throw new TypeError('Invalid generation hold reason');
     return result;
   }

@@ -9,7 +9,7 @@ import json
 import re
 import time
 
-from ai_sponsorship import SponsorshipPlan
+from ai_sponsorship import SponsorshipPlan,SPONSORSHIP_HOLD_REASONS
 
 _TOKEN=re.compile(r'[A-Za-z0-9_-]{32,2048}\Z')
 _KEY=re.compile(r'[a-f0-9]{32}\Z')
@@ -101,8 +101,9 @@ class BAMAIRevisionWSGI:
                     'draft_id':requested_draft,'revision':draft['revision'],
                     'status':draft['status'],'publishing_enabled':False}
         reason=result.get('reason')
-        if reason not in ('already_completed','already_failed',
-                          'already_in_progress','limit_reached','not_entitled'):
+        if reason not in (SPONSORSHIP_HOLD_REASONS |
+                         {'already_completed','already_failed',
+                          'already_in_progress'}):
             raise RuntimeError('Unsafe AI revision hold')
         return {'revised':False,'tenant_id':result['tenant_id'],
                 'reason':reason,'publishing_enabled':False}

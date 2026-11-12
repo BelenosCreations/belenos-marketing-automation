@@ -18,6 +18,55 @@ class SponsoredAITests(unittest.TestCase):
         self.policy=AIPolicyStore(db=self.db,sessions=self.sessions,directory=directory)
         self.quota=SponsoredAIQuota(db=self.db,policy_store=self.policy)
 
+    def test_operator_pause_blocks_new_sponsored_quota_without_refunds(self):
+        plan=SponsorshipPlan('owner',5,400,
+            max_request_estimated_micro_usd=100,
+            operator_monthly_estimated_micro_usd=1000)
+        first=self.quota.reserve(token=self.token,now=101,plan=plan,
+            month='2026-11')
+        self.assertTrue(first['reserved'])
+        paused=self.quota.set_operator_paused_trusted(
+            paused=True,now=102)
+        self.assertEqual(paused['operator_paused'],True)
+        self.assertFalse(paused['provider_execution_enabled'])
+        self.assertTrue(self.quota.operator_pause_status_trusted()[
+            'operator_paused'])
+        for month in ('2026-11','2026-12'):
+            rejected=self.quota.reserve(token=self.token,now=103,
+                plan=plan,month=month)
+            self.assertFalse(rejected['reserved'])
+            self.assertEqual(rejected['reason'],'operator_paused')
+        self.assertEqual(self.db.execute(
+            "SELECT SUM(accepted) FROM bam_ai_operator_usage").fetchone()[0],1)
+        self.assertEqual(self.db.execute(
+            "SELECT SUM(reserved_micro_usd) FROM bam_ai_operator_usage"
+            ).fetchone()[0],100)
+        self.quota.set_operator_paused_trusted(paused=False,now=104)
+        resumed=self.quota.reserve(token=self.token,now=105,
+            plan=plan,month='2026-11')
+        self.assertTrue(resumed['reserved'])
+        self.assertEqual(self.db.execute(
+            "SELECT SUM(accepted) FROM bam_ai_operator_usage").fetchone()[0],2)
+        self.assertFalse(self.quota.operator_pause_status_trusted()[
+            'operator_paused'])
+
+    def test_operator_pause_rejects_untrusted_configuration_and_missing_state(self):
+        for paused,now in [(1,100),('true',100),(None,100),
+                           (True,True),(True,-1),(False,'100')]:
+            with self.assertRaises(ValueError):
+                self.quota.set_operator_paused_trusted(paused=paused,now=now)
+        self.db.execute("DELETE FROM bam_ai_operator_control WHERE control_id=1")
+        self.db.commit()
+        with self.assertRaises(RuntimeError):
+            self.quota.operator_pause_status_trusted()
+        rejected=self.quota.reserve(token=self.token,now=101,
+            plan=SponsorshipPlan('owner',2,400),month='2026-11')
+        self.assertEqual(rejected['reason'],'operator_paused')
+        self.assertEqual(self.db.execute(
+            "SELECT COUNT(*) FROM bam_ai_usage").fetchone()[0],0)
+        with self.assertRaises(RuntimeError):
+            self.quota.set_operator_paused_trusted(paused=False,now=103)
+
     def test_estimated_projection_must_be_based_on_operator_pricing(self):
         price=AITokenPricing(Decimal('0.15'),Decimal('0.60'))
         estimated=conservative_request_cost_micro_usd(

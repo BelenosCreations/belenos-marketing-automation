@@ -7,10 +7,14 @@ from ai_sponsorship import SponsorshipPlan
 class FakeWorkflow:
     def __init__(self):
         self.calls=[]
+        self.hold_reason=None
     def generate_sponsored(self,**kwargs):
         self.calls.append(kwargs)
         if kwargs['token']!='valid':
             raise PermissionError('invalid')
+        if self.hold_reason is not None:
+            return {'created':False,'tenant_id':'shop',
+                    'reason':self.hold_reason,'publishing_enabled':False}
         return {'created':True,'draft':{
             'tenant_id':'shop','draft_id':'a'*32,'status':'needs_media',
             'publishing_enabled':False}}
@@ -53,6 +57,22 @@ class BAMAIWriteWSGITests(unittest.TestCase):
         self.assertEqual(call['month'],'2026-11')
         self.assertEqual(call['sponsorship_plan'].monthly_requests,2)
         self.assertNotIn('api_key',str(body))
+
+    def test_sponsorship_hold_is_safe_and_reasons_are_allowlisted(self):
+        for reason in ('operator_paused','tenant_limit_reached',
+                       'operator_estimated_budget_reached',
+                       'historical_estimated_cost_unknown',
+                       'already_completed'):
+            self.workflow.hold_reason=reason
+            (status,_),value=self.call()
+            self.assertEqual(status,'200 OK')
+            self.assertEqual(value,{'created':False,'tenant_id':'shop',
+                'reason':reason,'publishing_enabled':False})
+        self.workflow.hold_reason='vault:private-credential'
+        (status,_),value=self.call()
+        self.assertEqual(status,'503 Service Unavailable')
+        self.assertNotIn('credential',str(value))
+        self.workflow.hold_reason=None
 
     def test_disabled_endpoint_never_resolves_plan(self):
         app=BAMAIWriteWSGI(workflow=self.workflow,

@@ -2,6 +2,12 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Operator pause and sponsored-budget hold propagation — November 11, 2026
+
+The SQLite sponsorship ledger gained one trusted operator control row, an internal pause configuration method and a read-only diagnostic. During reservation, current-role and funding checks still execute under `BEGIN IMMEDIATE`; the pause is then read under that same lock **before** any user/tenant/operator count or estimated micro-USD is written. A separate-connection test pauses at the precise post-preflight boundary and proves no reservation can slip through. Tests also cover durable pause state, malformed settings, missing-row fail-closed behavior and resumed reservations with counters preserved. The disabled-by-default HTTPS draft generation/revision pathways and strict browser clients recognize only approved, generic budget/pause hold reasons. Additional end-to-end tests prove no executor is invoked during a pause and failed idempotency keys cannot silently retry on resume.
+
+**Verification:** `cb23ebbd212986e72e6351b34c834fc3fd43a12c` passed [GitHub Actions 43142566744](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43142566744); documentation-only follow-up awaits its own CI. **No paid OpenAI, production pricing confirmation, hosted control UI or provider-level dispatch stop.** An in-flight request cannot be recalled by the quota pause.
+
 ## Sponsored AI authorization at commit and conservative cost projection — November 11, 2026
 
 Budget tests now pause after the initial sponsor role/funding check, change an employee's business role or mode on a second SQLite connection, then prove that `SponsoredAIQuota.reserve` refuses the write after revalidation under `BEGIN IMMEDIATE`. A pure pricing helper produces upward-rounded estimated micro-USD from operator-supplied token prices and bounded assumed input/output tokens; it does not assert provider price accuracy or actual token usage. An internal `reserve_current_utc_month` method derives month from trusted server time. Legacy fixture-only explicit-month paths must never accept client-supplied billing month in production.
