@@ -16,6 +16,7 @@ from neon_ai_budget_schema import BUDGET_TABLE_NAMES,ai_budget_ddl_preview
 from neon_business_analytics_schema import BUSINESS_ANALYTICS_TABLES
 from neon_tenant_content_schema import TENANT_CONTENT_TABLES
 from neon_review_security_schema import REVIEW_SECURITY_TABLES
+from neon_media_schema import MEDIA_TABLE_NAMES,media_ddl_preview
 from neon_scoped_review_facts import prepare_current_private_facts
 from neon_authenticated_read_contract import (
     prepare_session_draft_read,prepare_session_calendar_read)
@@ -75,7 +76,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             tuple(name for name in BUDGET_TABLE_NAMES if
                 name!='bam_ai_operator_control')+
             BUSINESS_ANALYTICS_TABLES+TENANT_CONTENT_TABLES+
-            REVIEW_SECURITY_TABLES)+' CASCADE')
+            REVIEW_SECURITY_TABLES+MEDIA_TABLE_NAMES)+' CASCADE')
         self.conn.execute("""UPDATE bam_ai_operator_control
             SET paused=1,updated_at=0 WHERE control_id=1""")
         self.a='identityA'
@@ -107,8 +108,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
     def test_ci_schema_migration_journal_is_idempotent(self):
-        self.assertEqual(self.migration_result['versions_present'],7)
-        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5,6,7])
+        self.assertEqual(self.migration_result['versions_present'],8)
+        self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5,6,7,8])
         reread=apply_ephemeral_ci_migrations(self.conn)
         self.assertEqual(reread['versions_applied'],[])
         self.assertFalse(reread['migration_production_ready'])
@@ -116,7 +117,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertFalse(reread['neon_connected'])
         self.assertFalse(reread['social_publishing_enabled'])
         self.assertEqual(self.conn.execute(
-            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],7)
+            'SELECT COUNT(*) FROM bam_ci_migration_journal').fetchone()[0],8)
 
     def test_schema_digest_tamper_is_refused_without_changing_data(self):
         old=self.conn.execute('SELECT checksum FROM bam_ci_migration_journal '
@@ -166,7 +167,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                          set(TABLE_NAMES+COLLABORATION_NAMES+EXTRA_TABLE_NAMES+
                              BUDGET_TABLE_NAMES+BUSINESS_ANALYTICS_TABLES+
                              TENANT_CONTENT_TABLES+REVIEW_SECURITY_TABLES+
-                             ('bam_ci_migration_journal',)))
+                             MEDIA_TABLE_NAMES+('bam_ci_migration_journal',)))
         values=self.conn.execute("""SELECT column_name,data_type FROM
             information_schema.columns
             WHERE table_schema=%s AND table_name='bam_password_credentials'
@@ -1656,6 +1657,81 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             raw_session_token=token,tenant_id='shop-a',server_now=105))
         self.assertEqual(self.conn.execute(
             "SELECT revision FROM scheduling_settings").fetchone()[0],2)
+
+
+    def test_ci_private_media_metadata_no_storage_path(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Thumbnail_Metadata_Owner_123456789'
+        viewer='Synthetic_PG_Thumbnail_Metadata_Viewer_12345678'
+        for bearer,subject,role in ((token,self.a,'owner'),
+                                    (viewer,self.viewer,'viewer')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (hashlib.sha256(bearer.encode('ascii')).hexdigest(),
+                 subject,role))
+        a_id='d'*32
+        b_id='e'*32
+        for aid,tenant,rid,state,when,secret in (
+            (a_id,'shop-a',self.rid_a,'pending',103,'private-shop-a-path'),
+            (b_id,'shop-b',self.rid_b,'verified',102,'private-shop-b-path')):
+            self.conn.execute("""INSERT INTO content_attachments
+                (attachment_id,tenant_id,request_id,item,media_type,sha256,
+                 storage_key,status,created_at)
+                VALUES (%s,%s,%s,'image','image/png',%s,%s,%s,%s)""",
+                (aid,tenant,rid,'f'*64,secret,state,when))
+        adapter=EphemeralSessionPostgres(self.conn)
+        opts={'raw_session_token':token,'tenant_id':'shop-a',
+              'request_id':self.rid_a,'server_now':104}
+        own=adapter.read_attachment_statuses(**opts)
+        self.assertEqual(own['status'],'attachment_metadata_only')
+        self.assertEqual(own['items'],[{
+            'attachment_id':a_id,'item':'image','media_type':'image/png',
+            'status':'pending','created_at':103}])
+        self.assertEqual(adapter.read_attachment_statuses(
+            **(opts|{'raw_session_token':viewer})),own)
+        self.assertEqual(adapter.read_attachment_statuses(
+            **(opts|{'tenant_id':'shop-b','request_id':self.rid_b})
+        )['items'],[])
+        self.assertNotIn(b_id,str(own))
+        for secret in ('private-shop-a-path','private-shop-b-path','f'*64):
+            self.assertNotIn(secret,str(own))
+        self.assertFalse(own['approval_granted'])
+        self.assertFalse(own['publishing_enabled'])
+        self.assertFalse(own['scanning_performed_by_adapter'])
+        self.assertEqual(own['files_uploaded'],0)
+        self.conn.execute("""UPDATE sessions SET revoked_at=105
+            WHERE token_hash=%s""",
+            (hashlib.sha256(token.encode('ascii')).hexdigest(),))
+        self.assertEqual(adapter.read_attachment_statuses(
+            **(opts|{'server_now':106}))['items'],[])
+
+    def test_ci_media_schema_rejects_cross_tenant_and_invalid_state(self):
+        import psycopg
+        with self.assertRaises(psycopg.errors.ForeignKeyViolation):
+            self.conn.execute("""INSERT INTO content_attachments
+                (attachment_id,tenant_id,request_id,item,media_type,
+                 sha256,storage_key,status,created_at)
+                VALUES (%s,'shop-b',%s,'image','image/png',
+                        %s,'private/path','pending',101)""",
+                ('1'*32,self.rid_a,'a'*64))
+        with self.assertRaises(psycopg.errors.CheckViolation):
+            self.conn.execute("""INSERT INTO content_attachments
+                (attachment_id,tenant_id,request_id,item,media_type,
+                 sha256,storage_key,status,created_at)
+                VALUES (%s,'shop-a',%s,'image','image/png',
+                        %s,'private/path','published',101)""",
+                ('2'*32,self.rid_a,'a'*64))
+        with self.assertRaises(psycopg.errors.CheckViolation):
+            self.conn.execute("""INSERT INTO content_attachments
+                (attachment_id,tenant_id,request_id,item,media_type,
+                 sha256,storage_key,status,created_at)
+                VALUES (%s,'shop-a',%s,'image','image/png',
+                        'not-a-sha','private/path','pending',101)""",
+                ('3'*32,self.rid_a))
+        self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+            FROM content_attachments""").fetchone()[0],0)
 
 
 if __name__=='__main__':

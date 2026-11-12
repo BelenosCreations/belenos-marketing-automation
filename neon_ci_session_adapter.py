@@ -35,6 +35,9 @@ from neon_session_schedule_settings_contract import (
     summarize_session_schedule_settings,
     prepare_session_schedule_settings_save,
     summarize_session_schedule_settings_save)
+from neon_session_media_contract import (
+    prepare_session_attachment_statuses,
+    summarize_session_attachment_statuses)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -215,6 +218,15 @@ class EphemeralSessionPostgres:
             return summarize_session_schedule_settings_save(
                 row,tenant_id=tenant_id,
                 expected_revision=expected_revision)
+
+    def read_attachment_statuses(self,*,raw_session_token,tenant_id,
+                                 request_id,server_now):
+        sql,params=prepare_session_attachment_statuses(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            request_id=request_id,server_now=server_now)
+        rows=self._conn.execute(sql,params).fetchall()
+        return summarize_session_attachment_statuses(
+            rows,tenant_id=tenant_id,request_id=request_id)
 
     def update_draft_priority(self,*,raw_session_token,tenant_id,request_id,
                               expected_priority_token,priority,server_now):

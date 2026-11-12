@@ -32,7 +32,7 @@ class NeonSchemaInventoryTests(unittest.TestCase):
         self.assertFalse(report['contains_customer_records'])
         self.assertFalse(report['contains_raw_schema_ddl'])
 
-    def test_all_seven_postgres_preview_stages_are_counted_honestly(self):
+    def test_all_seven_postgres_preview_table_groups_are_counted_honestly(self):
         report=inventory_sqlite_for_neon(self.db)
         self.assertEqual(report['reviewed_pg_stage_counts'],
                          [9,5,7,8,7,4,6])

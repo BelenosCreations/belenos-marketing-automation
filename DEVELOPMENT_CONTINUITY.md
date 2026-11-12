@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Reviewed attachment metadata stage + signed-in status read candidate — November 12, 2026
+
+**Last verified baseline:** PR #55 merged at `508f5c2b572c845efb402266fa594acee74d8832`; [full merged-main Actions 43329651094](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43329651094) **success**. Main and `development/phase-3-5-account-directory` safely synchronized without force. Older headings below labeled candidate are history, not active work.
+
+**Current candidate (not verified):** New `neon_media_schema.py` + `test_neon_media_schema.py` for **constraint-only** hardening of the existing stage-3 nine-column `content_attachments` table. Add a tenant/request composite foreign key, media-type/ID/hash/item/timestamp checks and private state index while preserving the already reviewed status check. Append migration **stage 8** to the disposable CI loader; **46 reviewed tables across seven table-creation groups stay unchanged**, so the stage must not create a duplicate table. Update metadata-only inventory and tests accordingly. New `neon_session_media_contract.py` and tests provide current-session/tenant-scoped status-only reads without storage keys, hashes or media bytes; extend strictly CI-only `EphemeralSessionPostgres`. Real CI PostgreSQL tests verify FK/status checks, cross-tenant and stale session privacy. No upload, scanner, trust-state update, provider write, or executable posting.
+
+**Recovery:** Check actual branch/head SHA and latest Actions before editing. Pass exact-head PR CI, merge only green, verify exact post-merge main CI, fast-forward development without force. Future functionality after this: CI-only attachment binding to drafts using verified synthetic references and revision CAS; complete migration, object storage, backup/restore and a secure production gateway remain blocked.
+
+**Controls:** Offline Alpha, $0 added cost. No hosted services, shared EdgePilot credentials/infra, paid OpenAI, public endpoints, untrusted media verification or social publishing.
+
 ## Authenticated scheduling-preference persistence candidate — November 12, 2026
 
 **Last fully verified GitHub checkpoint:** PR #54 merged as `165a5398a499a16118313bb26cb8b11d8a936178`; exact merged-main [GitHub Actions 43328713423](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43328713423) passed. `main` and `development/phase-3-5-account-directory` synchronized without force. PR #54 fixed two *synthetic test fixture* issues before final clean CI; prior candidate headings are historical.
