@@ -2,6 +2,14 @@
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
 
+## Sponsored AI projected spend reservations and legacy migration — November 11, 2026
+
+The offline sponsorship plan can now optionally carry a conservative operator-estimated per-request micro-USD reservation and explicit user/tenant/operator monthly projected-cost ceilings. During `SponsoredAIQuota.reserve`, the three count and three projected-cost counters are updated together under the same SQLite write lock. Denial at any layer rolls back the entire request; simultaneous clients cannot overspend a shared projection cap. A migration marks historical count-only reservations `unpriced_requests`, and a mid-month dollar projection cap refuses to ignore that unknown history. No actual token usage or provider bill is inferred, and actual paid calls remain disabled.
+
+**Verification:** Source checkpoint `5dee209bb2df1c9b6bb3afe1470cdd2f69798aea` passed [GitHub Actions 43138168968](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43138168968), including Python compilation, JavaScript syntax/regressions, projected-cost races and migration regressions. This documentation-only commit still needs CI before PR merge.
+
+
+
 ## Read-only social metadata revocation and analytics transaction safety — November 11, 2026
 
 Trusted offline provider metadata now requires a narrow internal read-only capability marker and refuses old/future-dated status updates that would incorrectly restore an expired or revoked connection. A revoked record remains terminal until a separately verified OAuth connection lifecycle is designed. The analytics import service rechecks the current grant **inside its SQLite write transaction**, so if another process revokes an authorization while a fake fetch is in flight, no observation or cursor checkpoint is imported. Tests use independent SQLite connections and a deliberately paused fake fetcher. The implementation does not call a social network, prove account ownership, or permit posting.

@@ -160,3 +160,10 @@ BAM now refuses unknown or posting-capable **internal analytics scope markers** 
 
 The offline analytics import path checks the connection both before its simulated read-only fetch **and inside the SQLite transaction before writing imported metrics and the synchronization checkpoint**. Independent SQLite-client tests revoke permission during an in-flight fake fetch, confirming no observations or cursor are saved. The same connection-backed store is required for this particular transactional guarantee. No live provider requests, social account linking, publication, or scheduling were enabled.
 
+
+### Atomic estimated AI spending reservations (offline Alpha)
+
+The existing sponsored OpenAI request-count quotas now also support **operator-configured projected micro-USD reservations** for each individual BAM user, business, and the entire operator. All three count/estimated-cost increments occur atomically in one SQLite transaction; denial at any tier rolls back the whole reservation. Independent SQLite-client tests verify competing users and businesses cannot exceed a shared projected allowance.
+
+To avoid misleading accounting, historical sponsored requests with **unknown estimated costs** are marked unpriced during schema migration; enabling an estimated-dollar ceiling partway through such a month fails closed rather than ignoring earlier requests. A server plan must explicitly supply a nonzero conservative per-request estimated amount before dollar-denominated projected caps can be used. The estimates are operator assumptions, **not provider token usage, an actual invoice, a guarantee about final spend, or permission for paid AI calls**. Before any live AI activation, the chosen model's current pricing, actual input token ceilings, receipts, reconciliation, circuit breakers, and operator-approved dollar spending policy must be verified and integrated.
+

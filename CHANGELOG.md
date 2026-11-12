@@ -1,5 +1,14 @@
 # Changelog
 
+## November 11, 2026 — Atomic projected micro-USD AI reservation ceilings
+
+- Expanded the existing disabled-by-default sponsored OpenAI quota primitive with optional **per-user, per-business and overall-operator estimated micro-USD ceilings**, alongside existing monthly request-count limits.
+- All three estimated-cost reservations are transacted with count increments in **one SQLite write transaction**. Concurrent independent SQLite connections cannot exceed a capped aggregate; denial at any layer rolls back all counters.
+- Added safe backward-compatible schema migration from historical count-only usage to `unpriced_requests`; introducing an estimated-dollar cap mid-month fails closed if prior reservations have no projected cost rather than inventing historical costs.
+- Bounded per-request estimated amounts to avoid SQLite integer overflow, validated trusted plan input, and added a server-side `actual_billing_verified=False` marker to reservation results.
+- Added new unit, migration, mid-month and independent-client race tests. **GitHub Actions 43138168968** [passed](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43138168968) on source `5dee209bb2df1c9b6bb3afe1470cdd2f69798aea`; this documentation follow-up requires its own exact-SHA test.
+- These are **projected accounting ceilings only**. No OpenAI calls, invoices, verified current model pricing, actual USD enforcement, secret vault, subscription billing, hosting, or social publishing was activated.
+
 ## November 11, 2026 — Read-only social permission lifecycle and atomic analytics import
 
 - Tightened the offline provider metadata registry to accept only the internal `read_insights` capability, not arbitrary strings that happen to lack “publish” or “write.” This is not an authorization claim about real Meta scopes.

@@ -84,6 +84,43 @@ class SponsoredAIConcurrentBudgetTests(unittest.TestCase):
         self.assertEqual(self.db1.execute("""SELECT accepted FROM
             bam_ai_operator_usage""").fetchone()[0],1)
 
+    def test_projected_tenant_micro_usd_budget_cannot_be_over_reserved(self):
+        plan=SponsorshipPlan('invited',10,300,
+            max_request_estimated_micro_usd=1500,
+            tenant_monthly_estimated_micro_usd=2000,
+            operator_monthly_estimated_micro_usd=5000)
+        results=self.race([
+            lambda:self.reserve(self.quota1,self.shop_owner,plan),
+            lambda:self.reserve(self.quota2,self.shop_writer,plan)
+        ])
+        self.assertTrue(all(isinstance(x,dict) for x in results),results)
+        self.assertEqual(sum(x['reserved'] for x in results),1,results)
+        self.assertEqual([x['reason'] for x in results if not x['reserved']],
+                         ['tenant_estimated_budget_reached'])
+        for table in ('bam_ai_usage','bam_ai_tenant_usage',
+                      'bam_ai_operator_usage'):
+            self.assertEqual(self.db1.execute(
+                'SELECT SUM(reserved_micro_usd) FROM '+table
+                ).fetchone()[0],1500)
+            self.assertEqual(self.db1.execute(
+                'SELECT SUM(accepted) FROM '+table).fetchone()[0],1)
+
+    def test_projected_operator_budget_cannot_be_over_reserved(self):
+        plan=SponsorshipPlan('owner',10,300,
+            max_request_estimated_micro_usd=1500,
+            tenant_monthly_estimated_micro_usd=5000,
+            operator_monthly_estimated_micro_usd=2000)
+        results=self.race([
+            lambda:self.reserve(self.quota1,self.shop_owner,plan),
+            lambda:self.reserve(self.quota2,self.other,plan)
+        ])
+        self.assertTrue(all(isinstance(x,dict) for x in results),results)
+        self.assertEqual(sum(x['reserved'] for x in results),1,results)
+        self.assertEqual([x['reason'] for x in results if not x['reserved']],
+                         ['operator_estimated_budget_reached'])
+        self.assertEqual(self.db1.execute('SELECT reserved_micro_usd FROM '
+            'bam_ai_operator_usage').fetchone()[0],1500)
+
     def test_operator_budget_shared_between_independent_businesses(self):
         plan=SponsorshipPlan('owner',10,300,
             tenant_monthly_requests=10,operator_monthly_requests=1)

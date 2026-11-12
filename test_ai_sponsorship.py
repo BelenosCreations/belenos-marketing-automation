@@ -127,6 +127,138 @@ class SponsoredAITests(unittest.TestCase):
             self.assertEqual(self.db.execute(
                 'SELECT SUM(accepted) FROM '+table).fetchone()[0],1)
 
+    def test_estimated_micro_usd_caps_are_atomic_across_layers(self):
+        directory=self.policy.directory
+        directory.set_member(Principal('owner','shop',Role.OWNER),
+                             'editor',Role.CONTENT_CREATOR)
+        directory.bootstrap_owner('other','another_owner')
+        directory.bootstrap_owner('third','third_owner')
+        editor=self.sessions.issue(Principal('editor','shop',
+            Role.CONTENT_CREATOR),now=100)
+        other=self.sessions.issue(Principal('another_owner','other',
+            Role.OWNER),now=100)
+        third=self.sessions.issue(Principal('third_owner','third',
+            Role.OWNER),now=100)
+        plan=SponsorshipPlan('invited',10,400,
+            max_request_estimated_micro_usd=1000,
+            user_monthly_estimated_micro_usd=2500,
+            tenant_monthly_estimated_micro_usd=1800,
+            operator_monthly_estimated_micro_usd=2500)
+        first=self.quota.reserve(token=self.token,now=101,
+            plan=plan,month='2026-11')
+        self.assertTrue(first['reserved'])
+        self.assertEqual(first['estimated_micro_usd_reserved'],1000)
+        self.assertEqual(first['remaining_estimated_micro_usd'],800)
+        self.assertFalse(first['actual_billing_verified'])
+        refused=self.quota.reserve(token=editor,now=101,
+            plan=plan,month='2026-11')
+        self.assertEqual(refused['reason'],'tenant_estimated_budget_reached')
+        self.assertTrue(self.quota.reserve(token=other,now=101,
+            plan=plan,month='2026-11')['reserved'])
+        final=self.quota.reserve(token=third,now=101,
+            plan=plan,month='2026-11')
+        self.assertEqual(final['reason'],'operator_estimated_budget_reached')
+        for table,total in [('bam_ai_usage',2),('bam_ai_tenant_usage',2),
+                            ('bam_ai_operator_usage',2)]:
+            self.assertEqual(self.db.execute(
+                'SELECT SUM(accepted) FROM '+table).fetchone()[0],total)
+            self.assertEqual(self.db.execute(
+                'SELECT SUM(reserved_micro_usd) FROM '+table
+                ).fetchone()[0],2000)
+
+    def test_user_estimate_cap_and_zero_estimated_limit(self):
+        plan=SponsorshipPlan('owner',20,400,
+            max_request_estimated_micro_usd=750,
+            user_monthly_estimated_micro_usd=1500)
+        self.assertTrue(self.quota.reserve(token=self.token,now=101,
+            plan=plan,month='2026-11')['reserved'])
+        self.assertTrue(self.quota.reserve(token=self.token,now=101,
+            plan=plan,month='2026-11')['reserved'])
+        self.assertEqual(self.quota.reserve(token=self.token,now=101,
+            plan=plan,month='2026-11')['reason'],
+            'user_estimated_budget_reached')
+        self.assertEqual(self.db.execute(
+            "SELECT accepted FROM bam_ai_usage WHERE tenant_id='shop'"
+            ).fetchone()[0],2)
+        with self.assertRaises(ValueError):
+            SponsorshipPlan('owner',5,100,
+                tenant_monthly_estimated_micro_usd=1000)
+        with self.assertRaises(ValueError):
+            SponsorshipPlan('owner',5,100,
+                max_request_estimated_micro_usd=0)
+
+    def test_estimate_caps_reject_unpriced_prior_reservations(self):
+        initial=SponsorshipPlan('owner',10,100)
+        self.assertTrue(self.quota.reserve(token=self.token,now=101,
+            plan=initial,month='2026-11')['reserved'])
+        now_capped=SponsorshipPlan('owner',10,100,
+            max_request_estimated_micro_usd=10,
+            user_monthly_estimated_micro_usd=100,
+            tenant_monthly_estimated_micro_usd=100,
+            operator_monthly_estimated_micro_usd=100)
+        result=self.quota.reserve(token=self.token,now=101,
+            plan=now_capped,month='2026-11')
+        self.assertEqual(result['reason'],'historical_estimated_cost_unknown')
+        for table in ('bam_ai_usage','bam_ai_tenant_usage',
+                      'bam_ai_operator_usage'):
+            self.assertEqual(self.db.execute(
+                'SELECT reserved_micro_usd,unpriced_requests FROM '+table
+                ).fetchone(),(0,1))
+        self.assertTrue(self.quota.reserve(token=self.token,now=101,
+            plan=now_capped,month='2026-12')['reserved'])
+
+    def test_invalid_estimated_budget_config(self):
+        for value in (True,-1,10**12+1,1.5,'100'):
+            with self.assertRaises(ValueError):
+                SponsorshipPlan('owner',10,400,
+                    max_request_estimated_micro_usd=value)
+            with self.assertRaises(ValueError):
+                SponsorshipPlan('owner',10,400,
+                    max_request_estimated_micro_usd=100,
+                    operator_monthly_estimated_micro_usd=value)
+
+    def test_legacy_migration_marks_all_unpriced_requests_unknown(self):
+        old=sqlite3.connect(':memory:')
+        try:
+            directory=AccountDirectory(old)
+            directory.bootstrap_owner('shop','owner')
+            sessions=SessionStore(old)
+            token=sessions.issue(Principal('owner','shop',Role.OWNER),
+                                 now=100)
+            policy=AIPolicyStore(db=old,sessions=sessions,directory=directory)
+            old.execute("""INSERT INTO bam_ai_usage
+                VALUES ('shop','owner','2026-11',3)""")
+            old.execute("""CREATE TABLE bam_ai_tenant_usage(
+                tenant_id TEXT NOT NULL,month TEXT NOT NULL,
+                accepted INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(tenant_id,month))""")
+            old.execute("""CREATE TABLE bam_ai_operator_usage(
+                month TEXT PRIMARY KEY,
+                accepted INTEGER NOT NULL DEFAULT 0)""")
+            old.execute("""INSERT INTO bam_ai_tenant_usage
+                VALUES('shop','2026-11',3)""")
+            old.execute("""INSERT INTO bam_ai_operator_usage
+                VALUES('2026-11',3)""")
+            old.commit()
+            first=SponsoredAIQuota(db=old,policy_store=policy)
+            # An independent reinitialization cannot count migration twice.
+            SponsoredAIQuota(db=old,policy_store=policy)
+            for table in ('bam_ai_usage','bam_ai_tenant_usage',
+                          'bam_ai_operator_usage'):
+                self.assertEqual(old.execute(
+                    'SELECT accepted,reserved_micro_usd,unpriced_requests '
+                    'FROM '+table).fetchone(),(3,0,3))
+            cap=SponsorshipPlan('owner',10,100,
+                max_request_estimated_micro_usd=100,
+                operator_monthly_estimated_micro_usd=1000)
+            self.assertEqual(first.reserve(token=token,now=101,
+                plan=cap,month='2026-11')['reason'],
+                'historical_estimated_cost_unknown')
+            self.assertEqual(old.execute('SELECT accepted FROM '
+                'bam_ai_operator_usage').fetchone()[0],3)
+        finally:
+            old.close()
+
     def test_invalid_caps_and_viewer_cannot_reserve(self):
         for cap in (True,-1,10000001,0.5,'10'):
             with self.assertRaises(ValueError):
