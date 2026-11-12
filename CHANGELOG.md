@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — PostgreSQL-style tenant-safe draft priority CAS (offline)
+
+- Add non-executing `UPDATE ... RETURNING` builder to compare-and-swap private held-draft priority token while checking current verified identity, active membership, editorial role and tenant in the same SQL statement.
+- Add test-only SQLite query-shape/behavior checks for successful edits, unchanged draft content revision, stale-editor conflicts, cross-tenant isolation, viewer denial and identity/member revocation.
+- Receipt mapping permanently disallows publishing or scheduling. No actual PostgreSQL execution, database credentials, deployment, paid service or live social calls. CI pending.
+
 ## November 12, 2026 — Read-only data integrity preflight for future Neon migration
 
 - Add aggregate-only SQLite integrity and foreign key checks plus orphan-identity/membership/session, stale session role, inactive identity, malformed session digest, casefold email collision and orphan calendar proposal diagnostics.

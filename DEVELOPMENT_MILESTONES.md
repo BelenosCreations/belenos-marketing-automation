@@ -1052,3 +1052,7 @@ Pure parameterized SQL builder for held drafts and non-executable calendar propo
 ## November 12, 2026 — Neon migration read-only integrity preflight (offline)
 
 Audit SQLite relational integrity and aggregate-only anomalies in hashed sessions, verified identities, role revocation, cross-table orphan rows, case-insensitive duplicate emails and calendar references. Tests on synthetic offline fixtures enforce that no user rows, raw credentials or draft text ever leave the preflight, and that even a clean result does not imply hosted migration readiness. No database mutation, provider/network call, billable service or publishing. Exact GitHub CI pending.
+
+## November 12, 2026 — Postgres-style held-draft priority CAS SQL seam (offline)
+
+Pure prepared `UPDATE ... RETURNING` builder for held-draft priority. One statement enforces scoped tenant/request/version with server-verified subject's active identity/membership/editor role; receipt retains nonpublishing state and unchanged content revision. Test-only SQLite parameter adapter verifies cross-tenant isolation, viewer denial, revoked credentials and stale version conflicts. No hosted Postgres, actual SQL execution there, API route, new charge or publishing. Exact GitHub CI pending.
