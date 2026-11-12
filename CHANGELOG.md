@@ -1,6 +1,13 @@
 # Changelog
 
-## November 12, 2026 — Session-scoped versioned scheduling preferences in ephemeral PostgreSQL (candidate)
+## November 12, 2026 — Eighth PostgreSQL preview stage: private attachment metadata (candidate)
+
+- Add a reviewed source-parity `content_attachments` DDL preview with strict media type/status/hash validation, an index and a composite (tenant,request) foreign key that blocks cross-business draft references. CI schema review grows from 46 tables/seven stages to **47/eight**.
+- Add session-bound read-only attachment metadata lookup for active business members. Never expose SHA-256, storage path, file bytes, URLs or credential material. A row marked `verified` reflects only an existing synthetic test value; no trust scanner or publication permission is created.
+- Extend the disposable CI-only psycopg adapter, local SQLite parity, full metadata inventory and real PostgreSQL schema/privacy tests. No customer data is copied. PR and merged-main CI still pending.
+- Last verified checkpoint: PR #55 merged `508f5c2b`, [main Actions 43329651094](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43329651094) passed; development safely synchronized. **$0 new costs**; no Render/Neon provision, EdgePilot reuse, paid AI or live publishing.
+
+## November 12, 2026 — Session-scoped versioned scheduling preferences in ephemeral PostgreSQL (verified PR #55)
 
 - Add pure parameterized PostgreSQL read plus first-create/revision-CAS updates for existing per-tenant `scheduling_settings` schema. Each statement derives identity from the hashed live session and current membership/role/verified identity, not a caller-asserted user.
 - Only owner/marketing-manager/content-creator roles can edit. Any active business member may read. Validate IANA timezones, unique bounded weekday HH:MM slots, distinct preferred hours, and manual-mode time requirements before writing.

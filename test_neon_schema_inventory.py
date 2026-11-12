@@ -32,17 +32,17 @@ class NeonSchemaInventoryTests(unittest.TestCase):
         self.assertFalse(report['contains_customer_records'])
         self.assertFalse(report['contains_raw_schema_ddl'])
 
-    def test_all_seven_postgres_preview_stages_are_counted_honestly(self):
+    def test_all_eight_postgres_preview_stages_are_counted_honestly(self):
         report=inventory_sqlite_for_neon(self.db)
         self.assertEqual(report['reviewed_pg_stage_counts'],
-                         [9,5,7,8,7,4,6])
-        self.assertEqual(report['reviewed_pg_preview_count'],46)
-        self.assertEqual(len(report['reviewed_pg_preview_table_names']),46)
+                         [9,5,7,8,7,4,6,1])
+        self.assertEqual(report['reviewed_pg_preview_count'],47)
+        self.assertEqual(len(report['reviewed_pg_preview_table_names']),47)
         self.assertEqual(report['all_table_count'],
             report['reviewed_pg_preview_present_count']+
             report['unreviewed_pg_preview_count'])
         self.assertEqual(report['reviewed_pg_preview_present_count']+
-            len(report['reviewed_pg_preview_uninitialized_names']),46)
+            len(report['reviewed_pg_preview_uninitialized_names']),47)
         self.assertNotIn('bam_ai_preferences',
                          report['unreviewed_pg_preview_table_names'])
         self.assertIn('bam_ai_preferences',

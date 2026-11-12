@@ -1,5 +1,9 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Eighth reviewed PostgreSQL schema stage: attachment registry (candidate — November 12, 2026)
+
+From verified PR #55 (main `508f5c2b`, Actions 43329651094 passed), add a distinct test-only PostgreSQL DDL preview for the existing nine-column `content_attachments` SQLite registry. Composite foreign key `(tenant_id,request_id)` references the exact draft's business and is backed by a unique composite index on `content_requests`. Status is constrained to pending/verified/rejected; hash format and MIME types have checks. The 47th reviewed preview table / eighth disposable CI migration remains **not** a production schema migration. Signed-in metadata-only status reads omit private storage paths and SHA-256 and do not perform scanning/verification. Real media uploads, secure object storage, malware/consent checks, backup integrity and all provider publication remain beta blockers. No Neon/Render service is provisioned by these tests.
+
 ## Authenticated scheduling preference reads and optimistic saves (November 12, 2026 candidate)
 
 Building from verified PR #54 (`165a5398`, merged-main Actions 43328713423 passed), add a CI-only session-bound adapter for `scheduling_settings`. Its SQL verifies the hashed session, active/verified identity, current role and tenant on every read and write, with source-matching editor permissions. Persist manual weekday/timezone and smart preferred-hours preferences using an exact current revision CAS; a first save uses revision 0. Strictly validate IANA zone, bounded unique HH:MM weekday entries and hourly ranges before SQL. This is **not** a scheduler, queued job, provider write, verified audience recommendation, paid hosting, real Neon data migration or production authorization. Test with synthetic SQLite and disposable PostgreSQL before merge.

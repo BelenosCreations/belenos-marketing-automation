@@ -16,12 +16,14 @@ from neon_ai_budget_schema import BUDGET_TABLE_NAMES
 from neon_business_analytics_schema import BUSINESS_ANALYTICS_TABLES
 from neon_tenant_content_schema import TENANT_CONTENT_TABLES
 from neon_review_security_schema import REVIEW_SECURITY_TABLES
+from neon_media_schema import MEDIA_TABLE_NAMES
 
 # Stage definitions are DDL *previews*, never a claim of production migration.
 _REVIEWED_GROUPS = (
     TABLE_NAMES, COLLABORATION_NAMES, EXTRA_TABLE_NAMES,
     BUDGET_TABLE_NAMES, BUSINESS_ANALYTICS_TABLES,
     TENANT_CONTENT_TABLES, REVIEW_SECURITY_TABLES,
+    MEDIA_TABLE_NAMES,
 )
 REVIEWED_PREVIEW_NAMES = tuple(name for group in _REVIEWED_GROUPS
                                for name in group)
