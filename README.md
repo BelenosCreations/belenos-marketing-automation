@@ -18,6 +18,10 @@ The persistent account-level login throttle now records failures in one SQLite U
 
 BAM's intended first hosted setup is **its own Render Starter web service ($7/month base)** and **its own Neon Free PostgreSQL project ($0/month within free quotas)**. This replaces an open-ended hosting-provider choice, but **does not authorize creating either service, incurring charges or deploying the app**. BAM remains separate from EdgePilot. A standalone server does not imply a separate paid team instance for each user/business. Database migration away from SQLite, verified identity, durable media, encrypted backups and supported scheduling/worker operations are still required. The $7 is **not a guaranteed total or provider hard cap**. No other recurring charges, paid AI or publishing are approved. See [private beta hosting plan](PRIVATE_BETA_INFRASTRUCTURE.md) and [CI-checked planning record](BAM_HOSTING_PLAN.json).
 
+### Neon migration foundation (offline preview)
+
+The first database-portability milestone introduces a review-only PostgreSQL DDL blueprint for **nine** foundational BAM tables plus live SQLite schema parity checks, deterministic schema fingerprinting and privacy-safe row counts. No user records, credentials, or draft text are exported; no PostgreSQL driver, Neon service, Render deployment or paid integration is invoked. This is explicitly **incomplete** and cannot operate BAM on Neon yet. See [Neon migration roadmap](NEON_MIGRATION_ROADMAP.md).
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

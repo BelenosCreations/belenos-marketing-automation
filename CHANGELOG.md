@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Neon partial schema portability groundwork (offline)
+
+- Add nine-table review-only PostgreSQL DDL blueprint for BAM identity, sessions, membership, account throttle, held drafts, posting preferences and nonpublishing calendar proposals.
+- Add privacy-safe SQLite schema inventory with strict local-column compatibility checks, deterministic digest, row counts and permanent incomplete-migration blockers. It exports no data and cannot connect to Neon or execute DDL.
+- Add regression tests for privacy, schema drift, core table matching and no-deployment guard; add migration roadmap and README/continuity/readiness updates.
+- No database migration or external activation. Exact-source CI and reviewed PR required.
+
 ## November 12, 2026 — Hosting design selected ($7 Render Starter + Neon Free), unprovisioned
 
 - Record the owner-selected BAM infrastructure design: **one independent Render Starter web service ($7/month base)** and **one Neon Free PostgreSQL project ($0 within quotas)**, with strict separation from existing EdgePilot service and data.

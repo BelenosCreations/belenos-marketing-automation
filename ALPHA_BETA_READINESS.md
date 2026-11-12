@@ -6,6 +6,7 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Neon schema portability start | **Partial nine-table PostgreSQL DDL review preview, offline only; pending CI** | Port every additional table, build tested PostgreSQL data adapter/migrations, verify row parity and isolation, encrypted backups and actual hosted restore; no live migration performed |
 | Initial hosting design chosen (without provisioning) | **Planned: separate $7 Render Starter plus free Neon; no charge or deployment authorized** | Verify billing workspace/region, safe PostgreSQL migration, encrypted backups/restore, staging identity and tenant isolation; explicitly approve actual service creation and any other costs |
 | Offline WSGI public-exposure boundary | **Offline guard passed merged-main CI #43209573560; not a production gateway** | Reject public Host/IP/proxy metadata; build a separate hardened production runtime, enforce network isolation and verify hosted tests |
 | Responsive signed-in overview with large cards and deeper details | **Implemented in offline alpha**, not production validated | Mobile browser checks at common Android sizes, focus/keyboard accessibility smoke tests, signed-in shell regression |
