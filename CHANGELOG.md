@@ -1,5 +1,13 @@
 # Changelog
 
+## November 11, 2026 — Deduplicated trusted AI usage ledger
+
+- Added an **optional, trusted server-owned 32-hex usage reference** to `AICostLedger.record_trusted`. When supplied, its SHA-256 digest is stored in a new nullable column and uniquely scoped to the business and subject. Replaying the same reference with identical model, token counts and operator-estimated cost returns the original event rather than double-counting it; reusing the reference with different data fails closed.
+- The migration preserves all pre-existing cost events with NULL reference hashes and **does not invent** historical provider IDs. Legacy reference-free calls remain supported but **cannot promise deduplication**.
+- Regression coverage verifies independent tenants, mismatch rejection, existing-data migration and two simultaneous SQLite clients competing to record the same usage reference.
+- **Verified code:** `9765961fc8a63433863c91c9700f80891a9544fb` passed [GitHub Actions 43143316508](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43143316508) (Python compile, JavaScript syntax/tests and complete offline Python suite). This documentation-only follow-up requires exact-SHA CI.
+- **Limitations:** Usage references are not yet wired to a real OpenAI response identifier, actual invoice, paid model call, or quota/receipt reconciliation workflow. Cost values remain operator-priced estimates. No real provider traffic or new fees.
+
 ## November 11, 2026 — BAM-sponsored AI operator pause and safe budget holds
 
 - Added persistent **operator-only** offline pause controls to `SponsoredAIQuota`: `set_operator_paused_trusted` and `operator_pause_status_trusted`. Pause blocks **new** sponsored reservations for all businesses, users and UTC months after revalidation under the SQLite write lock; no counters or estimated charges are added for refused requests.
