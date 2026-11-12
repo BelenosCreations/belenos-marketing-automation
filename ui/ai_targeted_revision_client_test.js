@@ -33,6 +33,15 @@ async function main(){
       reason:'already_in_progress',publishing_enabled:false})})});
   assert.equal(hold.revised,false);
   assert.equal(hold.reason,'already_in_progress');
+  for(const reason of ['operator_paused',
+                       'operator_estimated_budget_reached',
+                       'historical_estimated_cost_unknown']){
+    const result=await revise({...base,fetchImpl:async()=>({
+      ok:true,status:200,json:async()=>({
+        revised:false,tenant_id:'shop',reason,publishing_enabled:false})})});
+    assert.equal(result.reason,reason);
+    assert.equal(result.publishingEnabled,false);
+  }
   for(const patch of [
     {origin:'http://bam.example'},{token:'invalid'},
     {expectedTenantId:' '},{draftId:'invalid'},

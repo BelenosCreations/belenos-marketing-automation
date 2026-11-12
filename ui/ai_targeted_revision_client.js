@@ -11,7 +11,14 @@
   const hex=/^[a-f0-9]{32}$/;
   const bearer=/^[A-Za-z0-9_-]{32,2048}$/;
   const allowedHold=new Set(['already_completed','already_failed',
-    'already_in_progress','limit_reached','not_entitled']);
+    'already_in_progress','limit_reached','not_entitled',
+    'tenant_limit_reached',
+    'operator_limit_reached',
+    'historical_estimated_cost_unknown',
+    'user_estimated_budget_reached',
+    'tenant_estimated_budget_reached',
+    'operator_estimated_budget_reached',
+    'operator_paused']);
   const allowedStatus=new Set(['needs_media','draft_pending_verification']);
   function exact(value,keys){
     return value!==null&&typeof value==='object'&&!Array.isArray(value)&&

@@ -8,6 +8,19 @@ import re
 from datetime import datetime,timezone
 from dataclasses import dataclass
 
+SPONSORSHIP_HOLD_REASONS=frozenset((
+    'limit_reached',
+    'tenant_limit_reached',
+    'operator_limit_reached',
+    'historical_estimated_cost_unknown',
+    'user_estimated_budget_reached',
+    'tenant_estimated_budget_reached',
+    'operator_estimated_budget_reached',
+    'operator_paused',
+    'not_entitled',
+))
+
+
 @dataclass(frozen=True)
 class SponsorshipPlan:
     scenario: str

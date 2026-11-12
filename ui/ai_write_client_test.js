@@ -48,6 +48,22 @@ async function main(){
     requestKey:key,topic:'Tumblers',platform:'facebook',needsMedia:true,
     includeImagePrompt:true});
   assert.equal(held.reason,'already_completed');
+  for(const reason of ['operator_paused',
+                       'user_estimated_budget_reached',
+                       'historical_estimated_cost_unknown']){
+    const result=await generate({...base,
+      fetchImpl:async()=>({ok:true,json:async()=>({created:false,
+        tenant_id:'shop',reason,publishing_enabled:false})}),
+      requestKey:key,topic:'Tumblers',platform:'facebook',
+      needsMedia:true,includeImagePrompt:true});
+    assert.equal(result.reason,reason);
+  }
+  await assert.rejects(()=>generate({...base,
+    fetchImpl:async()=>({ok:true,json:async()=>({created:false,
+      tenant_id:'shop',reason:'some-secret',
+      publishing_enabled:false})}),
+    requestKey:key,topic:'Tumblers',platform:'facebook',
+    needsMedia:true,includeImagePrompt:true}),TypeError);
   await assert.rejects(()=>generate({...base,
     fetchImpl:async()=>({ok:true,json:async()=>({created:false,
       tenant_id:'other',reason:'already_completed',publishing_enabled:false})}),
