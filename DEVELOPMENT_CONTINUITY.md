@@ -1,5 +1,13 @@
 # BAM development continuity checkpoint
 
+## Owner-private PostgreSQL team roster candidate — November 12, 2026
+
+**Last fully verified state:** PR #50 merged as `dd0b3210258bbe3a7200cf0f8540135af827c930`; [full merged-main Actions 43316746266](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43316746266) **success**; both `main` and `development/phase-3-5-account-directory` safely synchronized. Previous PR #50 CI fixture failure (nonhex synthetic ID) was corrected and the final exact-head PR CI passed.
+
+**Current unverified candidate:** `neon_session_team_contract.py` + tests, owner-private roster adapter method and disposable real PostgreSQL regressions. This is a *read-only* version of the existing offline team roster: no role mutations, email invitations, signup, public gateway or publication. Selects the current owner through a hashed bearer session in the SQL and filters all other-business members; redacts unverified/disabled target emails. Exact-head PR CI → merge main only if green → exact post-merge main CI → non-force development fast-forward.
+
+**Standing limits:** $0 additional cost; only public standard GitHub runners and local fixtures. No new Render/Neon hosting, no EdgePilot resource sharing, no paid AI, public identity, or live social publishing. The code remains offline Alpha. Older unverified headings below are historical.
+
 ## Authenticated held-draft inbox page candidate — November 12, 2026
 
 **Last fully verified GitHub baseline:** PR #49 merged at `e8b696cb9fc4aa59b9adbcc112b4668e326df3c5`. Full [merged-main Actions 43312549398](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43312549398) **success**, and `main` and `development/phase-3-5-account-directory` synchronized without force.

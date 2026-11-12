@@ -18,6 +18,8 @@ from neon_session_collaboration_contract import (
     prepare_session_pending_owner_invitations)
 from neon_session_inbox_contract import (
     prepare_session_inbox_page,summarize_inbox_page)
+from neon_session_team_contract import (
+    prepare_session_owner_team_roster,summarize_owner_team_roster)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -82,6 +84,14 @@ class EphemeralSessionPostgres:
                 'items':[{'invitation_id':r[0],'email':r[1],
                           'role':r[2],'expires_at':r[3]} for r in rows],
                 'publishing_enabled':False,'posts_scheduled':0}
+
+    def read_owner_team_roster(self,*,raw_session_token,tenant_id,
+                               server_now):
+        sql,params=prepare_session_owner_team_roster(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            server_now=server_now)
+        rows=self._conn.execute(sql,params).fetchall()
+        return summarize_owner_team_roster(rows,tenant_id=tenant_id)
 
     def update_draft_priority(self,*,raw_session_token,tenant_id,request_id,
                               expected_priority_token,priority,server_now):
