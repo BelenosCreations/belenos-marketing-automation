@@ -65,7 +65,7 @@ and it adds no fencing to BAM's runtime.
 python -m unittest -v test_neon_disposable_split_commit_rehearsal
 ```
 
-A future design review needs transaction-bound output receipts in the selected
-database, independently authenticated recovery authorization, separate handling
-for missing receipts and uncertain provider results, and tested rollback for
-both database and storage effects.
+The [AI request recovery design](MIGRATION_AI_REQUEST_RECOVERY.md) maps
+those receipts to the actual stores, separates uncertain provider outcomes
+from committed output, and rehearses database locking and rollback in CI.
+Independent recovery authorization and storage rollback remain open.

@@ -1,3 +1,10 @@
+## AI request recovery
+
+The [AI request recovery design](MIGRATION_AI_REQUEST_RECOVERY.md) records
+draft and receipt transaction boundaries and how to hold uncertain provider
+outcomes. The operator authentication, durable authority and provider
+reconciliation required for private Beta still need operational evidence.
+
 ## Alternate writer and recovery review
 
 The [alternate writer inventory and rehearsal](MIGRATION_ALTERNATE_WRITER_INVENTORY.md)

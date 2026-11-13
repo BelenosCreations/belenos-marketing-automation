@@ -1,3 +1,10 @@
+## Offline AI request recovery design
+
+The [AI request recovery design](MIGRATION_AI_REQUEST_RECOVERY.md) traces
+claims, reservations, draft writes and completion in the existing stores.
+Disposable tests exercise draft and receipt rollback and PostgreSQL freeze
+lock ordering. Requests with uncertain provider outcomes remain held.
+
 ## Alternate writer inventory and offline recovery rehearsal
 
 The [alternate writer inventory](MIGRATION_ALTERNATE_WRITER_INVENTORY.md)

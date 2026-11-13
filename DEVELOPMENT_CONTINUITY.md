@@ -8,12 +8,15 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 
 ## Last independently verified engineering checkpoint (2026-11-13)
 
+- Documentation PR **#117** passed exact-head Actions [#43456225700](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43456225700) at `8f552a81b037e7bb976bc7e9760716bbf0be3861`. Merged-main Actions [#43456564261](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43456564261) passed at `d3bffa1cf935d6ed15090f8cfb8f06b7bbf4a886`. Main and development were independently confirmed identical, with no open PRs before the next candidate.
 - PR **#116** inventoried alternate repository writers and tested the crash window between saving a synthetic AI draft and finalizing its request. After a freeze, recovery finalized a matching committed receipt without creating another draft. Deployment, provider reconciliation and operator authorization remain unverified. See [the inventory and rehearsal](MIGRATION_ALTERNATE_WRITER_INVENTORY.md).
 - Exact-head Actions [#43455446012](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43455446012) passed at `0cd5b540ee6fb8166db4934eafcef16bb5d866bf`. Merged-main Actions [#43455805907](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43455805907) passed at `110c34349cb463f98ac16665913f3cea5a946cf6`.
 - After #116, main and development matched following a non-force fast-forward, with zero divergence and no open PRs.
 - PRs **#110**, **#112** and **#114** reviewed local gateway writers. PR **#115** refreshed the prior handoff and passed merged-main Actions #43454318871.
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above.
+
+The next candidate maps the current AI stores to [request recovery design](MIGRATION_AI_REQUEST_RECOVERY.md) and adds SQLite interruption and disposable PostgreSQL receipt and freeze tests. Verify exact-head and merged-main Actions before recording it as a completed milestone.
 
 ## Next safe development milestone
 

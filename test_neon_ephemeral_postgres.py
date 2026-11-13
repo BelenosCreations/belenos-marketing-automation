@@ -501,6 +501,108 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute("""SELECT COUNT(*)
             FROM bam_ai_cost_events WHERE tenant_id='shop-b'""").fetchone()[0],1)
 
+    def test_ai_draft_and_receipt_commit_or_rollback_together(self):
+        scope = ('shop-a', self.a)
+        request_key, draft_id = 'a'*32, 'b'*32
+        request_insert = """INSERT INTO bam_ai_generation_requests
+            (tenant_id,subject_id,request_key,request_fingerprint,status,created_at)
+            VALUES (%s,%s,%s,%s,'in_progress',100)"""
+        self.conn.execute(request_insert, (*scope, request_key, 'c'*64))
+        # CI-only receipt shape using the actual migration preview tables.
+        self.conn.execute("""CREATE TABLE ci_ai_output_receipt (
+            tenant_id TEXT NOT NULL, subject_id TEXT NOT NULL,
+            request_key TEXT NOT NULL, draft_id TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, subject_id, request_key),
+            FOREIGN KEY (tenant_id, subject_id, request_key)
+                REFERENCES bam_ai_generation_requests,
+            FOREIGN KEY (tenant_id, subject_id, draft_id)
+                REFERENCES bam_ai_draft_components
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_output_receipt")
+        reader = self._connect()
+        self.addCleanup(reader.close)
+        draft_insert = """INSERT INTO bam_ai_draft_components
+            (tenant_id,subject_id,draft_id,platform,post_text,needs_media,
+             revision,created_at,updated_at)
+            VALUES (%s,%s,%s,'facebook','Synthetic draft',0,1,100,100)"""
+        receipt_insert = "INSERT INTO ci_ai_output_receipt VALUES (%s,%s,%s,%s)"
+
+        # A crash after writing the draft but before recording its receipt
+        # rolls back the uncommitted draft when the worker connection closes.
+        worker = self._connect()
+        try:
+            worker.execute("BEGIN")
+            worker.execute(draft_insert, (*scope, draft_id))
+        finally:
+            worker.close()
+        self.assertEqual(reader.execute(
+            "SELECT count(*) FROM bam_ai_draft_components").fetchone(), (0,))
+
+        # A receipt for a different subject cannot reference this draft.
+        other_scope = ('shop-a', self.b)
+        self.conn.execute(request_insert, (*other_scope, request_key, 'c'*64))
+        with self.assertRaises(self.psycopg.errors.ForeignKeyViolation):
+            with self.conn.transaction():
+                self.conn.execute(draft_insert, (*scope, draft_id))
+                self.conn.execute(receipt_insert, (*other_scope, request_key, draft_id))
+        self.assertEqual(reader.execute(
+            "SELECT count(*) FROM bam_ai_draft_components").fetchone(), (0,))
+
+        with self.conn.transaction():
+            self.conn.execute(draft_insert, (*scope, draft_id))
+            self.conn.execute(receipt_insert, (*scope, request_key, draft_id))
+            self.assertEqual(reader.execute(
+                "SELECT count(*) FROM ci_ai_output_receipt").fetchone(), (0,))
+        self.assertEqual(reader.execute("""SELECT r.status, d.draft_id
+            FROM ci_ai_output_receipt AS o
+            JOIN bam_ai_draft_components AS d USING (tenant_id,subject_id,draft_id)
+            JOIN bam_ai_generation_requests AS r USING (tenant_id,subject_id,request_key)
+            """).fetchall(), [('in_progress', draft_id)])
+        with self.assertRaises(self.psycopg.errors.UniqueViolation):
+            self.conn.execute(receipt_insert, (*scope, request_key, draft_id))
+
+    def test_ai_epoch_lock_orders_writes_against_freeze(self):
+        self.conn.execute("""CREATE TABLE ci_ai_epoch (
+            id INTEGER PRIMARY KEY CHECK (id=1), generation BIGINT NOT NULL,
+            frozen BOOLEAN NOT NULL
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_epoch")
+        self.conn.execute("INSERT INTO ci_ai_epoch VALUES (1,1,FALSE)")
+        operator = self._connect()
+        self.addCleanup(operator.close)
+        admit_and_write = """WITH admission AS (
+            SELECT id FROM ci_ai_epoch
+            WHERE id=1 AND generation=%s AND NOT frozen FOR SHARE NOWAIT
+        )
+        INSERT INTO bam_ai_generation_requests
+            (tenant_id,subject_id,request_key,request_fingerprint,status,created_at)
+        SELECT 'shop-a',%s,%s,%s,'in_progress',100 FROM admission"""
+        freeze = "UPDATE ci_ai_epoch SET generation=2, frozen=TRUE WHERE id=1"
+
+        # A pre-existing admitted writer holds the shared row lock until
+        # its transaction ends. The freeze cannot commit past that lock.
+        with self.conn.transaction():
+            self.assertEqual(self.conn.execute(
+                admit_and_write, (1, self.a, 'a'*32, 'c'*64)).rowcount, 1)
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                with operator.transaction():
+                    operator.execute("SET LOCAL lock_timeout = '250ms'")
+                    operator.execute(freeze)
+
+        # If the operator obtains the conflicting lock first, a worker
+        # cannot admit itself using the previously visible generation.
+        with operator.transaction():
+            operator.execute(freeze)
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                self.conn.execute(admit_and_write, (1, self.a, 'b'*32, 'c'*64))
+        self.assertEqual(self.conn.execute(
+            admit_and_write, (2, self.a, 'b'*32, 'c'*64)).rowcount, 0)
+        operator.execute("UPDATE ci_ai_epoch SET generation=3, frozen=FALSE WHERE id=1")
+        self.assertEqual(self.conn.execute(
+            admit_and_write, (1, self.a, 'b'*32, 'c'*64)).rowcount, 0)
+        self.assertEqual(self.conn.execute(
+            admit_and_write, (3, self.a, 'b'*32, 'c'*64)).rowcount, 1)
+
     def test_ai_budget_state_never_unpauses_or_approves_paid_ai(self):
         self.assertEqual(self.conn.execute("""SELECT paused
             FROM bam_ai_operator_control WHERE control_id=1"""
