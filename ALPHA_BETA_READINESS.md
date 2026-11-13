@@ -128,3 +128,8 @@ An enabled transport now requires a trusted operator guard, checked before resol
 ## Provider response identity and estimated cost events (offline Alpha)
 
 The simulated Responses execution boundary now derives a per-response private usage reference and passes it to the scoped, deduplicating estimated-cost ledger. Missing or malformed IDs fail closed, reused IDs with conflicting counts are refused, and cross-business isolation is tested. Code `f95f0820` passed [GitHub Actions 43145005354](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43145005354). This is **not verified provider billing**, a complete reservation-to-receipt ledger, or a real OpenAI activation. Beta still requires independent reconciliation and owner-approved paid API pricing/credentials.
+
+
+### Media revocation proof boundary (November 12, 2026)
+
+An optional offline validation path now checks independent scanner and rights HMAC evidence against an independently keyed revocation chain and externally supplied head pin. Synthetic tests demonstrate rejection of deleted, reordered, altered and replayed revocation events. This is **not an active scanner or licensed-media determination**: scan engine operation, consent/proof verification, durable chain persistence, authoritative newest-head custody, trusted publisher gating and cross-device beta tests remain blockers.

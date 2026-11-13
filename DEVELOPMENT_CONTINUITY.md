@@ -498,3 +498,8 @@ Public backend hosting (provider, credentials, persistence, budget and security)
 ### 2026-11-12 — Disposable encrypted archive durability step (pending merged-main CI)
 - New `bam_offline_durable_archive.py` demonstrates no-overwrite encrypted ciphertext persistence in a trusted local 0700 directory, fsync and readback pin/AEAD verification. The only test data are synthetic bounded envelopes; no customer rows or secrets are persisted. The pin must be anchored independently from the archive to have recovery value.
 - Still missing production key custody and rotation, large streaming backups, durable offsite secondary storage, retention/immutability policy enforcement, an operator restore drill with data parity, and authorized hosting. No $0-budget change.
+
+
+### 2026-11-12 — Media evidence revocation checkpoint (pending CI)
+- Signed claim checking can now be paired with HMAC-chained revocation records and an independently expected audit head. Revocation targets the exact signed claim, so tenant/media substitution fails under the existing evidence binding contract.
+- Chain is local/in-memory only; no authoritative durable latest-head registry exists. A caller supplying an obsolete but matching chain and pin cannot be detected unless the pin comes from a trusted independent head service. Thus the new module is evidence plumbing, not Beta-ready safety scanning/rights adjudication. No external service or paid resource was activated.

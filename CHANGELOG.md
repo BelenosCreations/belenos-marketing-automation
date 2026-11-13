@@ -2716,3 +2716,9 @@ The original `main` branch approved BAM's branding: light/dark SVG wordmarks, ap
 - Added atomic, no-overwrite and fsync-backed local ciphertext archive prototype reusing authenticated AES-256-GCM synthetic envelopes and a separately pinned ciphertext SHA-256.
 - Added tests for durable roundtrip, wrong-key/modified bytes, duplicate names, untrusted directories, pathname injection and symlink/hardlink exposure.
 - Preserved no-activation CI gate, no key persistence, no production PG dump, no offsite replication or retention execution.
+
+
+### 2026-11-12 — Signed media revocation proof (PR candidate)
+- Added independently keyed authenticated revocation chain for exact signed malware-scan and usage-rights claims; revision and removal require a matching independently pinned head.
+- Added wrong-key, reordering, log truncation, replay, cross-tenant and rights-withdrawal regressions.
+- No actual scan, legal proof review, hosted ledger, media state transition or publication is performed.
