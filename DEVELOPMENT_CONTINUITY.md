@@ -1,3 +1,11 @@
+## Verified merged-main after #105; candidate #106 documentation (2026-11-13)
+
+Repository BelenosCreations/belenos-marketing-automation, development branch development/phase-3-5-account-directory. **Latest independently verified merged-main e8f5dd509463c83235724920e1beb23fb73fede0**, merged-main Actions **#43435718147 PASSED**, exact-head #105 Actions **#43435447478 PASSED**, last PR head 5614680051aa569d39c6b844c644df70959d3d5b. PR #105 merged, main/development non-force FF synchronized and independently compared identical, zero ahead/behind; no open PRs. Initial #105 run #43435037937 failed on over-broad synthetic test fixture, then fixed and all 1332 tests passed.
+
+#105 adds CI-only read-only AST possible direct-call tracing from WSGI, scheduled/callback/worker candidate entrypoints to SQL/filesystem/job mutation sites; unresolved and unmatched writes remain visible. Source inspection confirms BAMOfflineGateway.__call__ dispatches requests to many bound self.*_wsgi instances, which the simple static graph cannot conclusively resolve. See MIGRATION_DISPATCH_REVIEW.md. #106 proposes documentation-only reviewer notes and checkpoint; do not claim it verified before exact-head plus merged-main Actions, then non-force FF and independent branch parity.
+
+Remaining blockers: full deployed Python/non-Python, dynamic handler/callback/job/retry writer review; persistent shared generation with all writers transaction-fenced and independent authenticated operator/head/key custody; reviewed PostgreSQL null/default/JSON/constraint/identity/tenant semantics; off-host independently restorable encrypted backups and measured rollback; genuine ClamAV publisher signature/binary/isolation; human rights and revocation; hosted auth/session/CSRF/tenant/proxy/abuse/security testing and explicit owner Beta authorization. $0 extra; do not touch Render/Neon/paid AI/social publishing/EdgePilot/customer data; migration and production integrations disabled.
+
 ## Candidate PR #105; verified recovery starting point #104 (2026-11-13)
 
 Verified merged-main 0cd22728bf63966252d7893dde526f44c986105f, GitHub Actions #43430594571 PASSED. Main and development/phase-3-5-account-directory independently compared identical, 0 ahead/behind; no open PRs. PRs #102–#104 completed and CI independently verified.

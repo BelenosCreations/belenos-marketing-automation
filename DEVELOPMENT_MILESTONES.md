@@ -1,3 +1,7 @@
+## Independently verified #105 and candidate #106 (2026-11-13)
+
+#105 merged-main e8f5dd509463c83235724920e1beb23fb73fede0 with exact-head Actions #43435447478 and merged-main Actions #43435718147 both PASSED. Its new CI-only source trace does basic Python direct-call alias mapping and retains unresolved/dynamic calls and untraced mutation candidates. Review of bam_offline_gateway.py shows attribute-dispatched WSGI handlers remain outside proven coverage. Development fast-forward 0/0. #106 is documentation-only and requires its own exact-head and merged-main CI. All production integrations remain disabled; $0 incremental cost.
+
 ## Candidate #105 (2026-11-13) — offline possible writer dispatch review
 
 #104 independently verified main 0cd22728bf63966252d7893dde526f44c986105f and Actions #43430594571 PASSED, development identical 0/0. #105 proposes read-only Python AST call-path hints plus explicit unresolved/unmapped write inventory and adversarial tests. Not full hosted writer coverage, transaction-bound distributed generation authority, or Beta authorization. CI and merge checks pending; $0 additional cost, integrations disabled.

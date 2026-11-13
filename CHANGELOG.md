@@ -1,3 +1,9 @@
+## Verified #105; candidate #106 recovery review (2026-11-13)
+
+- PR #105: CI-only conservative Python/WSGI/worker/callback possible source-call paths, unknown dynamic calls, unmapped writer sites and stable digest bound to the prior writer inventory; synthetic regression tests. First test run #43435037937 failed on an over-broad synthetic job fixture; repaired before final verification.
+- Verified exact-head 5614680051aa569d39c6b844c644df70959d3d5b Actions #43435447478 PASSED; merged-main e8f5dd509463c83235724920e1beb23fb73fede0 Actions #43435718147 PASSED; main/development fast-forward identical 0/0, no open PRs.
+- #106 candidate documentation-only: concrete source-level dispatch review notes, remaining dynamic handler bindings, risks and recovery checkpoint. No runtime read/write behavior or deployments changed. Exact-head/merged-main CI pending; no real migration, Beta, paid APIs or publishing. $0 incremental spend.
+
 ## Candidate #105 — offline ingress-to-writer static trace (2026-11-13)
 
 - Started from independently verified #104 SHA 0cd22728bf63966252d7893dde526f44c986105f, main Actions #43430594571 PASSED, branches identical 0/0, zero open PRs.
