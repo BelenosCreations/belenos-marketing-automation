@@ -108,6 +108,37 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
 
+
+    def test_ci_restore_rejects_unreviewed_constraints_and_indexes(self):
+        """Catalog drift must roll back target and allow clean retry."""
+        from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
+        cases=(
+            ('ALTER TABLE content_requests ADD CONSTRAINT '
+             'ci_restore_unreviewed_check CHECK (revision>=0)',
+             'ALTER TABLE content_requests '
+             'DROP CONSTRAINT ci_restore_unreviewed_check'),
+            ('CREATE INDEX ci_restore_unreviewed_idx '
+             'ON content_requests(priority)',
+             'DROP INDEX ci_restore_unreviewed_idx'),
+        )
+        for introduce,repair in cases:
+            with self.subTest(introduce=introduce.split()[0]):
+                self.conn.execute(introduce)
+                try:
+                    with self.assertRaisesRegex(ValueError,
+                                                'constraint or index shape mismatch'):
+                        run_ephemeral_ci_logical_restore(self.conn)
+                    self.assertIsNone(self.conn.execute(
+                        "SELECT to_regnamespace('bam_ci_restore_probe')"
+                    ).fetchone()[0])
+                    self.assertEqual(self.conn.execute(
+                        'SELECT COUNT(*) FROM content_requests').fetchone()[0],2)
+                finally:
+                    self.conn.execute(repair)
+                result=run_ephemeral_ci_logical_restore(self.conn)
+                self.assertEqual(result['constraint_and_index_shapes_checked'],47)
+                self.assertFalse(result['production_restore_validated'])
+
     def test_ci_restore_rejects_unreviewed_column_schema_drift(self):
         """A source table with a new/changed column must not restore as normal."""
         from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
