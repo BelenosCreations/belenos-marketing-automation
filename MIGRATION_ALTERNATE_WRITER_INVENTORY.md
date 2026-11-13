@@ -112,6 +112,13 @@ current receipt, assume those roles, alter the functions or restore the
 authority and witness store together. Repository source alone cannot
 identify those deployed principals.
 
+The witness journal and grant review at `15fa21a4d6fa8a937b59c09ea06bb72c7820c4d6`
+also identified evidence needed for function owners and inherited roles.
+Collect who can change function definitions, assume owners, add members,
+change public execution defaults, insert or restore witness rows, or reset
+the independent latest-head pin. Source and fixture grants document the
+boundary to test. Runtime identity and deployment evidence remain open.
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).

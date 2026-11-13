@@ -1320,8 +1320,10 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
     def test_ci_recovery_stage_acknowledgement_and_write_grants(self):
         with self.conn.transaction(force_rollback=True):
-            for role in ('ci_recovery_stager', 'ci_recovery_witness',
-                         'ci_recovery_writer', 'ci_recovery_definer'):
+            callers = ('ci_recovery_stager', 'ci_recovery_witness', 'ci_recovery_writer')
+            owners = ('ci_recovery_stage_owner', 'ci_recovery_ack_owner',
+                      'ci_recovery_admit_owner')
+            for role in (*callers, *owners, 'ci_recovery_reader', 'ci_recovery_inherited'):
                 self.conn.execute(f"CREATE ROLE {role} NOLOGIN")
                 self.conn.execute(f"GRANT USAGE ON SCHEMA bam_ci_integration TO {role}")
             self.conn.execute("""CREATE TABLE ci_recovery_gate (
@@ -1338,10 +1340,20 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             self.conn.execute("""CREATE TABLE ci_recovery_write (
                 operation TEXT PRIMARY KEY, generation INTEGER NOT NULL
             )""")
-            self.conn.execute("""GRANT SELECT, UPDATE ON ci_recovery_gate
-                TO ci_recovery_definer""")
-            self.conn.execute("GRANT SELECT ON ci_recovery_witness_pin TO ci_recovery_definer")
-            self.conn.execute("GRANT INSERT ON ci_recovery_write TO ci_recovery_definer")
+            self.conn.execute("GRANT ci_recovery_writer TO ci_recovery_inherited")
+            self.conn.execute("""GRANT SELECT ON ci_recovery_gate
+                TO ci_recovery_stage_owner,ci_recovery_ack_owner,ci_recovery_admit_owner""")
+            self.conn.execute("""GRANT UPDATE (generation,head,opened) ON ci_recovery_gate
+                TO ci_recovery_stage_owner""")
+            self.conn.execute("GRANT UPDATE (opened) ON ci_recovery_gate TO ci_recovery_ack_owner")
+            self.conn.execute("ALTER TABLE ci_recovery_gate ADD COLUMN lock_permission INTEGER")
+            self.conn.execute("""GRANT UPDATE (lock_permission) ON ci_recovery_gate
+                TO ci_recovery_admit_owner""")
+            self.conn.execute("""GRANT SELECT ON ci_recovery_witness_pin
+                TO ci_recovery_stage_owner,ci_recovery_ack_owner""")
+            self.conn.execute("""GRANT SELECT (generation) ON ci_recovery_witness_pin
+                TO ci_recovery_admit_owner""")
+            self.conn.execute("GRANT INSERT ON ci_recovery_write TO ci_recovery_admit_owner")
 
             self.conn.execute("""CREATE FUNCTION ci_recovery_stage(expected INTEGER)
                 RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -1362,6 +1374,10 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                     WHERE a.id=1 AND a.generation=expected AND NOT a.opened
                     AND p.generation=a.generation AND p.head=a.head
                     AND p.receipt_digest=sha256(supplied)
+                    AND NOT EXISTS (
+                        SELECT 1 FROM bam_ci_integration.ci_recovery_witness_pin AS newer
+                        WHERE newer.generation>p.generation
+                    )
                     RETURNING a.id
                 )
                 SELECT EXISTS (SELECT 1 FROM accepted)
@@ -1370,7 +1386,11 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
                 BEGIN
                     PERFORM 1 FROM bam_ci_integration.ci_recovery_gate
-                        WHERE id=1 AND generation=expected AND opened FOR SHARE NOWAIT;
+                        WHERE id=1 AND generation=expected AND opened
+                        AND NOT EXISTS (
+                            SELECT 1 FROM bam_ci_integration.ci_recovery_witness_pin
+                            WHERE generation>expected
+                        ) FOR SHARE NOWAIT;
                     IF NOT FOUND THEN
                         RETURN FALSE;
                     END IF;
@@ -1378,16 +1398,37 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                     RETURN TRUE;
                 END
                 $$""")
-            for function, role in (
-                ('ci_recovery_stage(INTEGER)', 'ci_recovery_stager'),
-                ('ci_recovery_ack(INTEGER,BYTEA)', 'ci_recovery_witness'),
-                ('ci_recovery_admit(INTEGER,TEXT)', 'ci_recovery_writer'),
-            ):
+            functions = ('ci_recovery_stage(INTEGER)', 'ci_recovery_ack(INTEGER,BYTEA)',
+                         'ci_recovery_admit(INTEGER,TEXT)')
+            for function, role, owner in zip(functions, callers, owners, strict=True):
                 self.conn.execute(f"REVOKE ALL ON FUNCTION {function} FROM PUBLIC")
-                self.conn.execute(f"ALTER FUNCTION {function} OWNER TO ci_recovery_definer")
+                self.conn.execute(f"ALTER FUNCTION {function} OWNER TO {owner}")
                 self.conn.execute(f"GRANT EXECUTE ON FUNCTION {function} TO {role}")
 
+            self.conn.execute("SET LOCAL ROLE ci_recovery_reader")
+            for function in functions:
+                self.assertFalse(self.conn.execute(
+                    "SELECT has_function_privilege(%s,'EXECUTE')", (function,)).fetchone()[0])
+            for role in (*callers, *owners, 'ci_recovery_inherited'):
+                self.conn.execute(f"SET LOCAL ROLE {role}")
+                for operation in ("UPDATE ci_recovery_witness_pin SET head='forged'",
+                                  "DELETE FROM ci_recovery_witness_pin",
+                                  "INSERT INTO ci_recovery_witness_pin VALUES (9,'forged',NULL)"):
+                    with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
+                        with self.conn.transaction():
+                            self.conn.execute(operation)
+
             for role, forbidden, params in (
+                ('ci_recovery_reader', 'SELECT ci_recovery_stage(1)', ()),
+                ('ci_recovery_reader', 'SELECT ci_recovery_ack(2,%s)', (receipt,)),
+                ('ci_recovery_reader', 'SELECT ci_recovery_admit(2,%s)', ('public',)),
+                ('ci_recovery_inherited', 'SELECT ci_recovery_ack(2,%s)', (receipt,)),
+                ('ci_recovery_inherited', 'SELECT ci_recovery_stage(1)', ()),
+                ('ci_recovery_inherited', 'UPDATE ci_recovery_gate SET opened=TRUE', ()),
+                ('ci_recovery_admit_owner', 'UPDATE ci_recovery_gate SET opened=TRUE', ()),
+                ('ci_recovery_admit_owner', 'SELECT receipt_digest FROM ci_recovery_witness_pin', ()),
+                ('ci_recovery_ack_owner', 'UPDATE ci_recovery_gate SET generation=9', ()),
+                ('ci_recovery_stage_owner', "INSERT INTO ci_recovery_write VALUES ('owner',2)", ()),
                 ('ci_recovery_stager', 'SELECT ci_recovery_ack(2,%s)', (receipt,)),
                 ('ci_recovery_stager', 'SELECT ci_recovery_admit(2,%s)', ('stager',)),
                 ('ci_recovery_stager', 'SELECT * FROM ci_recovery_witness_pin', ()),
@@ -1409,9 +1450,21 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             for generation in (1, 2):
                 self.assertEqual(self.conn.execute("SELECT ci_recovery_admit(%s,'pending')",
                                                    (generation,)).fetchone(), (False,))
+            # Independently retained evidence advances before the earlier
+            # pending acknowledgement is consumed.
+            self.conn.execute("RESET ROLE")
+            newer_receipt = b'newer independently retained receipt'
+            self.conn.execute("INSERT INTO ci_recovery_witness_pin VALUES (3,'third',%s)",
+                              (hashlib.sha256(newer_receipt).digest(),))
+            self.conn.execute("SET LOCAL ROLE ci_recovery_witness")
+            self.assertEqual(self.conn.execute("SELECT ci_recovery_ack(2,%s)",
+                                               (receipt,)).fetchone(), (False,))
+            self.conn.execute("SET LOCAL ROLE ci_recovery_stager")
+            self.assertEqual(self.conn.execute("SELECT ci_recovery_stage(2)").fetchone(), (True,))
             self.conn.execute("SET LOCAL ROLE ci_recovery_witness")
             for generation, supplied, expected in (
-                (1, receipt, False), (2, b'wrong', False), (2, receipt, True), (2, receipt, False),
+                (2, receipt, False), (3, receipt, False),
+                (3, newer_receipt, True), (3, newer_receipt, False),
             ):
                 self.assertEqual(self.conn.execute("SELECT ci_recovery_ack(%s,%s)",
                                                    (generation, supplied)).fetchone(), (expected,))
@@ -1419,10 +1472,19 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             self.assertEqual(self.conn.execute(
                 "SELECT ci_recovery_admit(1,'stale')").fetchone(), (False,))
             self.assertEqual(self.conn.execute(
-                "SELECT ci_recovery_admit(2,'current')").fetchone(), (True,))
+                "SELECT ci_recovery_admit(2,'superseded')").fetchone(), (False,))
+            self.conn.execute("SET LOCAL ROLE ci_recovery_inherited")
+            self.assertEqual(self.conn.execute(
+                "SELECT ci_recovery_admit(3,'current')").fetchone(), (True,))
+            self.conn.execute("RESET ROLE")
+            self.conn.execute("INSERT INTO ci_recovery_witness_pin VALUES (4,'fourth',%s)",
+                              (hashlib.sha256(b'next witness record').digest(),))
+            self.conn.execute("SET LOCAL ROLE ci_recovery_inherited")
+            self.assertEqual(self.conn.execute(
+                "SELECT ci_recovery_admit(3,'stale-open')").fetchone(), (False,))
             self.conn.execute("RESET ROLE")
             self.assertEqual(self.conn.execute("SELECT * FROM ci_recovery_write").fetchall(),
-                             [('current', 2)])
+                             [('current', 3)])
 
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.

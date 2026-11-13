@@ -446,3 +446,32 @@ function requires a matching independently seeded receipt digest. The
 trusted fixture setup seeds that digest. Deployed receipt authentication,
 function ownership, grant inheritance and direct client coverage still
 require operational verification.
+
+### Signed witness journal and function owner grants
+
+A separate disposable SQLite file retains ordered, Ed25519-signed witness
+records. Each record binds the previous record digest, generation,
+revocation state pin and promotion receipt. An independent fixture observer
+retains the latest digest. After a lost acknowledgement, a fresh connection
+can repeat the exact append against that digest without duplicating a row.
+A valid older backup still verifies under its historical digest and fails
+under the latest digest. A completion signing key cannot verify journal
+records.
+
+The authority fixture closes admission before publishing a newer witness.
+While it holds the write reservation, a second connection with the previous
+signed tuple cannot reconcile. Retrying after commit also fails because
+the generation and state have changed. Current witness evidence and
+receipt reconciliation are required before review or a test write. Journal
+and authority files are local fixtures. The ordering and latest-head
+observer must be established independently for any operational design.
+
+The PostgreSQL rehearsal assigns separate owners to stage, acknowledgement
+and admission functions. The admission owner has the lock-column grant
+and reads only witness generation metadata. A role inheriting the writer
+grant can invoke admission but cannot stage, acknowledge, or reopen the
+authority row. Public function execution and witness writes are refused.
+A newer pin blocks an older pending acknowledgement and invalidates an
+older open generation on a subsequent admission. These tests observe
+already-committed witness rows. Concurrent witness updates, external
+latest-head custody and deployed role membership remain operational gates.
