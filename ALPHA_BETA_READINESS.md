@@ -1,3 +1,7 @@
+## Verified #102–#103 do not unblock private Beta (2026-11-13)
+
+Exact-head/merged-main regression tests passed for both CI-only source-writer inventory and disposable SQLite epoch-fence rehearsal; merged-main #103 SHA `099b79e5a92035af812d08ed6f612405fffac5cb` Actions #43429752709 PASSED. No operational WSGI/job/callback writer fence, independent generation/head/key custody, authenticated operator/rollback, real offsite verified restore, genuine ClamAV publisher provenance/worker, human media rights/revocation or deployed multi-tenant session/CSRF/proxy/abuse acceptance. Private Beta remains **blocked**, no automatic posting/paid AI, no deployment or new cost.
+
 ## Candidate #103 — local SQLite generation test is not a Beta deployment control
 
 The disposable CI demonstration can reject test canary writes from stale epochs across fixture connection restarts. It does not fence actual BAM API handlers, scheduled jobs or provider callbacks, nor prove off-host recovery, independent authority or operator authentication. Private Beta still blocked pending all hosted/authentication/CSRF/tenant/proxy/abuse and media/backup/migration operational requirements. No infrastructure or paid integration activated; $0 incremental cost.

@@ -1,3 +1,7 @@
+## #102–#103 verified offline; hosted infrastructure unchanged (2026-11-13)
+
+#102 exact-head Actions #43428652129 and merged-main #43428902180 passed. #103 exact-head #43429490616 and merged-main #43429752709 passed; merged-main `099b79e5a92035af812d08ed6f612405fffac5cb`, main and development parity 0/0. Python source AST inventory and private generation transaction rehearsal are **not** actual hosted writer control, operator custody, offsite backup or measured restore. No new Render, Neon, subscriptions, public hosting, paid OpenAI generation, publishing or EdgePilot changes; Beta and cutover blocked; $0 incremental cost.
+
 ## Candidate #103 — synthetic generation transitions, no hosted write fence
 
 `neon_disposable_generation_authority.py` is CI-only: private disposable SQLite generation increments and test canary writes, never application/Render/Neon state. No real source or target database is locked; no WSGI or background task is gated. Independent generation custody, atomic cross-process admission, stale network participant rejection, operator approval, offsite recovery and measured rollback require future operator-reviewed architecture. Private Beta remains blocked; no new cost or activation.

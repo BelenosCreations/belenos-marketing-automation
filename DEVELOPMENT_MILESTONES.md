@@ -1,3 +1,7 @@
+## Verified PRs #102–#103 (2026-11-13), candidate #104 continuity
+
+#102: CI-only Python/WSGI writer-surface AST inventory and independent migration review plan, exact-head Actions #43428652129 PASSED, merged SHA `5ccff62cd27ffb2230026a8b008478a788e8c83f`, merged-main Actions #43428902180 PASSED. #103: disposable local SQLite generation authority/fence transaction rehearsal, exact-head Actions #43429490616 PASSED, merged SHA `099b79e5a92035af812d08ed6f612405fffac5cb`, merged-main Actions #43429752709 PASSED. Development fast-forward synchronized without force; 0 ahead/behind. #104 documentation candidate must pass both CI stages before being considered verified. No complete real writer fencing, independent epoch custody, customer migration, production rollback or Beta authorization; no production integrations or incremental cost.
+
 # BAM — Development Milestones and Historical Implementation Notes
 
 This document preserves detailed phase-by-phase development notes originally appended to the README. For the product overview, architecture and current state, see [README](README.md). For chronological changes, see [CHANGELOG](CHANGELOG.md).
