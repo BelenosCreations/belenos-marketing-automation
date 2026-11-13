@@ -1,3 +1,11 @@
+## First independently read source-dispatch evidence, November 13, 2026
+
+At merged-main e8f5dd509463c83235724920e1beb23fb73fede0, the reviewed source bam_offline_gateway.py has a disabled-by-default BAMOfflineGateway.__call__ WSGI dispatcher. It first checks its local-only gate, and then routes through *instance attributes*, for example self.auth_wsgi, self.invitation_accept_wsgi, self.invitation_wsgi, self.team_wsgi, self.preference_write_wsgi, self.facts_write_wsgi, self.calendar_wsgi, self.review_feedback_wsgi, self.ai_draft_edit_wsgi, self.content_revise_wsgi, self.content_write_wsgi, self.pending_media_wsgi, self.pending_status_wsgi and self.pending_discard_wsgi. These are source-level candidate invocations of supplied handler objects, not proof of deployed behavior or complete ingress/write coverage. The static graph in #105 does not follow most bound attributes, object construction or service dependencies. dev_http_gateway.py and any untracked worker/callback/provider ingress also require separate enumeration.
+
+Required before real migration: enumerate each actual deployed gateway and handler, HTTP method, identity/tenant check, state mutation, transaction commit, long-running retries and queue semantics; map any external storage/file paths; prove every actual writer obeys a shared persistent epoch at its write commit boundary; independently approve operator transitions and restore/rollback. Do not treat absent traces as read-only or deleted code. Existing source-only review does not authorize production.
+
+Verified #105 exact-head Actions #43435447478 PASSED and merged-main Actions #43435718147 PASSED at e8f5dd509463c83235724920e1beb23fb73fede0; development fast-forward identical 0/0. Candidate #106 is documentation-only with CI still pending. No customer data, migration, production connections, paid AI, publishing, Render, Neon or EdgePilot touched; $0 added spending.
+
 # CI-only candidate ingress-to-writer dispatch review
 
 This is an **incomplete source review**, not runtime execution, route validation,

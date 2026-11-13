@@ -1,3 +1,7 @@
+## Verified #105, candidate #106 documentation: private Beta remains blocked
+
+PR #105 source-only dispatch trace verified exact-head Actions #43435447478 and merged-main e8f5dd509463c83235724920e1beb23fb73fede0 Actions #43435718147; main/development synchronized 0/0. Source inspection of offline WSGI dispatcher confirms bound handler fanout that basic import-alias analysis cannot prove. None of the active app deployment, global writer fencing, independent operator authority/keys, offsite recovery, authentic ClamAV workers/signatures, human media rights or hostile hosted authentication/CSRF/tenant/proxy/abuse tests is thereby complete. #106 documentation CI pending. All production services, migration, social publishing, paid AI and EdgePilot remain disabled; $0 additional cost.
+
 ## Candidate #105 does not alter private Beta readiness
 
 CI-only syntactic WSGI/job/callback-to-write candidate graph with explicit unresolved and unmatched write sites is offline review evidence, not operational writer fencing or tested hosted security. Full deployment inventory, independent epoch authority, operator authentication, PostgreSQL mapping, offsite recoverable backups, genuine ClamAV provenance, media rights/revocation and hostile auth/session/CSRF/tenant/proxy/abuse tests remain blocked. No Beta release, external integration or customer migration; additional cost $0. Exact-head and merged-main Actions pending.
