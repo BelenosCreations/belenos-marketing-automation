@@ -153,6 +153,10 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
     if len(_TABLES)!=47 or len(set(_TABLES))!=47:
         raise ValueError('Unexpected reviewed table count')
     with conn.transaction():
+        # Keep every source export and final parity SELECT on one MVCC view.
+        # A concurrent writer must not splice two points in time together.
+        # DDL stays strictly in the disposable target schema.
+        conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
         # Deterministic schema name, transactional DDL and rollback-on-error.
         # A leftover probe schema must fail, never overwrite prior data.
         conn.execute('CREATE SCHEMA '+_RESTORE)
@@ -208,6 +212,7 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
         conn.execute('DROP SCHEMA '+_RESTORE+' CASCADE')
     return {'status':'ephemeral_ci_logical_restore_verified',
             'reviewed_tables_rehearsed':len(_TABLES)-1,
+            'consistent_source_snapshot_used':True,
             'column_shapes_checked':len(_TABLES),
             'constraint_and_index_shapes_checked':len(_TABLES),
             'migration_journal_rehearsed':True,

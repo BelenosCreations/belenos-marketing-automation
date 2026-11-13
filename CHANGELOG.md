@@ -1,5 +1,14 @@
 # Changelog
 
+## November 12, 2026 — Consistent-snapshot restore under concurrent edits (unverified candidate)
+
+- In CI-only PostgreSQL logical restore, set the transaction to REPEATABLE READ before any schema/data access. Exercise a second connection changing a source draft immediately after its table COPY; both exported rows and parity checks must use the original MVCC snapshot while the committed external edit survives. No live backup or point-in-time recovery is claimed.
+
+## November 12, 2026 — Independent signed media evidence contract (verified PR #67)
+
+- PR #67 merged as `fdc179b5ba8260458019cb1f8092f71d34604734`, exact-head Actions 43343292465 and [merged-main Actions 43343554641](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43343554641) passed; development synchronized without force.
+- Independent scanner-clean and rights-grant HMAC claims now undergo strict offline binding/signature/freshness checks. No actual scan, licensing review, worker integration, audit store, attachment-state change or publishing capability exists.
+
 ## November 12, 2026 — Signed media evidence contract (unverified candidate)
 
 - Add a pure server-side offline verifier for separate HMAC-authenticated malware-scan and channel-specific owned/licensed-rights attestations, bound to exact pending attachment ID, tenant, request, item, MIME and SHA-256. Reject altered, foreign, expired, future-dated and wrong-signer claims. Never change attachment state or authorize publishing; a signed statement alone does not prove a scan or license exists.

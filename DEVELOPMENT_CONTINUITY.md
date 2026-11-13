@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Active unverified milestone — consistent MVCC snapshot in disposable PostgreSQL restore
+
+**Verified baseline:** PR #67 merged `fdc179b5ba8260458019cb1f8092f71d34604734`, exact-head Actions 43343292465 and full [merged-main Actions 43343554641](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43343554641) passed. Development branch safely synchronized. PR #66 also fully verified. Historical candidate headings below are not current status.
+
+**Current candidate:** Before any query/DDL in the disposable second-schema PostgreSQL rehearsal transaction, select REPEATABLE READ isolation. Use a separate concurrent CI connection to mutate a source draft after export but before parity, proving the rehearsal uses a single consistent MVCC view and does not undo the writer's independently committed update. Exact PR-head CI then merge, post-merge main CI, non-force development sync. Further gates: real durable encrypted backups, key/retention/restore proof, secure production migration runner, private storage/trusted scanner and rights evidence audit. No hosting, paid APIs, provider publishing or EdgePilot shared services. Added budget $0.
+
 ## Current candidate — separate cryptographically signed media trust claims (November 12, 2026)
 
 **Last fully verified:** [PR #66](https://github.com/BelenosCreations/belenos-marketing-automation/pull/66) merged as `51944ce3b222979b6d5a69a1ee4dff9894224b3f`; exact-head Actions 43342519053 and [post-merge main Actions 43342715656](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43342715656) passed. `main` and `development/phase-3-5-account-directory` safely synchronized. PRs #61–#66 are historical completed work; prior 'candidate' paragraphs below are outdated.
