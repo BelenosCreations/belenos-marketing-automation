@@ -1,5 +1,8 @@
 # BAM private beta infrastructure — proposed, not authorized
 
+**Candidate PR #81 — read-only audit-durability rehearsal:** The offline event writer persists synthetic HMAC-linked revocations with fsync and inode/permission checks, but no trusted production signing service, immutable cross-host store, independent head custody, actual malware scan or licensed rights review exists. $0 and providers inactive.
+
+
 **Candidate PR #80 — recovery policy simulation:** Hash-linked, independently signed local encrypted-backup manifests can model rotation and expiration while refusing corrupt archives, but do not create an offsite recovery system, persistent authoritative head/pin custody, key storage, deletion scheduler, production backup, hosted environment or service authorization. Incremental spending remains $0.
 
 

@@ -1,5 +1,8 @@
 # BAM Alpha → Private Beta Readiness Gate
 
+**Candidate PR #81 — local revocation ledger proof, not Beta evidence authority:** Events can be durably appended and reloaded from a private offline directory against a separately supplied head. No production multi-tenant audit authority, retained independent pin, rights reviewer, ClamAV scanning execution, hosted media state update or release readiness. Private Beta remains blocked.
+
+
 **Candidate PR #80 — recovery-manifest evidence only:** Signed local ciphertext inventory, independent supplied head pin and key-rotation/retention simulation strengthen offline CI; they do not satisfy actual offsite backup, key escrow, immutable policy retention, independent disaster restoration or private Beta readiness. No hosting or publishing activation.
 
 

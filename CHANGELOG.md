@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-12 — Durable local synthetic media-revocation audit (PR #81 candidate)
+
+- Added bounded offline append-only HMAC event log with exclusive lock, atomic no-replace file publication, fsync and full independently pinned chain verification.
+- Added negative tests for head rollback, tampering, removed events, stale append, symlink/hardlink, unsafe permissions and inactive gate.
+- No persistent authoritative head, cross-host audit, actual scanner/reviewer, media approval or production authorization.
+
+
 ## 2026-11-12 — CI-only signed recovery manifests and key-rotation rehearsal (PR #80 candidate)
 
 - Added externally keyed, separately pinned HMAC manifest chain for local synthetic encrypted recovery points with signer/encryption key ID rotation and bounded retention metadata.

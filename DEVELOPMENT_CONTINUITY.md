@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+## PR #81 candidate — durable local revocation audit proof
+
+Add private synthetic append-only event files, fsync/no-replace operations and independently pinned HMAC-chain reinspection. Tests cover missing, altered, replayed, stale and linked records. Externally trusted latest-head custody, per-tenant key management, real scanner and rights-revocation authority, legal retention, verified status transition and publication remain blocked; CI pending. $0 and all production services inactive.
+
+
 ## PR #80 candidate — externally keyed synthetic recovery manifest chain
 
 CI-only HMAC-signed, SHA-256-linked ciphertext receipts with independent newest-head pin, signer/encryption key rotation, retention metadata, and local pinned AES-GCM restore. Negative trust/expiry/fork cases. No persistent authoritative manifest or offsite replica, escrow, deletion, production backup or release authorization; verify PR and merged-main CI before marking complete. $0 additional charges, all integrations disabled.
