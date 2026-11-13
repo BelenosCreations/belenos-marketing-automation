@@ -312,3 +312,21 @@ into a typed trust path. Evaluate the proposal only with disposable data.
 Next, rehearse typed read and approval visibility, and review how an
 authenticated claim index is retained, independently recovered and checked
 for completeness. Keep the current runtime and production transforms gated.
+
+### Claim index and review visibility follow-up
+
+The revocation ledger contains a digest of the full signed claim. Recover the
+matching canonical claim bytes from a private index before attributing a
+revocation to an attachment. Recompute the digest, verify the claim version
+and issuer evidence, and preserve the original scope. Keep a missing digest,
+unrecognized version, or conflicting record held. An independently supplied
+checkpoint must bind the index inventory and revocation head together.
+
+Use disposable fixtures to rehearse a consistent restore of the index and
+ledger, including an incomplete index, a stale but internally consistent
+snapshot, cross-tenant claim substitution and key rotation. Verify a single
+attachment ID cannot resolve to more than one typed parent. Exercise ordinary
+and AI read and review queries with the same parent ID and different subjects.
+Keep legacy and ambiguous rows unavailable to approval paths and preserve
+historical evidence for review. Gate rollout on an independently verified
+runtime writer and reader inventory and an authorized operational restore.
