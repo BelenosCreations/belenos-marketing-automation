@@ -2704,3 +2704,9 @@ The original `main` branch approved BAM's branding: light/dark SVG wordmarks, ap
 ## Phase 3 — 2026-11-10 (offline prototype)
 - Draft staging, authorization, audit, approval and dry-run workflow.
 - Local test suite, with no network or publishing implementation.
+
+
+### 2026-11-12 — Inactive PostgreSQL operator preflight (PR candidate)
+- Added metadata-only source integrity, unknown-table and pinned-schema drift checks for a future reviewed cutover, plus deterministic SHA-256 fingerprints for eight existing CI DDL preview stages.
+- Added negative regression tests for schema drift, unsafe inputs, confidential data leakage and the non-authorizing nature of a passing source pin.
+- No production migration executor, connection, customer export, rollback, publishing activation or new cost.
