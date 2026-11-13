@@ -1,5 +1,10 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Candidate PR #88 — why a SQLite memory-only writer fence is insufficient
+
+A unique, disposable `mode=memory&cache=shared` fixture opens two SQLite sessions and holds `BEGIN IMMEDIATE` while the second writer attempts the same operation. Rejected contender, rollback or crashed/closed owner, and post-release synthetic write are tested without any customer database. Actual production migration still needs application-wide write-fencing of API/async jobs/OAuth callbacks, a versioned PostgreSQL target transaction, reviewed row transformations and identity remapping, independently verified backups, rollback/replay idempotence and operator authorization. Neither an in-memory lock nor source/plan pins authorize cutover.
+
+
 ## Candidate PR #86: typed conversion canaries are not an accepted migration mapping
 
 Use strict synthetic-only typed-cell candidate checks against the separately supplied schema/mapping fingerprints. Reject SQL type coercion, float NaN/Inf, integer overflow, malformed Unicode, null or unsupported types before any customer data is considered. No original values are exported in results. A candidate value check does not prove that PostgreSQL constraints, collation, JSON, nullable fields, FK ownership, sessions or identity sequences will match in production. Migration, write fencing, rollback and hosted database remain disabled.
