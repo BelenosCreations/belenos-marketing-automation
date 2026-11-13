@@ -13,8 +13,8 @@ from neon_migration_operator_preflight import (
     inactive_pg_schema_manifest, inspect_inactive_migration_preflight)
 from neon_schema_inventory import REVIEWED_PREVIEW_NAMES
 
-_NAME = re.compile(r"[a-z][a-z0-9_]*\\Z")
-_SHA = re.compile(r"[0-9a-f]{64}\\Z")
+_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
+_SHA = re.compile(r"[0-9a-f]{64}\Z")
 _OPERATOR_STEPS = (
     ("01", "review_independent_backup_and_external_key_recovery"),
     ("02", "obtain_maintenance_approval_and_fence_all_writers"),
