@@ -1,6 +1,6 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
-**Current verified development checkpoint:** PR #59 (`e0fa3c1`) merged with [full main Actions 43334593446](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43334593446) successful. PRs #56–#59 covered 46-table/eight-stage disposable media schema hardening, redacted metadata reads, verified synthetic reference binding, source integrity preflight and editorial readiness preview. These are not deployable customer-data migrations. Production identity, backup/restore, private object storage, verified media scanning and final publication authorization remain outstanding.
+**Current verified development checkpoint:** PR #64 (`3f89c948a5e453b2516a9faa40c35eae294a3397`) merged and [full main Actions 43340205353](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43340205353) passed. PRs #61–#64 improved local file-container sanity and added CI-only, in-memory PostgreSQL restoration of 46 reviewed tables plus journal, rollback on interrupted/corrupt copies, and authenticated tenant/session access checks after restore. This is **not** a production SQLite→Neon migration, durable/encrypted backup, object-store restore or any permission to host/publish. Column-shape drift verification is the next candidate.
 
 ## Authenticated review readiness against tenant-safe synthetic attachment metadata (verified PR #59 — November 12, 2026)
 

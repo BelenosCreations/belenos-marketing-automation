@@ -108,6 +108,27 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
 
+    def test_ci_restore_rejects_unreviewed_column_schema_drift(self):
+        """A source table with a new/changed column must not restore as normal."""
+        from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
+        self.conn.execute("""ALTER TABLE content_requests
+            ADD COLUMN ci_unreviewed_column TEXT""")
+        try:
+            with self.assertRaisesRegex(ValueError,'column schema mismatch'):
+                run_ephemeral_ci_logical_restore(self.conn)
+            self.assertIsNone(self.conn.execute(
+                "SELECT to_regnamespace('bam_ci_restore_probe')").fetchone()[0])
+            self.assertEqual(self.conn.execute(
+                'SELECT COUNT(*) FROM content_requests').fetchone()[0],2)
+        finally:
+            self.conn.execute("""ALTER TABLE content_requests
+                DROP COLUMN ci_unreviewed_column""")
+        report=run_ephemeral_ci_logical_restore(self.conn)
+        self.assertEqual(report['column_shapes_checked'],47)
+        self.assertEqual(report['reviewed_tables_rehearsed'],46)
+        self.assertFalse(report['production_restore_validated'])
+        self.assertFalse(report['publishing_enabled'])
+
     def test_restored_postgres_sessions_preserve_live_business_isolation(self):
         """Actual restored PostgreSQL must enforce current auth and revocation."""
         import hashlib
