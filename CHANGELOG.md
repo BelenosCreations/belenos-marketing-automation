@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-12 — Candidate PR #86: strict synthetic migration type acceptance (pending verification)
+
+- Add offline, CI-gated and dual-fingerprint-pinned candidate conversion checks for TEXT, integer target widths, finite IEEE-754 floats and byte arrays, with no returned plaintext or row reads.
+- Negative tests cover NULL, NUL text/surrogates, oversized values, boolean coercion, target overflow, nonfinite float, wrong pins, source drift and inactive gate. **No approved value transformation or production migration.**
+
+
 ## Verified post-merge recovery checkpoint after PRs #83–#84
 
 Main SHA `10e18ce0e5554fd9dab80048b9ef002bf5e58654`; both branches identical, no forced update. PR #83 exact/main Actions 43357261226/43357506877 succeeded, PR #84 43357908998/43358111378 succeeded. All features remain offline Alpha proofs. Next major branch: independently audited per-column value transforms and a disabled transactional operator protocol; offsite encrypted replicas and external key/head authority; verifiable isolated ClamAV/signature provenance and human rights review; tenant-scoped evidence/media authorization and hostile private Beta session/CSRF/ingress tests. Obtain explicit authorization before connecting or spending. No genuine malware scan, offsite production backup, live cutover or publisher exists.
