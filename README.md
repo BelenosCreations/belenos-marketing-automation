@@ -6,6 +6,8 @@ Disposable tests exercise draft and receipt rollback and PostgreSQL freeze
 lock ordering. Requests with uncertain provider outcomes remain held. The
 design also specifies independent confirmation of the operator's latest
 transition before reopening writes after a restore.
+The disposable PostgreSQL suite exercises receipt-based finalization,
+targeted revision rollback, and closed admission after a stale restore.
 
 ## Alternate writer inventory and offline recovery rehearsal
 

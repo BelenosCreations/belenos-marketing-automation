@@ -1,3 +1,10 @@
+## Disposable PostgreSQL recovery rehearsal (2026-11-13)
+
+- Exercised receipt-based request finalization and atomic audit recording,
+  with stale authority, mismatched scope, missing receipts and replay cases.
+- Exercised rollback of a draft prompt revision and its media-link removal,
+  and write denial during pending resume and after a stale authority restore.
+
 ## AI draft request recovery design (2026-11-13)
 
 - Recorded a proposed operator transition and independent-head confirmation

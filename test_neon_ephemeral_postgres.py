@@ -501,17 +501,13 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute("""SELECT COUNT(*)
             FROM bam_ai_cost_events WHERE tenant_id='shop-b'""").fetchone()[0],1)
 
-    def test_ai_draft_and_receipt_commit_or_rollback_together(self):
-        scope = ('shop-a', self.a)
-        request_key, draft_id = 'a'*32, 'b'*32
-        request_insert = """INSERT INTO bam_ai_generation_requests
-            (tenant_id,subject_id,request_key,request_fingerprint,status,created_at)
-            VALUES (%s,%s,%s,%s,'in_progress',100)"""
-        self.conn.execute(request_insert, (*scope, request_key, 'c'*64))
+    def _create_ai_receipt_fixture(self):
         # CI-only receipt shape using the actual migration preview tables.
         self.conn.execute("""CREATE TABLE ci_ai_output_receipt (
             tenant_id TEXT NOT NULL, subject_id TEXT NOT NULL,
             request_key TEXT NOT NULL, draft_id TEXT NOT NULL,
+            fingerprint TEXT NOT NULL, generation BIGINT NOT NULL,
+            resulting_revision INTEGER NOT NULL,
             PRIMARY KEY (tenant_id, subject_id, request_key),
             FOREIGN KEY (tenant_id, subject_id, request_key)
                 REFERENCES bam_ai_generation_requests,
@@ -519,13 +515,24 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 REFERENCES bam_ai_draft_components
         )""")
         self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_output_receipt")
+
+    def test_ai_draft_and_receipt_commit_or_rollback_together(self):
+        scope = ('shop-a', self.a)
+        request_key, draft_id = 'a'*32, 'b'*32
+        request_insert = """INSERT INTO bam_ai_generation_requests
+            (tenant_id,subject_id,request_key,request_fingerprint,status,created_at)
+            VALUES (%s,%s,%s,%s,'in_progress',100)"""
+        self.conn.execute(request_insert, (*scope, request_key, 'c'*64))
+        self._create_ai_receipt_fixture()
         reader = self._connect()
         self.addCleanup(reader.close)
         draft_insert = """INSERT INTO bam_ai_draft_components
             (tenant_id,subject_id,draft_id,platform,post_text,needs_media,
              revision,created_at,updated_at)
             VALUES (%s,%s,%s,'facebook','Synthetic draft',0,1,100,100)"""
-        receipt_insert = "INSERT INTO ci_ai_output_receipt VALUES (%s,%s,%s,%s)"
+        receipt_insert = """INSERT INTO ci_ai_output_receipt
+            VALUES (%s,%s,%s,%s,%s,1,1)"""
+        receipt = (*scope, request_key, draft_id, 'c'*64)
 
         # A crash after writing the draft but before recording its receipt
         # rolls back the uncommitted draft when the worker connection closes.
@@ -544,13 +551,13 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         with self.assertRaises(self.psycopg.errors.ForeignKeyViolation):
             with self.conn.transaction():
                 self.conn.execute(draft_insert, (*scope, draft_id))
-                self.conn.execute(receipt_insert, (*other_scope, request_key, draft_id))
+                self.conn.execute(receipt_insert, (*other_scope, *receipt[2:]))
         self.assertEqual(reader.execute(
             "SELECT count(*) FROM bam_ai_draft_components").fetchone(), (0,))
 
         with self.conn.transaction():
             self.conn.execute(draft_insert, (*scope, draft_id))
-            self.conn.execute(receipt_insert, (*scope, request_key, draft_id))
+            self.conn.execute(receipt_insert, receipt)
             self.assertEqual(reader.execute(
                 "SELECT count(*) FROM ci_ai_output_receipt").fetchone(), (0,))
         self.assertEqual(reader.execute("""SELECT r.status, d.draft_id
@@ -559,7 +566,156 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             JOIN bam_ai_generation_requests AS r USING (tenant_id,subject_id,request_key)
             """).fetchall(), [('in_progress', draft_id)])
         with self.assertRaises(self.psycopg.errors.UniqueViolation):
-            self.conn.execute(receipt_insert, (*scope, request_key, draft_id))
+            self.conn.execute(receipt_insert, receipt)
+
+    def test_ai_recovery_finalizes_only_a_matching_committed_receipt_once(self):
+        self._create_ai_receipt_fixture()
+        self.conn.execute("""CREATE TABLE ci_ai_recovery_authority (
+            id INTEGER PRIMARY KEY CHECK (id=1), generation BIGINT NOT NULL,
+            head TEXT NOT NULL
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_recovery_authority")
+        self.conn.execute("INSERT INTO ci_ai_recovery_authority VALUES (1,3,'head-3')")
+        self.conn.execute("""CREATE TABLE ci_ai_recovery_audit (
+            decision_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL,
+            subject_id TEXT NOT NULL, request_key TEXT NOT NULL,
+            generation BIGINT NOT NULL, head TEXT NOT NULL
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_recovery_audit")
+        scope = ('shop-a', self.a)
+        request_key, uncertain_key, draft_id = 'a'*32, 'b'*32, 'c'*32
+        other_request_key, other_draft_id = 'd'*32, 'e'*32
+        fingerprint = 'd'*64
+        for key in (request_key, uncertain_key, other_request_key):
+            self.conn.execute("""INSERT INTO bam_ai_generation_requests
+                (tenant_id,subject_id,request_key,request_fingerprint,status,created_at)
+                VALUES (%s,%s,%s,%s,'in_progress',100)""", (*scope, key, fingerprint))
+        for key, output in ((request_key, draft_id), (other_request_key, other_draft_id)):
+            with self.conn.transaction():
+                self.conn.execute("""INSERT INTO bam_ai_draft_components
+                    (tenant_id,subject_id,draft_id,platform,post_text,needs_media,
+                     revision,created_at,updated_at)
+                    VALUES (%s,%s,%s,'facebook','Synthetic draft',0,1,100,100)""",
+                    (*scope, output))
+                self.conn.execute("""INSERT INTO ci_ai_output_receipt
+                    VALUES (%s,%s,%s,%s,%s,1,1)""",
+                    (*scope, key, output, fingerprint))
+
+        # The parameters stand in for a preverified operator approval. SQL
+        # compares the approved scope, receipt and authority under the lock.
+        finalize = """WITH authority AS (
+            SELECT generation, head FROM ci_ai_recovery_authority
+            WHERE id=1 AND generation=%s AND head=%s FOR SHARE NOWAIT
+        ), finalized AS (
+            UPDATE bam_ai_generation_requests AS r
+            SET status='completed', draft_id=o.draft_id
+            FROM ci_ai_output_receipt AS o, authority AS a
+            WHERE (r.tenant_id,r.subject_id,r.request_key) =
+                  (o.tenant_id,o.subject_id,o.request_key)
+              AND (r.tenant_id,r.subject_id,r.request_key) = (%s,%s,%s)
+              AND r.status='in_progress' AND r.draft_id IS NULL
+              AND r.request_fingerprint=o.fingerprint AND o.fingerprint=%s
+              AND o.draft_id=%s AND o.resulting_revision=%s
+              AND o.generation=%s AND o.generation<a.generation
+              AND %s::bigint < %s::bigint
+            RETURNING r.tenant_id,r.subject_id,r.request_key,a.generation,a.head
+        )
+        INSERT INTO ci_ai_recovery_audit
+        SELECT %s, tenant_id, subject_id, request_key, generation, head
+        FROM finalized"""
+        operator = self._connect()
+        self.addCleanup(operator.close)
+
+        def recover(*, generation=3, head='head-3', tenant='shop-a',
+                    subject=self.a, key=request_key, digest=fingerprint,
+                    receipt_draft=draft_id, output_revision=1, origin=1, expires=120):
+            return operator.execute(finalize, (
+                generation, head, tenant, subject, key, digest, receipt_draft,
+                output_revision, origin, 110, expires, 'decision-1',
+            )).rowcount
+
+        for rejected in (
+            {'generation': 2}, {'head': 'old-head'}, {'expires': 110},
+            {'tenant': 'shop-b'}, {'subject': self.b}, {'key': uncertain_key},
+            {'digest': 'e'*64}, {'receipt_draft': 'f'*32},
+            {'output_revision': 2}, {'origin': 2},
+        ):
+            with self.subTest(rejected=rejected):
+                self.assertEqual(recover(**rejected), 0)
+        self.assertEqual(self.conn.execute(
+            "SELECT count(*) FROM ci_ai_recovery_audit").fetchone(), (0,))
+        self.assertEqual(recover(), 1)
+        self.assertEqual(recover(), 0)
+        # An audit uniqueness failure rolls back even a valid status update.
+        with self.assertRaises(self.psycopg.errors.UniqueViolation):
+            recover(key=other_request_key, receipt_draft=other_draft_id)
+        self.assertEqual(self.conn.execute("""SELECT request_key, status, draft_id
+            FROM bam_ai_generation_requests ORDER BY request_key""").fetchall(),
+            [(request_key, 'completed', draft_id), (uncertain_key, 'in_progress', None),
+             (other_request_key, 'in_progress', None)])
+        self.assertEqual(self.conn.execute("""SELECT tenant_id, subject_id,
+            request_key, generation, head FROM ci_ai_recovery_audit""").fetchall(),
+            [(*scope, request_key, 3, 'head-3')])
+        self.assertEqual(self.conn.execute("""SELECT draft_id, revision, post_text
+            FROM bam_ai_draft_components ORDER BY draft_id""").fetchall(),
+            [(draft_id, 1, 'Synthetic draft'), (other_draft_id, 1, 'Synthetic draft')])
+        self.assertEqual(self.conn.execute(
+            "SELECT count(*) FROM bam_ai_cost_events").fetchone(), (0,))
+        for table in ('bam_ai_usage', 'bam_ai_tenant_usage', 'bam_ai_operator_usage'):
+            self.assertEqual(self.conn.execute(
+                "SELECT count(*) FROM " + table).fetchone(), (0,))
+
+    def test_ai_targeted_revision_media_and_receipt_roll_back_together(self):
+        self._create_ai_receipt_fixture()
+        scope = ('shop-a', self.a)
+        request_key, draft_id = 'a'*32, 'b'*32
+        draft_scope = (*scope, draft_id)
+        where_draft = " WHERE tenant_id=%s AND subject_id=%s AND draft_id=%s"
+        self.conn.execute("""INSERT INTO bam_ai_generation_requests
+            (tenant_id,subject_id,request_key,request_fingerprint,status,created_at)
+            VALUES (%s,%s,%s,%s,'in_progress',100)""", (*scope, request_key, 'c'*64))
+        self.conn.execute("""INSERT INTO bam_ai_draft_components
+            (tenant_id,subject_id,draft_id,platform,post_text,image_prompt,
+             needs_media,revision,created_at,updated_at)
+            VALUES (%s,%s,%s,'facebook','Synthetic draft','Old prompt',1,1,100,100)""",
+            draft_scope)
+        self.conn.execute("""INSERT INTO bam_ai_draft_verified_media
+            (tenant_id,subject_id,draft_id,attachment_id,updated_at)
+            VALUES (%s,%s,%s,'synthetic-link',100)""", draft_scope)
+        revise = """UPDATE bam_ai_draft_components SET image_prompt='New prompt',
+            revision=revision+1, updated_at=110""" + where_draft + " AND revision=1"
+        unlink = "DELETE FROM bam_ai_draft_verified_media" + where_draft
+        add_receipt = "INSERT INTO ci_ai_output_receipt VALUES (%s,%s,%s,%s,%s,1,2)"
+
+        # A receipt failure after both mutations must undo both.
+        with self.assertRaises(self.psycopg.errors.ForeignKeyViolation):
+            with self.conn.transaction():
+                self.assertEqual(self.conn.execute(revise, draft_scope).rowcount, 1)
+                self.assertEqual(self.conn.execute(unlink, draft_scope).rowcount, 1)
+                self.conn.execute(add_receipt, (*scope, 'd'*32, draft_id, 'c'*64))
+        self.assertEqual(self.conn.execute("""SELECT revision, image_prompt
+            FROM bam_ai_draft_components""" + where_draft, draft_scope).fetchone(),
+            (1, 'Old prompt'))
+        self.assertEqual(self.conn.execute("""SELECT attachment_id
+            FROM bam_ai_draft_verified_media""" + where_draft, draft_scope).fetchone(),
+            ('synthetic-link',))
+
+        with self.conn.transaction():
+            self.assertEqual(self.conn.execute(revise, draft_scope).rowcount, 1)
+            self.assertEqual(self.conn.execute(unlink, draft_scope).rowcount, 1)
+            self.conn.execute(add_receipt, (*scope, request_key, draft_id, 'c'*64))
+        self.assertEqual(self.conn.execute("""SELECT d.revision, d.image_prompt,
+            o.resulting_revision FROM bam_ai_draft_components AS d
+            JOIN ci_ai_output_receipt AS o USING (tenant_id,subject_id,draft_id)
+            """).fetchone(), (2, 'New prompt', 2))
+        self.assertEqual(self.conn.execute(
+            "SELECT count(*) FROM bam_ai_draft_verified_media").fetchone(), (0,))
+        self.assertEqual(self.conn.execute(revise, draft_scope).rowcount, 0)
+        self.conn.execute("""UPDATE bam_ai_draft_components
+            SET revision=3, image_prompt='Later manual edit'""" + where_draft,
+            draft_scope)
+        self.assertEqual(self.conn.execute("""SELECT resulting_revision
+            FROM ci_ai_output_receipt""").fetchone(), (2,))
 
     def test_ai_epoch_lock_orders_writes_against_freeze(self):
         self.conn.execute("""CREATE TABLE ci_ai_epoch (
@@ -602,6 +758,64 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             admit_and_write, (1, self.a, 'b'*32, 'c'*64)).rowcount, 0)
         self.assertEqual(self.conn.execute(
             admit_and_write, (3, self.a, 'b'*32, 'c'*64)).rowcount, 1)
+
+    def test_ai_resume_requires_confirmed_head_after_interruption_and_restore(self):
+        self.conn.execute("""CREATE TABLE ci_ai_resume_authority (
+            id INTEGER PRIMARY KEY CHECK (id=1), generation BIGINT NOT NULL,
+            head TEXT NOT NULL, mode TEXT NOT NULL
+                CHECK (mode IN ('open','frozen','pending'))
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_resume_authority")
+        self.conn.execute("INSERT INTO ci_ai_resume_authority VALUES (1,1,'head-1','open')")
+        previous_snapshot = self.conn.execute("""SELECT generation, head, mode
+            FROM ci_ai_resume_authority WHERE id=1""").fetchone()
+
+        operator = self._connect()
+        try:
+            with operator.transaction():
+                operator.execute("""UPDATE ci_ai_resume_authority
+                    SET generation=2, head='head-2', mode='frozen' WHERE id=1""")
+            with operator.transaction():
+                operator.execute("""UPDATE ci_ai_resume_authority
+                    SET generation=3, head='head-3', mode='pending'
+                    WHERE id=1 AND generation=2 AND mode='frozen'""")
+        finally:
+            operator.close()
+
+        # A replacement connection sees the committed pending transition.
+        # The independently witnessed head is represented by fixture inputs.
+        worker = self._connect()
+        self.addCleanup(worker.close)
+        admit = """WITH authority AS (
+            SELECT id FROM ci_ai_resume_authority
+            WHERE id=1 AND mode='open' AND generation=%s AND head=%s FOR SHARE NOWAIT
+        )
+        INSERT INTO bam_ai_generation_requests
+            (tenant_id,subject_id,request_key,request_fingerprint,status,created_at)
+        SELECT 'shop-a',%s,%s,%s,'in_progress',100 FROM authority"""
+        confirm = """UPDATE ci_ai_resume_authority SET mode='open'
+            WHERE id=1 AND mode='pending' AND generation=%s AND head=%s"""
+
+        def admit_request(generation, head, request_key):
+            return worker.execute(admit, (
+                generation, head, self.a, request_key, 'f'*64,
+            )).rowcount
+
+        self.assertEqual(admit_request(3, 'head-3', 'a'*32), 0)
+        self.assertEqual(self.conn.execute(confirm, (2, 'head-2')).rowcount, 0)
+        self.assertEqual(self.conn.execute(confirm, (3, 'unrelated')).rowcount, 0)
+        self.assertEqual(self.conn.execute(confirm, (3, 'head-3')).rowcount, 1)
+        self.assertEqual(admit_request(3, 'head-3', 'a'*32), 1)
+
+        # Simulate restoring the older database authority row. A restarted
+        # writer still uses the independently witnessed generation and head.
+        self.conn.execute("""UPDATE ci_ai_resume_authority
+            SET generation=%s, head=%s, mode=%s WHERE id=1""", previous_snapshot)
+        self.assertEqual(admit_request(3, 'head-3', 'b'*32), 0)
+        self.assertEqual(admit_request(1, None, 'b'*32), 0)
+        self.assertEqual(self.conn.execute(confirm, (1, 'head-1')).rowcount, 0)
+        self.assertEqual(self.conn.execute(
+            "SELECT request_key FROM bam_ai_generation_requests").fetchall(), [('a'*32,)])
 
     def test_ai_budget_state_never_unpauses_or_approves_paid_ai(self):
         self.assertEqual(self.conn.execute("""SELECT paused

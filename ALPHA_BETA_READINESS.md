@@ -4,6 +4,10 @@ The [AI request recovery design](MIGRATION_AI_REQUEST_RECOVERY.md) records
 draft and receipt transaction boundaries and how to hold uncertain provider
 outcomes. The operator authentication, durable authority and provider
 reconciliation required for private Beta still need operational evidence.
+The PostgreSQL tests exercise scoped finalization and audit writes, revision
+rollback and pending-resume behavior with synthetic authority. Verification of
+an operator's identity, latest-head custody and the actual deployment remains
+required.
 
 ## Alternate writer and recovery review
 
