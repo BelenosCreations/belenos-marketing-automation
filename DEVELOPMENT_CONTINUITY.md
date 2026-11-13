@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+## Candidate PR #88 — local writer-lock/rollback experiment (CI pending)
+
+Builds on PR #87 merged at `177ecd90728e96a7d6c604bb4ba4f1731039e023` (exact-head CI 43363803609 passed; separate merged-main Actions 43363985496 must be independently checked). Development fast-forwarded without force before this commit. New CI-only disposable SQLite shared-memory lock and rollback rehearsal covers competing writers, explicit rollback, simulated abandoned connection and post-release resume. It fences no production writer, hosted PostgreSQL session or external publishing job. All value/tenant transforms remain unapproved. Real operator lock, rollback, independent signoff, trustworthy scan isolation, rights review and offsite backup remain blocked. $0 spend.
+
+
 ## Candidate PR #87 — disabled ClamAV invocation boundary (CI pending)
 
 PR #86 exact-head Actions 43363216197 passed at `9d58479ef6eff6773465d5e79ca8463c69a05cf7` and merged as `af5154b94573a01bd4c4e2fc08184149a2b1ec09`; separate merged-main Actions 43363520290 must be confirmed before marking #86 independently verified. Development fast-forwarded to that merge without force. #87 adds a **non-HTTP**, CI-gated local `clamscan` command boundary which binds externally supplied scanner binary + single CVD/CLD file digests to current private staged media hashes with no shell, bounded output/time, and post-checks. Tests deliberately mock command results. It issues no approved scan claims and cannot change attachment state. Production scanner origin/signature provenance, sandboxing, reviewer, tenant-scoped audit/revocation, hosted ingress and backup remain blockers. $0 extra cost; all external services inactive.

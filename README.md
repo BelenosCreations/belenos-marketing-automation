@@ -1,5 +1,8 @@
 # BAM — Belenos Automatic Marketing
 
+**Candidate PR #88 — CI-only SQLite writer-fence/rollback rehearsal:** Two independently opened connections to a unique memory-only synthetic SQLite database demonstrate that a competing writer cannot begin while `BEGIN IMMEDIATE` is held and that rollback or abandoned connection release removes uncommitted canaries before a new writer commits. No customer database URI/path is accepted or opened, no actual BAM workers are fenced, no hosted PostgreSQL transaction, and no executable production cutover/rollback. This is an engine-semantics canary only; $0 additional costs.
+
+
 **Candidate PR #87 — inactive local ClamAV command boundary:** Adds standalone CLI execution plumbing for a separately installed `clamscan` with externally supplied exact binary/signature-file SHA-256 pins, private staged-byte hash/inode/permission checks, bounded subprocess with no shell/proxy and post-scan reinspection. The signed-claim system is deliberately NOT connected: no database status mutation, rights approval, or publication. CI uses mocked ClamAV responses, not a real scanner or known-good signed signatures. Execution is only permitted with the disposable CI environment gate. Independently establishing actual engine/sig origin, update freshness, worker sandbox, tenant binding, reviewer authority and durable audit remains required before real scanning approval or Beta. Costs $0.
 
 

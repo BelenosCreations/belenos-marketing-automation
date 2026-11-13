@@ -1,5 +1,10 @@
 # BAM Alpha → Private Beta Readiness Gate
 
+## Candidate PR #88 — synthetic SQLite lock behavior, not deployment fencing
+
+The two-client shared-memory experiment checks that one SQLite writer is rejected while another holds an immediate transaction and that uncommitted writes disappear on explicit rollback or connection abandonment. This does not stop BAM API workers, scheduled tasks, uploads, provider callbacks or actual customer SQLite writers, and cannot freeze a hosted PostgreSQL cutover. Private Beta remains blocked on independent operator cutover/runbook and operational controls; no release or provider activation.
+
+
 ## Candidate #87 — ClamAV CLI plumbing does not satisfy Beta trusted-media gate
 
 Offline CI-only worker code accepts externally vetted exact binary/CVD hashes and invokes fixed-format scanner commands against private files with fail-closed return code handling. Existing tests mock all scanner subprocess results; they do **not** execute actual ClamAV, validate upstream distribution signatures, or guarantee an isolated worker/sandbox. The worker returns no trusted signed scan claim, performs no license review, issues no final media state, and has no HTTP or publishing route. Real signatures, independent provenance, anti-TOCTOU controls, tenant identity, reviewer approval, durable audit/revocation and operator controls remain necessary. All production integrations disabled.

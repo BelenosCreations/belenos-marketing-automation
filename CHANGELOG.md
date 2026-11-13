@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-12 — Candidate PR #88: synthetic write-fence and rollback canaries
+
+- Rehearse SQLite `BEGIN IMMEDIATE` writer rejection from a second independent disposable connection in shared memory, rollback on explicit release and on abandoned connection, and successful post-release writer.
+- No user-controlled paths, customer connections, hosted PG execution, real BAM writer freeze or application rollback. Explicit inactive gate, bad-mode negatives, and CI fingerprint. Not production migration acceptance.
+
+
 ## 2026-11-12 — Candidate PR #87: disabled ClamAV CLI worker boundary
 
 - Prepared non-HTTP standalone scanner execution with externally pinned `clamscan` binary + CVD file, private pending inode SHA checks, bounded subprocess and mutation verification.
