@@ -1,3 +1,10 @@
+## Disposable PostgreSQL authority rehearsal (2026-11-13)
+
+- Tested both recovery-versus-freeze lock orders and checked that the
+  committed frozen generation rejects recovery.
+- Tested signed resume and separate confirmation with synthetic keys,
+  including wrong scope, expiry, mismatched head and replay.
+
 ## Disposable AI store mapping rehearsal (2026-11-13)
 
 - Checked exact memory text and compare-and-swap, receiptless request scope,

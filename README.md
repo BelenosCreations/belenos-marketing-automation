@@ -14,6 +14,8 @@ Synthetic SQLite-to-PostgreSQL tests preserve memory text, historical request
 state and unpriced quota counts. They also expose a preview constraint that
 rejects attachments linked only to an AI draft. The attachment parent and
 subject ownership model needs review before migration.
+Additional disposable tests order request recovery against freeze and require
+separately signed transition and confirmation evidence before resuming.
 
 ## Alternate writer inventory and offline recovery rehearsal
 

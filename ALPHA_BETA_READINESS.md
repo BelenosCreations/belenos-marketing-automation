@@ -12,6 +12,9 @@ The disposable mapping suite also exposed a blocker for migrating AI
 attachments. The PostgreSQL attachment constraint expects a content request,
 and legacy AI attachment metadata can point only to an AI draft and omit its
 subject. The parent and ownership rules require review before cutover.
+Disposable authority tests cover recovery-versus-freeze lock ordering and
+separately signed resume confirmation. Runtime writer coverage, operator
+identity, database grants and independent key and head custody remain open.
 
 ## Alternate writer and recovery review
 

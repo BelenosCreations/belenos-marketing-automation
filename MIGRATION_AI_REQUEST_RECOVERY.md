@@ -78,6 +78,12 @@ head, mismatched receipt or missing receipt leaves the request held. Repeating
 successful recovery does not add another audit row, draft or quota entry.
 Fixture inputs represent a preverified approval and trusted clock.
 
+The recovery fixture also tests both lock orders against freeze. If freeze
+holds the authority row first, the recovery statement aborts before writing
+the request or audit. If recovery holds the row first, freeze cannot finish
+until the recovery transaction ends. The committed frozen generation denies
+recovery even with its current generation and head.
+
 The targeted revision rehearsal rolls back the prompt edit and media-link
 removal when the receipt fails to insert. A successful receipt retains the
 resulting revision after a later manual edit. A separate resume rehearsal
@@ -107,6 +113,16 @@ that compares that confirmation to the pending generation and recorded head.
 If confirmation is interrupted, workers stay closed. On restart, verify and
 reconcile the committed transition before allowing writes. A stale
 acknowledgement cannot reopen a prior generation.
+
+An isolated PostgreSQL test signs the resume transition and the subsequent
+confirmation with two independently generated test keys. The transition binds
+the environment, purpose, prior generation and head, next generation and
+expiry. Confirmation binds the pending generation and digest of the signed
+transition under a distinct purpose and key. A new connection sees the
+pending state. Tampered, expired, mis-scoped, wrong-key and replayed evidence
+cannot reopen it. The keys, clock and database roles in this test are
+synthetic. Operator identity, revocation, independent key and head custody,
+and database grants still need operational verification.
 
 | Evidence required before activation | Verification |
 | --- | --- |

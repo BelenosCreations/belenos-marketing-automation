@@ -4,6 +4,7 @@ Runs only when BAM_EPHEMERAL_PG_TEST=1. Refuses any non-loopback endpoint or
 unexpected database name/user. This does not implement or authorize production
 credentials, migration, persistence, public hosting, or scheduled publication.
 """
+import hashlib
 import json
 import os
 import sqlite3
@@ -582,10 +583,10 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self._create_ai_receipt_fixture()
         self.conn.execute("""CREATE TABLE ci_ai_recovery_authority (
             id INTEGER PRIMARY KEY CHECK (id=1), generation BIGINT NOT NULL,
-            head TEXT NOT NULL
+            head TEXT NOT NULL, mode TEXT NOT NULL CHECK (mode IN ('open','frozen'))
         )""")
         self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_recovery_authority")
-        self.conn.execute("INSERT INTO ci_ai_recovery_authority VALUES (1,3,'head-3')")
+        self.conn.execute("INSERT INTO ci_ai_recovery_authority VALUES (1,3,'head-3','open')")
         self.conn.execute("""CREATE TABLE ci_ai_recovery_audit (
             decision_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL,
             subject_id TEXT NOT NULL, request_key TEXT NOT NULL,
@@ -615,7 +616,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         # compares the approved scope, receipt and authority under the lock.
         finalize = """WITH authority AS (
             SELECT generation, head FROM ci_ai_recovery_authority
-            WHERE id=1 AND generation=%s AND head=%s FOR SHARE NOWAIT
+            WHERE id=1 AND generation=%s AND head=%s AND mode='open' FOR SHARE NOWAIT
         ), finalized AS (
             UPDATE bam_ai_generation_requests AS r
             SET status='completed', draft_id=o.draft_id
@@ -654,7 +655,26 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 self.assertEqual(recover(**rejected), 0)
         self.assertEqual(self.conn.execute(
             "SELECT count(*) FROM ci_ai_recovery_audit").fetchone(), (0,))
-        self.assertEqual(recover(), 1)
+        freeze = """UPDATE ci_ai_recovery_authority SET generation=4,
+            head='head-4',mode='frozen' WHERE id=1 AND generation=3"""
+        # If freeze gets the row lock first, a previously approved recovery
+        # fails before writing either the request or its audit row.
+        with self.conn.transaction(force_rollback=True):
+            self.assertEqual(self.conn.execute(freeze).rowcount, 1)
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                recover()
+            self.assertEqual(self.conn.execute(
+                "SELECT count(*) FROM ci_ai_recovery_audit").fetchone(), (0,))
+        # A recovery that already holds the authority row orders its audit
+        # and request commits before a freeze can finish.
+        with operator.transaction():
+            self.assertEqual(recover(), 1)
+            self.assertEqual(self.conn.execute(
+                "SELECT count(*) FROM ci_ai_recovery_audit").fetchone(), (0,))
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                with self.conn.transaction():
+                    self.conn.execute("SET LOCAL lock_timeout = '250ms'")
+                    self.conn.execute(freeze)
         self.assertEqual(recover(), 0)
         # An audit uniqueness failure rolls back even a valid status update.
         with self.assertRaises(self.psycopg.errors.UniqueViolation):
@@ -674,6 +694,10 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         for table in ('bam_ai_usage', 'bam_ai_tenant_usage', 'bam_ai_operator_usage'):
             self.assertEqual(self.conn.execute(
                 "SELECT count(*) FROM " + table).fetchone(), (0,))
+        self.assertEqual(self.conn.execute(freeze).rowcount, 1)
+        self.assertEqual(recover(key=other_request_key, receipt_draft=other_draft_id), 0)
+        self.assertEqual(recover(generation=4, head='head-4',
+            key=other_request_key, receipt_draft=other_draft_id), 0)
 
     def test_ai_targeted_revision_media_and_receipt_roll_back_together(self):
         self._create_ai_receipt_fixture()
@@ -826,6 +850,101 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute(confirm, (1, 'head-1')).rowcount, 0)
         self.assertEqual(self.conn.execute(
             "SELECT request_key FROM bam_ai_generation_requests").fetchall(), [('a'*32,)])
+
+    def test_ai_pending_resume_requires_signed_transition_and_independent_confirmation(self):
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+        self.conn.execute("""CREATE TABLE ci_ai_signed_authority (
+            id INTEGER PRIMARY KEY CHECK (id=1), generation BIGINT NOT NULL,
+            head TEXT NOT NULL, mode TEXT NOT NULL CHECK (mode IN ('frozen','pending','open'))
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_signed_authority")
+        self.conn.execute("INSERT INTO ci_ai_signed_authority VALUES (1,2,'head-2','frozen')")
+        operator_key = Ed25519PrivateKey.generate()
+        witness_key = Ed25519PrivateKey.generate()
+        operator_verify = operator_key.public_key()
+        witness_verify = witness_key.public_key()
+        transition = {
+            'purpose': 'bam-ci-resume-v1', 'environment': 'bam-ci-test',
+            'previous_generation': 2, 'previous_head': 'head-2',
+            'new_generation': 3, 'expires_at': 120,
+        }
+
+        def encode(value):
+            return json.dumps(value, sort_keys=True, separators=(',', ':')).encode('utf-8')
+
+        signed_transition = encode(transition)
+        signature = operator_key.sign(signed_transition)
+        head = hashlib.sha256(signed_transition + signature).hexdigest()
+
+        def stage(value, signed, *, now=110):
+            payload = encode(value)
+            operator_verify.verify(signed, payload)
+            if (value['purpose'] != 'bam-ci-resume-v1'
+                    or value['environment'] != 'bam-ci-test'
+                    or value['new_generation'] != value['previous_generation'] + 1
+                    or now >= value['expires_at']):
+                return 0
+            transition_head = hashlib.sha256(payload + signed).hexdigest()
+            return self.conn.execute("""UPDATE ci_ai_signed_authority
+                SET generation=%s, head=%s, mode='pending'
+                WHERE id=1 AND mode='frozen' AND generation=%s AND head=%s""",
+                (value['new_generation'], transition_head,
+                 value['previous_generation'], value['previous_head'])).rowcount
+
+        with self.assertRaises(InvalidSignature):
+            stage(dict(transition, new_generation=4), signature)
+        with self.assertRaises(InvalidSignature):
+            stage(transition, witness_key.sign(signed_transition))
+        for changed in (
+            {'environment': 'different-environment'}, {'purpose': 'different-purpose'},
+            {'new_generation': 4}, {'previous_head': 'wrong-previous-head'},
+        ):
+            with self.subTest(changed=changed):
+                rejected = dict(transition, **changed)
+                self.assertEqual(stage(rejected, operator_key.sign(encode(rejected))), 0)
+        self.assertEqual(stage(transition, signature, now=120), 0)
+        self.assertEqual(stage(transition, signature), 1)
+        self.assertEqual(stage(transition, signature), 0)
+
+        acknowledgement = {'purpose': 'bam-ci-resume-confirmation-v1',
+                           'environment': 'bam-ci-test', 'generation': 3, 'head': head}
+        peer = self._connect()
+        self.addCleanup(peer.close)
+
+        def confirm(value, signed):
+            witness_verify.verify(signed, encode(value))
+            if (value['purpose'] != 'bam-ci-resume-confirmation-v1'
+                    or value['environment'] != 'bam-ci-test'):
+                return 0
+            return peer.execute("""UPDATE ci_ai_signed_authority SET mode='open'
+                WHERE id=1 AND mode='pending' AND generation=%s AND head=%s""",
+                (value['generation'], value['head'])).rowcount
+
+        acknowledgement_bytes = encode(acknowledgement)
+        with self.assertRaises(InvalidSignature):
+            confirm(acknowledgement, operator_key.sign(acknowledgement_bytes))
+        for changed in (
+            {'head': 'different-head'}, {'generation': 2},
+            {'environment': 'different-environment'},
+        ):
+            with self.subTest(changed=changed):
+                rejected = dict(acknowledgement, **changed)
+                self.assertEqual(confirm(rejected, witness_key.sign(encode(rejected))), 0)
+        self.assertEqual(peer.execute("SELECT mode FROM ci_ai_signed_authority").fetchone(),
+                         ('pending',))
+        witness_signature = witness_key.sign(acknowledgement_bytes)
+        self.assertEqual(confirm(acknowledgement, witness_signature), 1)
+        self.assertEqual(confirm(acknowledgement, witness_signature), 0)
+        self.assertEqual(peer.execute("""SELECT generation, head, mode
+            FROM ci_ai_signed_authority""").fetchone(), (3, head, 'open'))
+        self.conn.execute("""UPDATE ci_ai_signed_authority
+            SET generation=4, head='head-4', mode='frozen' WHERE id=1""")
+        self.assertEqual(stage(transition, signature), 0)
+        self.assertEqual(confirm(acknowledgement, witness_signature), 0)
+        self.assertEqual(peer.execute("""SELECT generation, head, mode
+            FROM ci_ai_signed_authority""").fetchone(), (4, 'head-4', 'frozen'))
 
     def test_ai_memory_and_facts_keep_exact_sqlite_text(self):
         def unique_object(pairs):
