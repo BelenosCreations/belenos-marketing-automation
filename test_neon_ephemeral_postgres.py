@@ -108,6 +108,51 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
 
+    def test_restored_postgres_sessions_preserve_live_business_isolation(self):
+        """Actual restored PostgreSQL must enforce current auth and revocation."""
+        import hashlib
+        from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
+        active_a='Synthetic_Restore_Active_A_Bearer_1234567890123456789'
+        active_b='Synthetic_Restore_Active_B_Bearer_1234567890123456789'
+        revoked='Synthetic_Restore_Revoked_Bearer_123456789012345678'
+        for bearer,subject,tenant,revoked_at in (
+                (active_a,self.a,'shop-a',None),
+                (active_b,self.b,'shop-b',None),
+                (revoked,self.a,'shop-a',100)):
+            digest=hashlib.sha256(bearer.encode('ascii')).hexdigest()
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at,revoked_at)
+                VALUES (%s,%s,%s,'owner',3600,%s)""",
+                (digest,subject,tenant,revoked_at))
+        def probe(bearer,tenant,rid,at,visible):
+            return {'raw_session_token':bearer,'tenant_id':tenant,
+                    'request_id':rid,'server_now':at,'visible':visible}
+        checks=[
+            probe(active_a,'shop-a',self.rid_a,101,True),
+            probe(active_a,'shop-b',self.rid_b,101,False),
+            probe(active_b,'shop-b',self.rid_b,101,True),
+            probe(active_b,'shop-a',self.rid_a,101,False),
+            probe(revoked,'shop-a',self.rid_a,101,False),
+            probe(active_a,'shop-a',self.rid_a,3600,False),
+            probe(active_a+'tampered','shop-a',self.rid_a,101,False),
+        ]
+        with self.assertRaises(ValueError):
+            run_ephemeral_ci_logical_restore(self.conn,
+                session_probes=[probe(active_a,'shop-b',self.rid_b,101,True)])
+        self.assertIsNone(self.conn.execute(
+            "SELECT to_regnamespace('bam_ci_restore_probe')").fetchone()[0])
+        with self.assertRaises(ValueError):
+            run_ephemeral_ci_logical_restore(self.conn,
+                session_probes=[dict(checks[0],visible=1)])
+        report=run_ephemeral_ci_logical_restore(self.conn,session_probes=checks)
+        self.assertEqual(report['restored_session_checks_passed'],7)
+        for secret in (active_a,active_b,revoked,self.a,self.b):
+            self.assertNotIn(secret,str(report))
+        self.assertFalse(report['production_restore_validated'])
+        self.assertFalse(report['publishing_enabled'])
+        self.assertIsNone(self.conn.execute(
+            "SELECT to_regnamespace('bam_ci_restore_probe')").fetchone()[0])
+
     def test_ci_restore_rejects_interrupted_or_corrupted_copy_without_residue(self):
         """Injected CI-only faults cannot leak a partial replacement schema."""
         from neon_ci_restore_probe import run_ephemeral_ci_logical_restore

@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Verified checkpoint and restored-session privacy milestone — November 12, 2026
+
+**Fully verified:** PR #63 merged into `main` as `fe1fe32ab49ca38add64ec7a25b1915cb4d6a7b5`; exact-head Actions 43339310351 and full merged-main Actions 43339557139 passed; development safely synchronized. PRs #61 and #62 also passed both. $0 additional spend; no Neon/Render services, public gateway, EdgePilot reuse, paid AI or publishing.
+
+**Current candidate:** PR for CI-only restored-session live SELECT probes. Test active own-business access, foreign-business denial, revoked and expired bearers, tampered tokens, no private output and rollback on false grant. Keep 46-table/8-stage previews unchanged. Exact PR-head CI → green merge → exact merged-main CI → non-force development sync. Then proceed to media rights/trust attestations, complete schema portability, production backup policies and secure hosted ingress only under future authorization.
+
 ## Current recovery checkpoint and fault-injection milestone — November 12, 2026
 
 **Verified:** PR #62 merged as `7beccbbd8c448de277744aedd5d798e8662ed9e3`; exact-head Actions 43338521752 and full merged-main Actions 43338797005 passed. `development/phase-3-5-account-directory` safely synchronized. PR #61 was also fully green. No new costs, no hosted Neon/Render, EdgePilot sharing, paid AI or publishing.
