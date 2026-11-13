@@ -14,7 +14,7 @@ class ByteInspectorTests(unittest.TestCase):
     def setUp(self):
         self.registry=AttachmentRegistry(sqlite3.connect(':memory:'))
         self.inspector=AttachmentByteInspector(self.registry)
-        self.png=(b'\x89PNG\\r\\n\x1a\\n' +
+        self.png=(b'\x89PNG\r\n\x1a\n' +
             self._chunk(b'IHDR',__import__('struct').pack('>IIBBBBB',
                 1,1,8,6,0,0,0)) +
             self._chunk(b'IDAT',__import__('zlib').compress(
@@ -91,7 +91,7 @@ class ByteInspectorTests(unittest.TestCase):
         for sample in (self.png[:-1],
                        self.png+b'extra',
                        self.png[:45]+bytes([self.png[45]^1])+self.png[46:],
-                       b'\x89PNG\\r\\n\x1a\\n'+b'test-data'):
+                       b'\x89PNG\r\n\x1a\n'+b'test-data'):
             with self.subTest(size=len(sample)):
                 with self.assertRaises(ValueError):
                     self.inspector.inspect(content=sample,media_type='image/png',
@@ -111,7 +111,7 @@ class ByteInspectorTests(unittest.TestCase):
 
     def test_incomplete_pdf_and_jpeg_fail_even_with_matching_digest(self):
         for media_type,data in (
-            ('application/pdf',b'%PDF-1.7\\nobjects only'),
+            ('application/pdf',b'%PDF-1.7\nobjects only'),
             ('image/jpeg',b'\xff\xd8\xff not finished')):
             with self.assertRaises(ValueError):
                 self.inspector.inspect(content=data,media_type=media_type,
