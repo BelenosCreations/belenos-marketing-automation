@@ -109,6 +109,39 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
 
 
+
+    def test_ci_restore_uses_one_snapshot_during_concurrent_source_edit(self):
+        """A parallel edit after copying one table cannot split the restore."""
+        from unittest.mock import patch
+        import neon_ci_restore_probe as probe
+        original_import=probe._import_csv
+        interleaved=[]
+        def import_then_change_source(conn,table,data):
+            original_import(conn,table,data)
+            if table=='bam_ci_restore_probe.content_requests':
+                peer=self._connect()
+                try:
+                    changed=peer.execute("""UPDATE content_requests
+                        SET draft_text=draft_text||'[parallel-ci-edit]'
+                        WHERE request_id=%s""",(self.rid_a,))
+                    self.assertEqual(changed.rowcount,1)
+                finally:
+                    peer.close()
+                interleaved.append(True)
+        with patch.object(probe,'_import_csv',
+                          side_effect=import_then_change_source):
+            report=probe.run_ephemeral_ci_logical_restore(self.conn)
+        self.assertEqual(interleaved,[True])
+        self.assertTrue(report['consistent_source_snapshot_used'])
+        self.assertTrue(report['separate_schema_discarded'])
+        self.assertFalse(report['production_restore_validated'])
+        self.assertEqual(self.conn.execute("""SELECT draft_text
+            FROM content_requests WHERE request_id=%s""",
+            (self.rid_a,)).fetchone()[0],
+            'private tenant A copy[parallel-ci-edit]')
+        self.assertIsNone(self.conn.execute(
+            "SELECT to_regnamespace('bam_ci_restore_probe')").fetchone()[0])
+
     def test_ci_restore_rejects_unreviewed_constraints_and_indexes(self):
         """Catalog drift must roll back target and allow clean retry."""
         from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
