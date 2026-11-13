@@ -387,3 +387,34 @@ stages a generation above the independent floor and requires a current-key
 confirmation. The test uses preauthorized fixture keys and an in-process
 witness. Operational key custody, cross-instance admission and measured
 off-host recovery remain open.
+
+### Witnessed promotion and revocation ordering
+
+A disposable SQLite authority file stages the verified replica digest under
+the current generation and revocation checkpoint. The replica and the
+completion witness use separate fixture keys. Promotion compares the staged
+digest, checkpoint and generation in one transaction. Closing and reopening
+the authority connection leaves the candidate staged and review closed. An
+interruption before commit rolls back both pointer changes. Once promoted,
+each review checks the generation and reopens the replica through the
+existing ciphertext, issuer catalog and claim-index validators.
+
+The fixture simulates publishing a newer revocation to authority after
+staging. That transition advances the generation and clears the staged and
+active pointers. An older completion cannot promote the previous backup.
+The current replica must validate and receive a new completion before its
+scoped review can run. Corrupted ciphertext or missing issuer history
+blocks review. The staged and active entries are fixture pointers rather
+than a replacement of a live database.
+
+In disposable PostgreSQL, a signed revocation advance and an admission
+canary acquire the same authority row lock on separate connections. The
+first lock holder commits before the other can proceed. A revocation
+advances the head and leaves the new generation pending. A new connection
+observes the committed pending state after the revocation connection closes
+before acknowledgement. Old signatures, replayed updates and an
+acknowledgement superseded by another revocation cannot reopen admission.
+An independently signed acknowledgement for the current generation does
+open the fixture. The canary records only its test operation and generation.
+External witness custody and transaction-bound checks in deployed paths
+remain required.

@@ -1,3 +1,12 @@
+## Witnessed restore promotion and review admission (2026-11-13)
+
+- Tested restart before promotion, independent completion signatures, atomic
+  rollback, and generation-bound review of a verified synthetic replica.
+- Rejected stale candidates after revocation, missing issuer history and
+  corrupted ciphertext. Exercised both PostgreSQL lock orders and kept
+  review closed after an unwitnessed revocation commit.
+- Updated the source inventory and documented the missing deployment evidence.
+
 ## Authenticated attachment recovery rehearsal (2026-11-13)
 
 - Restored a synthetic SQLite attachment index from a same-host encrypted

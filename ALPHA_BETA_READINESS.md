@@ -29,6 +29,10 @@ and independent evidence from deployed readers and writers.
 The authenticated recovery rehearsal uses a rotating synthetic witness
 and a same-host ciphertext copy. Independent custody, real off-host restore
 and database admission across deployed processes remain release gates.
+Disposable promotion uses an independent completion signature and closes
+review when the database commits a newer revocation. Operational admission
+still requires the current independently held checkpoint and coverage of
+every deployed reader and writer.
 
 ## Alternate writer and recovery review
 

@@ -27,6 +27,8 @@ Disposable PostgreSQL tests exercise both lock orders for confirmation
 racing a restore. A signed checkpoint now binds the claim index, issuer-key
 catalog and encrypted synthetic replica. The authority rehearsal tests
 witness rotation and recovery above an independently supplied generation.
+Disposable recovery now stages the replica before a separately signed
+completion and binds review admission to the promoted generation.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
