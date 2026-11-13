@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+## Verified PR #83 / next candidate #84 (2026-11-12)
+
+PR #83 exact-head main-compatible Actions **43357261226** passed at `d9ad14117cf82f1f20056ee52eed120f408a9fc6`, merged to main `8fe6eedf41f6576fd1d44e2960727e2c6dcb1775`, merged-main Actions **43357506877** passed; development fast-forwarded without force and zero ahead/behind verified. It adds metadata-only source/target column proposals with type/range/binary/floating/identity concerns; none approved for customer migration. Candidate #84 adds locally separate owner-only synthetic ciphertext replica and signed-manifest recovery after source deletion, with no external/offsite storage, retained independent keys or production DR proof. Continue toward actual operator-key custody, off-host restore evidence, reviewed transformation/transactional migration, production write fencing, authenticated scanner/rights reviewer and Beta ingress. Keep $0 additional cost, no Render/Neon/provider/publishing/EdgePilot activation. Require exact-head and post-merge CI before treating #84 as verified.
+
+
 ## Pending exact-head CI: Candidate PR #83 — column/type value-transform review
 
 Start from independently verified #82 main/dev `56de8e0bf82cb9620fdd7efdaa76bdc0d4e56b67`, merged-main Actions #43354810267 successful. New offline mapping report proposes per-column target type and conversion review requirements across the 46 reviewed PG target tables; independently pin its SHA and source schema, reject unsupported type pairs and source-only columns, and never read customer rows. Human acceptance of every type/value/default/tenant transformation, transactional migrations and write fencing remains blocked. Do not treat passing CI as authorization to operate PostgreSQL/Neon, Render, paid APIs, publishing, scanner or production backup; added spend $0.

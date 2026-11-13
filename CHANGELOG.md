@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-12 — Verified PR #83 and candidate #84 (recovery relocation; pending CI)
+
+- #83 merged at `8fe6eedf41f6576fd1d44e2960727e2c6dcb1775`; exact-head Actions 43357261226 and separate merged-main Actions 43357506877 passed. Development/main synchronized. Offline 46-table column/type proposals, drift pins and negative tests; no approved value migration.
+- Candidate #84 adds an immutable, private local ciphertext-only relocation rehearsal tied to independently signed recovery manifests. Tests simulated original loss and externally keyed AES-GCM restoration, wrong head/signature, ciphertext corruption, expiry, unsafe permissions and overwrite. Same-host synthetic test **is not offsite backup**.
+
+
 ## 2026-11-12 — Candidate PR #83: Offline target-column transformation review (CI verification pending)
 
 - Add deterministic and independently pinnable metadata-only 46-table target-column/type review, with explicit binary/integer/identity and missing-column proposals.
