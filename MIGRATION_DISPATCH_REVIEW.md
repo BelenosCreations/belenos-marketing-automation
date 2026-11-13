@@ -1,3 +1,7 @@
+## Candidate #107 WSGI handler binding-source extension
+
+See MIGRATION_WSGI_BINDING_REVIEW.md. CI-only source maps simple instance handler assignments, imported class declarations and route/method literal hints. No full runtime dispatch, scheduled-job, callback or database writer boundary proof. Prior #105 trace remains unchanged. Beta and migration disabled.
+
 ## First independently read source-dispatch evidence, November 13, 2026
 
 At merged-main e8f5dd509463c83235724920e1beb23fb73fede0, the reviewed source bam_offline_gateway.py has a disabled-by-default BAMOfflineGateway.__call__ WSGI dispatcher. It first checks its local-only gate, and then routes through *instance attributes*, for example self.auth_wsgi, self.invitation_accept_wsgi, self.invitation_wsgi, self.team_wsgi, self.preference_write_wsgi, self.facts_write_wsgi, self.calendar_wsgi, self.review_feedback_wsgi, self.ai_draft_edit_wsgi, self.content_revise_wsgi, self.content_write_wsgi, self.pending_media_wsgi, self.pending_status_wsgi and self.pending_discard_wsgi. These are source-level candidate invocations of supplied handler objects, not proof of deployed behavior or complete ingress/write coverage. The static graph in #105 does not follow most bound attributes, object construction or service dependencies. dev_http_gateway.py and any untracked worker/callback/provider ingress also require separate enumeration.

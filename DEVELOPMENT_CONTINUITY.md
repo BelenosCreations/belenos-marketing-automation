@@ -1,3 +1,7 @@
+## Candidate #107 from verified main #106 (2026-11-13)
+
+Latest independently verified main ee7c385303efa150a0c38fea02b71951521ad85c, Actions #43436668950 PASSED; development non-force synchronized 0/0 and no open PRs. Candidate #107 adds CI-only WSGI constructor/attribute handler mapping with source fingerprints, literal guard hints and synthetic negative tests. This is NOT complete deployed writer inventory or commit-time persistent fencing. Require exact-head and merged-main Actions before updating checkpoint. Next independent mapping of runtime WSGI, jobs, callbacks and dynamic dependencies; authenticated operator/epoch custody, reviewed PostgreSQL semantics, offsite recoverable backups, genuine ClamAV signature/worker and media rights, hostile hosted auth/session/CSRF/tenant/proxy/abuse tests. No migration, infrastructure, paid AI, social publishing or EdgePilot; $0 extra.
+
 ## Verified merged-main after #105; candidate #106 documentation (2026-11-13)
 
 Repository BelenosCreations/belenos-marketing-automation, development branch development/phase-3-5-account-directory. **Latest independently verified merged-main e8f5dd509463c83235724920e1beb23fb73fede0**, merged-main Actions **#43435718147 PASSED**, exact-head #105 Actions **#43435447478 PASSED**, last PR head 5614680051aa569d39c6b844c644df70959d3d5b. PR #105 merged, main/development non-force FF synchronized and independently compared identical, zero ahead/behind; no open PRs. Initial #105 run #43435037937 failed on over-broad synthetic test fixture, then fixed and all 1332 tests passed.

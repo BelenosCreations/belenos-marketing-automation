@@ -1,3 +1,7 @@
+## Candidate #107 static WSGI handler review does not authorize Beta
+
+CI-only offline source handler hints are not real hosted authentication, CSRF, revocation, tenant isolation, proxy safety, rate-abuse defenses, persistent fencing, scanner provenance, licensed media rights or independently recovered offsite backups. No hosting/Neon, production publishing, paid AI or customer migration. Beta remains blocked, $0 incremental cost.
+
 ## Verified #105, candidate #106 documentation: private Beta remains blocked
 
 PR #105 source-only dispatch trace verified exact-head Actions #43435447478 and merged-main e8f5dd509463c83235724920e1beb23fb73fede0 Actions #43435718147; main/development synchronized 0/0. Source inspection of offline WSGI dispatcher confirms bound handler fanout that basic import-alias analysis cannot prove. None of the active app deployment, global writer fencing, independent operator authority/keys, offsite recovery, authentic ClamAV workers/signatures, human media rights or hostile hosted authentication/CSRF/tenant/proxy/abuse tests is thereby complete. #106 documentation CI pending. All production services, migration, social publishing, paid AI and EdgePilot remain disabled; $0 additional cost.

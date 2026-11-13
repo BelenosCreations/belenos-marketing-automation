@@ -1,3 +1,7 @@
+## Candidate #107 bound offline WSGI source inventory
+
+AST-level pairing of offline gateway handler attributes with constructor/imported class candidates and literal API guard hints cannot prove executed paths, tenant checks, dynamic workers, transaction fencing or PostgreSQL migration readiness. Require independently reviewed real deployed ingress and writer commits, operator authority, shared persistent generation, schema semantics and recovery before enabling a migration. All production migrations disabled; $0 extra.
+
 ## Verified #105 source-only dispatch hypothesis; candidate #106 reviewer notes
 
 The CI-only Python call-path review passed exact-head Actions #43435447478 and merged-main Actions #43435718147 (main e8f5dd509463c83235724920e1beb23fb73fede0). Direct inspection of BAMOfflineGateway.__call__ shows bound handler instances for auth, invites/team, AI/content writes, media, calendar/review and preferences; such self.*_wsgi dispatches cannot be conclusively resolved by simple AST import alias edges. The source-only inventory therefore does not establish complete writer fencing. Require a complete independently checked deployed route/job/callback graph, transaction-bound shared epoch across real writers and approved migration semantics before cutover. No PostgreSQL connection or customer migration; $0 extra.

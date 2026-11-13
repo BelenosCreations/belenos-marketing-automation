@@ -1,3 +1,7 @@
+## Candidate #107 — CI-only gateway handler attribute resolution
+
+From independently verified #106 merged-main ee7c385303efa150a0c38fea02b71951521ad85c Actions #43436668950 PASSED. New AST read-only candidate constructor bindings and route/method hints for offline WSGI dispatcher plus adversarial tests. Not actual deployed writer fencing or private Beta authorization; CI pending, additional cost $0.
+
 ## Independently verified #105 and candidate #106 (2026-11-13)
 
 #105 merged-main e8f5dd509463c83235724920e1beb23fb73fede0 with exact-head Actions #43435447478 and merged-main Actions #43435718147 both PASSED. Its new CI-only source trace does basic Python direct-call alias mapping and retains unresolved/dynamic calls and untraced mutation candidates. Review of bam_offline_gateway.py shows attribute-dispatched WSGI handlers remain outside proven coverage. Development fast-forward 0/0. #106 is documentation-only and requires its own exact-head and merged-main CI. All production integrations remain disabled; $0 incremental cost.

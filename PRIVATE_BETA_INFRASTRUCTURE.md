@@ -1,3 +1,7 @@
+## Candidate #107 source-handler hints are not hosted protection
+
+CI-only AST analysis of offline gateway constructor assignments and bound WSGI handler call candidates is not an authenticated operational gateway or a persistent transaction-bound writer fence. Genuine hosted auth/tenant/CSRF/proxy/abuse validation, durable recovery and ClamAV/rights approval still need independent verification and owner approval. No infrastructure touched, $0 new costs.
+
 ## CI-only #105 source-dispatch review, not private Beta infrastructure
 
 Exact-head Actions #43435447478 and merged-main Actions #43435718147 for e8f5dd509463c83235724920e1beb23fb73fede0 passed; zero development/main divergence. Static Python handler call hints are incomplete. BAMOfflineGateway dispatches to bound handler objects, which must be independently traced to actual deployed routes and transaction boundaries. No hosted tenant/session/CSRF/proxy/abuse testing, persistent generation authority, independent recovery or real scanner/media approval is newly established. No infrastructure activation; $0 incremental cost; owner Beta authorization still required.
