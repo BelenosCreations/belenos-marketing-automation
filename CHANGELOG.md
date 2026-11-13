@@ -1,20 +1,32 @@
 # Changelog
 
-## 2026-11-12 — Durable local synthetic media-revocation audit (PR #81 candidate)
+**Latest independently verified BAM engineering checkpoint — November 12, 2026:** PRs [#79](https://github.com/BelenosCreations/belenos-marketing-automation/pull/79), [#80](https://github.com/BelenosCreations/belenos-marketing-automation/pull/80) and [#81](https://github.com/BelenosCreations/belenos-marketing-automation/pull/81) merged through main `2b01175e424c91121f78830ed169d705e426e8c1`. Exact-head and separate merged-main CI all passed: #79 [43352486026](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43352486026) / [43352747474](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43352747474); #80 [43353272446](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43353272446) / [43353494577](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43353494577); #81 [43354006070](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43354006070) / [43354211421](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43354211421). Main and development were confirmed identical, zero ahead/behind, after #81.
+
+**Scope of verified work:** #79: deterministically pinnable offline source-column inventory and non-executable eight-step migration plan; target-column/data transformation parity, transactional customer migration, source write fence and rollback remain unreviewed. #80: externally keyed HMAC/SHA-linked manifest of synthetic local ciphertext recovery points with signer/encryption key rotation, retention-window checks and independently pinned AES-GCM restore; no actual key vault, authoritative head store, backup retention execution or offsite replica. #81: locally durable append-only signed revocation event files with fsync, no-replace publication and complete pinned-chain validation; no production tenant-specific trust authority, actual malware scanner, legal rights reviewer or media approval. All private Beta authentication, hosted ingress, real PostgreSQL/Neon cutover, live social publishing, OpenAI spending, external provider credentials and EdgePilot resources remain disabled/unapproved. Additional costs authorized: **$0**. Passing synthetic CI is NOT production acceptance.
+
+## 2026-11-12 — Verified PRs #79–#81 and recovery checkpoint (PR #82 documentation-only candidate)
+
+- #79: source metadata migration planning, dual schema/plan drift pins; exact-head Actions 43352486026 and merged-main 43352747474 green.
+- #80: signed local ciphertext manifests, external keys, rotation/retention and authenticated restore; Actions 43353272446 and merged-main 43353494577 green.
+- #81: durable append-only offline HMAC media revocations, independent head and tamper/rollback regressions; Actions 43354006070 and merged-main 43354211421 green.
+- Latest verified engineering main SHA 2b01175e424c91121f78830ed169d705e426e8c1; synchronized development. All capabilities remain offline synthetic and not production. No new costs or services.
+
+
+## 2026-11-12 — Durable local synthetic media-revocation audit (verified PR #81)
 
 - Added bounded offline append-only HMAC event log with exclusive lock, atomic no-replace file publication, fsync and full independently pinned chain verification.
 - Added negative tests for head rollback, tampering, removed events, stale append, symlink/hardlink, unsafe permissions and inactive gate.
 - No persistent authoritative head, cross-host audit, actual scanner/reviewer, media approval or production authorization.
 
 
-## 2026-11-12 — CI-only signed recovery manifests and key-rotation rehearsal (PR #80 candidate)
+## 2026-11-12 — CI-only signed recovery manifests and key-rotation rehearsal (verified PR #80)
 
 - Added externally keyed, separately pinned HMAC manifest chain for local synthetic encrypted recovery points with signer/encryption key ID rotation and bounded retention metadata.
 - Added ciphertext reinspection/AEAD restore, missing-key, altered-byte, wrong-pin, truncation, tamper, replay and expiry regressions.
 - No persistent audit/head custody, offsite replication, retention deletion, customer restore or production backup activation.
 
 
-## 2026-11-12 — Inactive migration planning (PR #79 candidate)
+## 2026-11-12 — Inactive migration planning (verified PR #79)
 
 - Added deterministic, metadata-only, eight-step source-column/target-table inventory and independent source/plan drift pins.
 - Explicitly blocks all row mapping, PostgreSQL execution, writer fencing, cutover, application rollback and publication.
