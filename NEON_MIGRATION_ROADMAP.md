@@ -8,6 +8,8 @@ The disposable parent model and legacy-reader regression cases are recorded
 in the [attachment results](MIGRATION_AI_REQUEST_RECOVERY.md#disposable-attachment-parent-results).
 Production readers, writers and evidence claims still need a reviewed
 typed binding before any schema change or source transfer.
+The [typed binding rehearsal](MIGRATION_AI_REQUEST_RECOVERY.md#disposable-typed-binding-results)
+adds evidence for claim and file lifecycle decisions using disposable data.
 
 ## Candidate #108 — WSGI service delegation syntax is not a generation fence
 

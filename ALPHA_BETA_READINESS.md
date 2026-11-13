@@ -18,6 +18,9 @@ identity, database grants and independent key and head custody remain open.
 Disposable fixtures now model scoped attachment parents, confirmation
 expiry and revocation, and separate writer and operator grants. Legacy
 collision attribution and operational evidence remain release blockers.
+Typed signatures, discard recovery and restored revocation state now have
+synthetic coverage. Authoritative claim retention, independent revocation
+custody and live typed readers and writers still require verification.
 
 ## Alternate writer and recovery review
 

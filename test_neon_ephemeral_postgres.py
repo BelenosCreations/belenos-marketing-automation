@@ -986,16 +986,23 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         with self.conn.transaction(force_rollback=True):
             self.conn.execute("CREATE ROLE bam_ci_fixture_writer NOLOGIN")
             self.conn.execute("CREATE ROLE bam_ci_fixture_operator NOLOGIN")
+            self.conn.execute("CREATE ROLE bam_ci_fixture_function_owner NOLOGIN")
             self.conn.execute("""CREATE TABLE ci_grants_authority (
-                generation INTEGER PRIMARY KEY, mode TEXT NOT NULL
+                generation INTEGER PRIMARY KEY, mode TEXT NOT NULL,
+                lock_permission INTEGER
             )""")
-            self.conn.execute("INSERT INTO ci_grants_authority VALUES (1,'open')")
+            self.conn.execute("""INSERT INTO ci_grants_authority (generation,mode)
+                VALUES (1,'open')""")
             self.conn.execute("CREATE TABLE ci_grants_canary (id INTEGER PRIMARY KEY)")
             self.conn.execute("""GRANT USAGE ON SCHEMA bam_ci_integration
-                TO bam_ci_fixture_writer, bam_ci_fixture_operator""")
+                TO bam_ci_fixture_writer, bam_ci_fixture_operator,
+                   bam_ci_fixture_function_owner""")
             self.conn.execute("GRANT SELECT ON ci_grants_authority TO bam_ci_fixture_writer")
             self.conn.execute("""GRANT SELECT, UPDATE ON ci_grants_authority
                 TO bam_ci_fixture_operator""")
+            self.conn.execute("""GRANT SELECT, UPDATE (lock_permission) ON ci_grants_authority
+                TO bam_ci_fixture_function_owner""")
+            self.conn.execute("GRANT INSERT ON ci_grants_canary TO bam_ci_fixture_function_owner")
             self.conn.execute("""CREATE FUNCTION ci_grants_admit(expected INTEGER, canary INTEGER)
                 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER
                 SET search_path TO pg_catalog AS $fixture$
@@ -1010,8 +1017,19 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 END
                 $fixture$""")
             self.conn.execute("REVOKE ALL ON FUNCTION ci_grants_admit(INTEGER,INTEGER) FROM PUBLIC")
+            self.conn.execute("""ALTER FUNCTION ci_grants_admit(INTEGER,INTEGER)
+                OWNER TO bam_ci_fixture_function_owner""")
             self.conn.execute("""GRANT EXECUTE ON FUNCTION ci_grants_admit(INTEGER,INTEGER)
                 TO bam_ci_fixture_writer""")
+            self.conn.execute("SET LOCAL ROLE bam_ci_fixture_function_owner")
+            for forbidden in (
+                "UPDATE ci_grants_authority SET mode='frozen'",
+                "UPDATE ci_grants_authority SET generation=2",
+                "CREATE TABLE bam_ci_integration.ci_grants_unexpected (id INTEGER)",
+            ):
+                with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
+                    with self.conn.transaction():
+                        self.conn.execute(forbidden)
             self.conn.execute("SET LOCAL ROLE bam_ci_fixture_writer")
             self.assertEqual(self.conn.execute(
                 "SELECT generation,mode FROM ci_grants_authority").fetchone(), (1,'open'))
@@ -1019,17 +1037,24 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 "UPDATE ci_grants_authority SET mode='frozen'",
                 "SELECT generation FROM ci_grants_authority FOR SHARE",
                 "INSERT INTO ci_grants_canary VALUES (1)",
+                "CREATE TABLE bam_ci_integration.ci_grants_unexpected (id INTEGER)",
+                "ALTER FUNCTION bam_ci_integration.ci_grants_admit(INTEGER,INTEGER) RENAME TO ci_replaced",
             ):
                 with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
                     with self.conn.transaction():
                         self.conn.execute(forbidden)
+            self.conn.execute("CREATE TEMP TABLE ci_grants_authority (generation INTEGER,mode TEXT)")
+            self.conn.execute("INSERT INTO pg_temp.ci_grants_authority VALUES (2,'open')")
+            self.conn.execute("CREATE TEMP TABLE ci_grants_canary (id INTEGER)")
             self.assertEqual(self.conn.execute("SELECT ci_grants_admit(2,1)").fetchone(), (False,))
             self.assertEqual(self.conn.execute("SELECT ci_grants_admit(1,1)").fetchone(), (True,))
+            self.assertEqual(self.conn.execute(
+                "SELECT count(*) FROM pg_temp.ci_grants_canary").fetchone(), (0,))
             self.conn.execute("SET LOCAL ROLE bam_ci_fixture_operator")
             self.assertEqual(self.conn.execute(
-                "UPDATE ci_grants_authority SET mode='frozen'").rowcount, 1)
+                "UPDATE bam_ci_integration.ci_grants_authority SET mode='frozen'").rowcount, 1)
             for forbidden in (
-                "INSERT INTO ci_grants_canary VALUES (2)",
+                "INSERT INTO bam_ci_integration.ci_grants_canary VALUES (2)",
                 "SELECT ci_grants_admit(1,2)",
             ):
                 with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
@@ -1039,7 +1064,44 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             self.assertEqual(self.conn.execute("SELECT ci_grants_admit(1,2)").fetchone(), (False,))
             self.conn.execute("RESET ROLE")
             self.assertEqual(self.conn.execute(
-                "SELECT id FROM ci_grants_canary").fetchall(), [(1,)])
+                "SELECT id FROM bam_ci_integration.ci_grants_canary").fetchall(), [(1,)])
+
+    def test_ci_confirmation_uses_fresh_clock_and_independent_revocation_head(self):
+        with self.conn.transaction(force_rollback=True):
+            self.conn.execute("""CREATE TABLE ci_confirmation_clock (
+                id INTEGER PRIMARY KEY, mode TEXT NOT NULL,
+                deadline TIMESTAMPTZ,
+                revocation_head TEXT NOT NULL,
+                CHECK ((mode='pending' AND deadline IS NOT NULL)
+                    OR (mode='open' AND deadline IS NULL))
+            )""")
+            with self.assertRaises(self.psycopg.errors.CheckViolation):
+                with self.conn.transaction():
+                    self.conn.execute("""INSERT INTO ci_confirmation_clock
+                        VALUES (1,'pending',NULL,'old-head')""")
+            self.conn.execute("""INSERT INTO ci_confirmation_clock
+                VALUES (1,'pending',transaction_timestamp()+interval '20 milliseconds','old-head')""")
+            self.conn.execute("SELECT pg_sleep(0.05)")
+            self.conn.execute("SELECT id FROM ci_confirmation_clock WHERE id=1 FOR UPDATE")
+            self.assertEqual(self.conn.execute("""SELECT
+                transaction_timestamp()<deadline, clock_timestamp()>=deadline
+                FROM ci_confirmation_clock WHERE id=1""").fetchone(), (True,True))
+            confirm = """UPDATE ci_confirmation_clock SET mode='open',deadline=NULL
+                WHERE id=1 AND mode='pending' AND clock_timestamp()<deadline
+                  AND revocation_head=%s"""
+            self.assertEqual(self.conn.execute(confirm, ('old-head',)).rowcount, 0)
+
+            # Restore a pending row with a usable deadline but an old head.
+            self.conn.execute("""UPDATE ci_confirmation_clock
+                SET deadline=clock_timestamp()+interval '1 minute' WHERE id=1""")
+            current_head = 'independent-current-head'
+            self.assertEqual(self.conn.execute(confirm, (None,)).rowcount, 0)
+            self.assertEqual(self.conn.execute(confirm, (current_head,)).rowcount, 0)
+            self.assertEqual(self.conn.execute(
+                "SELECT mode FROM ci_confirmation_clock").fetchone(), ('pending',))
+            self.conn.execute("UPDATE ci_confirmation_clock SET revocation_head=%s",
+                              (current_head,))
+            self.assertEqual(self.conn.execute(confirm, (current_head,)).rowcount, 1)
 
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.

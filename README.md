@@ -19,6 +19,8 @@ separately signed transition and confirmation evidence before resuming.
 The disposable attachment model tests scoped parents and holds ambiguous
 legacy links. The authority rehearsal adds expiry, revocation, rollback
 and separate writer and operator grants.
+The offline attachment rehearsal checks signed parent and subject binding,
+revocation across claim versions, and retry after an interrupted discard.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
