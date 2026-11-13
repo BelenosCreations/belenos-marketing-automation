@@ -8,6 +8,10 @@ The PostgreSQL tests exercise scoped finalization and audit writes, revision
 rollback and pending-resume behavior with synthetic authority. Verification of
 an operator's identity, latest-head custody and the actual deployment remains
 required.
+The disposable mapping suite also exposed a blocker for migrating AI
+attachments. The PostgreSQL attachment constraint expects a content request,
+and legacy AI attachment metadata can point only to an AI draft and omit its
+subject. The parent and ownership rules require review before cutover.
 
 ## Alternate writer and recovery review
 

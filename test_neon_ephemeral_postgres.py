@@ -4,9 +4,19 @@ Runs only when BAM_EPHEMERAL_PG_TEST=1. Refuses any non-loopback endpoint or
 unexpected database name/user. This does not implement or authorize production
 credentials, migration, persistence, public hosting, or scheduled publication.
 """
+import json
 import os
+import sqlite3
 import threading
 import unittest
+from contextlib import closing
+
+from ai_account_policy import AIPolicyStore
+from ai_business_facts import AIBusinessFacts
+from ai_content_drafts import AIContentDraftStore
+from ai_generation_idempotency import AIGenerationIdempotency
+from ai_sponsorship import SponsoredAIQuota
+from content_attachments import AttachmentRegistry
 
 from neon_schema_blueprint import ddl_preview,TABLE_NAMES
 from neon_collaboration_schema import (
@@ -816,6 +826,213 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute(confirm, (1, 'head-1')).rowcount, 0)
         self.assertEqual(self.conn.execute(
             "SELECT request_key FROM bam_ai_generation_requests").fetchall(), [('a'*32,)])
+
+    def test_ai_memory_and_facts_keep_exact_sqlite_text(self):
+        def unique_object(pairs):
+            result = dict(pairs)
+            if len(result) != len(pairs):
+                raise ValueError('Duplicate JSON key')
+            return result
+
+        memory = {'greeting': 'Café 🐝', 'tone': 'Friendly'}
+        canonical = AIPolicyStore._encode_memory(memory)
+        legacy = '{ "tone": "Friendly", "greeting": "Caf\\u00e9 \\ud83d\\udc1d" }'
+        duplicate = '{"tone":"Wrong","tone":"Friendly"}'
+        for value in (canonical, legacy):
+            self.assertEqual(json.loads(value, object_pairs_hook=unique_object), memory)
+        with self.assertRaisesRegex(ValueError, 'Duplicate JSON key'):
+            json.loads(duplicate, object_pairs_hook=unique_object)
+        with self.assertRaises(ValueError):
+            AIPolicyStore._encode_memory(json.loads('{"tone":42}'))
+        with self.assertRaises(ValueError):
+            AIBusinessFacts._validate({})
+
+        with closing(sqlite3.connect(':memory:')) as source:
+            policy = AIPolicyStore(db=source, sessions=None, directory=None)
+            AIBusinessFacts(db=source, policy_store=policy)
+            source.executemany('INSERT INTO bam_ai_memories VALUES (?,?,?,?)', (
+                ('shop-a', self.a, canonical, 100),
+                ('shop-b', self.a, legacy, 100),
+                ('shop-a', self.viewer, '{}', 0),
+            ))
+            source.execute('INSERT INTO bam_ai_business_facts VALUES (?,?,?,?,?)',
+                           ('shop-a', AIBusinessFacts._validate({'store': 'Café 🐝'}),
+                            4, self.a, 100))
+            for table, placeholders in (
+                ('bam_ai_memories', '%s,%s,%s,%s'),
+                ('bam_ai_business_facts', '%s,%s,%s,%s,%s'),
+            ):
+                select = f'SELECT * FROM {table} ORDER BY 1,2'
+                source_rows = source.execute(select).fetchall()
+                for row in source_rows:
+                    self.conn.execute(f'INSERT INTO {table} VALUES ({placeholders})', row)
+                self.assertEqual(self.conn.execute(select).fetchall(), source_rows)
+        self.assertEqual(self.conn.execute("""SELECT
+            convert_to(memory_json,'UTF8') FROM bam_ai_memories
+            WHERE tenant_id='shop-b' AND subject_id=%s""", (self.a,)).fetchone(),
+            (legacy.encode('utf-8'),))
+
+        compare_and_swap = """UPDATE bam_ai_memories SET memory_json=%s
+            WHERE tenant_id=%s AND subject_id=%s AND memory_json=%s"""
+        replacement = AIPolicyStore._encode_memory({'tone': 'Direct'})
+        self.assertEqual(self.conn.execute(compare_and_swap,
+            (replacement, 'shop-b', self.a, canonical)).rowcount, 0)
+        self.assertEqual(self.conn.execute(compare_and_swap,
+            (replacement, 'shop-a', self.a, canonical)).rowcount, 1)
+        self.assertEqual(self.conn.execute(compare_and_swap,
+            (canonical, 'shop-a', self.a, canonical)).rowcount, 0)
+        self.assertEqual(self.conn.execute("""SELECT memory_json FROM bam_ai_memories
+            WHERE tenant_id='shop-b' AND subject_id=%s""", (self.a,)).fetchone(), (legacy,))
+
+    def test_ai_legacy_requests_and_media_require_full_scope(self):
+        draft_id, shared_id, ai_only_id, missing_id = self.rid_a, self.rid_b, 'c'*32, 'd'*32
+        prompt = 'Synthetic image prompt'
+        drafts = (
+            ('shop-a', self.a, draft_id, 'facebook', 'Synthetic copy', prompt, 1, 4, 100, 102),
+            ('shop-b', self.a, draft_id, 'facebook', 'Synthetic copy', None, 0, 1, 100, 100),
+            ('shop-b', self.a, shared_id, 'facebook', 'Synthetic copy', prompt, 1, 1, 100, 100),
+            ('shop-b', self.b, shared_id, 'facebook', 'Synthetic copy', prompt, 1, 1, 100, 100),
+            ('shop-a', self.a, ai_only_id, 'facebook', 'Synthetic copy', prompt, 1, 1, 100, 100),
+        )
+        request_cases = (
+            ('shop-a', self.a, 'completed', draft_id, True),
+            ('shop-a', self.viewer, 'completed', draft_id, False),
+            ('shop-b', self.a, 'completed', ai_only_id, False),
+            ('shop-a', self.a, 'completed', None, False),
+            ('shop-a', self.a, 'in_progress', None, True),
+            ('shop-a', self.a, 'failed', None, True),
+            ('shop-a', self.a, 'in_progress', draft_id, False),
+            ('shop-b', self.a, 'failed', draft_id, False),
+        )
+        requests = [
+            (tenant, subject, f'{index:032x}', 'f'*64, status, draft, 100)
+            for index, (tenant, subject, status, draft, _) in enumerate(request_cases)
+        ]
+        attachments = [
+            (f'{index:032x}', tenant, draft, item, 'image/png', 'f'*64,
+             f'ci-object-{index}', status, 100)
+            for index, (tenant, draft, item, status) in enumerate((
+                ('shop-a', draft_id, 'image', 'verified'),
+                ('shop-b', shared_id, 'image', 'verified'),
+                ('shop-a', ai_only_id, 'image', 'verified'),
+                ('shop-b', shared_id, 'image', 'pending'),
+                ('shop-a', draft_id, 'caption', 'verified'),
+            ))
+        ]
+        with closing(sqlite3.connect(':memory:')) as source:
+            AIContentDraftStore(db=source, policy_store=None)
+            AIGenerationIdempotency(db=source, policy_store=None)
+            AttachmentRegistry(source)
+            for table, rows in (
+                ('bam_ai_draft_components', drafts),
+                ('bam_ai_generation_requests', requests),
+            ):
+                sqlite_params = ','.join('?' for _ in rows[0])
+                pg_params = ','.join('%s' for _ in rows[0])
+                source.executemany(f'INSERT INTO {table} VALUES ({sqlite_params})', rows)
+                for row in source.execute(f'SELECT * FROM {table}'):
+                    self.conn.execute(f'INSERT INTO {table} VALUES ({pg_params})', row)
+            source.executemany('INSERT INTO content_attachments VALUES (?,?,?,?,?,?,?,?,?)',
+                               attachments)
+            insert_attachment = 'INSERT INTO content_attachments VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+            for row in source.execute('SELECT * FROM content_attachments ORDER BY attachment_id'):
+                if row[2] == ai_only_id:
+                    # SQLite accepted this AI draft parent. The stage-eight
+                    # target constraint points exclusively to content_requests.
+                    with self.assertRaises(self.psycopg.errors.ForeignKeyViolation) as rejected:
+                        self.conn.execute(insert_attachment, row)
+                    self.assertEqual(rejected.exception.diag.constraint_name,
+                                     'content_attachments_tenant_request_fkey')
+                else:
+                    self.conn.execute(insert_attachment, row)
+
+        # A structurally matching historical draft still cannot prove an output
+        # receipt, a provider outcome, or which revision a request produced.
+        request_review = self.conn.execute("""SELECT r.request_key, r.status,
+            r.draft_id, r.request_fingerprint, CASE WHEN r.status='completed'
+                THEN d.draft_id IS NOT NULL ELSE r.draft_id IS NULL END
+            FROM bam_ai_generation_requests AS r
+            LEFT JOIN bam_ai_draft_components AS d USING (tenant_id,subject_id,draft_id)
+            ORDER BY r.request_key""").fetchall()
+        self.assertEqual(request_review, [
+            (row[2], row[4], row[5], row[3], case[4])
+            for row, case in zip(requests, request_cases)
+        ])
+        self.assertEqual(self.conn.execute("""SELECT subject_id, image_prompt,
+            needs_media, revision FROM bam_ai_draft_components WHERE draft_id=%s
+            ORDER BY tenant_id""", (draft_id,)).fetchall(),
+            [(self.a, prompt, 1, 4), (self.a, None, 0, 1)])
+
+        # The legacy attachment key has no subject. A second same-tenant
+        # draft owner with the same ID makes attribution ambiguous.
+        media_cases = (
+            ('shop-a', self.a, draft_id, 0, (True, 1, True, 1)),
+            ('shop-b', self.a, shared_id, 1, (True, 1, True, 2)),
+            ('shop-b', self.a, draft_id, 0, (True, 0, False, 1)),
+            ('shop-a', self.a, ai_only_id, 2, (True, 1, False, 1)),
+            ('shop-b', self.a, shared_id, 3, (True, 1, False, 2)),
+            ('shop-a', self.a, draft_id, 4, (True, 1, False, 1)),
+            ('shop-a', self.viewer, draft_id, 0, (False, None, True, 1)),
+            ('shop-a', self.a, missing_id, 0, (False, None, False, 0)),
+        )
+        for tenant, subject, draft, index, expected in media_cases:
+            with self.subTest(tenant=tenant, subject=subject, draft=draft, index=index):
+                # The same composite link is reused only within this transaction.
+                with self.conn.transaction(force_rollback=True):
+                    self.conn.execute("""INSERT INTO bam_ai_draft_verified_media
+                        VALUES (%s,%s,%s,%s,103)""",
+                        (tenant, subject, draft, attachments[index][0]))
+                    self.assertEqual(self.conn.execute("""SELECT d.draft_id IS NOT NULL,
+                        d.needs_media, a.attachment_id IS NOT NULL,
+                        (SELECT count(*) FROM bam_ai_draft_components AS candidate
+                         WHERE candidate.tenant_id=l.tenant_id AND candidate.draft_id=l.draft_id)
+                        FROM bam_ai_draft_verified_media AS l
+                        LEFT JOIN bam_ai_draft_components AS d
+                            USING (tenant_id,subject_id,draft_id)
+                        LEFT JOIN content_attachments AS a
+                            ON a.tenant_id=l.tenant_id AND a.request_id=l.draft_id
+                           AND a.item='image' AND a.attachment_id=l.attachment_id
+                           AND a.status='verified'""").fetchone(),
+                        expected)
+
+    def test_ai_monthly_usage_preserves_unpriced_counts_across_source_versions(self):
+        scopes = (
+            ('bam_ai_usage', ('shop-a', self.a)),
+            ('bam_ai_tenant_usage', ('shop-a',)),
+            ('bam_ai_operator_usage', ()),
+        )
+        for version, values, expected in (
+            ('counts-only', (3,), (3, 0, 3)),
+            ('reserved-only', (5, 120), (5, 120, 5)),
+            ('current', (7, 260, 2), (7, 260, 2)),
+        ):
+            with self.subTest(version=version), closing(sqlite3.connect(':memory:')) as source:
+                policy = AIPolicyStore(db=source, sessions=None, directory=None)
+                source.execute("""CREATE TABLE bam_ai_tenant_usage (
+                    tenant_id TEXT NOT NULL, month TEXT NOT NULL, accepted INTEGER NOT NULL,
+                    PRIMARY KEY (tenant_id,month))""")
+                source.execute("""CREATE TABLE bam_ai_operator_usage (
+                    month TEXT PRIMARY KEY, accepted INTEGER NOT NULL)""")
+                for table, scope in scopes:
+                    if len(values) >= 2:
+                        source.execute(f'ALTER TABLE {table} ADD COLUMN reserved_micro_usd '
+                                       'INTEGER NOT NULL DEFAULT 0')
+                    if len(values) == 3:
+                        source.execute(f'ALTER TABLE {table} ADD COLUMN unpriced_requests '
+                                       'INTEGER NOT NULL DEFAULT 0')
+                    row = (*scope, '2026-11', *values)
+                    placeholders = ','.join('?' for _ in row)
+                    source.execute(f'INSERT INTO {table} VALUES ({placeholders})', row)
+                SponsoredAIQuota(db=source, policy_store=policy)
+                SponsoredAIQuota(db=source, policy_store=policy)
+                with self.conn.transaction(force_rollback=True):
+                    for table, scope in scopes:
+                        row = source.execute(f'SELECT * FROM {table}').fetchone()
+                        self.assertEqual(row, (*scope, '2026-11', *expected))
+                        placeholders = ','.join('%s' for _ in row)
+                        self.conn.execute(f'INSERT INTO {table} VALUES ({placeholders})', row)
+                        self.assertEqual(self.conn.execute(f'SELECT * FROM {table}').fetchone(),
+                                         row)
 
     def test_ai_budget_state_never_unpauses_or_approves_paid_ai(self):
         self.assertEqual(self.conn.execute("""SELECT paused

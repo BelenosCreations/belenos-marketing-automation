@@ -1,3 +1,10 @@
+## Disposable AI store mapping rehearsal (2026-11-13)
+
+- Checked exact memory text and compare-and-swap, receiptless request scope,
+  nullable draft fields and legacy quota backfill against the PostgreSQL preview.
+- Reproduced rejection of a SQLite attachment whose parent exists only as an AI
+  draft. Recorded same-tenant draft-owner ambiguity for the ownership review.
+
 ## Disposable PostgreSQL recovery rehearsal (2026-11-13)
 
 - Reviewed AI store migration fields and documented independent evidence

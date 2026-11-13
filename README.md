@@ -10,6 +10,10 @@ The disposable PostgreSQL suite exercises receipt-based finalization,
 targeted revision rollback, and closed admission after a stale restore.
 The recovery design includes a source-level review of AI store migration
 fields and the evidence needed to verify ownership and legacy values.
+Synthetic SQLite-to-PostgreSQL tests preserve memory text, historical request
+state and unpriced quota counts. They also expose a preview constraint that
+rejects attachments linked only to an AI draft. The attachment parent and
+subject ownership model needs review before migration.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
