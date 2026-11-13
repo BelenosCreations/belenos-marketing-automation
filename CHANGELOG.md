@@ -1,19 +1,28 @@
 # Changelog
 
-## 2026-11-12 — Candidate PR #88: synthetic write-fence and rollback canaries
+**Latest independently verified BAM functional checkpoint — November 12, 2026:** PRs [#86](https://github.com/BelenosCreations/belenos-marketing-automation/pull/86), [#87](https://github.com/BelenosCreations/belenos-marketing-automation/pull/87) and [#88](https://github.com/BelenosCreations/belenos-marketing-automation/pull/88) all merged, with separately successful exact-head and merged-main GitHub Actions. #86: [43363216197](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43363216197) / [43363520290](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43363520290), merged main `af5154b94573a01bd4c4e2fc08184149a2b1ec09`; #87: [43363803609](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43363803609) / [43363985496](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43363985496), merged main `177ecd90728e96a7d6c604bb4ba4f1731039e023`; #88: [43364238789](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43364238789) / [43364411439](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43364411439), merged main `d0b3255597349fd864842625e7dc0a5f6def55df`. Both main and development were independently compared identical, zero commits ahead/behind, after a non-force fast-forward.
+
+**Verified offline scope, NOT production release:** #86 checks exact source/target synthetic values, integer ranges, finite floating-point/text/binary assumptions and independently pinned schema/mapping fingerprints without querying source rows or migrating data. #87 prepares a dormant ClamAV subprocess interface with external executable/CVD hashes, safe private file reinspection and negative mocked-CLI tests; no genuine engine/signatures were invoked in CI, no trusted worker isolation or rights adjudication is proven, and no scan claim/status approval is issued. #88 validates two-connection **in-memory synthetic SQLite** lock and rollback behavior only, not a BAM-wide production write fence. Real customer data transformation, transactional PostgreSQL runner, application rollback, authoritative offsite AES-GCM backup/head/key custody, independently authenticated scanner/rights reviewers, hosted session/tenant/CSRF/ingress hardening and publishing authorization remain blocked. No Render, Neon, paid APIs, social publishing or EdgePilot activation. Incremental spending: **$0**.
+
+## Verified recovery checkpoint after PRs #86–#88
+
+Latest independently verified functional main: `d0b3255597349fd864842625e7dc0a5f6def55df`; last verified merged-main Actions **43364411439** succeeded. PR #86 exact/main Actions **43363216197 / 43363520290**, PR #87 **43363803609 / 43363985496**, PR #88 **43364238789 / 43364411439** all succeeded. Main and development were synchronized without force and independently verified zero ahead/behind. No pending functional PR at this point; PR #89 is a documentation-only recovery checkpoint candidate. **Production is still inactive offline Alpha, not approved private Beta.** Distinguish: a synthetic conversion canary does not approve customer values; a mocked ClamAV CLI response does not prove real malware scanning or legitimate usage rights; a shared-memory SQLite lock does not fence BAM web workers or production PostgreSQL; same-host encrypted ciphertext is not offsite customer backup. Remaining gates: independently reviewed column/default/tenant transforms, versioned atomic migration/rollback and operator wide-area write fencing, externally controlled offsite backup/keys/heads, independently attested real ClamAV signatures and isolated worker, human rights-review and tenant-scoped revocation authority, hardened real sessions/CSRF/proxy/abuse tests, explicit operator authorization. Keep $0 added costs and all Render/Neon/paid providers/social/EdgePilot services disabled.
+
+
+## 2026-11-12 — Verified CI-only PR #88: synthetic write-fence and rollback canaries
 
 - Rehearse SQLite `BEGIN IMMEDIATE` writer rejection from a second independent disposable connection in shared memory, rollback on explicit release and on abandoned connection, and successful post-release writer.
 - No user-controlled paths, customer connections, hosted PG execution, real BAM writer freeze or application rollback. Explicit inactive gate, bad-mode negatives, and CI fingerprint. Not production migration acceptance.
 
 
-## 2026-11-12 — Candidate PR #87: disabled ClamAV CLI worker boundary
+## 2026-11-12 — Verified CI-only PR #87: disabled ClamAV CLI worker boundary
 
 - Prepared non-HTTP standalone scanner execution with externally pinned `clamscan` binary + CVD file, private pending inode SHA checks, bounded subprocess and mutation verification.
 - Mocked-only CI tests cover clean/infected/error/timeout, external pin mismatch, hash changes, hard links, unsafe permissions, unsupported filenames and inactive gate.
 - CI does **not** run genuine ClamAV; no independent vendor provenance, signature freshness, OS sandbox, tenant-scoped signed attestation, actual rights reviewer or attachment approval. All production integrations disabled.
 
 
-## 2026-11-12 — Candidate PR #86: strict synthetic migration type acceptance (pending verification)
+## 2026-11-12 — Verified CI-only PR #86: strict synthetic migration type acceptance (pending verification)
 
 - Add offline, CI-gated and dual-fingerprint-pinned candidate conversion checks for TEXT, integer target widths, finite IEEE-754 floats and byte arrays, with no returned plaintext or row reads.
 - Negative tests cover NULL, NUL text/surrogates, oversized values, boolean coercion, target overflow, nonfinite float, wrong pins, source drift and inactive gate. **No approved value transformation or production migration.**
@@ -30,7 +39,7 @@ Main SHA `10e18ce0e5554fd9dab80048b9ef002bf5e58654`; both branches identical, no
 - Verified #84 adds an immutable, private local ciphertext-only relocation rehearsal tied to independently signed recovery manifests. Tests simulated original loss and externally keyed AES-GCM restoration, wrong head/signature, ciphertext corruption, expiry, unsafe permissions and overwrite. Same-host synthetic test **is not offsite backup**.
 
 
-## 2026-11-12 — Candidate PR #83: Offline target-column transformation review (CI verification pending)
+## 2026-11-12 — Candidate PR #83: Offline target-column transformation review (CI verified)
 
 - Add deterministic and independently pinnable metadata-only 46-table target-column/type review, with explicit binary/integer/identity and missing-column proposals.
 - Add drift, malformed-pin, no-private-data and non-execution negative tests. Human review is still outstanding for **every** value, default, constraint and tenant relationship; no executable customer migration or activation.
