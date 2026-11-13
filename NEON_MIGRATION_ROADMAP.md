@@ -1,6 +1,6 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
-**Current unverified candidate:** Add foreign-key/constraint/index catalog parity to the CI-only two-schema PostgreSQL restore rehearsal; reject altered source constraints and unreviewed indexes, roll back cleanly, and emit no DDL/customer details. Starting fully verified state is PR #65 at `7ea77bed`, merged-main Actions 43340767900 successful. No customer migration or durable recovery has been performed.
+**Last verified CI-only restore integrity:** PR #66 merged at `51944ce3`; full main Actions 43342715656 passed. The rehearsal compares row, column, FK/constraint/index catalog parity across all 47 objects, but has neither a durable encrypted archive nor an off-host recovery point. The new signed-media-evidence milestone is a separate offline contract and does not make migration or backup production-ready.
 
 **Current verified development checkpoint:** PR #64 (`3f89c948a5e453b2516a9faa40c35eae294a3397`) merged and [full main Actions 43340205353](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43340205353) passed. PRs #61–#64 improved local file-container sanity and added CI-only, in-memory PostgreSQL restoration of 46 reviewed tables plus journal, rollback on interrupted/corrupt copies, and authenticated tenant/session access checks after restore. This is **not** a production SQLite→Neon migration, durable/encrypted backup, object-store restore or any permission to host/publish. Column-shape drift verification is the next candidate.
 

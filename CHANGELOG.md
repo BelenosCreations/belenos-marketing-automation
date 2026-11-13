@@ -1,5 +1,15 @@
 # Changelog
 
+## November 12, 2026 — Signed media evidence contract (unverified candidate)
+
+- Add a pure server-side offline verifier for separate HMAC-authenticated malware-scan and channel-specific owned/licensed-rights attestations, bound to exact pending attachment ID, tenant, request, item, MIME and SHA-256. Reject altered, foreign, expired, future-dated and wrong-signer claims. Never change attachment state or authorize publishing; a signed statement alone does not prove a scan or license exists.
+- Synthetic tests only; actual trusted scanner, rights-verification workflow, private storage, tamper-resistant audit and production integration remain private-Beta blockers. $0 spend.
+
+## November 12, 2026 — PostgreSQL restore constraint/index parity (verified PR #66)
+
+- PR #66 merged as `51944ce3b222979b6d5a69a1ee4dff9894224b3f`; exact-head Actions 43342519053 and [merged-main Actions 43342715656](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43342715656) succeeded. Development fast-forward synchronized safely.
+- All 47 CI objects are now checked for constraint, index and same-schema foreign-key metadata parity as well as column shape and row parity; deliberate check/index drift rolls back cleanly. Not production recovery readiness.
+
 ## November 12, 2026 — CI PostgreSQL constraint/index parity (unverified candidate)
 
 - Compare schema-independent foreign-key, check/unique/primary-key and index catalog attributes for all 46 reviewed tables plus migration journal in the disposable second-schema restore rehearsal. Foreign keys must preserve same-schema target scope.
