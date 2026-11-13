@@ -43,6 +43,16 @@ The tracked files had no release manifest for a hosted process. These checks
 describe GitHub's record and checked-in configuration. External hosts, job
 schedulers, callbacks and separately operated writers remain unverified.
 
+The AI attachment review found two source namespaces that use the same
+registry. [Upload preflight](content_upload_preflight.py) registers ordinary
+content-request attachments, while [AI draft attachment](ai_content_drafts.py)
+looks up verified metadata using an AI draft ID. The [PostgreSQL media read
+contract](neon_session_media_contract.py) joins only ordinary content
+requests. Any eventual typed parent design needs to account for those
+readers as well as pending-file writes, scanner status and discard. The
+review inspected source bindings only. Live callbacks, external workers,
+direct database clients and storage grants still require runtime evidence.
+
 For an authorized deployment review, compare independent runtime observations
 with the repository map before proposing a freeze. The observation and the
 repository path should both identify the version and writer principal.
