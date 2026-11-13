@@ -1,3 +1,10 @@
+## AI attachment ownership mapping
+
+The [disposable AI mapping rehearsal](MIGRATION_AI_REQUEST_RECOVERY.md#disposable-sqlite-to-postgresql-mapping-results)
+reproduces a PostgreSQL constraint failure for an attachment whose SQLite
+parent is an AI draft. Review a typed, tenant- and subject-scoped parent
+mapping alongside historical author retention before enabling any migration.
+
 ## Candidate #108 — WSGI service delegation syntax is not a generation fence
 
 Candidate offline source-only mapping of direct WSGI handler self.dependency.method calls may narrow manual review but cannot prove SQL transactions, actual tenant or role guards, dynamically injected services, callback retries or a persistent shared epoch at the commit boundary. Independent operator/head/key custody and approved PostgreSQL migration/rollback remain mandatory; no Neon connection or migration enabled. See MIGRATION_WSGI_SERVICE_REVIEW.md, $0 incremental cost.

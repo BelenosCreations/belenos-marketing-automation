@@ -138,3 +138,35 @@ Review provider behavior using authorized evidence, establish operator identity
 and independent head and key custody, and prove that all writers are fenced.
 The disposable tests cover selected database boundaries. They do not authorize
 provider activity, real recovery, customer migration, or private Beta.
+
+### Disposable SQLite-to-PostgreSQL mapping results
+
+- Canonical and noncanonical memory JSON text round-trips byte for byte. The
+  existing compare-and-swap uses a canonical encoding of the previously read
+  map. A valid legacy spelling with different whitespace, key order or
+  Unicode escaping still fails that comparison after an exact transfer.
+  Preserve the original text for review before deciding how to repair it.
+  Reject duplicate keys before validating decoded objects. Keep an absent
+  facts row distinct from a stored empty personal memory.
+- Legacy request keys, fingerprints, status and nullable draft IDs transfer
+  unchanged. A completed request requires a matching tenant, subject and
+  draft. Even a matching row cannot establish a receipt or provider outcome.
+  Held and failed rows with a draft reference require review.
+- The stage-eight PostgreSQL attachment foreign key references
+  `content_requests(tenant_id, request_id)`. SQLite's AI draft workflow can
+  store that same attachment key under an AI draft ID with no content-request
+  row. PostgreSQL rejects this source-valid case. A matching attachment
+  metadata row also lacks a subject and can be ambiguous if two draft owners
+  share an ID within the same tenant. Review explicit parent type, subject
+  scope, namespace collisions and historical membership before selecting a
+  schema change. Do not synthesize a content request to satisfy the constraint.
+- Counts-only quota rows acquire `reserved_micro_usd=0` and
+  `unpriced_requests=accepted` through the existing SQLite upgrade. A
+  synthetic intermediate schema with only the reserved-cost column retains
+  that cost but also marks all accepted requests unpriced. Current rows
+  preserve both accounting fields. This holds across user, tenant and
+  operator rows and a repeated initializer. The PostgreSQL zero defaults
+  cannot replace the legacy backfill.
+
+These tests copy only hand-seeded fixtures into the disposable preview and
+leave production transforms, receipt creation and media trust decisions gated.
