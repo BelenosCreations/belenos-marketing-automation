@@ -1,3 +1,7 @@
+## Candidate PR #94 — recovery incident planning is not an operator migration gate
+
+CI-only signed-manifest incident planning can flag expired/unavailable-key synthetic recovery points and select hypothetical metadata candidates. It does not validate offsite failure-domain isolation, latest-head custody, external key escrow, actual encrypted replica presence, full customer restore or acceptable measured RPO/RTO. Real migration remains blocked by approved transformations, global writer fencing, transactional versioning, operator approvals and reversible cutover. Do not treat an HMAC manifest or a synthetic incident as production disaster recovery.
+
 ## Proposed CI-only semantic review — PR #93
 
 In addition to type-only column mapping proposals and synthetic typed-value canaries, offline metadata review now flags PG NOT NULL versus SQLite nullable/PK quirks, presence of defaults without exposing their expressions, TEXT fields potentially containing JSON, tenant/reference and constraint review, and generated identities requiring reseed. Four external fingerprints (source, mapping, PG preview and semantics) must match for a drift-free report; a mismatch is a blocker and a match is **not** authorization. Every transformation, null policy, default meaning, JSON parsing strategy, FK mapping, transaction runner, application write fence, backup, rollback and promotion remains unapproved or absent. No real migration or hosted PostgreSQL.

@@ -1,3 +1,9 @@
+## 2026-11-12 — Candidate PR #94: signed synthetic recovery incident planning
+
+- Added CI-only recovery incident scenario planning around independently pinned, HMAC-signed synthetic recovery chain metadata, expiration policy, externally claimed key IDs and incident age limits.
+- Added failure tests for wrong head/signer, changed/reordered manifests, expiration, host loss, unavailable keys and invalid/disabled inputs.
+- A candidate manifest is **not** a validated local/offsite ciphertext, customer backup, actual restore, measured RPO/RTO, custody proof or DR acceptance. No filesystem access in planner, remote backup, deletion, migration, hosting, AI charge or publishing. $0 extra cost. Verification pending.
+
 ## 2026-11-12 — Candidate PR #93: CI-only migration column semantics review
 
 - Added deterministic, independently pinnable, metadata-only source/target semantics report for 46 preview tables: nullable/PK ambiguity, default *presence* parity, JSON-text/tenant/FK/constraints, and sequence-reseed TODOs.
