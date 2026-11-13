@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Candidate PR #72 — encrypt every disposable PostgreSQL table restore payload
+
+Baseline PR #71 merged as `f7259ff3e9dd9fd494c9a96c752650fe9b52be89` after exact-head Actions 43346697060 passed. Candidate: use independently fingerprinted authenticated in-memory envelopes on all 47 synthetic CI PostgreSQL export/import payloads, check tamper rejection and transactional rollback, preserve repeatable-read source snapshots, session/tenant parity and schema invariants. No durable/offsite encrypted backups, operator key custody, production migration runner, hosted service, media rights audit or publishing. Before declaring verified: exact PR-head Actions success, merge, separate merged-main Actions success, non-force synchronize development. All additional charges forbidden; next logical branch: production migration operator safety and private Beta ingress.
+
 ## Candidate PR #71 — signed evidence tested against staged private image bytes
 
 Verified baseline PR #70: merge `9b1ad4fc139fc755c782e3ce7abc437db6ce51fd`, exact-head Actions 43346035365 and post-merge Actions 43346263328 passed; both branches safely synced. Candidate adds a CI-only read-only probe comparing staged file inode/security/hash/container to the exact current pending SQLite attachment and draft, plus independently HMAC-signed fresh scanner/rights claims. It never supplies scanning, actual consent/licensing adjudication, evidence durability/revocation, attachment verification or posting. Require exact PR-head CI, merge, main Actions, non-force sync. Next: disabled operator migration acceptance and private Beta ingress review. $0 additional spending; all hosted/external services off.

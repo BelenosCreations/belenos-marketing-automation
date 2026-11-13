@@ -1,5 +1,7 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+**Candidate PR #72:** Each of 47 disposable CI PostgreSQL table COPY payloads now crosses a distinct authenticated encrypted in-memory envelope and a tamper-abort rollback test. This increases synthetic restore confidence but is not production backup/restore: it neither creates durable off-host encrypted archives nor implements key custody, PITR, measured recovery or a permissioned Neon migration.
+
 **Candidate PR #71:** Offline staged media evidence checks are isolated from PostgreSQL migration/restore. The production object-store migration, scanner/rights audit, operator-mediated encryption key recovery and durable offsite database backup are still absent; no external systems or customer data are touched.
 
 **Candidate PR #70 — encrypted synthetic envelope only:** Adds in-memory AES-256-GCM sealing/opening for bounded disposable CI synthetic restore payloads with authenticated schema and age, but does not persist backup archives, provide production key management, restore-point retention, PITR or an offsite recovery test. A production-ready migration remains blocked on a reviewed and disabled-by-default operator procedure, validated off-host encryption and retention, independent recovery drill and tenant-safe production adapter.
