@@ -1,18 +1,20 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
-## Authenticated review readiness against tenant-safe synthetic attachment metadata (candidate — November 12, 2026)
+**Current verified development checkpoint:** PR #59 (`e0fa3c1`) merged with [full main Actions 43334593446](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43334593446) successful. PRs #56–#59 covered 46-table/eight-stage disposable media schema hardening, redacted metadata reads, verified synthetic reference binding, source integrity preflight and editorial readiness preview. These are not deployable customer-data migrations. Production identity, backup/restore, private object storage, verified media scanning and final publication authorization remain outstanding.
+
+## Authenticated review readiness against tenant-safe synthetic attachment metadata (verified PR #59 — November 12, 2026)
 
 Verified base: PR #58 merged as `6a121ca`, main Actions 43333804031 successful. Add a read-only single-statement PostgreSQL snapshot of an exact held draft's required/provided JSON and matching synthetic attachment rows currently marked verified, with live tenant/member/verified-identity/session guard in the same SELECT. Bound the attachment snapshot to 100 and reject malformed source JSON or unexpected rows. Derive missing and unverified item blockers, but always include TruthGuard review, owner approval not implemented and social publishing disabled. This is *editorial preparation*, not a scanner, proof of image rights, production migration, owner approval, executable scheduling or social posting API.
 
-## Pre-migration media integrity checks (candidate — November 12, 2026)
+## Pre-migration media integrity checks (verified PR #58 — November 12, 2026)
 
 PR #57 is verified at `7a97c6c` with merged-main Actions 43333173764 successful. Before a real SQLite-to-PostgreSQL transition, local legacy attachments must be checked for rows that violate the new tenant/request foreign key or stricter metadata CHECK constraints; existing SQLite attachment records have no tenant-scoped foreign key and may have been written through legacy code. Add private, aggregate-only `orphan_or_cross_tenant_attachments` and `invalid_attachment_metadata` preflight findings. Fail `require_clean_offline_fixture` on either count without exposing file paths, hashes, attachment IDs or customer content. An all-clean synthetic check is **not** migration approval, backup proof or a scanner; actual production migration tooling and secure object storage are still separate blockers.
 
-## Bind previously verified synthetic media to held drafts (candidate — November 12, 2026)
+## Bind previously verified synthetic media to held drafts (verified PR #57 — November 12, 2026)
 
 Build on verified PR #56 (`1cfcca10`, main Actions 43332328800 successful) with a parameterized UPDATE that only binds an existing `content_attachments.status='verified'` record to a matching tenant, draft and required item. The exact draft revision and current active editor session, member role and verified identity are rechecked within the same SQL statement. The source-provided-items JSON is updated as a verified-attachment reference; `ready_for_review` is computed only when required item keys are present without unexpected keys, and remains a non-publishing editorial state. Competing writers must fail revision CAS. No upload/scan trust is created here: only synthetic fixture rows are marked verified by test setup. Require actual disposable PG tests and a separate audited production gateway, secure object storage, scanner/permission proof, migration and backup/restore before real customer media flows.
 
-## Eighth PostgreSQL constraint stage: attachment registry (candidate — November 12, 2026)
+## Eighth PostgreSQL constraint stage: attachment registry (verified PR #56 — November 12, 2026)
 
 From verified PR #55 (main `508f5c2b`, Actions 43329651094 passed), add a test-only PostgreSQL **constraint-only stage** for the nine-column `content_attachments` table already created in schema stage 3. Never redefine it or alter the stage-3 checksum. Composite foreign key `(tenant_id,request_id)` references the exact draft's business and is backed by a unique composite index on `content_requests`. Status is constrained to pending/verified/rejected; hash format and MIME types have checks. There are still **46 reviewed tables across seven table-creation groups**, with an **eighth disposable CI hardening migration**. This remains **not** a production schema migration. Signed-in metadata-only status reads omit private storage paths and SHA-256 and do not perform scanning/verification. Real media uploads, secure object storage, malware/consent checks, backup integrity and all provider publication remain beta blockers. No Neon/Render service is provisioned by these tests.
 
