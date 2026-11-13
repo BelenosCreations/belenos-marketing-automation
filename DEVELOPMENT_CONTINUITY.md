@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+## Candidate PR #86 — synthetic typed-cell checks (verification pending)
+
+Base verified main/dev `f07c53cd5f393fb547af457fb638250b05c3ad1e`, Actions 43358739501 succeeded. Candidate enforces strict finite numeric, integer range, UTF-8, binary, and nullability-rejection checks for *synthetic* cells anchored to the independently pinned source/mapping inventory of PR #83. It neither reads SQLite data rows nor connects to PostgreSQL; no customer migration, writer fencing, transaction runner, rollback, production backup, scanning, rights approval or publishing. $0 cost, all external services inactive. Require exact-head CI and separate merged-main CI.
+
+
 ## Verified post-merge recovery checkpoint after PRs #83–#84
 
 Main SHA `10e18ce0e5554fd9dab80048b9ef002bf5e58654`; both branches identical, no forced update. PR #83 exact/main Actions 43357261226/43357506877 succeeded, PR #84 43357908998/43358111378 succeeded. All features remain offline Alpha proofs. Next major branch: independently audited per-column value transforms and a disabled transactional operator protocol; offsite encrypted replicas and external key/head authority; verifiable isolated ClamAV/signature provenance and human rights review; tenant-scoped evidence/media authorization and hostile private Beta session/CSRF/ingress tests. Obtain explicit authorization before connecting or spending. No genuine malware scan, offsite production backup, live cutover or publisher exists.
