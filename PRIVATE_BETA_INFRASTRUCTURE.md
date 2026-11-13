@@ -1,3 +1,7 @@
+## Verified #96–#97 are offline-only, not deployed infrastructure
+
+Last independently successful merged-main Actions #43371792518 on `b21f132009402f00f54a59df9843224ecea82c0a`; dev non-force fast-forwarded, identical 0/0. Synthetic v1 migration event/rollback tests and pinned journal/semantic checks do not deploy PostgreSQL, Render or backups, authenticate real operators, fence hosted jobs, prove independent key/head/offsite custody, or scan/authorize media. Genuine hosted IAM/session/CSRF/ingress/tenant/worker hardening and operational evidence, production restore validation and explicit Beta approval remain required. Render, Neon, paid AI, social and EdgePilot still inactive; no new costs. Docs checkpoint PR #98 must pass CI before verified.
+
 ## Candidate #97 — no hosted migration authority or Beta activation
 
 Offline schema-pinned intent/semantic validation now precedes disposable SQLite protocol rehearsal; no validated source-to-target customer rows are migrated and no runtime pathway uses this CI-only module. Hashes are caller-provided and not externally custodied, writer/replay fencing is not durable or BAM-wide, encrypted offsite backups remain unverified, and private Beta infrastructure/security evidence is still outstanding. Render, Neon, external publishing, paid AI and EdgePilot remain disabled; $0 additional cost.
