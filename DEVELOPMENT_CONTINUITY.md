@@ -8,17 +8,10 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 
 ## Last independently verified engineering checkpoint (2026-11-13)
 
-- PR **#114** traced offline preferences, calendar proposals, review feedback, AI facts, memory and manual edits to SQLite. It documented where the disabled AI generation flow separates quota, draft and request status writes. See [the editorial and AI review](MIGRATION_WSGI_EDITORIAL_WRITE_REVIEW.md).
-- Exact-head Actions [#43453199412](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43453199412) passed at `d8061d45e62617e2df74afd378feee6c3d5dc825`. Merged-main Actions [#43453575269](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43453575269) passed at `a32784fa20b70373302cc53fb6e4d38ddfa4664d`.
-- After #114, main and development matched following a non-force fast-forward, with zero divergence and no open PRs.
-- PRs **#110** and **#112** mapped held-draft, media, identity and local draft writes. PR **#113** refreshed the prior handoff and passed merged-main Actions #43451026080.
-
-PR **#115** refreshed the handoff only. Main Actions #43454318871 passed
-at `afe883ede843dffff60a3c06c93dcb9c344973e1`; both branches matched with no
-open PRs before the alternate writer review began.
-
-The candidate inventory and synthetic split-commit rehearsal require
-exact-head and merged-main Actions before counting as verified.
+- PR **#116** inventoried alternate repository writers and tested the crash window between saving a synthetic AI draft and finalizing its request. After a freeze, recovery finalized a matching committed receipt without creating another draft. Deployment, provider reconciliation and operator authorization remain unverified. See [the inventory and rehearsal](MIGRATION_ALTERNATE_WRITER_INVENTORY.md).
+- Exact-head Actions [#43455446012](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43455446012) passed at `0cd5b540ee6fb8166db4934eafcef16bb5d866bf`. Merged-main Actions [#43455805907](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43455805907) passed at `110c34349cb463f98ac16665913f3cea5a946cf6`.
+- After #116, main and development matched following a non-force fast-forward, with zero divergence and no open PRs.
+- PRs **#110**, **#112** and **#114** reviewed local gateway writers. PR **#115** refreshed the prior handoff and passed merged-main Actions #43454318871.
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above.
 
