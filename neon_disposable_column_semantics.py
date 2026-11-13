@@ -99,7 +99,8 @@ def _target_signals():
                     if re.search(r"\bCHECK\s*\(", clause, re.I):
                         table_checks = True
                     if not (pk or fk or table_checks or
-                            re.match(r"^CONSTRAINT\s+", clause, re.I)):
+                            re.match(r"^CONSTRAINT\s+", clause, re.I) or
+                            re.match(r"^UNIQUE\s*\(", clause, re.I)):
                         raise ValueError("Unknown target schema clause")
             if list(columns) != list(ordered_names):
                 raise ValueError("Incomplete target schema semantic parsing")
