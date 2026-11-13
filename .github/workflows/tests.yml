@@ -48,8 +48,8 @@ jobs:
           for test_file in ui/*_test.js; do
             node "$test_file"
           done
-      - name: Install ephemeral PostgreSQL test driver
-        run: python -m pip install 'psycopg[binary]==3.2.12'
+      - name: Install ephemeral PostgreSQL driver and offline backup cipher
+        run: python -m pip install 'psycopg[binary]==3.2.12' 'cryptography==46.0.2'
       - name: Run all offline tests plus local-container PostgreSQL parity
         env:
           BAM_EPHEMERAL_PG_TEST: '1'

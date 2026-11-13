@@ -1,5 +1,7 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+**Candidate PR #70 — encrypted synthetic envelope only:** Adds in-memory AES-256-GCM sealing/opening for bounded disposable CI synthetic restore payloads with authenticated schema and age, but does not persist backup archives, provide production key management, restore-point retention, PITR or an offsite recovery test. A production-ready migration remains blocked on a reviewed and disabled-by-default operator procedure, validated off-host encryption and retention, independent recovery drill and tenant-safe production adapter.
+
 **Last verified restore milestone:** PR #68 merged as `3052f1e2`; exact-head Actions 43344020606 and main Actions 43344264999 succeeded. A CI-only REPEATABLE READ restore preserves one coherent MVCC source snapshot even when another connection changes and commits a draft after COPY. The 47-object column, FK/constraint/index and row parity checks remain in place. This does **not** create a durable encrypted backup, offsite retention, point-in-time recovery, a hosted PostgreSQL migration, or a production failover path.
 
 **Last verified CI-only restore integrity:** PR #66 merged at `51944ce3`; full main Actions 43342715656 passed. The rehearsal compares row, column, FK/constraint/index catalog parity across all 47 objects, but has neither a durable encrypted archive nor an off-host recovery point. The new signed-media-evidence milestone is a separate offline contract and does not make migration or backup production-ready.

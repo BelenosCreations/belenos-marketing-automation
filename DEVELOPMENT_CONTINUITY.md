@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Candidate PR #70 — authenticated synthetic recovery envelope
+
+Verified starting point: PR #69 merged main and development synchronized at `cceb1003c18acdd1d3d78894f34094408372b607`, merged-main Actions 43344937760 passed. Candidate: add offline-only, bounded AES-GCM/HKDF authenticated envelope for synthetic migration rehearsal bytes and failure tests; not a retained or off-host customer backup, production restore, key custody or hosted migration. Require exact PR-head CI green, merge, merged-main CI green, then non-force synchronize development. Next priorities: read-only staged-media signed evidence integration, operator-safe production migration planning and private Beta security. Authorization is $0 added spending; no hosting, paid API, publishing or EdgePilot resources.
+
 ## Current verified recovery checkpoint — November 12, 2026 (PR #68)
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`. **Branches:** `main` and `development/phase-3-5-account-directory` synchronized at `3052f1e2a7ab65c4a19cf7b8a31e854fc94b6b88` after PR #68. PR #68 exact-head Actions 43344020606 and [post-merge main Actions 43344264999](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43344264999) passed. PR #67 merged at `fdc179b5` with main Actions 43343554641 successful; PR #66 merged at `51944ce3` with main Actions 43342715656 successful. Older headings below containing "current candidate" describe historic pre-merge work only.
