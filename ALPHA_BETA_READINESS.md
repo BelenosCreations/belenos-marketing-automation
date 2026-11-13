@@ -1,3 +1,7 @@
+## Candidate PR #94: signed-recovery scenario matrix is not disaster proof
+
+Synthetic chain verification plus incident age/key/retention selection stays offline and metadata-only. Whole-host loss exposes an explicit offsite gap, and lost encryption keys cannot be reconstructed from a signed manifest. No data copied, decrypted, deleted, restored or transmitted; no customer recovery guarantees or Beta authorization. Existing hostile security, scanner provenance, human rights-review, hosted session and operational signoff blockers remain. $0 incremental cost.
+
 ## Candidate PR #93 — migration metadata cannot unblock Beta
 
 CI-only source/target semantic flags cover nullability, defaults, JSON text, tenant references and generated identity reseed under independently supplied fingerprints. They do not validate production customer values, schema constraints in real migrations, key custody, actual ClamAV provenance, rights ownership, hosted session/CSRF defenses, application-wide writer fencing, rollback or offsite restore. No private Beta release approval or infrastructure activation; incremental spend $0.
