@@ -487,3 +487,9 @@ Extend read-only campaign queue summaries, test policy boundaries, and refine sm
 ## Major decisions requiring user input
 
 Public backend hosting (provider, credentials, persistence, budget and security), Google sign-in provider verification, production media scanning/storage and consent workflow, AI spending limits and real OpenAI activation, social provider OAuth permissions, and any live scheduling/automatic publication all require separate user authorization. Never infer consent from an offline green test.
+
+
+### 2026-11-12 — Migration operator preflight checkpoint (pending PR / merged CI verification)
+- Starting baseline: verified main/dev `a09e10cc7eb71c1ca4fd4e6f2c5161431b7eeab2`, passed main run `43348622610`.
+- New `neon_migration_operator_preflight.py` is an offline *blocking* report. It fingerprints existing preview SQL and detects source integrity, unreviewed tables and pinned SQLite schema drift; it never executes PostgreSQL DDL or grants production approval.
+- After verification, record exact merged-main commit/run in a later checkpoint. Remaining blockers: complete production data mapping, real PostgreSQL transactional adapter and migrations, key custody/offsite recovery, independently tested restore, trusted malware and rights workers, hosted security, human approval and authorized spending. Preserve $0 and no EdgePilot/Render/Neon connection.

@@ -333,3 +333,8 @@ A new owner/teammate-scoped **read-only** `GET /api/v1/calendar-readiness` repor
 ## Public GitHub readiness (preparation only)
 
 Hosting this source publicly is under consideration to reduce GitHub Actions compute costs. The repository remains private until a historical credential and Actions-artifact review is complete. See [Public repository readiness](PUBLIC_REPOSITORY_READINESS.md). Repository visibility does not grant permission for live integrations, production deployment, additional spending, trades, transfers or publishing.
+
+
+### Inactive PostgreSQL operator preflight (November 12, 2026)
+
+`neon_migration_operator_preflight.py` emits deterministic reviewed-DDL fingerprints and a metadata-only SQLite integrity/drift checklist. It flags unreviewed and optional uninitialized source tables; even a matching pinned digest cannot authorize a live cutover. No PostgreSQL connection, customer export, production migration, backup, rollback or publishing occurs. Run `python -m unittest -q test_neon_migration_operator_preflight` locally with the existing offline environment. All live infrastructure and additional spending remain unapproved ($0).
