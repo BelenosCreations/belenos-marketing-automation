@@ -1,3 +1,7 @@
+## Candidate #105 (2026-11-13) — offline possible writer dispatch review
+
+#104 independently verified main 0cd22728bf63966252d7893dde526f44c986105f and Actions #43430594571 PASSED, development identical 0/0. #105 proposes read-only Python AST call-path hints plus explicit unresolved/unmapped write inventory and adversarial tests. Not full hosted writer coverage, transaction-bound distributed generation authority, or Beta authorization. CI and merge checks pending; $0 additional cost, integrations disabled.
+
 ## Verified PRs #102–#103 (2026-11-13), candidate #104 continuity
 
 #102: CI-only Python/WSGI writer-surface AST inventory and independent migration review plan, exact-head Actions #43428652129 PASSED, merged SHA `5ccff62cd27ffb2230026a8b008478a788e8c83f`, merged-main Actions #43428902180 PASSED. #103: disposable local SQLite generation authority/fence transaction rehearsal, exact-head Actions #43429490616 PASSED, merged SHA `099b79e5a92035af812d08ed6f612405fffac5cb`, merged-main Actions #43429752709 PASSED. Development fast-forward synchronized without force; 0 ahead/behind. #104 documentation candidate must pass both CI stages before being considered verified. No complete real writer fencing, independent epoch custody, customer migration, production rollback or Beta authorization; no production integrations or incremental cost.

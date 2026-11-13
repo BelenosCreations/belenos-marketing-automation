@@ -1,3 +1,7 @@
+## Candidate #105 static possible call-path triage
+
+See MIGRATION_DISPATCH_REVIEW.md. CI-only basic direct-call mapping extends #102 source inventory but still misses dynamic, deployed and external write paths. Unknown and unmatched sites are review blockers, not proof of safety. Not a migration runner, global fence or production review approval.
+
 ## CI-only generation experiment after #102
 
 Candidate #103 adds `neon_disposable_generation_authority.py` to model a
