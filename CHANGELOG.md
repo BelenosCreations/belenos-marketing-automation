@@ -1,3 +1,11 @@
+## Disposable attachment ownership and authority checks (2026-11-13)
+
+- Rehearsed typed attachment parents and retained ambiguous legacy rows
+  for review. Reproduced how untyped status, binding, storage and evidence
+  paths interpret a colliding parent ID.
+- Tested confirmation deadlines, witness revocation and interrupted staging.
+  Exercised a disposable generation-checked write path with separate grants.
+
 ## Disposable PostgreSQL authority rehearsal (2026-11-13)
 
 - Tested both recovery-versus-freeze lock orders and checked that the
