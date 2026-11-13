@@ -1,5 +1,10 @@
 # BAM Alpha → Private Beta Readiness Gate
 
+## Candidate #87 — ClamAV CLI plumbing does not satisfy Beta trusted-media gate
+
+Offline CI-only worker code accepts externally vetted exact binary/CVD hashes and invokes fixed-format scanner commands against private files with fail-closed return code handling. Existing tests mock all scanner subprocess results; they do **not** execute actual ClamAV, validate upstream distribution signatures, or guarantee an isolated worker/sandbox. The worker returns no trusted signed scan claim, performs no license review, issues no final media state, and has no HTTP or publishing route. Real signatures, independent provenance, anti-TOCTOU controls, tenant identity, reviewer approval, durable audit/revocation and operator controls remain necessary. All production integrations disabled.
+
+
 ## Verified post-merge recovery checkpoint after PRs #83–#84
 
 Main SHA `10e18ce0e5554fd9dab80048b9ef002bf5e58654`; both branches identical, no forced update. PR #83 exact/main Actions 43357261226/43357506877 succeeded, PR #84 43357908998/43358111378 succeeded. All features remain offline Alpha proofs. Next major branch: independently audited per-column value transforms and a disabled transactional operator protocol; offsite encrypted replicas and external key/head authority; verifiable isolated ClamAV/signature provenance and human rights review; tenant-scoped evidence/media authorization and hostile private Beta session/CSRF/ingress tests. Obtain explicit authorization before connecting or spending. No genuine malware scan, offsite production backup, live cutover or publisher exists.
