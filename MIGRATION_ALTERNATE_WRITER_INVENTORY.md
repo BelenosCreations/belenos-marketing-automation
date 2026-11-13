@@ -59,6 +59,10 @@ receipt, discard and signed evidence also resolve only ordinary requests.
 AI media reads look up a subject-scoped link separately. A future deployment
 inventory must identify each running version, principal and evidence path
 before treating a parent binding as enforced across readers and writers.
+The typed binding review requires the scan issuer, rights issuer, revocation
+authority and claim-index custodian to appear in the inventory. Record which
+principals may append, repair or restore that index and how the latest head
+is verified. The repository fixtures model these inputs in-process.
 
 For an authorized deployment review, compare independent runtime observations
 with the repository map before proposing a freeze. The observation and the

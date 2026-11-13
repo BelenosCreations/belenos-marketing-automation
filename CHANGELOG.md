@@ -1,3 +1,13 @@
+## Disposable typed attachment evidence and authority checks (2026-11-13)
+
+- Tested typed scan and rights evidence against attachment, parent and
+  subject substitution. Legacy revocations and unknown claim digests hold
+  the attachment in the disposable model.
+- Exercised a private synthetic discard intent across file failure, failed
+  metadata finalization and reconnection, preserving a colliding parent.
+- Tested a restricted PostgreSQL function owner, temporary schema
+  shadowing, a fresh confirmation clock and an independent revocation pin.
+
 ## Disposable attachment ownership and authority checks (2026-11-13)
 
 - Rehearsed typed attachment parents and retained ambiguous legacy rows

@@ -281,3 +281,34 @@ and discard. Ordinary and AI callers each need an explicit lookup path.
 Keep the legacy claims and unresolved parent rows available for review.
 Require new, independently reviewed evidence before promoting any association
 into a typed trust path. Evaluate the proposal only with disposable data.
+
+### Disposable typed binding results
+
+- A versioned signed envelope binds the complete parent tuple to an
+  existing independently signed scan or rights claim. The test checks
+  actual synthetic PNG bytes and denies namespace, subject and attachment
+  substitutions, including an identical PNG under a second attachment.
+- The authenticated revocation chain records a digest of the exact signed
+  claim. The fixture supplies a complete synthetic claim index so the
+  original attachment can be held after reissue, including a revoked
+  legacy claim. An unknown digest holds the check. An older chain fails
+  against the supplied current head. Production still needs an independently
+  maintained head and authenticated durable claim retention and resolution.
+- A private SQLite fixture keeps an immutable parent tuple and commits a
+  discard intent before unlink. It retries after failed unlink or failed
+  metadata finalization and denies new receipt while discard is pending.
+  Reopening the fixture preserves the intent and a current membership is
+  required to finish. A colliding request's attachment stays intact. This
+  covers selected interruption cases with synthetic files. It does not
+  measure power-loss durability or distributed storage recovery.
+- A non-login PostgreSQL function owner gets a column grant for row locking
+  and can insert the canary. It cannot change the generation or mode. The
+  writer cannot create objects in the authority schema or replace the
+  function. Temporary lookalike tables cannot redirect the fenced insert.
+  The confirmation fixture requires a deadline and samples the database clock
+  after the row lock. Missing or stale restored revocation state cannot
+  confirm against the supplied independent pin.
+
+Next, rehearse typed read and approval visibility, and review how an
+authenticated claim index is retained, independently recovered and checked
+for completeness. Keep the current runtime and production transforms gated.
