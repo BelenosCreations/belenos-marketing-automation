@@ -1,3 +1,7 @@
+## Candidate #108 one-hop handler method-source review
+
+See MIGRATION_WSGI_SERVICE_REVIEW.md for CI-only syntactic WSGI-handler service method hints, dependency constructor assignments and source digests. A method-name hint is not proof of reachable database writes or a globally enforced generation. Previous #105 and #107 review tools remain intact. No production cutover or Beta authorization.
+
 ## Candidate #107 WSGI handler binding-source extension
 
 See MIGRATION_WSGI_BINDING_REVIEW.md. CI-only source maps simple instance handler assignments, imported class declarations and route/method literal hints. No full runtime dispatch, scheduled-job, callback or database writer boundary proof. Prior #105 trace remains unchanged. Beta and migration disabled.

@@ -1,3 +1,7 @@
+## Candidate #108 — CI-only WSGI service-delegation review (2026-11-13)
+
+PR #107 independently verified: exact-head Actions #43438915110 PASSED; merged-main SHA 7c557ed43f7696982e5e2bcf8130e807707636c9 Actions #43439178092 PASSED. Main/development non-force synchronized, identical 0/0, no open PRs. Candidate #108 adds a second source-only inspection hop from offline WSGI handlers into direct service-method call names and constructor dependency hints, bound to source digests. See MIGRATION_WSGI_SERVICE_REVIEW.md. No actual SQL commit, worker fencing, tenant authorization, hosted readiness, customer migration or paid/publishing activation. Full CI for #108 pending; additional cost $0.
+
 ## Candidate #107 — CI-only WSGI handler-source binding review (2026-11-13)
 
 Independently verified starting checkpoint #106: ee7c385303efa150a0c38fea02b71951521ad85c, merged-main Actions #43436668950 PASSED, development/main identical 0/0, no open PRs. Candidate #107 adds AST-only WSGI gateway constructor-to-handler binding hints, route/method literal clues and adversarial regressions. See MIGRATION_WSGI_BINDING_REVIEW.md. No deployed writer coverage, authenticated shared generation authority, production database changes or Beta readiness. Exact-head and merged-main CI pending. Additional cost $0, all production integrations disabled.
