@@ -1,3 +1,7 @@
+## Candidate synthetic transaction protocol — inactive infrastructure
+
+Versioned migration-protocol tests run in disposable SQLite shared memory, not Neon, Render or a deployed service. No persistent operation replay authority, real writer fencing, customer data migration, isolated scanner worker or offsite disaster recovery is introduced. Hosted Beta is still blocked by authenticated tenancy/session/CSRF/proxy/media hardening and explicit release authorization. Keep all live integrations disabled and spending at $0.
+
 ## Verified recovery and migration gap checkpoint (#93–#94)
 
 **Verified November 12–13, 2026:** PR #93 merged as `2b3afbf69519feccfd62d3479967d5addcf392a3` after exact-head Actions **#43368157960 PASSED** and independently successful merged-main Actions **#43368340201**. PR #94 merged as `bc9a0ba046a0ec5ae43d6ec95c14f853eae58e27` after exact-head Actions **#43368737129 PASSED** and independently successful merged-main Actions **#43368931927**. At both checkpoints development was fast-forward synchronized without force and independently compared to main as identical, 0 commits ahead/behind.

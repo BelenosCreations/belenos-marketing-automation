@@ -1,3 +1,7 @@
+## Candidate offline Alpha rehearsal — no private Beta authorization
+
+New CI-only in-memory SQLite v1 protocol exercises synthetic ordered stage receipts, same-fixture replay/stale-fence rejection and lost-owner rollback. It cannot fence real BAM API/background/provider writers, authenticate an operator or independently held intent head, or recover real customer data. PostgreSQL cutover, offsite backup, ClamAV signature provenance, rights review, hosted session/CSRF/tenant/proxy abuse evidence and external publishing remain unapproved and disabled. No Beta readiness claim; $0 extra cost.
+
 ## Verified CI-only milestones #93–#94 — Beta still blocked
 
 **Verified November 12–13, 2026:** PR #93 merged as `2b3afbf69519feccfd62d3479967d5addcf392a3` after exact-head Actions **#43368157960 PASSED** and independently successful merged-main Actions **#43368340201**. PR #94 merged as `bc9a0ba046a0ec5ae43d6ec95c14f853eae58e27` after exact-head Actions **#43368737129 PASSED** and independently successful merged-main Actions **#43368931927**. At both checkpoints development was fast-forward synchronized without force and independently compared to main as identical, 0 commits ahead/behind.

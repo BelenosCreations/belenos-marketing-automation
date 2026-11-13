@@ -1,3 +1,7 @@
+## Candidate CI-only v1 transaction protocol rehearsal — NOT a migration runner
+
+`neon_disposable_versioned_protocol.py` exercises atomic receipt CAS and terminal-abort semantics in a unique in-memory SQLite fixture for ordered stages 01–07 only. It detects simulated stale epochs, wrong fence-token/head claims, duplicate operation IDs *within the same ephemeral database*, malformed stages and event tampering; staged synthetic canaries are rolled back or lost when the writer connection closes. These are not an application-wide writer fence, durable replay journal, authenticated journal/approval, approved source-to-target transformation or Postgres transaction. Stage 08 remains forbidden, all production backends offline; rollback/DR readiness still unproven, $0 added cost. PR must pass exact-head and merged-main CI before verified.
+
 ## Independently verified inactive migration and disaster milestones (#93–#94)
 
 **Verified November 12–13, 2026:** PR #93 merged as `2b3afbf69519feccfd62d3479967d5addcf392a3` after exact-head Actions **#43368157960 PASSED** and independently successful merged-main Actions **#43368340201**. PR #94 merged as `bc9a0ba046a0ec5ae43d6ec95c14f853eae58e27` after exact-head Actions **#43368737129 PASSED** and independently successful merged-main Actions **#43368931927**. At both checkpoints development was fast-forward synchronized without force and independently compared to main as identical, 0 commits ahead/behind.
