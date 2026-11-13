@@ -28,7 +28,9 @@ racing a restore. A signed checkpoint now binds the claim index, issuer-key
 catalog and encrypted synthetic replica. The authority rehearsal tests
 witness rotation and recovery above an independently supplied generation.
 Disposable recovery now stages the replica before a separately signed
-completion and binds review admission to the promoted generation.
+completion and binds review admission to the promoted generation. The
+recovery receipt rehearsal keeps review and writes closed until the
+promoted generation matches an independently retained receipt.
 
 ## Alternate writer inventory and offline recovery rehearsal
 

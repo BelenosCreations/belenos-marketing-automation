@@ -1,3 +1,11 @@
+## Promotion receipts and recovery grants (2026-11-13)
+
+- Replayed a completion after a lost acknowledgement without creating another
+  receipt. Restored stale authority and advanced above the independent
+  generation before reopening scoped review and writes.
+- Tested separate PostgreSQL recovery stage, receipt acknowledgement and
+  write grants. Pending or stale workers cannot write through the fixture.
+
 ## Witnessed restore promotion and review admission (2026-11-13)
 
 - Tested restart before promotion, independent completion signatures, atomic

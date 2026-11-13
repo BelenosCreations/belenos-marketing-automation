@@ -418,3 +418,31 @@ An independently signed acknowledgement for the current generation does
 open the fixture. The canary records only its test operation and generation.
 External witness custody and transaction-bound checks in deployed paths
 remain required.
+
+### Receipt reconciliation and recovery grants
+
+The disposable SQLite promotion transaction records a receipt over the
+signed completion, generation and checkpoint. If the commit succeeds and
+the caller loses the acknowledgement, repeating the exact completion
+returns the same receipt. A separate reconciliation step matches it to the
+independent generation, state pin and receipt. Both scoped review and the
+write canary check that tuple and the reconciled state under the authority
+lock. A receipt mismatch keeps both paths closed.
+
+The test restores a real older SQLite authority snapshot taken before a
+newer revocation. That snapshot contains a locally reconciled receipt. An
+independently retained current generation blocks the older state even when
+the local row looks open. A second recovery advances above that generation,
+validates the new encrypted replica and reconciles a fresh receipt before
+admitting either operation. The external witness is represented by fixture
+inputs. The test measures no off-host recovery or external witness custody.
+
+The PostgreSQL grant fixture uses separate non-login caller roles for staging,
+acknowledging a pinned receipt and invoking write admission. Public function
+execution is removed, tables are qualified, and each function has a fixed
+search path. The writer cannot reset authority or insert the canary
+directly. A stale or pending generation is refused, and the acknowledgement
+function requires a matching independently seeded receipt digest. The
+trusted fixture setup seeds that digest. Deployed receipt authentication,
+function ownership, grant inheritance and direct client coverage still
+require operational verification.
