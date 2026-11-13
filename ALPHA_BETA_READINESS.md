@@ -1,3 +1,7 @@
+## Candidate #97 — stronger offline migration metadata prerequisite, not Beta evidence
+
+CI-only v1 transaction rehearsal now requires valid unexecuted intent-chain and source/plan/mapping/preview/semantic fingerprints. This rejects synthetic tamper and source metadata drift but does not validate customer value/null/JSON/default/tenant transformations, operator authority, production writer fencing or actual PG copy/rollback. Private Beta still requires independently evidenced hosted auth/sessions, CSRF, proxy/tenant isolation, operational abuse protection, malware scan provenance and human usage-rights review. All services disabled, $0 extra costs.
+
 ## Candidate offline Alpha rehearsal — no private Beta authorization
 
 New CI-only in-memory SQLite v1 protocol exercises synthetic ordered stage receipts, same-fixture replay/stale-fence rejection and lost-owner rollback. It cannot fence real BAM API/background/provider writers, authenticate an operator or independently held intent head, or recover real customer data. PostgreSQL cutover, offsite backup, ClamAV signature provenance, rights review, hosted session/CSRF/tenant/proxy abuse evidence and external publishing remain unapproved and disabled. No Beta readiness claim; $0 extra cost.
