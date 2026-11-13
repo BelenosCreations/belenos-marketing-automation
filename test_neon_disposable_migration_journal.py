@@ -39,8 +39,9 @@ class DisposableMigrationJournalTests(unittest.TestCase):
             os.environ["BAM_EPHEMERAL_PG_TEST"] = self.previous
 
     def build(self, **changes):
-        return build_disposable_migration_intent_journal(
-            self.db, operation_id=self.operation, **{**self.pins, **changes})
+        arguments = dict(operation_id=self.operation, **self.pins)
+        arguments.update(changes)
+        return build_disposable_migration_intent_journal(self.db, **arguments)
 
     def inspect(self, journal, **changes):
         return inspect_disposable_migration_intent_journal(
