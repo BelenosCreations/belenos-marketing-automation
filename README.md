@@ -1,5 +1,8 @@
 # BAM — Belenos Automatic Marketing
 
+**Verified offline PR #83:** Source-to-target column/type review merged as `8fe6eedf41f6576fd1d44e2960727e2c6dcb1775` after exact-head Actions [43357261226](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43357261226) and merged-main [43357506877](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43357506877) passed, with both branches independently confirmed identical. All type/value transforms still unapproved. **Candidate PR #84:** ciphertext-only no-overwrite relocation from one owner-only local directory to a different owner-only local directory, followed by a separate authenticated recovery after simulated source loss. No offsite storage, key escrow, retention deletion, actual customer backup, hosting or publication. Cost $0.
+
+
 **Candidate next milestone (#83; verification pending):** Adds a read-only SQLite-to-PostgreSQL target-column/type comparison proposal for all 46 reviewed target tables. Exact names, types, INTEGER/SMALLINT/BIGINT range concerns, BLOB/BYTEA adaptations and generated identity-sequence reseeding are inventoried with independently pinnable mapping SHA. All value/constraint/tenant reviews remain explicitly unapproved; no customer rows are read, no transactional migration, backup, writer fence or cutover is enabled. All services inactive; additional cost $0.
 
 
