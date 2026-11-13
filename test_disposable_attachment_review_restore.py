@@ -465,9 +465,14 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             with db:
                 db.execute("""CREATE TABLE promotion (
                     id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
-                    state_pin TEXT NOT NULL, staged TEXT, active TEXT
+                    state_pin TEXT NOT NULL, staged TEXT, active TEXT,
+                    receipt TEXT, reconciled INTEGER NOT NULL DEFAULT 0
                 )""")
-                db.execute("INSERT INTO promotion VALUES (1,1,?,NULL,NULL)",
+                db.execute("""CREATE TABLE recovery_canary (
+                    operation TEXT PRIMARY KEY, generation INTEGER NOT NULL,
+                    receipt TEXT NOT NULL
+                )""")
+                db.execute("INSERT INTO promotion VALUES (1,1,?,NULL,NULL,NULL,0)",
                            (self.witness(self.source),))
         return closing(db)
 
@@ -487,29 +492,68 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
     def promote(db, generation, state_pin, checkpoint_pin, signature, witness_key,
                 *, abort=False):
         message = _canonical(['ci-completion-v1', generation, state_pin, checkpoint_pin])
+        receipt = _sha(message + signature)
         with db:
-            # An independently signed completion can only promote the exact
-            # candidate still staged under the current generation and head.
+            db.execute('BEGIN IMMEDIATE')
             witness_key.verify(signature, message)
-            result = db.execute("""UPDATE promotion SET active=staged,staged=NULL
+            result = db.execute("""UPDATE promotion SET active=staged,staged=NULL,receipt=?
                 WHERE id=1 AND generation=? AND state_pin=? AND staged=? AND active IS NULL""",
-                (generation, state_pin, checkpoint_pin))
+                (receipt, generation, state_pin, checkpoint_pin))
             if result.rowcount != 1:
-                raise PermissionError('Restore candidate is stale or already promoted')
+                committed = db.execute("""SELECT 1 FROM promotion WHERE id=1
+                    AND generation=? AND state_pin=? AND active=? AND receipt=?""",
+                    (generation, state_pin, checkpoint_pin, receipt)).fetchone()
+                if committed is None:
+                    raise PermissionError('Restore candidate is stale or differs from receipt')
             if abort:
                 raise InterruptedError('Promotion interrupted before commit')
+        return receipt
 
-    def promoted_review(self, db, generation, checkpoint, signature, **options):
+    @staticmethod
+    def begin_recovery(db, independent):
+        generation, state_pin, _ = independent
         with db:
-            # Serialize review admission with revocation in the disposable
-            # store while the validated replica is reopened for the read.
+            # An older local snapshot cannot set the next generation floor.
+            return db.execute("""UPDATE promotion
+                SET generation=max(generation,?)+1,state_pin=?,active=NULL,staged=NULL,
+                    receipt=NULL,reconciled=0 WHERE id=1 RETURNING generation""",
+                (generation, state_pin)).fetchone()[0]
+
+    @staticmethod
+    def reconcile_promotion(db, independent):
+        generation, state_pin, receipt = independent
+        with db:
+            changed = db.execute("""UPDATE promotion SET reconciled=1
+                WHERE id=1 AND generation=? AND state_pin=? AND active IS NOT NULL
+                AND receipt=?""", (generation, state_pin, receipt)).rowcount
+            if changed != 1:
+                raise PermissionError('Current promotion receipt is unavailable')
+
+    @staticmethod
+    def _require_admission(db, generation, state_pin, independent):
+        if independent[:2] != (generation, state_pin):
+            raise PermissionError('Restore is not admitted at the current generation')
+        row = db.execute("""SELECT active FROM promotion WHERE id=1
+            AND generation=? AND state_pin=? AND receipt=? AND reconciled=1""",
+            independent).fetchone()
+        if row is None or row[0] is None:
+            raise PermissionError('Restore is not admitted without a reconciled receipt')
+        return row[0]
+
+    def promoted_review(self, db, generation, checkpoint, signature, *, independent, **options):
+        with db:
             db.execute('BEGIN IMMEDIATE')
-            row = db.execute("""SELECT 1 FROM promotion
-                WHERE id=1 AND generation=? AND state_pin=? AND active=?""",
-                (generation, checkpoint['state'], options['pin'])).fetchone()
-            if row is None:
-                raise PermissionError('Restore is not admitted for review')
+            active = self._require_admission(db, generation, checkpoint['state'], independent)
+            if active != options['pin']:
+                raise PermissionError('Restore is not admitted for this checkpoint')
             return self.open_checkpoint(checkpoint, signature, **options)
+
+    def admitted_write(self, db, generation, state_pin, independent, operation):
+        with db:
+            db.execute('BEGIN IMMEDIATE')
+            self._require_admission(db, generation, state_pin, independent)
+            db.execute("INSERT INTO recovery_canary VALUES (?,?,?)",
+                       (operation, generation, independent[2]))
 
     def test_staged_replica_requires_independent_completion_after_restart(self):
         with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
@@ -518,13 +562,14 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             (checkpoint, sig, pin), (chain, _) = self.archive_checkpoint(1, archive_key)
             options = dict(pin=pin, epoch=1, key=archive_key.public_key(), chain=chain)
             args = (1, checkpoint['state'], pin)
+            independent = (1, checkpoint['state'], None)
             message = _canonical(['ci-completion-v1', *args])
             acknowledgement = completion_key.sign(message)
             with self.promotion_store(initialize=True) as db:
                 self.stage_promotion(db, 1, checkpoint, sig, **options)
             with self.promotion_store() as db:
                 with self.assertRaisesRegex(PermissionError, 'not admitted'):
-                    self.promoted_review(db, 1, checkpoint, sig, **options)
+                    self.promoted_review(db, 1, checkpoint, sig, independent=independent, **options)
                 with self.assertRaises(InvalidSignature):
                     self.promote(db, *args, archive_key.sign(message),
                                  completion_key.public_key())
@@ -534,12 +579,14 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             with self.promotion_store() as db:
                 self.assertEqual(db.execute("SELECT staged,active FROM promotion").fetchone(),
                                  (pin, None))
-                self.promote(db, *args, acknowledgement, completion_key.public_key())
-                with self.assertRaisesRegex(PermissionError, 'already promoted'):
-                    self.promote(db, *args, acknowledgement, completion_key.public_key())
+                receipt = self.promote(db, *args, acknowledgement, completion_key.public_key())
+                self.assertEqual(
+                    self.promote(db, *args, acknowledgement, completion_key.public_key()), receipt)
+                independent = (1, checkpoint['state'], receipt)
+                self.reconcile_promotion(db, independent)
                 with self.assertRaisesRegex(PermissionError, 'not admitted'):
-                    self.promoted_review(db, 2, checkpoint, sig, **options)
-                self.assertEqual(self.promoted_review(db, 1, checkpoint, sig, **options),
+                    self.promoted_review(db, 2, checkpoint, sig, independent=independent, **options)
+                self.assertEqual(self.promoted_review(db, 1, checkpoint, sig, independent=independent, **options),
                                  ('c' * 32,))
 
                 # Even a promoted pointer is insufficient if ciphertext is
@@ -548,7 +595,7 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                 raw = ciphertext.read_bytes()
                 ciphertext.write_bytes(raw[:-1] + bytes([raw[-1] ^ 1]))
                 with self.assertRaises(PermissionError):
-                    self.promoted_review(db, 1, checkpoint, sig, **options)
+                    self.promoted_review(db, 1, checkpoint, sig, independent=independent, **options)
 
     def test_new_revocation_invalidates_staged_candidate_and_old_review(self):
         with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
@@ -563,7 +610,8 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             options = dict(pin=pin, epoch=2, key=archive_key.public_key(), chain=chain)
             with self.promotion_store() as db, db:
                 db.execute("""UPDATE promotion SET generation=generation+1,state_pin=?,
-                    active=NULL,staged=NULL WHERE id=1""", (current['state'],))
+                    active=NULL,staged=NULL,receipt=NULL,reconciled=0 WHERE id=1""",
+                    (current['state'],))
             with self.promotion_store() as db:
                 args = (1, old['state'], old_pin)
                 stale = completion_key.sign(_canonical(['ci-completion-v1', *args]))
@@ -578,5 +626,62 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                 self.stage_promotion(db, 2, current, sig, **options)
                 args = (2, current['state'], pin)
                 fresh = completion_key.sign(_canonical(['ci-completion-v1', *args]))
-                self.promote(db, *args, fresh, completion_key.public_key())
-                self.assertEqual(self.promoted_review(db, 2, current, sig, **options), ())
+                receipt = self.promote(db, *args, fresh, completion_key.public_key())
+                independent = (2, current['state'], receipt)
+                self.reconcile_promotion(db, independent)
+                self.assertEqual(self.promoted_review(
+                    db, 2, current, sig, independent=independent, **options), ())
+
+    def test_older_authority_restore_requires_current_receipt_after_lost_ack(self):
+        with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
+            archive_key = Ed25519PrivateKey.generate()
+            completion_key = Ed25519PrivateKey.generate()
+            (old, old_sig, old_pin), prior = self.archive_checkpoint(1, archive_key)
+            old_options = dict(pin=old_pin, epoch=1, key=archive_key.public_key(), chain=prior[0])
+            with self.promotion_store(initialize=True) as db, closing(
+                    sqlite3.connect(self.directory / 'old-authority.sqlite')) as old_authority:
+                self.stage_promotion(db, 1, old, old_sig, **old_options)
+                args = (1, old['state'], old_pin)
+                signature = completion_key.sign(_canonical(['ci-completion-v1', *args]))
+                receipt = self.promote(db, *args, signature, completion_key.public_key())
+                self.reconcile_promotion(db, (1, old['state'], receipt))
+                db.backup(old_authority)
+
+                self.revoke(_claim(_ALICE, version=1))
+                (current, sig, pin), (chain, _) = self.archive_checkpoint(
+                    2, archive_key, previous=prior)
+                options = dict(pin=pin, epoch=2, key=archive_key.public_key(), chain=chain)
+                independent = (2, current['state'], None)
+                old_authority.backup(db)
+
+            with self.promotion_store() as db:
+                self.assertEqual(db.execute("SELECT generation,reconciled FROM promotion").fetchone(),
+                                 (1, 1))
+                with self.assertRaisesRegex(PermissionError, 'current generation'):
+                    self.promoted_review(db, 1, old, old_sig, independent=independent, **old_options)
+                with self.assertRaisesRegex(PermissionError, 'current generation'):
+                    self.admitted_write(db, 1, old['state'], independent, 'stale')
+                self.assertEqual(self.begin_recovery(db, independent), 3)
+                self.stage_promotion(db, 3, current, sig, **options)
+                args = (3, current['state'], pin)
+                signature = completion_key.sign(_canonical(['ci-completion-v1', *args]))
+                self.promote(db, *args, signature, completion_key.public_key())
+                # Drop the returned receipt to simulate a lost acknowledgement.
+            with self.promotion_store() as db:
+                pending = (3, current['state'], None)
+                with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
+                    self.promoted_review(db, 3, current, sig, independent=pending, **options)
+                with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
+                    self.admitted_write(db, 3, current['state'], pending, 'unreconciled')
+                receipt = self.promote(db, *args, signature, completion_key.public_key())
+                self.assertEqual(db.execute("SELECT receipt,reconciled FROM promotion").fetchone(),
+                                 (receipt, 0))
+                with self.assertRaisesRegex(PermissionError, 'receipt is unavailable'):
+                    self.reconcile_promotion(db, (3, current['state'], '0' * 64))
+                independent = (3, current['state'], receipt)
+                self.reconcile_promotion(db, independent)
+                self.assertEqual(self.promoted_review(
+                    db, 3, current, sig, independent=independent, **options), ())
+                self.admitted_write(db, 3, current['state'], independent, 'current')
+                self.assertEqual(db.execute("SELECT * FROM recovery_canary").fetchall(),
+                                 [('current', 3, receipt)])

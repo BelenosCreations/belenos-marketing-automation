@@ -1318,6 +1318,112 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             FROM ci_review_admission ORDER BY generation""").fetchall(),
             [('review-before-revocation', 1, 'head-1'), ('review-after-ack', 3, 'head-3')])
 
+    def test_ci_recovery_stage_acknowledgement_and_write_grants(self):
+        with self.conn.transaction(force_rollback=True):
+            for role in ('ci_recovery_stager', 'ci_recovery_witness',
+                         'ci_recovery_writer', 'ci_recovery_definer'):
+                self.conn.execute(f"CREATE ROLE {role} NOLOGIN")
+                self.conn.execute(f"GRANT USAGE ON SCHEMA bam_ci_integration TO {role}")
+            self.conn.execute("""CREATE TABLE ci_recovery_gate (
+                id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
+                head TEXT NOT NULL, opened BOOLEAN NOT NULL
+            )""")
+            self.conn.execute("INSERT INTO ci_recovery_gate VALUES (1,1,'first',TRUE)")
+            self.conn.execute("""CREATE TABLE ci_recovery_witness_pin (
+                generation INTEGER PRIMARY KEY, head TEXT NOT NULL, receipt_digest BYTEA NOT NULL
+            )""")
+            receipt = b'synthetic separately retained receipt'
+            self.conn.execute("INSERT INTO ci_recovery_witness_pin VALUES (2,'second',%s)",
+                              (hashlib.sha256(receipt).digest(),))
+            self.conn.execute("""CREATE TABLE ci_recovery_write (
+                operation TEXT PRIMARY KEY, generation INTEGER NOT NULL
+            )""")
+            self.conn.execute("""GRANT SELECT, UPDATE ON ci_recovery_gate
+                TO ci_recovery_definer""")
+            self.conn.execute("GRANT SELECT ON ci_recovery_witness_pin TO ci_recovery_definer")
+            self.conn.execute("GRANT INSERT ON ci_recovery_write TO ci_recovery_definer")
+
+            self.conn.execute("""CREATE FUNCTION ci_recovery_stage(expected INTEGER)
+                RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$
+                WITH staged AS (
+                    UPDATE bam_ci_integration.ci_recovery_gate AS a
+                    SET generation=p.generation,head=p.head,opened=FALSE
+                    FROM bam_ci_integration.ci_recovery_witness_pin AS p
+                    WHERE a.id=1 AND a.generation=expected AND p.generation=expected+1
+                    RETURNING a.id
+                )
+                SELECT EXISTS (SELECT 1 FROM staged)
+                $$""")
+            self.conn.execute("""CREATE FUNCTION ci_recovery_ack(expected INTEGER, supplied BYTEA)
+                RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$
+                WITH accepted AS (
+                    UPDATE bam_ci_integration.ci_recovery_gate AS a SET opened=TRUE
+                    FROM bam_ci_integration.ci_recovery_witness_pin AS p
+                    WHERE a.id=1 AND a.generation=expected AND NOT a.opened
+                    AND p.generation=a.generation AND p.head=a.head
+                    AND p.receipt_digest=sha256(supplied)
+                    RETURNING a.id
+                )
+                SELECT EXISTS (SELECT 1 FROM accepted)
+                $$""")
+            self.conn.execute("""CREATE FUNCTION ci_recovery_admit(expected INTEGER, op TEXT)
+                RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+                BEGIN
+                    PERFORM 1 FROM bam_ci_integration.ci_recovery_gate
+                        WHERE id=1 AND generation=expected AND opened FOR SHARE NOWAIT;
+                    IF NOT FOUND THEN
+                        RETURN FALSE;
+                    END IF;
+                    INSERT INTO bam_ci_integration.ci_recovery_write VALUES (op,expected);
+                    RETURN TRUE;
+                END
+                $$""")
+            for function, role in (
+                ('ci_recovery_stage(INTEGER)', 'ci_recovery_stager'),
+                ('ci_recovery_ack(INTEGER,BYTEA)', 'ci_recovery_witness'),
+                ('ci_recovery_admit(INTEGER,TEXT)', 'ci_recovery_writer'),
+            ):
+                self.conn.execute(f"REVOKE ALL ON FUNCTION {function} FROM PUBLIC")
+                self.conn.execute(f"ALTER FUNCTION {function} OWNER TO ci_recovery_definer")
+                self.conn.execute(f"GRANT EXECUTE ON FUNCTION {function} TO {role}")
+
+            for role, forbidden, params in (
+                ('ci_recovery_stager', 'SELECT ci_recovery_ack(2,%s)', (receipt,)),
+                ('ci_recovery_stager', 'SELECT ci_recovery_admit(2,%s)', ('stager',)),
+                ('ci_recovery_stager', 'SELECT * FROM ci_recovery_witness_pin', ()),
+                ('ci_recovery_witness', 'SELECT ci_recovery_stage(1)', ()),
+                ('ci_recovery_witness', 'SELECT ci_recovery_admit(2,%s)', ('witness',)),
+                ('ci_recovery_writer', 'SELECT ci_recovery_ack(2,%s)', (receipt,)),
+                ('ci_recovery_writer', 'SELECT ci_recovery_stage(1)', ()),
+                ('ci_recovery_writer', 'UPDATE ci_recovery_gate SET opened=TRUE', ()),
+                ('ci_recovery_writer', "INSERT INTO ci_recovery_write VALUES ('bypass',2)", ()),
+            ):
+                self.conn.execute(f"SET LOCAL ROLE {role}")
+                with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
+                    with self.conn.transaction():
+                        self.conn.execute(forbidden, params)
+            self.conn.execute("SET LOCAL ROLE ci_recovery_stager")
+            self.assertEqual(self.conn.execute("SELECT ci_recovery_stage(1)").fetchone(), (True,))
+            self.assertEqual(self.conn.execute("SELECT ci_recovery_stage(1)").fetchone(), (False,))
+            self.conn.execute("SET LOCAL ROLE ci_recovery_writer")
+            for generation in (1, 2):
+                self.assertEqual(self.conn.execute("SELECT ci_recovery_admit(%s,'pending')",
+                                                   (generation,)).fetchone(), (False,))
+            self.conn.execute("SET LOCAL ROLE ci_recovery_witness")
+            for generation, supplied, expected in (
+                (1, receipt, False), (2, b'wrong', False), (2, receipt, True), (2, receipt, False),
+            ):
+                self.assertEqual(self.conn.execute("SELECT ci_recovery_ack(%s,%s)",
+                                                   (generation, supplied)).fetchone(), (expected,))
+            self.conn.execute("SET LOCAL ROLE ci_recovery_writer")
+            self.assertEqual(self.conn.execute(
+                "SELECT ci_recovery_admit(1,'stale')").fetchone(), (False,))
+            self.assertEqual(self.conn.execute(
+                "SELECT ci_recovery_admit(2,'current')").fetchone(), (True,))
+            self.conn.execute("RESET ROLE")
+            self.assertEqual(self.conn.execute("SELECT * FROM ci_recovery_write").fetchall(),
+                             [('current', 2)])
+
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.
         with self.conn.transaction(force_rollback=True):

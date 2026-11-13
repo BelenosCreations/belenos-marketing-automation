@@ -104,6 +104,14 @@ or retry principal that can stage or activate a checkpoint, who can sign
 completion, and which read or write roles can bypass the authority row.
 The disposable tests exercise only their own principals and data.
 
+The source tree at `2d7eb93f06cf13e230a718eea718fe65d1c44407` still
+contains the CI workflows and scanner boundary. The receipt rehearsal adds
+separate fixture permissions for recovery staging, acknowledgement and write
+admission. An operational inventory must identify who can change the
+current receipt, assume those roles, alter the functions or restore the
+authority and witness store together. Repository source alone cannot
+identify those deployed principals.
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).

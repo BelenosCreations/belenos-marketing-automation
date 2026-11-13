@@ -32,7 +32,10 @@ and database admission across deployed processes remain release gates.
 Disposable promotion uses an independent completion signature and closes
 review when the database commits a newer revocation. Operational admission
 still requires the current independently held checkpoint and coverage of
-every deployed reader and writer.
+every deployed reader and writer. The receipt and grant rehearsals
+exercise stale authority restoration, idempotent completion and restricted
+database callers with synthetic data. Operational receipt custody and
+independent evidence of deployed grants still need verification.
 
 ## Alternate writer and recovery review
 
