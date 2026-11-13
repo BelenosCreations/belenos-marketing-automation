@@ -1,5 +1,8 @@
 # BAM — Belenos Automatic Marketing
 
+**Candidate PR #87 — inactive local ClamAV command boundary:** Adds standalone CLI execution plumbing for a separately installed `clamscan` with externally supplied exact binary/signature-file SHA-256 pins, private staged-byte hash/inode/permission checks, bounded subprocess with no shell/proxy and post-scan reinspection. The signed-claim system is deliberately NOT connected: no database status mutation, rights approval, or publication. CI uses mocked ClamAV responses, not a real scanner or known-good signed signatures. Execution is only permitted with the disposable CI environment gate. Independently establishing actual engine/sig origin, update freshness, worker sandbox, tenant binding, reviewer authority and durable audit remains required before real scanning approval or Beta. Costs $0.
+
+
 **Candidate PR #86 — CI-only typed-value acceptance:** A strict, operator-pin-bound synthetic cell validator for the already proposed SQLite-to-PostgreSQL types checks exact TEXT/UTF-8 without NUL, integer widths/booleans, finite DOUBLE PRECISION, exact bounded BLOB/BYTEA and NULL rejection. Only keyed schema identifiers and a synthetic digest are returned; no source rows are read, no SQL generated, and no data is migrated or approved. Every target constraint/default, tenant identity and customer-value mapping still requires independent review. No production cutover, costs or integrations.
 
 

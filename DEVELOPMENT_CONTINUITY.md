@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+## Candidate PR #87 — disabled ClamAV invocation boundary (CI pending)
+
+PR #86 exact-head Actions 43363216197 passed at `9d58479ef6eff6773465d5e79ca8463c69a05cf7` and merged as `af5154b94573a01bd4c4e2fc08184149a2b1ec09`; separate merged-main Actions 43363520290 must be confirmed before marking #86 independently verified. Development fast-forwarded to that merge without force. #87 adds a **non-HTTP**, CI-gated local `clamscan` command boundary which binds externally supplied scanner binary + single CVD/CLD file digests to current private staged media hashes with no shell, bounded output/time, and post-checks. Tests deliberately mock command results. It issues no approved scan claims and cannot change attachment state. Production scanner origin/signature provenance, sandboxing, reviewer, tenant-scoped audit/revocation, hosted ingress and backup remain blockers. $0 extra cost; all external services inactive.
+
+
 ## Candidate PR #86 — synthetic typed-cell checks (verification pending)
 
 Base verified main/dev `f07c53cd5f393fb547af457fb638250b05c3ad1e`, Actions 43358739501 succeeded. Candidate enforces strict finite numeric, integer range, UTF-8, binary, and nullability-rejection checks for *synthetic* cells anchored to the independently pinned source/mapping inventory of PR #83. It neither reads SQLite data rows nor connects to PostgreSQL; no customer migration, writer fencing, transaction runner, rollback, production backup, scanning, rights approval or publishing. $0 cost, all external services inactive. Require exact-head CI and separate merged-main CI.

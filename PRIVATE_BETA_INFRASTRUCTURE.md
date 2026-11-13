@@ -1,5 +1,10 @@
 # BAM private beta infrastructure — proposed, not authorized
 
+## Candidate PR #87 — trusted-scanner worker prerequisites
+
+An offline-only, CI-gated `clamscan` subprocess adapter validates supplied engine and single signature DB SHA pins plus staged-media SHA before and after invocation and bounds time/output with a fixed sanitized environment. CI subprocesses are mocked; no real ClamAV installation or signature database verification is exercised. Actual Beta requires an independently installed/signed scanner, vetted signature update workflow and freshness SLAs, isolated least-privilege worker with file-descriptor-safe input, tenant-scoped authenticated queue/audit, human rights assessment, evidence and revocation authority, plus negative production deployment tests. No hosted execution, media approval, or publication is active.
+
+
 ## Verified post-merge recovery checkpoint after PRs #83–#84
 
 Main SHA `10e18ce0e5554fd9dab80048b9ef002bf5e58654`; both branches identical, no forced update. PR #83 exact/main Actions 43357261226/43357506877 succeeded, PR #84 43357908998/43358111378 succeeded. All features remain offline Alpha proofs. Next major branch: independently audited per-column value transforms and a disabled transactional operator protocol; offsite encrypted replicas and external key/head authority; verifiable isolated ClamAV/signature provenance and human rights review; tenant-scoped evidence/media authorization and hostile private Beta session/CSRF/ingress tests. Obtain explicit authorization before connecting or spending. No genuine malware scan, offsite production backup, live cutover or publisher exists.

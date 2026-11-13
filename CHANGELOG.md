@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-12 — Candidate PR #87: disabled ClamAV CLI worker boundary
+
+- Prepared non-HTTP standalone scanner execution with externally pinned `clamscan` binary + CVD file, private pending inode SHA checks, bounded subprocess and mutation verification.
+- Mocked-only CI tests cover clean/infected/error/timeout, external pin mismatch, hash changes, hard links, unsafe permissions, unsupported filenames and inactive gate.
+- CI does **not** run genuine ClamAV; no independent vendor provenance, signature freshness, OS sandbox, tenant-scoped signed attestation, actual rights reviewer or attachment approval. All production integrations disabled.
+
+
 ## 2026-11-12 — Candidate PR #86: strict synthetic migration type acceptance (pending verification)
 
 - Add offline, CI-gated and dual-fingerprint-pinned candidate conversion checks for TEXT, integer target widths, finite IEEE-754 floats and byte arrays, with no returned plaintext or row reads.
