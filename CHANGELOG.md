@@ -1,5 +1,8 @@
 ## AI draft request recovery design (2026-11-13)
 
+- Recorded a proposed operator transition and independent-head confirmation
+  sequence for crash and restore, and verified the GitHub deployment inventory
+  available from repository metadata.
 - Mapped generation and targeted revision to request, quota, draft and
   usage stores, with separate recovery decisions for missing receipts and
   uncertain provider results.

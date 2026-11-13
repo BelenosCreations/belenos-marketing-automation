@@ -70,6 +70,35 @@ atomic receipt visibility, scoped foreign keys and duplicate denial. A second
 connection tests that freeze conflicts with an admitted write, and that frozen
 or stale generations cannot insert a new request.
 
+## Authority after interruption or restore
+
+The database generation orders local transactions. Keep the latest approved
+transition head and its verification keys in independent custody so a restored
+database cannot make an old open generation current again. Start recovered
+workers with write admission closed. Compare the restored authority and audit
+chain with the independently held head before opening a new generation. An
+unavailable, stale or divergent head leaves workers closed pending operator
+review. Never reuse an earlier generation after rollback.
+
+An operator transition should name the intended environment, previous
+generation and mode, new generation and mode, previous decision head, and
+the expected evidence. Restrict the role that can change the authority row.
+Advance the database generation and record the authorized transition in one
+transaction. Freeze immediately denies normal writes. A resume transition
+records a pending generation with writes still denied. Publish and confirm
+the new head independently, then admit writes with a separate transaction
+that compares that confirmation to the pending generation and recorded head.
+If confirmation is interrupted, workers stay closed. On restart, verify and
+reconcile the committed transition before allowing writes. A stale
+acknowledgement cannot reopen a prior generation.
+
+| Evidence required before activation | Verification |
+| --- | --- |
+| Independent operator identity and transition authority | Reject expired, replayed, revoked and wrong-environment approvals, including during role changes. Verify that ordinary app credentials cannot change the generation or run recovery. |
+| Independently held latest head and verification keys | Restore an older open generation from a disposable snapshot. Confirm that missing or mismatched head evidence blocks writes and that the next approved generation is newer than the independently witnessed head. |
+| Request recovery authorization | Verify the scoped request, operation kind, fingerprint, admitted generation, receipt and current request status while holding the transaction locks. Confirm recovery cannot stage output, call a provider or adjust quota. |
+| Deployment inventory and drain | Reconcile running instances, worker versions, ingress routes, scheduled and retry jobs, provider callbacks and storage writers against independently reviewed runtime evidence. Verify each principal's write path and the outcome for stale work. |
+
 Before any activation, independently identify the deployed WSGI, callback,
 worker, scheduler, retry, admin and storage writer identities and bindings.
 Review provider behavior using authorized evidence, establish operator identity
