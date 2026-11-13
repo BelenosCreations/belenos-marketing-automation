@@ -1,3 +1,12 @@
+## Signed witness journal and restricted function owners (2026-11-13)
+
+- Reopened a signed SQLite witness journal after a lost acknowledgement and
+  rejected a valid older journal using a separately retained current head.
+- Tested two authority connections reconciling around a revocation and
+  required the current witness before scoped review or test writes.
+- Separated PostgreSQL function owners and exercised inherited grants,
+  public execution denial, witness table protections and newer receipts.
+
 ## Promotion receipts and recovery grants (2026-11-13)
 
 - Replayed a completion after a lost acknowledgement without creating another

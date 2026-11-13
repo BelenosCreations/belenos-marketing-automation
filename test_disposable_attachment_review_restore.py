@@ -555,6 +555,122 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             db.execute("INSERT INTO recovery_canary VALUES (?,?,?)",
                        (operation, generation, independent[2]))
 
+    def witness_journal(self, *, initialize=False):
+        db = sqlite3.connect(self.directory / 'witness.sqlite', timeout=0)
+        if initialize:
+            db.execute("""CREATE TABLE witness_record (
+                sequence INTEGER PRIMARY KEY, body BLOB NOT NULL, signature BLOB NOT NULL
+            )""")
+        return closing(db)
+
+    @staticmethod
+    def read_witness_journal(db, key, expected_head):
+        head, latest = _EMPTY_HEAD, (0, None, None)
+        records = db.execute(
+            "SELECT sequence,body,signature FROM witness_record ORDER BY sequence")
+        for expected_sequence, (sequence, body, signature) in enumerate(records, 1):
+            key.verify(signature, body)
+            purpose, number, previous, generation, state_pin, receipt = json.loads(body)
+            if (purpose != 'ci-witness-journal-v1' or number != sequence
+                    or sequence != expected_sequence
+                    or previous != head or generation <= latest[0]):
+                raise PermissionError('Invalid witness journal sequence')
+            head, latest = _sha(body + signature), (generation, state_pin, receipt)
+        if head != expected_head:
+            raise PermissionError('Witness journal differs from independent head')
+        return latest
+
+    @classmethod
+    def append_witness_record(cls, db, key, expected_head, state):
+        with db:
+            db.execute('BEGIN IMMEDIATE')
+            latest = cls.read_witness_journal(db, key.public_key(), expected_head)
+            if state == latest:
+                return expected_head
+            if state[0] <= latest[0]:
+                raise PermissionError('Witness generation must advance')
+            sequence = db.execute("SELECT count(*)+1 FROM witness_record").fetchone()[0]
+            body = _canonical(['ci-witness-journal-v1', sequence, expected_head, *state])
+            signature = key.sign(body)
+            db.execute("INSERT INTO witness_record VALUES (?,?,?)", (sequence, body, signature))
+            return _sha(body + signature)
+
+    def test_signed_witness_journal_restart_rollback_and_concurrent_revocation(self):
+        with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
+            archive_key = Ed25519PrivateKey.generate()
+            completion_key = Ed25519PrivateKey.generate()
+            journal_key = Ed25519PrivateKey.generate()
+            public_key = journal_key.public_key()
+            (old, old_sig, old_pin), prior = self.archive_checkpoint(1, archive_key)
+            old_options = dict(pin=old_pin, epoch=1, key=archive_key.public_key(), chain=prior[0])
+            with self.promotion_store(initialize=True) as authority:
+                self.stage_promotion(authority, 1, old, old_sig, **old_options)
+                args = (1, old['state'], old_pin)
+                completion = completion_key.sign(_canonical(['ci-completion-v1', *args]))
+                receipt = self.promote(authority, *args, completion, completion_key.public_key())
+            old_state = (1, old['state'], receipt)
+            with self.witness_journal(initialize=True) as journal, closing(
+                    sqlite3.connect(self.directory / 'old-witness.sqlite')) as older:
+                self.append_witness_record(journal, journal_key, _EMPTY_HEAD, old_state)
+                # The independent observer retains the signed record's digest.
+                body, signature = journal.execute(
+                    "SELECT body,signature FROM witness_record WHERE sequence=1").fetchone()
+                first_head = _sha(body + signature)
+                journal.backup(older)
+
+            # The independent checkpoint has the committed head, even if the
+            # writer loses its acknowledgement and reconnects to the journal.
+            with self.witness_journal() as journal:
+                self.assertEqual(self.append_witness_record(
+                    journal, journal_key, first_head, old_state), first_head)
+                self.assertEqual(journal.execute("SELECT count(*) FROM witness_record").fetchone(),
+                                 (1,))
+                with self.assertRaises(InvalidSignature):
+                    self.read_witness_journal(journal, completion_key.public_key(), first_head)
+
+            with self.promotion_store() as authority, self.promotion_store() as peer, (
+                    self.witness_journal()) as journal:
+                retry = self.read_witness_journal(journal, public_key, first_head)
+                self.revoke(_claim(_ALICE, version=1))
+                (current, sig, pin), (chain, _) = self.archive_checkpoint(
+                    2, archive_key, previous=prior)
+                options = dict(pin=pin, epoch=2, key=archive_key.public_key(), chain=chain)
+                with authority:
+                    # Close local admission before publishing the new witness
+                    # record. The competing connection has the old signed state.
+                    authority.execute("BEGIN IMMEDIATE")
+                    authority.execute("""UPDATE promotion SET generation=2,state_pin=?,
+                        receipt=NULL,reconciled=0,staged=NULL,active=NULL WHERE id=1""",
+                        (current['state'],))
+                    with self.assertRaisesRegex(sqlite3.OperationalError, 'locked'):
+                        self.reconcile_promotion(peer, retry)
+                with self.assertRaisesRegex(PermissionError, 'receipt is unavailable'):
+                    self.reconcile_promotion(peer, retry)
+
+                self.stage_promotion(authority, 2, current, sig, **options)
+                args = (2, current['state'], pin)
+                completion = completion_key.sign(_canonical(['ci-completion-v1', *args]))
+                receipt = self.promote(authority, *args, completion, completion_key.public_key())
+                current_state = (2, current['state'], receipt)
+                second_head = self.append_witness_record(
+                    journal, journal_key, first_head, current_state)
+                with closing(sqlite3.connect(self.directory / 'old-witness.sqlite')) as older:
+                    self.assertEqual(self.read_witness_journal(older, public_key, first_head),
+                                     old_state)
+                    with self.assertRaisesRegex(PermissionError, 'independent head'):
+                        self.read_witness_journal(older, public_key, second_head)
+                verified = self.read_witness_journal(journal, public_key, second_head)
+                with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
+                    self.admitted_write(peer, 2, current['state'], verified, 'before-reconcile')
+                self.reconcile_promotion(authority, verified)
+                with self.assertRaisesRegex(PermissionError, 'current generation'):
+                    self.promoted_review(peer, 2, current, sig, independent=retry, **options)
+                self.assertEqual(self.promoted_review(
+                    peer, 2, current, sig, independent=verified, **options), ())
+                self.admitted_write(peer, 2, current['state'], verified, 'reconciled')
+                self.assertEqual(peer.execute("SELECT operation FROM recovery_canary").fetchall(),
+                                 [('reconciled',)])
+
     def test_staged_replica_requires_independent_completion_after_restart(self):
         with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
             archive_key = Ed25519PrivateKey.generate()

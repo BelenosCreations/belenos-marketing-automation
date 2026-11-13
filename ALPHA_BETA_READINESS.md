@@ -35,7 +35,10 @@ still requires the current independently held checkpoint and coverage of
 every deployed reader and writer. The receipt and grant rehearsals
 exercise stale authority restoration, idempotent completion and restricted
 database callers with synthetic data. Operational receipt custody and
-independent evidence of deployed grants still need verification.
+independent evidence of deployed grants still need verification. The
+signed journal and function ownership rehearsals cover synthetic rollback
+and privilege checks. Separately operated witness storage, externally
+retained latest-head evidence and deployed grants remain release gates.
 
 ## Alternate writer and recovery review
 

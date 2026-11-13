@@ -30,7 +30,8 @@ witness rotation and recovery above an independently supplied generation.
 Disposable recovery now stages the replica before a separately signed
 completion and binds review admission to the promoted generation. The
 recovery receipt rehearsal keeps review and writes closed until the
-promoted generation matches an independently retained receipt.
+promoted generation matches an independently retained receipt. A signed
+fixture journal also checks restart, rollback and superseded receipts.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
