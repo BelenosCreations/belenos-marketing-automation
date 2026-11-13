@@ -108,6 +108,39 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 (rid,tenant,copy,self.priority_token))
 
 
+    def test_ci_restore_rejects_interrupted_or_corrupted_copy_without_residue(self):
+        """Injected CI-only faults cannot leak a partial replacement schema."""
+        from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
+        before=self.conn.execute("""SELECT request_id,draft_text,revision
+            FROM content_requests ORDER BY request_id""").fetchall()
+        source_tables=self.conn.execute("""SELECT COUNT(*) FROM
+            information_schema.tables
+            WHERE table_schema='bam_ci_integration'""").fetchone()[0]
+        with self.assertRaises(ValueError):
+            run_ephemeral_ci_logical_restore(self.conn,fail_mode='unknown')
+        with self.assertRaises(ValueError):
+            run_ephemeral_ci_logical_restore(self.conn,fail_mode=True)
+        for fault,error in (('abort_after_copy',RuntimeError),
+                            ('corrupt_restored_draft',ValueError)):
+            with self.subTest(fault=fault):
+                with self.assertRaises(error):
+                    run_ephemeral_ci_logical_restore(self.conn,fail_mode=fault)
+                self.assertIsNone(self.conn.execute(
+                    "SELECT to_regnamespace('bam_ci_restore_probe')"
+                    ).fetchone()[0])
+                self.assertEqual(self.conn.execute("""SELECT request_id,
+                    draft_text,revision FROM content_requests
+                    ORDER BY request_id""").fetchall(),before)
+                self.assertEqual(self.conn.execute("""SELECT COUNT(*)
+                    FROM information_schema.tables
+                    WHERE table_schema='bam_ci_integration'
+                    """).fetchone()[0],source_tables)
+        # A repaired/retried run has no leftover schema and succeeds normally.
+        result=run_ephemeral_ci_logical_restore(self.conn)
+        self.assertTrue(result['separate_schema_discarded'])
+        self.assertFalse(result['production_restore_validated'])
+        self.assertFalse(result['publishing_enabled'])
+
     def test_full_preview_ci_copy_restore_rehearsal(self):
         """Restore all reviewed table rows to a second disposable PG schema."""
         import hashlib

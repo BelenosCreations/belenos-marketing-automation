@@ -1,5 +1,15 @@
 # Changelog
 
+## November 12, 2026 — CI restore transaction rollback and parity fault injection (candidate)
+
+- Add constrained synthetic fault modes for a mid-copy interruption and a changed restored draft. Both must fail the disposable PostgreSQL exercise, roll back temporary schema creation, retain original business data and permit a later clean rehearsal.
+- Strictly local/CI-only; not a production backup, encrypted archive, or migration. No customer content, new service, paid AI or publishing.
+
+## November 12, 2026 — Full PostgreSQL preview copy/restore rehearsal (verified PR #62)
+
+- PR #62 merged as `7beccbbd8c448de277744aedd5d798e8662ed9e3`; [exact-head CI 43338521752](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43338521752) and [merged-main CI 43338797005](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43338797005) both passed. Development safely synchronized non-force.
+- Verified in-memory CSV round-trip parity for all 46 reviewed PostgreSQL preview tables and migration journal in a disposable second schema. No durable encrypted backup, customer recovery or production authorization.
+
 ## November 12, 2026 — Disposable PostgreSQL logical copy/restore rehearsal (candidate)
 
 - Add a CI-only, loopback-restricted second-schema rehearsal that copies all 46 reviewed PostgreSQL preview tables plus the eight-stage migration journal through bounded in-memory CSV, checks exact two-way row parity and drops the temporary schema transactionally.

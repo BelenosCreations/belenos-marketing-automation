@@ -15,6 +15,8 @@
 
 **Verified media safety checkpoint:** [PR #61](https://github.com/BelenosCreations/belenos-marketing-automation/pull/61) merged at `82b1a0bd27cd5bf8c34ca373b890774b12dd43c7`; [merged-main Actions 43338078991](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43338078991) passed. Offline media containers undergo stronger sanity checks, not malware or rights verification. A disposable PostgreSQL logical restore rehearsal is next; it will **not** create a production backup or hosted service.
 
+**Verified PostgreSQL restore rehearsal:** [PR #62](https://github.com/BelenosCreations/belenos-marketing-automation/pull/62) merged at `7beccbbd8c448de277744aedd5d798e8662ed9e3` and passed [merged-main Actions 43338797005](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43338797005). It round-trips the 46 reviewed CI-only PostgreSQL tables and migration journal; this is **not** an encrypted or production backup. Fault-injection rollback rehearsal is in development; never treat a synthetic restored schema as private-Beta recovery readiness.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

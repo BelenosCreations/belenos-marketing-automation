@@ -57,13 +57,17 @@ def _import_csv(conn,table,data):
                 copier.write(data)
 
 
-def run_ephemeral_ci_logical_restore(conn):
+def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None):
     """Round-trip all reviewed CI tables, preserving values and constraints.
 
     Data never leaves the same disposable local PostgreSQL instance.
     No backup file or provider credential is created.
     """
     _check_disposable_connection(conn)
+    if (fail_mode is not None and
+            (type(fail_mode) is not str or fail_mode not in (
+                'abort_after_copy','corrupt_restored_draft'))):
+        raise ValueError('Unsupported disposable restore fault simulation')
     if len(_TABLES)!=47 or len(set(_TABLES))!=47:
         raise ValueError('Unexpected reviewed table count')
     with conn.transaction():
@@ -81,9 +85,21 @@ def run_ephemeral_ci_logical_restore(conn):
         # This single operator-policy row is seeded by the schema DDL.
         # Replace it with the exact source snapshot, never issue unpause.
         conn.execute('TRUNCATE '+_RESTORE+'.bam_ai_operator_control')
-        for name in _TABLES:
+        for number,name in enumerate(_TABLES):
             _import_csv(conn,_RESTORE+'.'+name,
                         _export_csv(conn,_SOURCE+'.'+name))
+            if fail_mode=='abort_after_copy' and number==0:
+                raise RuntimeError('Deliberately interrupted CI restore')
+        if fail_mode=='corrupt_restored_draft':
+            # Fault injection is confined to a disposable *target* schema.
+            # The exact-parity verifier must reject this changed synthetic row.
+            update=conn.execute("""UPDATE bam_ci_restore_probe.content_requests
+                SET draft_text=draft_text||'[ci-corruption]'
+                WHERE request_id=(
+                    SELECT MIN(request_id)
+                    FROM bam_ci_restore_probe.content_requests)""")
+            if update.rowcount!=1:
+                raise ValueError('No synthetic draft available for fault test')
         for name in _TABLES:
             old=_SOURCE+'.'+name
             new=_RESTORE+'.'+name
