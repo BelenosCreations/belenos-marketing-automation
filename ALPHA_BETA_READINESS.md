@@ -1,3 +1,7 @@
+## Independently verified offline Alpha #96–#97; hosted private Beta remains blocked
+
+#96 exact PR/main/reconciliation Actions 43370721912 / 43370961873 / 43371191220 passed; #97 exact PR/main Actions 43371588657 / 43371792518 passed. Current verified main `b21f132009402f00f54a59df9843224ecea82c0a`, development identical non-force 0/0. The CI-only versioned SQLite migration rehearsal is now gated on validated unexecuted intent journal and pinned column semantic metadata; these prove neither authentic human approval nor real customer migration/restore, global writer fencing, offsite key/ciphertext recovery, isolated genuine malware scan/rights review or operational hosted security. Continue hostile session/CSRF/tenant/proxy/abuse/media verification before private Beta and require explicit authorization. All hosted services/integrations disabled, $0 extra costs.
+
 ## Candidate #97 — stronger offline migration metadata prerequisite, not Beta evidence
 
 CI-only v1 transaction rehearsal now requires valid unexecuted intent-chain and source/plan/mapping/preview/semantic fingerprints. This rejects synthetic tamper and source metadata drift but does not validate customer value/null/JSON/default/tenant transformations, operator authority, production writer fencing or actual PG copy/rollback. Private Beta still requires independently evidenced hosted auth/sessions, CSRF, proxy/tenant isolation, operational abuse protection, malware scan provenance and human usage-rights review. All services disabled, $0 extra costs.
