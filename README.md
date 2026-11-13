@@ -343,3 +343,8 @@ Hosting this source publicly is under consideration to reduce GitHub Actions com
 ### Disposable durable encrypted archive experiment
 
 `bam_offline_durable_archive.py` writes only AES-GCM ciphertext envelopes to a trusted owner-only local directory with atomic no-replace publication, fsync and external ciphertext-hash pin verification. It rejects altered, hard-linked, symlinked and incorrectly permissioned objects. **CI-only, synthetic, maximum 4 MiB plaintext per existing envelope:** no PostgreSQL streaming backup, real key vault, retained offsite replica, disaster-recovery guarantee or unattended retention. A separate reviewed production backup stack remains mandatory, and production and publishing remain disabled at $0 added cost.
+
+
+### Offline signed media revocation audit
+
+`trusted_media_revocation.py` extends the existing independent HMAC scan/rights evidence verifier with a separately keyed, hash-chained revocation proof. Removing or changing events, presenting an obsolete independently pinned chain head, using shared issuer/audit keys, and replaying revoked claims fail closed. The chain is **not** persisted or connected to an authoritative source; scanner and copyright-review workers still do not exist, and the module never approves media or publishing. A durable authenticated revocation register and trusted real scanner/reviewer service are prerequisites for Beta.
