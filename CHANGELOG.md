@@ -1,3 +1,7 @@
+## 2026-11-13 — Candidate #100 read-only ClamAV signature-metadata freshness
+
+**Added:** separate CI-only synthetically tested 512-byte CVD header parser, SHA-256 pin, file inode safety, UTC timestamp consistency and configurable bounded age check, stale/tamper/forged-header tests. **Not achieved:** trusted publisher signature verification, authentic ClamAV execution/worker isolation, human rights review or any media approval. This is not production-ready; CI pending. $0 spend, services disabled.
+
 ## 2026-11-13 — Candidate PR #99 offline durable replay canary
 
 **Added:** CI-only private local synthetic SQLite HMAC event ledger, reconnect persistence and replay/fence-epoch rejection, authenticated receipts against a caller-held head, terminal abort, tamper/permission/negative tests. **Test status:** candidate; exact-head/main CI not yet independently verified. **Limits:** no customer data, real PostgreSQL, app writer fence, true external authority or production DR; no paid services; $0 extra cost.
