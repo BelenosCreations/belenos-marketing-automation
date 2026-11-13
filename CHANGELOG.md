@@ -1,5 +1,11 @@
 # Changelog
 
+## November 12, 2026 — CI PostgreSQL constraint/index parity (unverified candidate)
+
+- Compare schema-independent foreign-key, check/unique/primary-key and index catalog attributes for all 46 reviewed tables plus migration journal in the disposable second-schema restore rehearsal. Foreign keys must preserve same-schema target scope.
+- Regress unreviewed source CHECK constraints and indexes; both must fail transactionally, leave no target schema and allow clean retry. Receipts remain aggregate-only. No production migration, durable backup, paid service or social publishing.
+- Verified starting point: PR #65 merged at `7ea77bed`; merged-main Actions 43340767900 succeeded. Candidate requires exact-head and post-merge CI before being called verified.
+
 ## November 12, 2026 — Disposable PostgreSQL restore column-shape drift detection (candidate)
 
 - Check ordered column names, physical types, nullability and identity/generated metadata for all 46 reviewed PostgreSQL preview tables and the migration journal before any synthetic data COPY. Detect source schema changes that row parity alone might not reveal, and roll back the temporary schema without touching source data.

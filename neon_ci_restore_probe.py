@@ -78,6 +78,47 @@ def _check_column_shapes(conn):
         if not original or original!=restored:
             raise ValueError('Disposable restore column schema mismatch')
 
+
+def _check_relational_shapes(conn):
+    """Fail closed on lost/changed PG constraints and indexes in the rehearsal.
+
+    Compare schema-independent catalog attributes, including FK targets:
+    references must remain within the corresponding disposable schema.
+    Nothing from these private catalog rows enters the public receipt.
+    """
+    constraints="""SELECT c.conname, c.contype, c.conkey::text,
+        c.confkey::text, c.confupdtype, c.confdeltype, c.confmatchtype,
+        c.condeferrable, c.condeferred, c.convalidated,
+        pg_get_expr(c.conbin,c.conrelid),
+        CASE WHEN ref_ns.nspname=table_ns.nspname THEN 'same-schema'
+             ELSE COALESCE(ref_ns.nspname,'') END,
+        COALESCE(ref.relname,'')
+      FROM pg_constraint c
+      JOIN pg_class rel ON rel.oid=c.conrelid
+      JOIN pg_namespace table_ns ON table_ns.oid=rel.relnamespace
+      LEFT JOIN pg_class ref ON ref.oid=c.confrelid
+      LEFT JOIN pg_namespace ref_ns ON ref_ns.oid=ref.relnamespace
+      WHERE table_ns.nspname=%s AND rel.relname=%s
+      ORDER BY c.conname"""
+    indexes="""SELECT idx.relname, access.amname, i.indisunique,
+        i.indisprimary, i.indisexclusion, i.indisvalid, i.indisready,
+        i.indnkeyatts, i.indnatts, i.indkey::text, i.indoption::text,
+        i.indcollation::text, i.indclass::text,
+        pg_get_expr(i.indexprs,i.indrelid), pg_get_expr(i.indpred,i.indrelid)
+      FROM pg_index i
+      JOIN pg_class rel ON rel.oid=i.indrelid
+      JOIN pg_namespace ns ON ns.oid=rel.relnamespace
+      JOIN pg_class idx ON idx.oid=i.indexrelid
+      JOIN pg_am access ON access.oid=idx.relam
+      WHERE ns.nspname=%s AND rel.relname=%s
+      ORDER BY idx.relname"""
+    for name in _TABLES:
+        for query in (constraints,indexes):
+            source=conn.execute(query,(_SOURCE,name)).fetchall()
+            restored=conn.execute(query,(_RESTORE,name)).fetchall()
+            if source!=restored:
+                raise ValueError('Disposable restore constraint or index shape mismatch')
+
 def _prepare_restore_session_checks(session_probes):
     """Fixed-shape synthetic-only auth claims; raw bearers never returned."""
     if (type(session_probes) not in (tuple,list)
@@ -124,6 +165,7 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
             checksum TEXT NOT NULL,
             completed_at BIGINT NOT NULL)""")
         _check_column_shapes(conn)
+        _check_relational_shapes(conn)
         # This single operator-policy row is seeded by the schema DDL.
         # Replace it with the exact source snapshot, never issue unpause.
         conn.execute('TRUNCATE '+_RESTORE+'.bam_ai_operator_control')
@@ -167,6 +209,7 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
     return {'status':'ephemeral_ci_logical_restore_verified',
             'reviewed_tables_rehearsed':len(_TABLES)-1,
             'column_shapes_checked':len(_TABLES),
+            'constraint_and_index_shapes_checked':len(_TABLES),
             'migration_journal_rehearsed':True,
             'restored_session_checks_passed':len(session_checks),
             'separate_schema_discarded':True,

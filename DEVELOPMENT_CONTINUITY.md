@@ -1,5 +1,13 @@
 # BAM development continuity checkpoint
 
+## Active unverified candidate — PostgreSQL constraint/index parity (November 12, 2026)
+
+**Verified baseline:** PR #65 merged at `7ea77bed8b673501e61f62f65dfd19fe640d1d3d`; [merged-main Actions 43340767900](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43340767900) succeeded; `main` and `development/phase-3-5-account-directory` synchronized before this candidate. Existing older candidate headings are historical.
+
+**Work:** Extend CI-only complete PostgreSQL restore rehearsal to compare per-table constraint definitions/foreign-key schema scope and index catalog shape as well as columns/rows, for all 47 objects (46 reviewed tables + journal). Inject novel CHECK/index metadata in the synthetic source to prove target rollback, untouched source and clean retry. This is not a durable encrypted backup or live migration. Require exact head PR tests, merge, exact merged-main tests, non-force development sync before calling it verified.
+
+**After this:** Strict non-self-asserted trusted media scanning and rights proof boundary; portable deployment/migration and encrypted retained recovery plan, all offline. $0 additional costs, no live services or EdgePilot reuse, no paid API, no public posting.
+
 ## Current verified recovery checkpoint + schema drift milestone — November 12, 2026
 
 **Last verified merge:** [PR #64](https://github.com/BelenosCreations/belenos-marketing-automation/pull/64) at `3f89c948a5e453b2516a9faa40c35eae294a3397`; exact-head Actions 43339979250 and full merged-main Actions 43340205353 **success**. The development branch was safely synchronized without force. PRs #61–#64 are merged and verified. Ignore historical headings below that use the word candidate for already merged work.
