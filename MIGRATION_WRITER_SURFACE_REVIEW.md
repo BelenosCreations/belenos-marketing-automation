@@ -1,3 +1,10 @@
+## Selected SQL and filesystem boundaries
+
+The [held-draft and pending-media review](MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md)
+links selected local gateway delegates to their transaction and file sites.
+It also records startup and alternative loopback writers, unresolved paths and
+the remaining design work for database and media fencing.
+
 ## Candidate #105 static possible call-path triage
 
 See MIGRATION_DISPATCH_REVIEW.md. CI-only basic direct-call mapping extends #102 source inventory but still misses dynamic, deployed and external write paths. Unknown and unmatched sites are review blockers, not proof of safety. Not a migration runner, global fence or production review approval.

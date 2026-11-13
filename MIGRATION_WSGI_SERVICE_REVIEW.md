@@ -1,5 +1,12 @@
 # CI-only WSGI handler-to-service method review
 
+## Selected SQL and filesystem boundaries
+
+The [held-draft and pending-media review](MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md)
+links selected local gateway delegates to their transaction and file sites.
+It also records startup and alternative loopback writers, unresolved paths and
+the remaining design work for database and media fencing.
+
 PR #108 builds on independently verified #107. This non-executing AST module
 adds a single downstream source hop for candidate gateway handler bindings.
 It identifies direct self.dependency.method calls inside candidate handler
