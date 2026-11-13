@@ -186,3 +186,27 @@ provider activity, real recovery, customer migration, or private Beta.
 
 These tests copy only hand-seeded fixtures into the disposable preview and
 leave production transforms, receipt creation and media trust decisions gated.
+
+### Proposed attachment parent review
+
+An ordinary attachment would reference its tenant and content request. An
+AI attachment would reference its tenant, subject and AI draft. Give each
+association an explicit parent type and constrain it to exactly one parent.
+Preserve the attachment ID and its storage metadata. Keep the existing
+ordinary-request foreign key until a replacement design has been reviewed
+against every reader and writer.
+
+| Legacy evidence | Disposition to rehearse |
+| --- | --- |
+| Ordinary request matches and no AI parent or conflicting link exists | Candidate for the ordinary parent after verifying the tenant, request and item. |
+| AI draft matches and exactly one legacy media link matches the same tenant, subject, draft and attachment | Candidate for the AI parent after independently validating provenance and historical ownership. A legacy metadata status is insufficient for media trust. |
+| Both namespaces match, two subjects own the same draft ID in a tenant, or links disagree | Hold the attachment and preserve the contradictory associations. Require independent provenance to resolve the parent. |
+| Only an AI draft ID matches and no link identifies its subject, no parent matches, or the tenant differs | Hold for review. A draft ID by itself cannot establish ownership. |
+| The historical subject is inactive or membership is absent | Keep historical attribution for review. Current session and membership checks must govern any future access. |
+
+Before a schema proposal, exercise content status reads, pending-file
+receipt and discard, trusted byte inspection, scanner and rights decisions,
+review readiness and AI draft link reads against these cases. Inspect how the
+legacy integrity preflight reports attachments whose only parent is an AI
+draft. Keep its existing blocker until classification and ownership rules
+have independent evidence.
