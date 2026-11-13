@@ -6,15 +6,14 @@
 
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation, verify the GitHub checkpoint, and follow the next steps and restrictions in that file.
 
-## Last independently verified baseline (2026-11-13)
+## Last independently verified engineering checkpoint (2026-11-13)
 
-- Main and development SHA: `f855a265a2973324637db23621de1e5cfcfbf62e`.
-- Merged-main Actions **#43443740177 passed** for that exact SHA. Branches were independently compared identical, 0 ahead/behind, with no open PRs.
-- PR **#109** made this file the canonical handoff. Exact-head Actions **#43443398238 passed** at `caa89c5d901b8d1f7f5763ca3c1f750ed0a64448`.
-- PRs **#107–#108** added offline WSGI binding and handler-to-service source discovery. PRs **#75–#106** cover earlier offline migration, recovery, media and writer-review work.
-- Candidate after #109 maps held-draft and pending-media source calls to SQL and filesystem boundaries. See `MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md`. Recheck its PR and merged-main Actions before treating it as verified.
+- PR **#110** mapped seven offline write paths for held drafts and pending media. The review records SQLite transaction contexts, filesystem writes and the split between file unlink and metadata deletion. It rejects source drift and leaves unreviewed and indirect paths visible. See [the write boundary review](MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md).
+- Exact-head Actions [#43447087316](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43447087316) passed at `8a507c091ee719a69212cc42d113bad7c4d1f57e`. Merged-main Actions [#43447377425](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43447377425) passed at `62d9eac274f12937746cafdf5215939bae7141c1`.
+- At the #110 checkpoint, main and development were independently verified identical, 0 ahead/behind, following a non-force fast-forward, with no open PRs.
+- PR **#109** established this handoff. PRs **#107–#108** added gateway binding and handler-to-service discovery. PRs **#75–#106** cover earlier offline migration, recovery, media and writer-review work.
 
-**Important:** This baseline is not a future SHA prediction or automatically updated live status. The next chat must discover and verify whichever main/Actions/PRs are newest. A documentation-only commit/merge may advance main after this baseline without changing production readiness. If branches diverge or CI is pending, investigate rather than assuming a clean checkpoint.
+This is the last verified engineering checkpoint recorded before the handoff-only update. Fetch the current GitHub heads, PRs and exact-SHA Actions before resuming.
 
 ## Next safe development milestone
 
