@@ -1236,6 +1236,88 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(confirm(peer, next_state, signed('confirm', next_state, new_key),
                                  next_state), 1)
 
+    def test_ci_signed_revocation_orders_review_and_requires_fresh_ack_after_restart(self):
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+        self.conn.execute("""CREATE TABLE ci_review_authority (
+            id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
+            head TEXT NOT NULL, mode TEXT NOT NULL CHECK (mode IN ('open','pending'))
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_review_authority")
+        self.conn.execute("""CREATE TABLE ci_review_admission (
+            operation TEXT PRIMARY KEY, generation INTEGER NOT NULL, head TEXT NOT NULL
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_review_admission")
+        self.conn.execute("INSERT INTO ci_review_authority VALUES (1,1,'head-1','open')")
+        peer = self._connect()
+        self.addCleanup(peer.close)
+        revoker = Ed25519PrivateKey.generate()
+        witness = Ed25519PrivateKey.generate()
+        lock = """SELECT generation,head,mode FROM ci_review_authority
+                  WHERE id=1 FOR UPDATE NOWAIT"""
+
+        def message(purpose, *state):
+            return json.dumps(['bam-ci-review-fence-v1', purpose, *state]).encode()
+
+        def admit(db, state, operation):
+            with db.transaction():
+                if db.execute(lock).fetchone() != (*state, 'open'):
+                    return 0
+                return db.execute("INSERT INTO ci_review_admission VALUES (%s,%s,%s)",
+                                  (operation, *state)).rowcount
+
+        def revoke(db, previous, current, signature):
+            with db.transaction():
+                row = db.execute(lock).fetchone()
+                revoker.public_key().verify(signature, message('revoke', *previous, *current))
+                if row[:2] != previous or current[0] != previous[0] + 1 or current[1] == previous[1]:
+                    return 0
+                return db.execute("""UPDATE ci_review_authority SET generation=%s,head=%s,
+                    mode='pending' WHERE id=1""", current).rowcount
+
+        def confirm(db, state, signature):
+            with db.transaction():
+                if db.execute(lock).fetchone() != (*state, 'pending'):
+                    return 0
+                witness.public_key().verify(signature, message('ack', *state))
+                return db.execute("UPDATE ci_review_authority SET mode='open' WHERE id=1").rowcount
+
+        first, second, third = (1, 'head-1'), (2, 'head-2'), (3, 'head-3')
+        advance = revoker.sign(message('revoke', *first, *second))
+        with self.conn.transaction():
+            self.assertEqual(admit(self.conn, first, 'review-before-revocation'), 1)
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                revoke(peer, first, second, advance)
+        with self.assertRaises(InvalidSignature):
+            revoke(peer, first, second, witness.sign(message('revoke', *first, *second)))
+        with peer.transaction():
+            self.assertEqual(revoke(peer, first, second, advance), 1)
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                admit(self.conn, first, 'racing-review')
+        self.assertEqual(revoke(peer, first, second, advance), 0)
+        peer.close()  # Restart after the revocation commit but before witness acknowledgement.
+
+        with closing(self._connect()) as restarted:
+            self.assertEqual(admit(restarted, first, 'stale-review'), 0)
+            self.assertEqual(admit(restarted, second, 'unwitnessed-review'), 0)
+            self.assertEqual(confirm(restarted, first, witness.sign(message('ack', *first))), 0)
+            with self.assertRaises(InvalidSignature):
+                confirm(restarted, second, advance)
+
+            # Another signed revocation advances the pending head while the
+            # worker is offline. Its delayed acknowledgement must stay stale.
+            acknowledgement = witness.sign(message('ack', *second))
+            self.assertEqual(revoke(self.conn, second, third, revoker.sign(
+                message('revoke', *second, *third))), 1)
+            self.assertEqual(confirm(restarted, second, acknowledgement), 0)
+            self.assertEqual(admit(restarted, third, 'still-pending-review'), 0)
+            self.assertEqual(confirm(restarted, third, witness.sign(message('ack', *third))), 1)
+            self.assertEqual(admit(restarted, third, 'review-after-ack'), 1)
+        self.assertEqual(self.conn.execute("""SELECT operation,generation,head
+            FROM ci_review_admission ORDER BY generation""").fetchall(),
+            [('review-before-revocation', 1, 'head-1'), ('review-after-ack', 3, 'head-3')])
+
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.
         with self.conn.transaction(force_rollback=True):

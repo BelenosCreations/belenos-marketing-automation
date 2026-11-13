@@ -96,6 +96,14 @@ ciphertext and request decryption. Include any tool capable of restoring
 database authority rows and check that it cannot rewrite the witness.
 The fixture keeps these inputs outside the snapshot in the test process.
 
+The restore-promotion review checked the tree at `c1f679806730f771160ed65efbf6fc24710061f9`
+for service, scheduler, callback and worker manifests. The checked-in
+workflows remain CI and history audit. The scanner boundary remains a
+separate source entry point. For an operational review, trace any restore
+or retry principal that can stage or activate a checkpoint, who can sign
+completion, and which read or write roles can bypass the authority row.
+The disposable tests exercise only their own principals and data.
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).

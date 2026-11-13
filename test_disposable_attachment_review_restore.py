@@ -458,3 +458,125 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                 self.open_checkpoint(current, sig, fail_after_validation=True, **options)
             self.assertFalse(self.restored.exists())
             self.assertEqual(self.open_checkpoint(current, sig, **options), ())
+
+    def promotion_store(self, *, initialize=False):
+        db = sqlite3.connect(self.directory / 'promotion.sqlite', timeout=0)
+        if initialize:
+            with db:
+                db.execute("""CREATE TABLE promotion (
+                    id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
+                    state_pin TEXT NOT NULL, staged TEXT, active TEXT
+                )""")
+                db.execute("INSERT INTO promotion VALUES (1,1,?,NULL,NULL)",
+                           (self.witness(self.source),))
+        return closing(db)
+
+    def stage_promotion(self, db, generation, checkpoint, signature, **options):
+        # Validate the complete replica before staging. The transaction checks
+        # that the authority still points to the validated evidence.
+        self.open_checkpoint(checkpoint, signature, **options)
+        with db:
+            result = db.execute("""UPDATE promotion SET staged=?
+                WHERE id=1 AND generation=? AND state_pin=? AND active IS NULL
+                AND (staged IS NULL OR staged=?)""",
+                (options['pin'], generation, checkpoint['state'], options['pin']))
+            if result.rowcount != 1:
+                raise PermissionError('Restore authority moved before staging')
+
+    @staticmethod
+    def promote(db, generation, state_pin, checkpoint_pin, signature, witness_key,
+                *, abort=False):
+        message = _canonical(['ci-completion-v1', generation, state_pin, checkpoint_pin])
+        with db:
+            # An independently signed completion can only promote the exact
+            # candidate still staged under the current generation and head.
+            witness_key.verify(signature, message)
+            result = db.execute("""UPDATE promotion SET active=staged,staged=NULL
+                WHERE id=1 AND generation=? AND state_pin=? AND staged=? AND active IS NULL""",
+                (generation, state_pin, checkpoint_pin))
+            if result.rowcount != 1:
+                raise PermissionError('Restore candidate is stale or already promoted')
+            if abort:
+                raise InterruptedError('Promotion interrupted before commit')
+
+    def promoted_review(self, db, generation, checkpoint, signature, **options):
+        with db:
+            # Serialize review admission with revocation in the disposable
+            # store while the validated replica is reopened for the read.
+            db.execute('BEGIN IMMEDIATE')
+            row = db.execute("""SELECT 1 FROM promotion
+                WHERE id=1 AND generation=? AND state_pin=? AND active=?""",
+                (generation, checkpoint['state'], options['pin'])).fetchone()
+            if row is None:
+                raise PermissionError('Restore is not admitted for review')
+            return self.open_checkpoint(checkpoint, signature, **options)
+
+    def test_staged_replica_requires_independent_completion_after_restart(self):
+        with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
+            archive_key = Ed25519PrivateKey.generate()
+            completion_key = Ed25519PrivateKey.generate()
+            (checkpoint, sig, pin), (chain, _) = self.archive_checkpoint(1, archive_key)
+            options = dict(pin=pin, epoch=1, key=archive_key.public_key(), chain=chain)
+            args = (1, checkpoint['state'], pin)
+            message = _canonical(['ci-completion-v1', *args])
+            acknowledgement = completion_key.sign(message)
+            with self.promotion_store(initialize=True) as db:
+                self.stage_promotion(db, 1, checkpoint, sig, **options)
+            with self.promotion_store() as db:
+                with self.assertRaisesRegex(PermissionError, 'not admitted'):
+                    self.promoted_review(db, 1, checkpoint, sig, **options)
+                with self.assertRaises(InvalidSignature):
+                    self.promote(db, *args, archive_key.sign(message),
+                                 completion_key.public_key())
+                with self.assertRaises(InterruptedError):
+                    self.promote(db, *args, acknowledgement, completion_key.public_key(),
+                                 abort=True)
+            with self.promotion_store() as db:
+                self.assertEqual(db.execute("SELECT staged,active FROM promotion").fetchone(),
+                                 (pin, None))
+                self.promote(db, *args, acknowledgement, completion_key.public_key())
+                with self.assertRaisesRegex(PermissionError, 'already promoted'):
+                    self.promote(db, *args, acknowledgement, completion_key.public_key())
+                with self.assertRaisesRegex(PermissionError, 'not admitted'):
+                    self.promoted_review(db, 2, checkpoint, sig, **options)
+                self.assertEqual(self.promoted_review(db, 1, checkpoint, sig, **options),
+                                 ('c' * 32,))
+
+                # Even a promoted pointer is insufficient if ciphertext is
+                # corrupted before a later review reopens it.
+                ciphertext = self.directory / 'ciphertext-replica' / checkpoint['archive_name']
+                raw = ciphertext.read_bytes()
+                ciphertext.write_bytes(raw[:-1] + bytes([raw[-1] ^ 1]))
+                with self.assertRaises(PermissionError):
+                    self.promoted_review(db, 1, checkpoint, sig, **options)
+
+    def test_new_revocation_invalidates_staged_candidate_and_old_review(self):
+        with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
+            archive_key = Ed25519PrivateKey.generate()
+            completion_key = Ed25519PrivateKey.generate()
+            (old, old_sig, old_pin), prior = self.archive_checkpoint(1, archive_key)
+            old_options = dict(pin=old_pin, epoch=1, key=archive_key.public_key(), chain=prior[0])
+            with self.promotion_store(initialize=True) as db:
+                self.stage_promotion(db, 1, old, old_sig, **old_options)
+            self.revoke(_claim(_ALICE, version=1))
+            (current, sig, pin), (chain, _) = self.archive_checkpoint(2, archive_key, previous=prior)
+            options = dict(pin=pin, epoch=2, key=archive_key.public_key(), chain=chain)
+            with self.promotion_store() as db, db:
+                db.execute("""UPDATE promotion SET generation=generation+1,state_pin=?,
+                    active=NULL,staged=NULL WHERE id=1""", (current['state'],))
+            with self.promotion_store() as db:
+                args = (1, old['state'], old_pin)
+                stale = completion_key.sign(_canonical(['ci-completion-v1', *args]))
+                with self.assertRaisesRegex(PermissionError, 'candidate is stale'):
+                    self.promote(db, *args, stale, completion_key.public_key())
+                with self.assertRaisesRegex(PermissionError, 'authority moved'):
+                    self.stage_promotion(db, 1, old, old_sig, **old_options)
+                with self.assertRaisesRegex(PermissionError, 'issuer catalog differs'):
+                    self.stage_promotion(db, 2, current, sig, issuers={}, **options)
+                self.assertEqual(db.execute("SELECT staged,active FROM promotion").fetchone(),
+                                 (None, None))
+                self.stage_promotion(db, 2, current, sig, **options)
+                args = (2, current['state'], pin)
+                fresh = completion_key.sign(_canonical(['ci-completion-v1', *args]))
+                self.promote(db, *args, fresh, completion_key.public_key())
+                self.assertEqual(self.promoted_review(db, 2, current, sig, **options), ())
