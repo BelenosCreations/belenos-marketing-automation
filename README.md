@@ -1,5 +1,7 @@
 # BAM — Belenos Automatic Marketing
 
+**Candidate PR #70 — encrypted recovery envelope (offline only):** Adds a bounded, in-memory AES-256-GCM backup envelope with HKDF-derived per-envelope keys, authenticated schema fingerprint/freshness, random salt/nonce, and fail-closed recovery tests. The only enabled context is the disposable CI PostgreSQL flag. It writes no backup files and supplies neither off-host retention, key custody nor production migration or restore. Customer data and real services remain inactive.
+
 **BAM is an AI-assisted marketing planning, creation, collaboration, scheduling and analytics platform for businesses.** It is designed to support multiple independent businesses and teams, with direct social-media platform integrations instead of requiring Metricool. Each business has its own voice, products, media, permissions, calendar and performance reporting. The Belenos name identifies the product's origin, not a restriction to one store or industry.
 
 **Current release status (November 12, 2026): Offline Alpha.** The GitHub repository is public, but there is **no publicly deployed BAM application**. A local-only responsive web workspace, signed-in collaboration, held drafts, independent AI copy/image-prompt components and safety checks can be tested offline. Live Meta OAuth, social publishing, executable scheduling, native analytics ingestion, paid OpenAI API generation, hosted multi-user production and Android APK distribution are **not active**. None of the tested previews authorize publication.

@@ -1,5 +1,7 @@
 # BAM Alpha → Private Beta Readiness Gate
 
+**Candidate PR #70 (offline only):** CI-gated AES-GCM synthetic backup-envelope authentication is not durable encrypted customer backup, off-host retention, key custody, operator recovery or private Beta authorization. These remain release blockers.
+
 **Status as of November 12, 2026:** Private, offline **alpha**. This checklist is an acceptance gate, not a claim that release milestones were reached. BAM remains unpublished and has no permission to call social publishing services or paid AI.
 
 ## A. Checks that can be developed without production authorization

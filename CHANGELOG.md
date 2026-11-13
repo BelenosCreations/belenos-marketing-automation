@@ -1,5 +1,10 @@
 # Changelog
 
+## November 12, 2026 — Candidate PR #70: synthetic encrypted backup envelope
+
+- Add offline-only AES-256-GCM authenticated encryption for bounded synthetic restore rehearsal payloads, with random per-envelope salt/nonce, HKDF key separation, schema/freshness binding and tamper/wrong-key/expiry rejection. CI uses pinned `cryptography==46.0.2`. No durable backup, storage provider, key escrow, hosted database, customer migration, live publishing or spending is enabled.
+
+
 ## November 12, 2026 — Snapshot-consistent synthetic restore (verified PR #68)
 
 - PR #68 merged as `3052f1e2a7ab65c4a19cf7b8a31e854fc94b6b88`; [exact-head CI 43344020606](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43344020606) and [merged-main CI 43344264999](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43344264999) passed. Development synchronized without force.
