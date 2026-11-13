@@ -13,6 +13,8 @@
 
 **Media boundary hardening in progress (November 12, 2026):** A new offline file preflight rejects several malformed or truncated container formats after SHA-256 matching; this is preliminary sanity checking only, never malware/rights verification. Before claiming verification, check the exact PR-head GitHub Actions result and post-merge `main` test run. All provider writes and real uploads stay disabled.
 
+**Verified media safety checkpoint:** [PR #61](https://github.com/BelenosCreations/belenos-marketing-automation/pull/61) merged at `82b1a0bd27cd5bf8c34ca373b890774b12dd43c7`; [merged-main Actions 43338078991](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43338078991) passed. Offline media containers undergo stronger sanity checks, not malware or rights verification. A disposable PostgreSQL logical restore rehearsal is next; it will **not** create a production backup or hosted service.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:
