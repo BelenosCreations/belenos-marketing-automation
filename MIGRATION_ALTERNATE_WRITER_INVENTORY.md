@@ -43,6 +43,17 @@ The tracked files had no release manifest for a hosted process. These checks
 describe GitHub's record and checked-in configuration. External hosts, job
 schedulers, callbacks and separately operated writers remain unverified.
 
+For an authorized deployment review, compare independent runtime observations
+with the repository map before proposing a freeze. The observation and the
+repository path should both identify the version and writer principal.
+
+| Runtime surface | Independent evidence to compare |
+| --- | --- |
+| WSGI and process startup | Release manifest, running command, route bindings, process identity and database write grants, including schema setup at startup. |
+| Callbacks, retry workers and scheduled jobs | Registered callback destinations, queue consumers, scheduler entries, service identities and evidence that retries and in-flight work stop or stay fenced. |
+| File and object writes | Mount and bucket grants, worker and admin principals, and the observed order of metadata commits and storage effects. |
+| External and non-Python writers | Authorized database and storage principal inventory, access logs, and owner-reviewed list of direct clients or admin tools. |
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).

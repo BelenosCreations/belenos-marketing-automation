@@ -8,6 +8,8 @@ design also specifies independent confirmation of the operator's latest
 transition before reopening writes after a restore.
 The disposable PostgreSQL suite exercises receipt-based finalization,
 targeted revision rollback, and closed admission after a stale restore.
+The recovery design includes a source-level review of AI store migration
+fields and the evidence needed to verify ownership and legacy values.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
