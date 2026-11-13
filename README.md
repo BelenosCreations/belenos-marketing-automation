@@ -21,6 +21,10 @@ legacy links. The authority rehearsal adds expiry, revocation, rollback
 and separate writer and operator grants.
 The offline attachment rehearsal checks signed parent and subject binding,
 revocation across claim versions, and retry after an interrupted discard.
+A restored SQLite fixture ties the revocation head to its claim index and
+tests typed review visibility after colliding IDs or issuer key rotation.
+Disposable PostgreSQL tests exercise both lock orders for confirmation
+racing a restore.
 
 ## Alternate writer inventory and offline recovery rehearsal
 

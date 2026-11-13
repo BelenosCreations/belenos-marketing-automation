@@ -1103,6 +1103,59 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                               (current_head,))
             self.assertEqual(self.conn.execute(confirm, (current_head,)).rowcount, 1)
 
+    def test_ci_confirmation_and_restore_serialize_on_authority_row(self):
+        self.conn.execute("""CREATE TABLE ci_restore_authority (
+            id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
+            revocation_head TEXT NOT NULL,
+            mode TEXT NOT NULL CHECK (mode IN ('pending','open','frozen'))
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_restore_authority")
+        self.conn.execute("INSERT INTO ci_restore_authority VALUES (1,2,'head-2','pending')")
+        peer = self._connect()
+        self.addCleanup(peer.close)
+        lock = "SELECT id FROM ci_restore_authority WHERE id=1 FOR UPDATE NOWAIT"
+
+        def confirm(db, witness):
+            db.execute(lock)
+            return db.execute("""UPDATE ci_restore_authority SET mode='open'
+                WHERE id=1 AND mode='pending' AND generation=%s AND revocation_head=%s
+                """, witness).rowcount
+
+        def stage_restore(db, restored_head):
+            # An older backup supplies content, never the authority generation
+            # or admission mode. The independent witness is outside this row.
+            db.execute(lock)
+            db.execute("""UPDATE ci_restore_authority
+                SET generation=generation+1, revocation_head=%s, mode='frozen'
+                WHERE id=1""", (restored_head,))
+
+        original_pin = (2, 'head-2')
+        with self.conn.transaction():
+            stage_restore(self.conn, 'head-1')
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable), peer.transaction():
+                confirm(peer, original_pin)
+        with peer.transaction():
+            self.assertEqual(confirm(peer, original_pin), 0)
+            self.assertEqual(confirm(peer, (3, 'head-3')), 0)
+        self.assertEqual(peer.execute("""SELECT generation,revocation_head,mode
+            FROM ci_restore_authority""").fetchone(), (3, 'head-1', 'frozen'))
+
+        # Reconcile the restored state against an independently witnessed head
+        # and stage a new pending transition before attempting confirmation.
+        self.conn.execute("""UPDATE ci_restore_authority
+            SET revocation_head='head-3', mode='pending' WHERE id=1 AND generation=3
+            AND mode='frozen'""")
+        with self.conn.transaction():
+            self.assertEqual(confirm(self.conn, (3, 'head-1')), 0)
+            self.assertEqual(confirm(self.conn, (3, 'head-3')), 1)
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable), peer.transaction():
+                stage_restore(peer, 'head-1')
+        with peer.transaction():
+            stage_restore(peer, 'head-1')
+            self.assertEqual(confirm(peer, (3, 'head-3')), 0)
+        self.assertEqual(peer.execute("""SELECT generation,revocation_head,mode
+            FROM ci_restore_authority""").fetchone(), (4, 'head-1', 'frozen'))
+
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.
         with self.conn.transaction(force_rollback=True):
