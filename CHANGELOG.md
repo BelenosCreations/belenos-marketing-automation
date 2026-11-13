@@ -1,3 +1,9 @@
+## Candidate #107 (2026-11-13) — static offline gateway binding candidates
+
+- Added CI-only neon_ci_wsgi_binding_review.py and its adversarial tests, deterministic inventory-bound AST handler binding and literal guard hints.
+- Added MIGRATION_WSGI_BINDING_REVIEW.md with explicit runtime and dynamic-call gaps.
+- No production integrations, customer data movement, real cross-instance fencing, paid APIs or publishing. $0 cost; exact-head/merged-main CI pending.
+
 ## Verified #105; candidate #106 recovery review (2026-11-13)
 
 - PR #105: CI-only conservative Python/WSGI/worker/callback possible source-call paths, unknown dynamic calls, unmapped writer sites and stable digest bound to the prior writer inventory; synthetic regression tests. First test run #43435037937 failed on an over-broad synthetic job fixture; repaired before final verification.
