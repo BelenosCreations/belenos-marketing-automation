@@ -64,3 +64,8 @@ Render Starter and Neon Free are selected for *design only*. Before actual servi
 ## Account-throttle shared-state hardening (offline)
 
 The alpha login-failure counter uses one SQLite write per failed attempt and tests independent concurrent clients; this prevents an avoidable lost-update issue. The next hosted admission layer must still enforce atomic request attempt reservation, trusted client IP/device and global quotas, distributed or database-backed consistent enforcement, safe account enumeration responses and rollback/monitoring. Neither these offline tests nor a passing CI run constitute production identity security or owner authorization to deploy.
+
+
+### Recovery architecture gate — disposable ciphertext is not a backup service
+
+The offline CI archive experiment demonstrates authenticated ciphertext disk persistence under strict local permissions, no replacement and explicit hash pinning. It is deliberately guarded by the disposable test flag and inherits a 4 MiB synthetic envelope cap and seven-day freshness. Production architecture must specify: independently controlled root-key generation/custody, least-privilege restore access, rotation/re-encryption, disaster loss of application+primary site, separate offsite key and ciphertext domains, immutable version retention and legal deletion, encrypted metadata/catalog, periodic restore parity and drill evidence, recovery objective, secure disposal and incident revocation. No offsite provider, vault, retention process or recovery point exists yet.

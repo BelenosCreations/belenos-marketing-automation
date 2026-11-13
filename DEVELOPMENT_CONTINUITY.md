@@ -493,3 +493,8 @@ Public backend hosting (provider, credentials, persistence, budget and security)
 - Starting baseline: verified main/dev `a09e10cc7eb71c1ca4fd4e6f2c5161431b7eeab2`, passed main run `43348622610`.
 - New `neon_migration_operator_preflight.py` is an offline *blocking* report. It fingerprints existing preview SQL and detects source integrity, unreviewed tables and pinned SQLite schema drift; it never executes PostgreSQL DDL or grants production approval.
 - After verification, record exact merged-main commit/run in a later checkpoint. Remaining blockers: complete production data mapping, real PostgreSQL transactional adapter and migrations, key custody/offsite recovery, independently tested restore, trusted malware and rights workers, hosted security, human approval and authorized spending. Preserve $0 and no EdgePilot/Render/Neon connection.
+
+
+### 2026-11-12 — Disposable encrypted archive durability step (pending merged-main CI)
+- New `bam_offline_durable_archive.py` demonstrates no-overwrite encrypted ciphertext persistence in a trusted local 0700 directory, fsync and readback pin/AEAD verification. The only test data are synthetic bounded envelopes; no customer rows or secrets are persisted. The pin must be anchored independently from the archive to have recovery value.
+- Still missing production key custody and rotation, large streaming backups, durable offsite secondary storage, retention/immutability policy enforcement, an operator restore drill with data parity, and authorized hosting. No $0-budget change.
