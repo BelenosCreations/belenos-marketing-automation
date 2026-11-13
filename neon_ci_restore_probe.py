@@ -60,6 +60,24 @@ def _import_csv(conn,table,data):
 
 
 
+
+
+def _check_column_shapes(conn):
+    """Fail on column reorder, type, nullability or untracked additions.
+
+    This supplements, not replaces, row/constraint/semantic validation. No
+    schema DDL, column names, customer data or credentials are returned.
+    """
+    query="""SELECT column_name,udt_name,is_nullable,is_identity,is_generated
+        FROM information_schema.columns
+        WHERE table_schema=%s AND table_name=%s
+        ORDER BY ordinal_position"""
+    for name in _TABLES:
+        original=conn.execute(query,(_SOURCE,name)).fetchall()
+        restored=conn.execute(query,(_RESTORE,name)).fetchall()
+        if not original or original!=restored:
+            raise ValueError('Disposable restore column schema mismatch')
+
 def _prepare_restore_session_checks(session_probes):
     """Fixed-shape synthetic-only auth claims; raw bearers never returned."""
     if (type(session_probes) not in (tuple,list)
@@ -105,6 +123,7 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
             version INTEGER PRIMARY KEY,
             checksum TEXT NOT NULL,
             completed_at BIGINT NOT NULL)""")
+        _check_column_shapes(conn)
         # This single operator-policy row is seeded by the schema DDL.
         # Replace it with the exact source snapshot, never issue unpause.
         conn.execute('TRUNCATE '+_RESTORE+'.bam_ai_operator_control')
@@ -147,6 +166,7 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
         conn.execute('DROP SCHEMA '+_RESTORE+' CASCADE')
     return {'status':'ephemeral_ci_logical_restore_verified',
             'reviewed_tables_rehearsed':len(_TABLES)-1,
+            'column_shapes_checked':len(_TABLES),
             'migration_journal_rehearsed':True,
             'restored_session_checks_passed':len(session_checks),
             'separate_schema_discarded':True,

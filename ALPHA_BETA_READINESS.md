@@ -6,6 +6,9 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
+| Full disposable PG preview copy/restore with session privacy | **Verified PRs #62–#64; merged-main Actions 43340205353 passed; CI-only** | Preserve all 46 preview tables plus migration journal, reject copy interruption/corruption and prove active, cross-business, revoked and expired session behavior after restore. Not a durable production backup or real hosted customer restore |
+| Exact column-shape safety before synthetic PG restore | **New development candidate, not verified** | Compare ordered column metadata between original and restored CI schemas, reject drift/extra columns, prove rollback and clean retry; hosted migration still blocked |
+| Hash-matched local media container sanity | **Verified PR #61; merged-main Actions 43338078991 passed; offline only** | Reject malformed PNG, WebP, MP4, JPEG and PDF wrappers with synthetic fixtures. Never equate this with malware scanning, licensing or owner approval |
 | Authenticated PostgreSQL editorial review readiness preview | **Verified PR #59, merged-main Actions 43334593446 passed; CI-only** | Validate fail-closed JSON and tenant/role/revocation, pending or rejected media and unconditional approval/publishing blockers; never treat media-ready as approval |
 | Local attachment-integrity preflight for PostgreSQL migration | **Verified PR #58, merged-main Actions 43333804031 passed; local-only** | Detect corrupt or mismatched SQLite references before migration; never export private values or treat clean synthetic data as permission to migrate |
 | Verified attachment reference binding to held drafts | **Verified PR #57, merged-main Actions 43333173764 passed; CI-only** | Verify pending/rejected/foreign registry denial, reviewed-required item rules, live editor role/revocation, concurrent CAS and nonpublishing result; production scanner/storage still absent |

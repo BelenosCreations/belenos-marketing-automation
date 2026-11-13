@@ -1,5 +1,15 @@
 # Changelog
 
+## November 12, 2026 — Disposable PostgreSQL restore column-shape drift detection (candidate)
+
+- Check ordered column names, physical types, nullability and identity/generated metadata for all 46 reviewed PostgreSQL preview tables and the migration journal before any synthetic data COPY. Detect source schema changes that row parity alone might not reveal, and roll back the temporary schema without touching source data.
+- Add real ephemeral PG negative regression for unreviewed column injection and a clean retry; no hosted Neon, durable encrypted backup, real customer data or publishing.
+
+## November 12, 2026 — Restored PostgreSQL tenant-session authorization (verified PR #64)
+
+- PR #64 merged as `3f89c948a5e453b2516a9faa40c35eae294a3397`; [exact-head PR CI 43339979250](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43339979250) and [merged-main CI 43340205353](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43340205353) passed; development synchronized non-force.
+- Run actual authenticated SELECTs inside the restored disposable PG schema: active own-business sessions can read held drafts; wrong-business, revoked, expired and tampered sessions cannot. Only counts, never tokens or private drafts, appear in receipt. Failure rolls back; production networking and posting remain unapproved.
+
 ## November 12, 2026 — Restored PostgreSQL session isolation drill (candidate)
 
 - Add a bounded, synthetic CI-only restore probe that runs the real token-hash-bound draft SELECT within the restored temporary schema after 46-table parity validation. It must allow active same-business sessions and deny foreign-business, revoked, expired or tampered sessions.

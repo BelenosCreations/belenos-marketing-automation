@@ -1,5 +1,13 @@
 # BAM development continuity checkpoint
 
+## Current verified recovery checkpoint + schema drift milestone — November 12, 2026
+
+**Last verified merge:** [PR #64](https://github.com/BelenosCreations/belenos-marketing-automation/pull/64) at `3f89c948a5e453b2516a9faa40c35eae294a3397`; exact-head Actions 43339979250 and full merged-main Actions 43340205353 **success**. The development branch was safely synchronized without force. PRs #61–#64 are merged and verified. Ignore historical headings below that use the word candidate for already merged work.
+
+**Current unverified candidate:** Add exact ordered column-shape comparisons for all 46 CI-only reviewed PostgreSQL tables plus the migration journal in the disposable second-schema restore exercise. Reject unreviewed nullable columns and confirm failed transaction leaves no residue and clean retry succeeds. Also refresh README, CHANGELOG, roadmap and Alpha/Beta acceptance gate headings. Exact PR-head tests → green merge → merged-main tests → non-force sync. No actual Neon/Render service, customer backup, EdgePilot sharing, paid OpenAI, authenticated public app or social posting; additional budget remains **$0**.
+
+**Next major gaps:** Production-grade PostgreSQL migration runner, complete live adapter and encrypted/retained backup restores; private object storage and trusted malware/rights attestation, production ingress/device isolation and owner-reviewed provider actions. None of these are authorized to deploy or spend.
+
 ## Verified checkpoint and restored-session privacy milestone — November 12, 2026
 
 **Fully verified:** PR #63 merged into `main` as `fe1fe32ab49ca38add64ec7a25b1915cb4d6a7b5`; exact-head Actions 43339310351 and full merged-main Actions 43339557139 passed; development safely synchronized. PRs #61 and #62 also passed both. $0 additional spend; no Neon/Render services, public gateway, EdgePilot reuse, paid AI or publishing.
