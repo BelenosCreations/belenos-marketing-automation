@@ -1,3 +1,7 @@
+## Independently verified #102–#103 (merged-main `099b79e5a92035af812d08ed6f612405fffac5cb`)
+
+#102 static read-only Python/WSGI candidate writer inventory passed exact-head and merged-main CI (#43428652129, #43428902180). #103 disposable local SQLite generation CAS and synthetic write-transaction admission passed exact-head and merged-main CI (#43429490616, #43429752709). **Neither is the application-wide write fence or persistent independently controlled generation authority necessary for production PostgreSQL migration.** All eight planned phases remain inactive. No actual data mapping approval, source freeze, PostgreSQL cutover, off-host backup or executable rollback. Review `MIGRATION_WRITER_SURFACE_REVIEW.md` and `MIGRATION_EPOCH_FENCE_REHEARSAL.md` before any future operator proposal.
+
 ## Candidate #103 — local transaction-bound generation ordering only
 
 Test `neon_disposable_generation_authority.py` uses disposable SQLite CAS generation transitions and local `BEGIN IMMEDIATE` writer admission. It models that every writer must validate the authoritative generation **inside** the same durable write transaction and never reuse a pre-freeze generation after a restart. It does not implement shared production generation authority, distributed stale-node fencing, scheduler/callback drain, source-to-target mapping, PostgreSQL transactions or rollback. The cutover remains disallowed; see `MIGRATION_EPOCH_FENCE_REHEARSAL.md`.

@@ -1,3 +1,11 @@
+## Verified #102–#103; candidate #104 documentation checkpoint (2026-11-13)
+
+- #102 merged `5ccff62cd27ffb2230026a8b008478a788e8c83f`: exact-head Actions #43428652129 and merged-main #43428902180 PASSED. CI-gated AST Python/WSGI writer candidate inventory; deterministic digest; adversarial tests; fencing architecture review.
+- #103 merged `099b79e5a92035af812d08ed6f612405fffac5cb`: exact-head Actions #43429490616 and merged-main #43429752709 PASSED. Disposable, transaction-bound SQLite generation test; stale/duplicate/abandoned-writer and crash/reopen controls, with no BAM writer enforcement.
+- Both main and development fast-forward synchronized without force and independently confirmed identical, 0/0 divergence after #103.
+- #104 documentation only: final verification and limitations recorded in README, CHANGELOG, DEVELOPMENT_CONTINUITY, milestones, migration roadmap and Beta/infrastructure documentation. Exact-head and merged-main #104 Actions pending.
+- Customer migration, full writer fencing, independently recoverable offsite backups, operator authentication, genuine ClamAV provenance/worker, media rights, public/paid integrations and publishing remain disabled or unproven. $0 incremental spending.
+
 ## Candidate #103 — CI-only disposable generation admission test (2026-11-13)
 
 - Independently verified #102: exact-head Actions #43428652129 and merged-main Actions #43428902180 passed, merged at `5ccff62cd27ffb2230026a8b008478a788e8c83f`, development fast-forward synced 0/0.
