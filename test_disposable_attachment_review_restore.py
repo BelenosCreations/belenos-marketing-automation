@@ -3,10 +3,21 @@ from contextlib import closing
 import hashlib
 import hmac
 import json
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+from bam_offline_durable_archive import store_disposable_ciphertext
+from bam_offline_recovery_manifest import (
+    append_disposable_recovery_manifest, restore_disposable_recovery_point)
+from bam_offline_recovery_relocation import relocate_disposable_ciphertext
+from offline_encrypted_backup import seal_disposable_backup
 
 from trusted_media_revocation import append_revocation_event, verify_revocation_chain
 
@@ -102,6 +113,24 @@ def _checkpoint(head, inventory):
     return _sha(_canonical({'format': 1, 'ledger_head': head, 'claims': inventory}))
 
 
+def _catalog_digest(issuers):
+    # Only synthetic key fingerprints and issuance windows are committed.
+    return _sha(_canonical([
+        (scope, _sha(key), starts_at, ends_at)
+        for scope, (key, starts_at, ends_at) in sorted(issuers.items())
+    ]))
+
+
+def _verify_witness(checkpoint, signature, *, pin, epoch, key):
+    if (checkpoint['epoch'] != epoch or checkpoint['purpose'] != 'ci-attachment-restore-v1'
+            or _sha(_canonical(checkpoint)) != pin or key is None):
+        raise PermissionError('Restore witness differs from independent pin or epoch')
+    try:
+        key.verify(signature, _canonical(checkpoint))
+    except InvalidSignature as exc:
+        raise PermissionError('Restore witness signature failed') from exc
+
+
 def _read_state(db):
     stored_claims = db.execute("SELECT digest, body FROM claim_index ORDER BY digest")
     chain = tuple(json.loads(body) for (body,) in db.execute(
@@ -130,6 +159,7 @@ def _read_attachments(db, parent_type, tenant, actor, parent_id, *, review, held
 class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
     def setUp(self):
         directory = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.directory = directory
         self.source = self.enterContext(closing(sqlite3.connect(directory / 'source.sqlite')))
         self.restored = directory / 'restored.sqlite'
         self.source.executescript("""
@@ -329,3 +359,102 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                 with self.source:
                     self.source.execute("DELETE FROM claim_index")
                     self.source.execute("DELETE FROM revocation")
+
+
+    def archive_checkpoint(self, epoch, witness_key, *, previous=None):
+        # Keys and the witness pin stay outside both SQLite and the replica.
+        archive_dir = self.directory / 'ciphertext-source'
+        replica_dir = self.directory / 'ciphertext-replica'
+        archive_dir.mkdir(mode=0o700, exist_ok=True)
+        replica_dir.mkdir(mode=0o700, exist_ok=True)
+        name = f'point-{epoch}.bamenc'
+        encryption_key = b'e' * 32
+        signers = {'manifest': b'm' * 32}
+        schema = _sha(b'CI typed attachment SQLite fixture v1')
+        with closing(sqlite3.connect(':memory:')) as snapshot:
+            self.source.backup(snapshot)
+            state_pin = self.witness(snapshot)
+            ciphertext = seal_disposable_backup(
+                plaintext=snapshot.serialize(), root_key=encryption_key,
+                schema_fingerprint=schema, now=145)
+        receipt = store_disposable_ciphertext(
+            directory=str(archive_dir), name=name, envelope=ciphertext,
+            root_key=encryption_key, schema_fingerprint=schema, now=146)
+        prior_chain, prior_head = previous or ((), _EMPTY_HEAD)
+        chain, head = append_disposable_recovery_manifest(
+            chain=prior_chain, expected_head=prior_head, signer_keys=signers,
+            schema_fingerprint=schema, now=147, receipt=receipt,
+            signer_key_id='manifest', encryption_key_id='replica',
+            encryption_root_key=encryption_key, retain_until=200)
+        relocate_disposable_ciphertext(
+            source_directory=str(archive_dir), destination_directory=str(replica_dir),
+            archive_name=name, chain=chain, expected_head=head, signer_keys=signers,
+            schema_fingerprint=schema, now=148)
+        (archive_dir / name).unlink()
+        checkpoint = dict(purpose='ci-attachment-restore-v1', epoch=epoch,
+                          catalog=_catalog_digest(_ISSUERS), state=state_pin,
+                          archive_name=name, archive_head=head, schema=schema)
+        message = _canonical(checkpoint)
+        return (checkpoint, witness_key.sign(message), _sha(message)), (chain, head)
+
+    def open_checkpoint(self, checkpoint, signature, *, pin, epoch, key, chain,
+                        issuers=_ISSUERS, fail_after_validation=False):
+        _verify_witness(checkpoint, signature, pin=pin, epoch=epoch, key=key)
+        if _catalog_digest(issuers) != checkpoint['catalog']:
+            raise PermissionError('Restore issuer catalog differs from witness')
+        plaintext = restore_disposable_recovery_point(
+            chain=chain, expected_head=checkpoint['archive_head'],
+            signer_keys={'manifest': b'm' * 32}, encryption_keyring={'replica': b'e' * 32},
+            directory=str(self.directory / 'ciphertext-replica'),
+            archive_name=checkpoint['archive_name'],
+            schema_fingerprint=checkpoint['schema'], now=160)
+        # Admission stays closed until the isolated copy passes the complete
+        # index check. A failed attempt does not publish a restored database.
+        with closing(sqlite3.connect(':memory:')) as db:
+            db.deserialize(plaintext)
+            if (db.execute('PRAGMA integrity_check').fetchall() != [('ok',)]
+                    or db.execute('PRAGMA foreign_key_check').fetchall()):
+                raise PermissionError('Invalid restored database')
+            result = self.query(db, checkpoint['state'], 'ai_draft', 'shop', 'alice',
+                                review=True, issuers=issuers)
+            if fail_after_validation:
+                raise InterruptedError('Restore interrupted before admission')
+            return result
+
+    def test_authenticated_replica_rejects_stale_witness_and_key_catalog(self):
+        with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
+            old_key = Ed25519PrivateKey.generate()
+            current_key = Ed25519PrivateKey.generate()
+            (old, old_sig, old_pin), prior = self.archive_checkpoint(1, old_key)
+            self.revoke(_claim(_ALICE, version=1))
+            self.revoke(_claim(_ALICE, issued_at=130))
+            (current, sig, pin), (chain, _) = self.archive_checkpoint(
+                2, current_key, previous=prior)
+            options = dict(pin=pin, epoch=2, key=current_key.public_key(), chain=chain)
+            self.assertEqual(self.open_checkpoint(current, sig, **options), ())
+            self.assertEqual(self.open_checkpoint(
+                old, old_sig, pin=old_pin, epoch=1, key=old_key.public_key(), chain=prior[0]),
+                ('c' * 32,))
+            with self.assertRaisesRegex(PermissionError, 'pin or epoch'):
+                self.open_checkpoint(old, old_sig, **{**options, 'chain': prior[0]})
+            with self.assertRaisesRegex(PermissionError, 'pin or epoch'):
+                self.open_checkpoint(old, old_sig, **{**options, 'pin': old_pin})
+            with self.assertRaisesRegex(PermissionError, 'signature failed'):
+                self.open_checkpoint(current, old_key.sign(_canonical(current)), **options)
+            with self.assertRaisesRegex(PermissionError, 'pin or epoch'):
+                self.open_checkpoint(current, sig, **{**options, 'key': None})
+            old_scope = ('scan', 'scanner', 'old')
+            new_scope = ('scan', 'scanner', 'new')
+            for issuers in (
+                {scope: value for scope, value in _ISSUERS.items() if scope != new_scope},
+                {scope: value for scope, value in _ISSUERS.items() if scope != old_scope},
+                {**_ISSUERS, old_scope: (b'x' * 32, 100, 120)},
+                {**_ISSUERS, old_scope: (_OLD_SCAN, 100, 200)},
+            ):
+                with self.subTest(catalog=tuple(issuers)), self.assertRaisesRegex(
+                        PermissionError, 'issuer catalog differs'):
+                    self.open_checkpoint(current, sig, issuers=issuers, **options)
+            with self.assertRaisesRegex(InterruptedError, 'before admission'):
+                self.open_checkpoint(current, sig, fail_after_validation=True, **options)
+            self.assertFalse(self.restored.exists())
+            self.assertEqual(self.open_checkpoint(current, sig, **options), ())
