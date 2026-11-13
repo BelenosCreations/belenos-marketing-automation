@@ -3,12 +3,13 @@ import sqlite3
 import unittest
 from content_attachments import AttachmentRegistry
 from content_byte_inspector import AttachmentByteInspector
+from synthetic_media_fixture import PNG
 
 class ByteInspectorTests(unittest.TestCase):
     def setUp(self):
         self.registry=AttachmentRegistry(sqlite3.connect(':memory:'))
         self.inspector=AttachmentByteInspector(self.registry)
-        self.png=b'\x89PNG\r\n\x1a\n' + b'test-data'
+        self.png=PNG
         self.digest=hashlib.sha256(self.png).hexdigest()
 
     def test_valid_png_bytes(self):
@@ -74,5 +75,36 @@ class ByteInspectorTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.inspector.inspect_pending(tenant_id='shop',
                 attachment_id=aid,content=self.png)
+
+
+    def test_corrupted_png_crc_truncated_and_extra_bytes_fail(self):
+        for sample in (self.png[:-1],
+                       self.png+b'extra',
+                       self.png[:45]+bytes([self.png[45]^1])+self.png[46:],
+                       b'\x89PNG\r\n\x1a\n'+b'test-data'):
+            with self.subTest(size=len(sample)):
+                with self.assertRaises(ValueError):
+                    self.inspector.inspect(content=sample,media_type='image/png',
+                        expected_sha256=hashlib.sha256(sample).hexdigest())
+
+    def test_riff_length_and_mp4_box_boundaries_fail(self):
+        samples=(
+            ('image/webp',b'RIFF'+(100).to_bytes(4,'little')+b'WEBPVP8 '+b'\x00'*8),
+            ('video/mp4',b'\x00\x00\x00\x10ftypisom0000'),
+            ('video/mp4',b'\x00\x00\x00\x00ftypisom0000'),
+        )
+        for media_type,data in samples:
+            with self.subTest(media_type=media_type):
+                with self.assertRaises(ValueError):
+                    self.inspector.inspect(content=data,media_type=media_type,
+                        expected_sha256=hashlib.sha256(data).hexdigest())
+
+    def test_incomplete_pdf_and_jpeg_fail_even_with_matching_digest(self):
+        for media_type,data in (
+            ('application/pdf',b'%PDF-1.7\nobjects only'),
+            ('image/jpeg',b'\xff\xd8\xff not finished')):
+            with self.assertRaises(ValueError):
+                self.inspector.inspect(content=data,media_type=media_type,
+                    expected_sha256=hashlib.sha256(data).hexdigest())
 
 if __name__=='__main__':unittest.main()

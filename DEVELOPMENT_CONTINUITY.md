@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Current engineering candidate — November 12, 2026
+
+Starting from verified synchronized `bc08327b4b04641fff4e095fd5646c4a745296a8` (PR #60, merged-main Actions 43335386575 succeeded), harden offline attachment container sanity checks and preserve synthetic tests. PR and merged-main verification required. No malware scan, media rights attestation, bytes upload, customer migration, new paid services or publishing.
+
 ## Fully verified media/tenant-safety checkpoint — November 12, 2026
 
 **Last verified implementation merge:** [PR #59](https://github.com/BelenosCreations/belenos-marketing-automation/pull/59) merged at `e0fa3c1fc051bb8ccda2357cd9b1193b4bf22183`, with [full merged-main Actions 43334593446](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43334593446) **success**. `main` and `development/phase-3-5-account-directory` safely synchronized without force. Inspect actual GitHub branch refs and current CI when resuming; do not infer success from interrupted chat turns.

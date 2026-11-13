@@ -14,7 +14,7 @@ from content_request_service import ContentRequestService
 from content_upload_preflight import ContentUploadPreflight
 from bam_pending_media_store import BAMPendingMediaStore
 
-PNG=b'\x89PNG\r\n\x1a\n'+b'a-test-only-image'
+from synthetic_media_fixture import PNG
 
 class PendingMediaStoreTests(unittest.TestCase):
     def setUp(self):

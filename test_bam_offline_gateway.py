@@ -837,7 +837,8 @@ class BAMOfflineGatewayTests(unittest.TestCase):
         import hashlib
         import tempfile
         from pathlib import Path
-        png=b'\x89PNG\r\n\x1a\n'+b'a-test-artwork'
+        from synthetic_media_fixture import PNG
+        png=PNG
         with tempfile.TemporaryDirectory() as folder:
             self.app=BAMOfflineGateway(self.db,enabled=True,
                 clock=lambda:101,pending_media_dir=str(Path(folder)/'pending'))
