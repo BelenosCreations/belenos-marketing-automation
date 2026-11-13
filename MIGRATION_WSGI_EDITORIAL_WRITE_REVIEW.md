@@ -48,6 +48,8 @@ their actual invocation and permissions before freeze. The source review
 cannot resolve production provider callbacks, retries, queued jobs, external
 vault actions or independent writers.
 
+See the [alternate writer inventory and split-commit rehearsal](MIGRATION_ALTERNATE_WRITER_INVENTORY.md) for a disposable model of recovering a saved draft before request finalization.
+
 ## Inactive freeze design
 
 - For each SQLite-to-PostgreSQL mapping, put the generation check and write in

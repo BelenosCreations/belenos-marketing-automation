@@ -1,3 +1,10 @@
+## Alternate writer inventory and offline recovery rehearsal
+
+The [alternate writer inventory](MIGRATION_ALTERNATE_WRITER_INVENTORY.md)
+covers checked-in preview and CLI paths, provider and operator interfaces,
+and recovery tools. A disposable SQLite rehearsal checks whether a saved
+synthetic draft can be reconciled after freeze without writing it twice.
+
 ## Offline editorial and AI write review
 
 The offline review maps preference, calendar, feedback, AI fact, memory and
