@@ -1,6 +1,12 @@
 # Changelog
 
-## November 12, 2026 — Offline media container boundary hardening (candidate PR)\n\n- Tighten hash-matched, local-only file preflight to reject truncated/CRC-invalid PNG chunks, corrupt WebP RIFF boundaries, malformed MP4 top-level boxes and incomplete PDF/JPEG wrappers. This does **not** decode content, scan for malware, determine rights, store uploads, approve drafts or publish anything.\n- Add deterministic one-pixel PNG fixture and malformed-container regressions; review via exact-head CI and full merged-main CI.\n- Remain offline Alpha and at $0 additional cost; do not connect storage, Neon/Render, paid AI or social providers.\n\n## November 12, 2026 — Read-only PostgreSQL editorial readiness with media status checks (verified PR #59)
+## November 12, 2026 — Offline media container boundary hardening (candidate PR)
+
+- Tighten hash-matched, local-only file preflight to reject truncated/CRC-invalid PNG chunks, corrupt WebP RIFF boundaries, malformed MP4 top-level boxes and incomplete PDF/JPEG wrappers. This does **not** decode content, scan for malware, determine rights, store uploads, approve drafts or publish anything.
+- Add deterministic one-pixel PNG fixture and malformed-container regressions; review via exact-head CI and full merged-main CI.
+- Remain offline Alpha and at $0 additional cost; do not connect storage, Neon/Render, paid AI or social providers.
+
+## November 12, 2026 — Read-only PostgreSQL editorial readiness with media status checks (verified PR #59)
 
 - Introduce a session-hash-bound, tenant/private single-draft SELECT returning bounded held-draft state and only synthetic **verified attachment IDs + item names**, excluding media bytes, hashes and private storage keys.
 - Compute missing, unverified, unexpected and held-material blockers in Python from the one-statement snapshot. Even fully complete material always retains TruthGuard review, owner approval not implemented, and social publishing disabled blockers.
