@@ -13,11 +13,19 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 - At the #112 checkpoint, main and development matched after a non-force fast-forward. Comparison was 0 ahead/behind, with no open PRs.
 - PR **#110** mapped offline held-draft and pending-media writes. PR **#111** refreshed the handoff and passed merged-main Actions #43448086550. Earlier reviews and offline rehearsals are recorded below.
 
+PR **#113** refreshed the handoff only. Its main Actions #43451026080 passed
+at `ab16d0381a877a5b24aef2e7663f880a7b3a4c6d`; both branches matched with no
+open PRs before the editorial review began.
+
+The candidate editorial review maps preferences, calendar, feedback and AI
+writes. Verify its exact-head and merged-main Actions before treating it as
+an engineering checkpoint.
+
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above.
 
 ## Next safe development milestone
 
-1. Extend the **read-only/offline** boundary review to posting preferences, calendar proposals, review feedback and remaining AI state writers. Use the [identity write review](MIGRATION_WSGI_IDENTITY_WRITE_REVIEW.md) and the earlier content/media review. Preserve unknown provider, worker, callback and alternative entry points, and refine the freeze design for operations split across commits.
+1. Build a read-only repository inventory of alternate entry points, starting with the disabled AI composition, operator and CLI tools, loopback servers, workers and provider callbacks. Compare their SQL and file effects with the gateway reviews, keep externally configured writers explicitly unknown, and choose one split-commit path for an isolated freeze/retry rehearsal. See the [editorial and AI write review](MIGRATION_WSGI_EDITORIAL_WRITE_REVIEW.md).
 2. Independently inventory all deployed and alternative writers—WSGI routes, callbacks, provider retries, scheduled jobs, workers, processes, file/object stores and non-Python clients—before making any claim of comprehensive coverage. A source graph is not a deployed graph.
 3. Design (only; do not activate) persistent shared generation/epoch fencing enforced **inside the actual write transaction**, including stale worker denial after freeze/crash, independently authenticated operator transitions and independently custodied latest heads/keys. Preserve existing offline/synthetic fixtures as research, not production guards.
 4. Continue human review of PostgreSQL column nullability/defaults/JSON/identity/constraints/foreign-key/tenant ownership transforms; off-host encrypted independently recoverable backups and measured restore/rollback; genuine ClamAV engine/database publisher signatures, isolated authenticated scanner, rights review and authoritative revocation; hostile hosted IAM/session/CSRF/tenant/proxy/abuse testing.

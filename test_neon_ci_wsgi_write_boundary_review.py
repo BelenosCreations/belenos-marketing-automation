@@ -70,7 +70,7 @@ class WSGIWriteBoundaryReviewTests(unittest.TestCase):
         report = inspect_ci_wsgi_write_boundaries()
         self.assertFalse(report["deployed_writer_inventory_complete"])
         self.assertFalse(report["transaction_generation_fencing_proven"])
-        self.assertEqual(_delegate(report, "calendar_wsgi", "propose")["boundary_status"],
+        self.assertEqual(_delegate(report, "read_wsgi", "get_dashboard_view")["boundary_status"],
                          "unreviewed_delegate")
         self.assertEqual(_delegate(report, "pending_status_wsgi", "statuses")["boundary_status"],
                          "no_direct_mutation_in_reviewed_body")
@@ -121,6 +121,60 @@ class WSGIWriteBoundaryReviewTests(unittest.TestCase):
         self.assertEqual(redeem["unresolved_dependencies"], google["unresolved_dependencies"])
         self.assertEqual([s["sqlite_context_line"] for s in redeem["mutation_sites"]],
                          [40, 256, 256, 256, 67, 51])
+
+    def test_editorial_mutations_keep_transaction_boundaries(self):
+        report = inspect_ci_wsgi_write_boundaries()
+        for handler, method, path, context, lines in (
+            ("preference_write_wsgi", "set_posting_preferences", "posting_preferences.py", 65, [66]),
+            ("calendar_wsgi", "propose", "calendar_proposals.py", 142, [144, 156]),
+            ("calendar_wsgi", "discard", "calendar_proposals.py", 266, [267]),
+            ("review_feedback_wsgi", "save", "review_feedback.py", 125, [131, 138, 148]),
+            ("review_feedback_wsgi", "discard", "review_feedback.py", 166, [174, 179]),
+            ("facts_write_wsgi", "confirm", "ai_business_facts.py", 38, [44]),
+            ("ai_memory_wsgi", "edit_ai_memory", "ai_account_policy.py", 134, [135, 139]),
+            ("ai_draft_edit_wsgi", "edit_ai_draft_component", "ai_content_drafts.py", 102, [103, 114]),
+        ):
+            with self.subTest(handler=handler, method=method):
+                call = _delegate(report, handler, method)
+                self.assertEqual(call["boundary_status"], "reviewed_source_write_path")
+                self.assertEqual(
+                    [(site["module"], site["sqlite_context_line"], site["line"])
+                     for site in call["mutation_sites"]],
+                    [(path, context, line) for line in lines],
+                )
+        draft_edit = _delegate(report, "ai_draft_edit_wsgi", "edit_ai_draft_component")
+        self.assertEqual(draft_edit["mutation_sites"][1]["kind"],
+                         "sql_delete_on_image_prompt_edit")
+
+    def test_read_previews_do_not_imply_paid_generation_coverage(self):
+        report = inspect_ci_wsgi_write_boundaries()
+        for handler, method in (
+            ("calendar_wsgi", "readiness_digest"),
+            ("calendar_wsgi", "suggest_unassigned"),
+            ("review_feedback_wsgi", "history_current_business"),
+            ("review_readiness_wsgi", "list_current_business"),
+            ("ai_batch_preview_wsgi", "preview_ai_batch"),
+        ):
+            with self.subTest(handler=handler, method=method):
+                call = _delegate(report, handler, method)
+                self.assertEqual(call["boundary_status"], "no_direct_mutation_in_reviewed_body")
+                self.assertEqual(call["mutation_sites"], [])
+        attributes = {handler["gateway_attribute"] for handler in report["handler_candidates"]}
+        self.assertIn("ai_batch_preview_wsgi", attributes)
+        self.assertNotIn("generate_app", attributes)
+        self.assertNotIn("revision_app", attributes)
+        self.assertFalse(report["deployed_writer_inventory_complete"])
+
+    def test_preview_source_drift_withholds_read_classification(self):
+        root = self._fixture()
+        path = root / "ai_batch_preview.py"
+        path.write_text(path.read_text().replace(
+            "facts=self.facts.snapshot(", "facts=self.facts.dynamic_snapshot("))
+        report = inspect_ci_wsgi_write_boundaries(source_root=root)
+        self.assertEqual(report["drifted_reviewed_source"], ["ai_batch_preview.py"])
+        call = _delegate(report, "ai_batch_preview_wsgi", "preview_ai_batch")
+        self.assertEqual(call["boundary_status"], "reviewed_source_drift")
+        self.assertEqual(call["source_chain"], [])
 
     def test_rebound_local_alias_withholds_mapping(self):
         root = self._fixture()

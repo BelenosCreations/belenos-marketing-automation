@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import neon_ci_wsgi_editorial_write_paths as editorial
 from neon_ci_wsgi_binding_review import _read
 from neon_ci_wsgi_delegate_review import _fingerprint, inspect_ci_wsgi_delegated_calls
 from neon_ci_wsgi_identity_write_paths import (
@@ -13,6 +14,7 @@ from neon_ci_wsgi_identity_write_paths import (
 # Review changes to the source paths before replacing these pins.
 _REVIEWED_SOURCE = {
     **SOURCE_HASHES,
+    **editorial.SOURCE_HASHES,
     "access_policy.py": "1a0e6d513a5921a037a2d059f7aef360206340be83f4605af0ba982affa6a257",
     "account_dashboard.py": "4dca5cc7366e66b0c6eb65ea4c34f3ef493fac00ce090b00493c251234385539",
     "account_read_api.py": "bf7c56fff210d7a05d4d64cade17ae8b91efe42d727e0eb75aab9a602913a516",
@@ -65,13 +67,19 @@ _MEDIA_WRITES = {
     ),
 }
 
-_MEDIA_READS = {
-    ("pending_media_wsgi", "store", "authorize_slot"),
-    ("pending_status_wsgi", "store", "statuses"),
+_REVIEWED_READS = {
+    **editorial.READ_PATHS,
+    ("pending_media_wsgi", "store", "authorize_slot"): (
+        "bam_pending_media_store.BAMPendingMediaStore.authorize_slot",
+    ),
+    ("pending_status_wsgi", "store", "statuses"): (
+        "bam_pending_media_store.BAMPendingMediaStore.statuses",
+    ),
 }
 
 _HANDLER_BINDINGS = {
     **HANDLERS,
+    **editorial.HANDLERS,
     "content_write_wsgi": ("bam_content_write_wsgi", "BAMContentWriteWSGI"),
     "content_priority_wsgi": ("bam_content_priority_wsgi", "BAMContentPriorityWSGI"),
     "content_revise_wsgi": ("bam_content_revise_wsgi", "BAMContentReviseWSGI"),
@@ -95,7 +103,7 @@ def _review_delegate(handler, call, drifted_files, writes):
     result = {**call, "boundary_status": "unreviewed_delegate",
               "unresolved_dependencies": list(UNRESOLVED_DEPENDENCIES.get(key, ())),
               "source_chain": [], "mutation_sites": []}
-    if key not in writes and key not in _MEDIA_READS:
+    if key not in writes and key not in _REVIEWED_READS:
         return result
     if drifted_files:
         return {**result, "boundary_status": "reviewed_source_drift"}
@@ -104,10 +112,9 @@ def _review_delegate(handler, call, drifted_files, writes):
             binding != _HANDLER_BINDINGS[key[0]] or
             call["constructor_dependency_hint"] != constructor):
         return {**result, "boundary_status": "unresolved_binding"}
-    if key in _MEDIA_READS:
+    if key in _REVIEWED_READS:
         return {**result, "boundary_status": "no_direct_mutation_in_reviewed_body",
-                "source_chain": [
-                    "bam_pending_media_store.BAMPendingMediaStore." + key[2]]}
+                "source_chain": list(_REVIEWED_READS[key])}
     chain, sites = writes[key]
     return {
         **result,
@@ -140,7 +147,7 @@ def inspect_ci_wsgi_write_boundaries(*, source_root=None):
         if name in observed and observed[name] != digest:
             raise ValueError("Handler changed during source inspection: " + name)
 
-    writes = {**_MEDIA_WRITES, **WRITE_PATHS}
+    writes = {**_MEDIA_WRITES, **WRITE_PATHS, **editorial.WRITE_PATHS}
     for handler, api_method, method, sql, transaction, line in _DRAFT_WRITES:
         writes[handler, "api", api_method] = (
             ("account_read_api.AccountReadAPI." + api_method,

@@ -1,3 +1,10 @@
+## Offline editorial and AI write review
+
+The offline review maps preference, calendar, feedback, AI fact, memory and
+draft edits to their SQLite writes. It also traces the separate, disabled AI
+generation flow across quota reservation, draft storage and request completion.
+[Editorial and AI write review](MIGRATION_WSGI_EDITORIAL_WRITE_REVIEW.md)
+
 ## Offline identity and local draft write review
 
 The offline review now traces local product and service drafts, authentication,

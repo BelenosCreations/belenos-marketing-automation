@@ -1,3 +1,12 @@
+## Offline editorial and AI write review (2026-11-13)
+
+- Mapped posting preferences, calendar proposals, review feedback, AI facts,
+  memory and manual draft edits to their SQLite boundaries.
+- Added pinned read classifications for calendar and AI previews, with
+  regression coverage for source drift and conditional media-link removal.
+- Documented separate commits in the disabled AI generation workflow and
+  the recovery evidence a future migration freeze needs.
+
 ## Offline identity and local draft write review (2026-11-13)
 
 - Traced local draft aliases, sign-in, logout, business switching, membership

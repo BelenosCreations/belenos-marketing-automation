@@ -1,3 +1,9 @@
+## Editorial and AI migration review
+
+The [offline review](MIGRATION_WSGI_EDITORIAL_WRITE_REVIEW.md) records SQLite
+write boundaries and separate commits in disabled AI workflows. Deployed
+writers, provider reconciliation and transaction-bound fencing remain open.
+
 ## Offline identity write review
 
 The [identity and local draft review](MIGRATION_WSGI_IDENTITY_WRITE_REVIEW.md)
