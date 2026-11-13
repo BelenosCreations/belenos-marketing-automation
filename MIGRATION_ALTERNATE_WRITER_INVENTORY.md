@@ -53,6 +53,13 @@ readers as well as pending-file writes, scanner status and discard. The
 review inspected source bindings only. Live callbacks, external workers,
 direct database clients and storage grants still require runtime evidence.
 
+The disposable attachment cases now show where the missing discriminator
+matters: ordinary status and review queries join by request ID, while pending
+receipt, discard and signed evidence also resolve only ordinary requests.
+AI media reads look up a subject-scoped link separately. A future deployment
+inventory must identify each running version, principal and evidence path
+before treating a parent binding as enforced across readers and writers.
+
 For an authorized deployment review, compare independent runtime observations
 with the repository map before proposing a freeze. The observation and the
 repository path should both identify the version and writer principal.

@@ -117,6 +117,86 @@ class NeonIntegrityPreflightTests(unittest.TestCase):
         self.assertFalse(report['production_ready'])
         self.assertFalse(report['postgres_connection_attempted'])
 
+    def test_synthetic_attachment_parent_classification_preserves_unresolved_rows(self):
+        from ai_content_drafts import AIContentDraftStore
+
+        AIContentDraftStore(db=self.db,policy_store=None)
+        tenant = 'shop'
+        author = self.subject
+        other_author = 'other-fixture-author'
+        cases = (
+            # Parent and link evidence are independent inputs to review.
+            ('ordinary_candidate', tenant, self.rid, 'image', (), ()),
+            ('held', tenant, self.rid, 'unused', (), ()),
+            ('ai_candidate', tenant, 'a'*32, 'image', (author,), (author,)),
+            ('held', tenant, 'b'*32, 'image', (author,), ()),
+            ('held', tenant, 'c'*32, 'image', (author, other_author), (author,)),
+            ('held', tenant, 'd'*32, 'image', (author,), (other_author,)),
+            ('held', tenant, 'e'*32, 'image', (author,), (author, other_author)),
+            ('held', 'outside', self.rid, 'image', (), ()),
+            ('held', tenant, 'f'*32, 'image', (), ()),
+        )
+        # Use a separate ordinary request to model an ID collision.
+        collision_id = self.app.requests.create(tenant_id=tenant,channel='facebook',
+            draft_text='Collision fixture',suggestion='Supply image',
+            required_items=['image'],now=100)
+        cases += (('held',tenant,collision_id,'image',(author,),(author,)),)
+        expected = {}
+        for disposition, scope, parent, item, owners, linked in cases:
+            aid = self.app.attachments.register_pending(
+                tenant_id=scope,request_id=parent,item=item,media_type='image/png',
+                sha256='a'*64,storage_key='fixture/private',now=100)
+            expected[aid] = disposition
+            with self.db:
+                self.db.executemany("""INSERT INTO bam_ai_draft_components
+                    VALUES (?,?,?,'facebook','fixture','prompt',1,1,100,100)""",
+                    [(scope, subject, parent) for subject in owners])
+                self.db.executemany("""INSERT INTO bam_ai_draft_verified_media
+                    VALUES (?,?,?,?,100)""",
+                    [(scope, subject, parent, aid) for subject in linked])
+        # An attachment ID named by a foreign tenant link is contradictory.
+        foreign_link = self.app.attachments.register_pending(
+            tenant_id=tenant,request_id=self.rid,item='image',media_type='image/png',
+            sha256='b'*64,storage_key='fixture/foreign-link',now=100)
+        expected[foreign_link] = 'held'
+        with self.db:
+            self.db.execute("""INSERT INTO bam_ai_draft_verified_media
+                VALUES ('outside',?,?,?,100)""", (author,self.rid,foreign_link))
+
+        before = self.db.execute("SELECT * FROM content_attachments ORDER BY attachment_id").fetchall()
+        changes = self.db.total_changes
+        review = self.db.execute("""WITH evidence AS (
+            SELECT a.attachment_id,a.item,
+                EXISTS (SELECT 1 FROM content_requests AS c
+                    WHERE c.tenant_id=a.tenant_id AND c.request_id=a.request_id) AS ordinary,
+                EXISTS (SELECT 1 FROM content_requests AS c,json_each(c.required_items) AS r
+                    WHERE c.tenant_id=a.tenant_id AND c.request_id=a.request_id
+                      AND r.value=a.item) AS item_matches,
+                (SELECT count(*) FROM bam_ai_draft_components AS d
+                    WHERE d.tenant_id=a.tenant_id AND d.draft_id=a.request_id) AS ai_owners,
+                (SELECT count(*) FROM bam_ai_draft_verified_media AS l
+                    WHERE l.attachment_id=a.attachment_id) AS links,
+                EXISTS (SELECT 1 FROM bam_ai_draft_verified_media AS l
+                    JOIN bam_ai_draft_components AS d USING (tenant_id,subject_id,draft_id)
+                    WHERE l.attachment_id=a.attachment_id AND l.tenant_id=a.tenant_id
+                      AND l.draft_id=a.request_id AND d.needs_media=1) AS scoped_link
+            FROM content_attachments AS a
+        )
+        SELECT attachment_id, CASE
+            WHEN ordinary AND item_matches AND ai_owners=0 AND links=0
+                THEN 'ordinary_candidate'
+            WHEN NOT ordinary AND ai_owners=1 AND links=1 AND scoped_link AND item='image'
+                THEN 'ai_candidate'
+            ELSE 'held' END FROM evidence""").fetchall()
+        self.assertEqual(dict(review),expected)
+        report = inspect_offline_integrity(self.db)
+        self.assertEqual(report['aggregate_issue_counts']['orphan_or_cross_tenant_attachments'],7)
+        with self.assertRaises(ValueError):
+            require_clean_offline_fixture(self.db)
+        self.assertEqual(self.db.total_changes,changes)
+        self.assertEqual(self.db.execute(
+            "SELECT * FROM content_attachments ORDER BY attachment_id").fetchall(),before)
+
     def test_cross_tenant_attachment_preflight_refuses_fixture(self):
         orphan=self.app.attachments.register_pending(
             tenant_id='shop',request_id='f'*32,item='image',

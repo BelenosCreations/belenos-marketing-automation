@@ -4,6 +4,10 @@ The [disposable AI mapping rehearsal](MIGRATION_AI_REQUEST_RECOVERY.md#disposabl
 reproduces a PostgreSQL constraint failure for an attachment whose SQLite
 parent is an AI draft. Review a typed, tenant- and subject-scoped parent
 mapping alongside historical author retention before enabling any migration.
+The disposable parent model and legacy-reader regression cases are recorded
+in the [attachment results](MIGRATION_AI_REQUEST_RECOVERY.md#disposable-attachment-parent-results).
+Production readers, writers and evidence claims still need a reviewed
+typed binding before any schema change or source transfer.
 
 ## Candidate #108 — WSGI service delegation syntax is not a generation fence
 

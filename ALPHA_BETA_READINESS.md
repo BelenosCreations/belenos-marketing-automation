@@ -15,6 +15,9 @@ subject. The parent and ownership rules require review before cutover.
 Disposable authority tests cover recovery-versus-freeze lock ordering and
 separately signed resume confirmation. Runtime writer coverage, operator
 identity, database grants and independent key and head custody remain open.
+Disposable fixtures now model scoped attachment parents, confirmation
+expiry and revocation, and separate writer and operator grants. Legacy
+collision attribution and operational evidence remain release blockers.
 
 ## Alternate writer and recovery review
 

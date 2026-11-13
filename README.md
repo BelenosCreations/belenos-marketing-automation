@@ -16,6 +16,9 @@ rejects attachments linked only to an AI draft. The attachment parent and
 subject ownership model needs review before migration.
 Additional disposable tests order request recovery against freeze and require
 separately signed transition and confirmation evidence before resuming.
+The disposable attachment model tests scoped parents and holds ambiguous
+legacy links. The authority rehearsal adds expiry, revocation, rollback
+and separate writer and operator grants.
 
 ## Alternate writer inventory and offline recovery rehearsal
 

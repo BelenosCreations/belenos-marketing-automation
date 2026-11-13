@@ -857,10 +857,16 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
         self.conn.execute("""CREATE TABLE ci_ai_signed_authority (
             id INTEGER PRIMARY KEY CHECK (id=1), generation BIGINT NOT NULL,
-            head TEXT NOT NULL, mode TEXT NOT NULL CHECK (mode IN ('frozen','pending','open'))
+            head TEXT NOT NULL, mode TEXT NOT NULL CHECK (mode IN ('frozen','pending','open')),
+            confirmation_deadline BIGINT
         )""")
         self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_signed_authority")
-        self.conn.execute("INSERT INTO ci_ai_signed_authority VALUES (1,2,'head-2','frozen')")
+        self.conn.execute("""INSERT INTO ci_ai_signed_authority
+            (id,generation,head,mode) VALUES (1,2,'head-2','frozen')""")
+        self.conn.execute("""CREATE TABLE ci_ai_revoked_witness (
+            witness_id TEXT PRIMARY KEY
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_ai_revoked_witness")
         operator_key = Ed25519PrivateKey.generate()
         witness_key = Ed25519PrivateKey.generate()
         operator_verify = operator_key.public_key()
@@ -888,9 +894,9 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 return 0
             transition_head = hashlib.sha256(payload + signed).hexdigest()
             return self.conn.execute("""UPDATE ci_ai_signed_authority
-                SET generation=%s, head=%s, mode='pending'
+                SET generation=%s, head=%s, mode='pending', confirmation_deadline=%s
                 WHERE id=1 AND mode='frozen' AND generation=%s AND head=%s""",
-                (value['new_generation'], transition_head,
+                (value['new_generation'], transition_head, value['expires_at'],
                  value['previous_generation'], value['previous_head'])).rowcount
 
         with self.assertRaises(InvalidSignature):
@@ -905,22 +911,36 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 rejected = dict(transition, **changed)
                 self.assertEqual(stage(rejected, operator_key.sign(encode(rejected))), 0)
         self.assertEqual(stage(transition, signature, now=120), 0)
+        with self.conn.transaction(force_rollback=True):
+            self.assertEqual(stage(transition, signature), 1)
+        self.assertEqual(self.conn.execute("""SELECT generation,head,mode,confirmation_deadline
+            FROM ci_ai_signed_authority""").fetchone(), (2,'head-2','frozen',None))
         self.assertEqual(stage(transition, signature), 1)
         self.assertEqual(stage(transition, signature), 0)
 
         acknowledgement = {'purpose': 'bam-ci-resume-confirmation-v1',
-                           'environment': 'bam-ci-test', 'generation': 3, 'head': head}
+                           'environment': 'bam-ci-test', 'generation': 3, 'head': head,
+                           'witness_id': 'fixture-witness', 'expires_at': 118}
         peer = self._connect()
         self.addCleanup(peer.close)
 
-        def confirm(value, signed):
+        def confirm(value, signed, *, now=112):
             witness_verify.verify(signed, encode(value))
             if (value['purpose'] != 'bam-ci-resume-confirmation-v1'
-                    or value['environment'] != 'bam-ci-test'):
+                    or value['environment'] != 'bam-ci-test'
+                    or value['witness_id'] != 'fixture-witness'):
                 return 0
-            return peer.execute("""UPDATE ci_ai_signed_authority SET mode='open'
-                WHERE id=1 AND mode='pending' AND generation=%s AND head=%s""",
-                (value['generation'], value['head'])).rowcount
+            # Both revocation and confirmation take the authority lock first.
+            # READ COMMITTED then observes revocations that committed ahead of it.
+            with peer.transaction():
+                peer.execute("SELECT id FROM ci_ai_signed_authority WHERE id=1 FOR UPDATE")
+                return peer.execute("""UPDATE ci_ai_signed_authority
+                    SET mode='open', confirmation_deadline=NULL
+                    WHERE id=1 AND mode='pending' AND generation=%s AND head=%s
+                      AND %s < LEAST(confirmation_deadline,%s)
+                      AND NOT EXISTS (SELECT 1 FROM ci_ai_revoked_witness WHERE witness_id=%s)""",
+                    (value['generation'], value['head'], now, value['expires_at'],
+                     value['witness_id'])).rowcount
 
         acknowledgement_bytes = encode(acknowledgement)
         with self.assertRaises(InvalidSignature):
@@ -935,6 +955,22 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(peer.execute("SELECT mode FROM ci_ai_signed_authority").fetchone(),
                          ('pending',))
         witness_signature = witness_key.sign(acknowledgement_bytes)
+        self.assertEqual(confirm(acknowledgement, witness_signature, now=118), 0)
+        late = dict(acknowledgement, expires_at=130)
+        self.assertEqual(confirm(late, witness_key.sign(encode(late)), now=120), 0)
+        with self.conn.transaction():
+            self.conn.execute("SELECT id FROM ci_ai_signed_authority WHERE id=1 FOR UPDATE")
+            self.conn.execute("INSERT INTO ci_ai_revoked_witness VALUES ('fixture-witness')")
+            # Observe a lock conflict before the revocation transaction commits.
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                with peer.transaction():
+                    peer.execute("SET LOCAL lock_timeout = '250ms'")
+                    confirm(acknowledgement, witness_signature)
+        self.assertEqual(confirm(acknowledgement, witness_signature), 0)
+        self.assertEqual(peer.execute("SELECT mode FROM ci_ai_signed_authority").fetchone(),
+                         ('pending',))
+        # Rewind only the synthetic revocation row to exercise successful confirmation.
+        self.conn.execute("DELETE FROM ci_ai_revoked_witness")
         self.assertEqual(confirm(acknowledgement, witness_signature), 1)
         self.assertEqual(confirm(acknowledgement, witness_signature), 0)
         self.assertEqual(peer.execute("""SELECT generation, head, mode
@@ -945,6 +981,170 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(confirm(acknowledgement, witness_signature), 0)
         self.assertEqual(peer.execute("""SELECT generation, head, mode
             FROM ci_ai_signed_authority""").fetchone(), (4, 'head-4', 'frozen'))
+
+    def test_ci_generation_fixture_separates_writer_and_operator_grants(self):
+        with self.conn.transaction(force_rollback=True):
+            self.conn.execute("CREATE ROLE bam_ci_fixture_writer NOLOGIN")
+            self.conn.execute("CREATE ROLE bam_ci_fixture_operator NOLOGIN")
+            self.conn.execute("""CREATE TABLE ci_grants_authority (
+                generation INTEGER PRIMARY KEY, mode TEXT NOT NULL
+            )""")
+            self.conn.execute("INSERT INTO ci_grants_authority VALUES (1,'open')")
+            self.conn.execute("CREATE TABLE ci_grants_canary (id INTEGER PRIMARY KEY)")
+            self.conn.execute("""GRANT USAGE ON SCHEMA bam_ci_integration
+                TO bam_ci_fixture_writer, bam_ci_fixture_operator""")
+            self.conn.execute("GRANT SELECT ON ci_grants_authority TO bam_ci_fixture_writer")
+            self.conn.execute("""GRANT SELECT, UPDATE ON ci_grants_authority
+                TO bam_ci_fixture_operator""")
+            self.conn.execute("""CREATE FUNCTION ci_grants_admit(expected INTEGER, canary INTEGER)
+                RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER
+                SET search_path TO pg_catalog AS $fixture$
+                BEGIN
+                    PERFORM 1 FROM bam_ci_integration.ci_grants_authority
+                        WHERE generation=expected AND mode='open' FOR SHARE NOWAIT;
+                    IF NOT FOUND THEN
+                        RETURN FALSE;
+                    END IF;
+                    INSERT INTO bam_ci_integration.ci_grants_canary VALUES (canary);
+                    RETURN TRUE;
+                END
+                $fixture$""")
+            self.conn.execute("REVOKE ALL ON FUNCTION ci_grants_admit(INTEGER,INTEGER) FROM PUBLIC")
+            self.conn.execute("""GRANT EXECUTE ON FUNCTION ci_grants_admit(INTEGER,INTEGER)
+                TO bam_ci_fixture_writer""")
+            self.conn.execute("SET LOCAL ROLE bam_ci_fixture_writer")
+            self.assertEqual(self.conn.execute(
+                "SELECT generation,mode FROM ci_grants_authority").fetchone(), (1,'open'))
+            for forbidden in (
+                "UPDATE ci_grants_authority SET mode='frozen'",
+                "SELECT generation FROM ci_grants_authority FOR SHARE",
+                "INSERT INTO ci_grants_canary VALUES (1)",
+            ):
+                with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
+                    with self.conn.transaction():
+                        self.conn.execute(forbidden)
+            self.assertEqual(self.conn.execute("SELECT ci_grants_admit(2,1)").fetchone(), (False,))
+            self.assertEqual(self.conn.execute("SELECT ci_grants_admit(1,1)").fetchone(), (True,))
+            self.conn.execute("SET LOCAL ROLE bam_ci_fixture_operator")
+            self.assertEqual(self.conn.execute(
+                "UPDATE ci_grants_authority SET mode='frozen'").rowcount, 1)
+            for forbidden in (
+                "INSERT INTO ci_grants_canary VALUES (2)",
+                "SELECT ci_grants_admit(1,2)",
+            ):
+                with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
+                    with self.conn.transaction():
+                        self.conn.execute(forbidden)
+            self.conn.execute("SET LOCAL ROLE bam_ci_fixture_writer")
+            self.assertEqual(self.conn.execute("SELECT ci_grants_admit(1,2)").fetchone(), (False,))
+            self.conn.execute("RESET ROLE")
+            self.assertEqual(self.conn.execute(
+                "SELECT id FROM ci_grants_canary").fetchall(), [(1,)])
+
+    def test_typed_attachment_parent_constraints_and_private_reads(self):
+        # The rollback removes the model table without changing preview DDL.
+        with self.conn.transaction(force_rollback=True):
+            self.conn.execute("""CREATE TABLE ci_typed_attachments (
+                attachment_id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                parent_type TEXT NOT NULL,
+                request_id TEXT,
+                subject_id TEXT,
+                draft_id TEXT,
+                item TEXT NOT NULL,
+                storage_key TEXT NOT NULL,
+                CHECK ((parent_type='request' AND request_id IS NOT NULL
+                            AND subject_id IS NULL AND draft_id IS NULL)
+                    OR (parent_type='ai_draft' AND request_id IS NULL
+                            AND subject_id IS NOT NULL AND draft_id IS NOT NULL
+                            AND item='image')),
+                FOREIGN KEY (tenant_id,request_id) REFERENCES content_requests (tenant_id,request_id),
+                FOREIGN KEY (tenant_id,subject_id,draft_id) REFERENCES bam_ai_draft_components
+            )""")
+            self.conn.execute("""INSERT INTO bam_ai_draft_components
+                VALUES ('shop-a',%s,%s,'facebook','fixture','image prompt',1,1,100,100),
+                       ('shop-a',%s,%s,'facebook','fixture','image prompt',1,1,100,100)""",
+                (self.a,self.rid_a,self.viewer,self.rid_a))
+            insert = "INSERT INTO ci_typed_attachments VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
+            ordinary = ('shop-a','request',self.rid_a,None,None,'image')
+            ai = ('shop-a','ai_draft',None,self.a,self.rid_a,'image')
+            self.conn.execute(insert, ('ordinary',*ordinary,'fixture/ordinary'))
+            self.conn.execute(insert, ('ai',*ai,'fixture/ai'))
+            for invalid, error in (
+                (('shop-a','request',self.rid_a,self.a,self.rid_a,'image'),
+                 self.psycopg.errors.CheckViolation),
+                (('shop-a','request',None,None,None,'image'),
+                 self.psycopg.errors.CheckViolation),
+                (('shop-a','ai_draft',None,None,self.rid_a,'image'),
+                 self.psycopg.errors.CheckViolation),
+                (('shop-a','ai_draft',None,self.a,self.rid_a,'caption'),
+                 self.psycopg.errors.CheckViolation),
+                (('shop-b','request',self.rid_a,None,None,'image'),
+                 self.psycopg.errors.ForeignKeyViolation),
+                (('shop-b','ai_draft',None,self.a,self.rid_a,'image'),
+                 self.psycopg.errors.ForeignKeyViolation),
+                (('shop-a','ai_draft',None,self.b,self.rid_a,'image'),
+                 self.psycopg.errors.ForeignKeyViolation),
+            ):
+                with self.subTest(invalid=invalid), self.assertRaises(error):
+                    with self.conn.transaction():
+                        self.conn.execute(insert, ('invalid',*invalid,'fixture/invalid'))
+            with self.assertRaises(self.psycopg.errors.UniqueViolation):
+                with self.conn.transaction():
+                    self.conn.execute(insert, ('ordinary',*ai,'fixture/reused'))
+            self.assertEqual(self.conn.execute("""SELECT attachment_id
+                FROM ci_typed_attachments WHERE parent_type='request'
+                AND tenant_id='shop-a' AND request_id=%s""", (self.rid_a,)).fetchall(),
+                [('ordinary',)])
+            read_ai = """SELECT a.attachment_id FROM ci_typed_attachments AS a
+                JOIN members AS m USING (tenant_id,subject_id)
+                JOIN bam_identities AS i USING (subject_id)
+                WHERE a.parent_type='ai_draft' AND a.tenant_id=%s
+                  AND a.subject_id=%s AND a.draft_id=%s AND m.active=1 AND i.active=1"""
+            self.assertEqual(self.conn.execute(
+                read_ai, ('shop-a',self.a,self.rid_a)).fetchall(), [('ai',)])
+            self.assertEqual(self.conn.execute(
+                read_ai, ('shop-a',self.viewer,self.rid_a)).fetchall(), [])
+            self.conn.execute("""UPDATE members SET active=0
+                WHERE tenant_id='shop-a' AND subject_id=%s""", (self.a,))
+            self.assertEqual(self.conn.execute(
+                read_ai, ('shop-a',self.a,self.rid_a)).fetchall(), [])
+            self.conn.execute("""DELETE FROM members
+                WHERE tenant_id='shop-a' AND subject_id=%s""", (self.a,))
+            self.assertEqual(self.conn.execute(
+                read_ai, ('shop-a',self.a,self.rid_a)).fetchall(), [])
+            self.assertEqual(self.conn.execute("""SELECT subject_id,storage_key
+                FROM ci_typed_attachments WHERE attachment_id='ai'""").fetchone(),
+                (self.a,'fixture/ai'))
+
+    def test_legacy_status_and_review_treat_colliding_ai_parent_as_ordinary(self):
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+
+        token = 'Synthetic_Parent_Collision_Owner_1234567890123456'
+        aid = 'e'*32
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (hashlib.sha256(token.encode()).hexdigest(),self.a))
+        self.conn.execute("""INSERT INTO bam_ai_draft_components
+            VALUES ('shop-a',%s,%s,'facebook','fixture','image prompt',1,1,100,100)""",
+            (self.a,self.rid_a))
+        self.conn.execute("""INSERT INTO content_attachments
+            VALUES (%s,'shop-a',%s,'image','image/png',%s,'fixture/private','verified',100)""",
+            (aid,self.rid_a,'f'*64))
+        self.conn.execute("""INSERT INTO bam_ai_draft_verified_media
+            VALUES ('shop-a',%s,%s,%s,100)""", (self.a,self.rid_a,aid))
+        app = EphemeralSessionPostgres(self.conn)
+        scope = dict(raw_session_token=token,tenant_id='shop-a',request_id=self.rid_a,server_now=101)
+        # Existing preview paths see the ordinary request and have no parent
+        # discriminator. This is a negative migration finding, not approval.
+        statuses = app.read_attachment_statuses(**scope)
+        self.assertEqual([row['attachment_id'] for row in statuses['items']], [aid])
+        app.bind_verified_attachment(**scope,item='image',attachment_id=aid,expected_revision=1)
+        readiness = app.read_review_readiness(**scope)
+        self.assertEqual(readiness['editorial_material_complete_count'],1)
+        self.assertEqual(readiness['approved_count'],0)
+        self.assertFalse(readiness['publishing_enabled'])
 
     def test_ai_memory_and_facts_keep_exact_sqlite_text(self):
         def unique_object(pairs):

@@ -110,6 +110,38 @@ class StagedEvidenceProbeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.probe()
 
+    def test_legacy_storage_and_evidence_cannot_distinguish_a_parent_collision(self):
+        from ai_content_drafts import AIContentDraftStore
+
+        AIContentDraftStore(db=self.db,policy_store=None)
+        with self.db:
+            self.db.execute("""INSERT INTO bam_ai_draft_components
+                VALUES ('shop','owner',?,'facebook','Fixture','Image prompt',1,1,100,100)
+                """, (self.rid,))
+            self.db.execute("""INSERT INTO bam_ai_draft_verified_media
+                VALUES ('shop','owner',?,?,102)""", (self.rid,self.aid))
+        # The ordinary reader sees the ambiguous row, and the signed claims
+        # still bind because their current schema has no parent type or subject.
+        self.assertEqual(self.store.statuses(token=self.token,now=110)['items'], [
+            {'request_id':self.rid,'item':'image','status':'pending_scan'}])
+        self.assertFalse(self.probe()['media_verified'])
+        ai_only = 'f'*32
+        with self.db:
+            self.db.execute("UPDATE content_attachments SET request_id=? WHERE attachment_id=?",
+                            (ai_only,self.aid))
+            self.db.execute("UPDATE bam_ai_draft_components SET draft_id=?", (ai_only,))
+            self.db.execute("UPDATE bam_ai_draft_verified_media SET draft_id=?", (ai_only,))
+        self.assertEqual(self.store.statuses(token=self.token,now=110)['items'], [])
+        with self.assertRaises(PermissionError):
+            self.store.receive(token=self.token,attachment_id=self.aid,content=PNG,now=110)
+        with self.assertRaises(PermissionError):
+            self.probe()
+        self.assertEqual(self.store.discard(
+            token=self.token,request_id=self.rid,item='image',now=110)['removed'],0)
+        self.assertTrue((self.store.root/(self.aid+'.pending')).is_file())
+        self.assertEqual(self.db.execute("""SELECT status FROM content_attachments
+            WHERE attachment_id=?""", (self.aid,)).fetchone(), ('pending',))
+
     def test_symlink_and_world_readable_staging_refused(self):
         path = self.store.root / (self.aid+'.pending')
         path.chmod(0o644)

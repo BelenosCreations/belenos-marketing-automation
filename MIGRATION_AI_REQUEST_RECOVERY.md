@@ -124,6 +124,22 @@ cannot reopen it. The keys, clock and database roles in this test are
 synthetic. Operator identity, revocation, independent key and head custody,
 and database grants still need operational verification.
 
+The expanded disposable fixture keeps a confirmation deadline on the pending
+authority row. Confirmation must be inside both the transition deadline and
+the witness signature expiry. Revocation and confirmation take the same
+authority lock first. The test verifies a lock conflict before the revocation
+commits and denial afterward. An aborted stage transaction restores the
+prior frozen row. These checks use a synthetic clock and revocation row.
+
+PostgreSQL requires update privilege for a direct row-locking read. A
+separate disposable grant fixture denied that read, direct authority changes
+and direct canary inserts to the writer role. Its only write path was a
+fixture function that checked the expected open generation under a row lock
+before inserting. The operator could freeze but could not use that canary
+path. A deployable design still needs a reviewed function owner and grants,
+trusted generation, independent revocation and head custody, and equivalent
+coverage at every real write path.
+
 | Evidence required before activation | Verification |
 | --- | --- |
 | Independent operator identity and transition authority | Reject expired, replayed, revoked and wrong-environment approvals, including during role changes. Verify that ordinary app credentials cannot change the generation or run recovery. |
@@ -210,3 +226,30 @@ review readiness and AI draft link reads against these cases. Inspect how the
 legacy integrity preflight reports attachments whose only parent is an AI
 draft. Keep its existing blocker until classification and ownership rules
 have independent evidence.
+
+### Disposable attachment parent results
+
+The SQLite fixture classified only an ordinary row with a required item and
+no conflicting link, and an AI row with one scoped owner and one matching
+link, as candidates. An unmatched item, unlinked AI draft, cross-tenant row,
+foreign link, duplicate owner, conflicting link, or same-tenant namespace
+collision stayed held. The existing integrity preflight still flags
+AI-only rows as missing an ordinary parent. The review leaves all source
+rows intact and grants no media trust.
+
+The disposable PostgreSQL model enforced exactly one parent type with
+separate composite foreign keys. Two namespaces can share an ID when
+their typed associations are explicit. The model preserved historical
+subject and storage references after membership was deactivated or removed,
+while the fixture's subject-scoped read denied access. This is a candidate
+shape for comparison, with no preview schema or runtime change.
+
+Existing ordinary status, verified binding and review readiness accept a
+synthetic legacy row when its AI draft ID collides with an ordinary request.
+The pending-file status reader and signed evidence probe also treat that
+collision as an ordinary request. For an AI-only ID, the existing receipt
+and staged evidence probe refuse the row, and ordinary discard leaves its
+file and metadata in place. These fixtures expose the limits of untyped
+lookups. A future proposal needs to bind the explicit parent to file receipt,
+discard, scanner and rights evidence, review readiness, and AI draft reads.
+Keep colliding rows held and require independent provenance before approval.
