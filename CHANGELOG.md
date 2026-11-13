@@ -1,3 +1,11 @@
+## Offline identity and local draft write review (2026-11-13)
+
+- Traced local draft aliases, sign-in, logout, business switching, membership
+  changes and invitations to their SQLite writes and commits.
+- Documented preview and demo startup writers and kept injected verifier
+  and delivery behavior unresolved in the CI report.
+- Added regression coverage for alias drift and separate commit boundaries.
+
 ## Offline held-draft and media write boundary review (2026-11-13)
 
 - Added CI-only, source-pinned maps for draft creation, hold, revision, priority,

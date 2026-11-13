@@ -70,13 +70,69 @@ class WSGIWriteBoundaryReviewTests(unittest.TestCase):
         report = inspect_ci_wsgi_write_boundaries()
         self.assertFalse(report["deployed_writer_inventory_complete"])
         self.assertFalse(report["transaction_generation_fencing_proven"])
-        self.assertEqual(_delegate(report, "auth_wsgi", "password_login")["boundary_status"],
+        self.assertEqual(_delegate(report, "calendar_wsgi", "propose")["boundary_status"],
                          "unreviewed_delegate")
         self.assertEqual(_delegate(report, "pending_status_wsgi", "statuses")["boundary_status"],
                          "no_direct_mutation_in_reviewed_body")
         alias_handler = next(h for h in report["handler_candidates"]
                              if h["gateway_attribute"] == "local_draft_wsgi")
         self.assertEqual(alias_handler["boundary_scope"], "unresolved_no_delegate")
+
+    def test_pinned_local_draft_aliases_map_to_the_same_insert(self):
+        report = inspect_ci_wsgi_write_boundaries()
+        for attribute, method in (
+            ("local_draft_wsgi", "create_local_product_draft"),
+            ("local_service_wsgi", "create_local_service_draft"),
+        ):
+            handler = next(h for h in report["handler_candidates"]
+                           if h["gateway_attribute"] == attribute)
+            self.assertEqual(handler["syntactic_delegate_calls"], [])
+            [call] = handler["manually_reviewed_alias_calls"]
+            self.assertEqual(call["candidate_method"], method)
+            self.assertEqual(call["source_evidence"], "manual_pinned_alias")
+            self.assertEqual(call["boundary_status"], "reviewed_source_write_path")
+            [site] = call["mutation_sites"]
+            self.assertEqual(site, {
+                "kind": "sql_insert", "module": "ai_content_drafts.py",
+                "line": 50, "sqlite_context_line": 49, "sqlite_explicit_commit_line": None,
+            })
+
+    def test_auth_and_membership_keep_distinct_commits_and_dynamic_dependencies(self):
+        report = inspect_ci_wsgi_write_boundaries()
+        password = _delegate(report, "auth_wsgi", "password_login")
+        issue, success, failure = password["mutation_sites"]
+        self.assertEqual((issue["line"], issue["sqlite_explicit_commit_line"]), (50, 54))
+        self.assertIsNone(issue["sqlite_context_line"])
+        self.assertEqual([site["sqlite_context_line"] for site in (success, failure)],
+                         [67, 51])
+        google = _delegate(report, "auth_wsgi", "google_login")
+        self.assertEqual(google["unresolved_dependencies"],
+                         ["AuthLoginAPI.google_verifier.verify"])
+        self.assertEqual([s["module"] for s in google["mutation_sites"]],
+                         ["google_login_challenges.py", "sessions.py"])
+        team = _delegate(report, "team_wsgi", "change_current")
+        self.assertEqual([s["sqlite_context_line"] for s in team["mutation_sites"]],
+                         [114, 114, 114])
+        invite = _delegate(report, "invitation_wsgi", "invite_current")
+        self.assertEqual(invite["unresolved_dependencies"], ["BusinessInvitations.deliver"])
+        self.assertEqual([s["sqlite_context_line"] for s in invite["mutation_sites"]],
+                         [162, 186, 186, 197, 197])
+        redeem = _delegate(report, "invitation_accept_wsgi", "redeem_invitation_google")
+        self.assertEqual(redeem["unresolved_dependencies"], google["unresolved_dependencies"])
+        self.assertEqual([s["sqlite_context_line"] for s in redeem["mutation_sites"]],
+                         [40, 256, 256, 256, 67, 51])
+
+    def test_rebound_local_alias_withholds_mapping(self):
+        root = self._fixture()
+        handler = root / "bam_local_draft_wsgi.py"
+        handler.write_text(handler.read_text().replace(
+            "result=create(session_token=", "result=self.other_handler(session_token="))
+        report = inspect_ci_wsgi_write_boundaries(source_root=root)
+        self.assertEqual(report["drifted_reviewed_source"], ["bam_local_draft_wsgi.py"])
+        for candidate in report["handler_candidates"]:
+            for call in candidate["manually_reviewed_alias_calls"]:
+                self.assertEqual(call["boundary_status"], "reviewed_source_drift")
+                self.assertEqual(call["mutation_sites"], [])
 
     def test_missing_and_dynamic_sources_invalidate_reviewed_paths(self):
         root = self._fixture()

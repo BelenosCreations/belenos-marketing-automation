@@ -1,3 +1,9 @@
+## Offline identity write review
+
+The [identity and local draft review](MIGRATION_WSGI_IDENTITY_WRITE_REVIEW.md)
+records split commits and startup writes that a future migration freeze must
+address. Hosted identity, callback and writer-fence evidence remains outstanding.
+
 ## Held-draft and pending-media write boundary review
 
 The [offline write review](MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md) maps selected
