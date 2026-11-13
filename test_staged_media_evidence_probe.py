@@ -161,5 +161,60 @@ class StagedEvidenceProbeTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.probe()
 
+
+    def revocable_probe(self, chain=(), head='0'*64, **kwargs):
+        from staged_media_evidence_probe import (
+            probe_staged_signed_media_with_revocations)
+        opts = dict(store=self.store, tenant_id='shop',
+                    attachment_id=self.aid, scan=self.scan,
+                    rights=self.rights, scanner_key=_SCAN,
+                    rights_key=_RIGHTS, now=110,
+                    audit_key=b'separate-synthetic-audit-secret-123456789',
+                    revocation_chain=chain, expected_head=head)
+        opts.update(kwargs)
+        return probe_staged_signed_media_with_revocations(**opts)
+
+    def test_revocation_aware_staged_bytes_are_still_never_approved(self):
+        result = self.revocable_probe()
+        self.assertEqual(result['status'],
+                         'staged_signed_revocation_probe_passed')
+        self.assertTrue(result['revocation_chain_checked'])
+        self.assertFalse(result['media_verified'])
+        self.assertFalse(result['audit_persisted'])
+        self.assertFalse(result['authoritative_revocation_head_connected'])
+        self.assertFalse(result['publishing_enabled'])
+        self.assertEqual(self.db.execute(
+            'SELECT status FROM content_attachments WHERE attachment_id=?',
+            (self.aid,)).fetchone()[0], 'pending')
+        self.assertNotIn(self.aid, str(result))
+        self.assertNotIn(self.rid, str(result))
+
+    def test_revoked_scan_or_rights_never_pass_staged_probe(self):
+        from trusted_media_revocation import append_revocation_event
+        audit = b'separate-synthetic-audit-secret-123456789'
+        chain, head = append_revocation_event(
+            chain=(), expected_head='0'*64, audit_key=audit,
+            claim=self.scan, kind='scan', reason='scanner_recall', now=108)
+        with self.assertRaises(PermissionError):
+            self.revocable_probe(chain, head)
+        # Independently revoke the rights claim (also tied to exact staged SHA).
+        chain, head = append_revocation_event(
+            chain=(), expected_head='0'*64, audit_key=audit,
+            claim=self.rights, kind='rights', reason='rights_withdrawn', now=108)
+        with self.assertRaises(PermissionError):
+            self.revocable_probe(chain, head)
+        with self.assertRaises(PermissionError):
+            self.revocable_probe(chain, '0'*64)
+
+    def test_revocable_probe_preserves_staged_inode_and_tenant_safety(self):
+        with self.assertRaises(KeyError):
+            self.revocable_probe(tenant_id='other')
+        with self.assertRaises(ValueError):
+            self.revocable_probe(expected_head='untrusted')
+        path = self.store.root / (self.aid + '.pending')
+        path.write_bytes(b'malicious replacement')
+        with self.assertRaises(ValueError):
+            self.revocable_probe()
+
 if __name__=='__main__':
     unittest.main()

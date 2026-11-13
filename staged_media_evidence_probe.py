@@ -96,3 +96,54 @@ def probe_staged_signed_media(*, store, tenant_id, attachment_id,
             'audit_persisted': False,
             'media_verified': False,
             'publishing_enabled': False}
+
+
+
+def probe_staged_signed_media_with_revocations(*, store, tenant_id,
+        attachment_id, scan, rights, scanner_key, rights_key, now,
+        audit_key, revocation_chain, expected_head):
+    """Read-only staged-byte + independently pinned revocation experiment.
+
+    Always perform the original strict inode, digest, pending DB, current
+    request, and signed two-worker checks BEFORE evaluating revocations.
+    No state transition, publish, durable audit or assertion of real AV review.
+    """
+    from trusted_media_revocation import verify_signed_media_with_revocations
+    baseline = probe_staged_signed_media(
+        store=store, tenant_id=tenant_id, attachment_id=attachment_id,
+        scan=scan, rights=rights, scanner_key=scanner_key,
+        rights_key=rights_key, now=now)
+    db = store.service.attachments.db
+    statement = """SELECT request_id,item,media_type,sha256,status,created_at
+                   FROM content_attachments
+                   WHERE tenant_id=? AND attachment_id=?"""
+    row = db.execute(statement, (tenant_id, attachment_id)).fetchone()
+    if row is None or row[4] != 'pending':
+        raise PermissionError('Pending staged receipt changed')
+    request_id, item, media_type, digest, status, created_at = row
+    request = store.service.requests.get(
+        tenant_id=tenant_id, request_id=request_id)
+    if request is None or request['status'] != 'needs_content':
+        raise PermissionError('Pending request changed')
+    pending = dict(attachment_id=attachment_id, tenant_id=tenant_id,
+                   request_id=request_id, item=item, media_type=media_type,
+                   sha256=digest, status=status, created_at=created_at)
+    verify_signed_media_with_revocations(
+        pending=pending, scan=scan, rights=rights,
+        channel=request['channel'], now=now,
+        scanner_key=scanner_key, rights_key=rights_key,
+        audit_key=audit_key, chain=revocation_chain,
+        expected_head=expected_head)
+    if (db.execute(statement, (tenant_id, attachment_id)).fetchone() != row
+            or store.service.requests.get(
+                tenant_id=tenant_id, request_id=request_id) != request):
+        raise PermissionError('Staged media changed during revocation check')
+    return {**baseline,
+            'status': 'staged_signed_revocation_probe_passed',
+            'revocation_chain_checked': True,
+            'authoritative_revocation_head_connected': False,
+            'actual_malware_scan_performed': False,
+            'actual_rights_review_performed': False,
+            'audit_persisted': False,
+            'media_verified': False,
+            'publishing_enabled': False}

@@ -503,3 +503,8 @@ Public backend hosting (provider, credentials, persistence, budget and security)
 ### 2026-11-12 — Media evidence revocation checkpoint (pending CI)
 - Signed claim checking can now be paired with HMAC-chained revocation records and an independently expected audit head. Revocation targets the exact signed claim, so tenant/media substitution fails under the existing evidence binding contract.
 - Chain is local/in-memory only; no authoritative durable latest-head registry exists. A caller supplying an obsolete but matching chain and pin cannot be detected unless the pin comes from a trusted independent head service. Thus the new module is evidence plumbing, not Beta-ready safety scanning/rights adjudication. No external service or paid resource was activated.
+
+
+### 2026-11-12 — Byte-bound revocation integration (pending merged-main CI)
+- Optional staged-media probe now verifies local private bytes/inode and signed scan/rights evidence before checking the independently expected revocation head, and rechecks the pending record before returning a nonpublishing receipt. This closes a CI composition gap without granting live media trust.
+- Operational blockers remain: real trusted antivirus service/version/update policy, provable human/license rights process, externally anchored durable revocation log, storage tamper and concurrent worker fencing, multi-device Beta security, offsite backups and production PostgreSQL migration. Only $0 offline work has been performed.

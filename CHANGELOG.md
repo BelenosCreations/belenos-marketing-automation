@@ -2722,3 +2722,8 @@ The original `main` branch approved BAM's branding: light/dark SVG wordmarks, ap
 - Added independently keyed authenticated revocation chain for exact signed malware-scan and usage-rights claims; revision and removal require a matching independently pinned head.
 - Added wrong-key, reordering, log truncation, replay, cross-tenant and rights-withdrawal regressions.
 - No actual scan, legal proof review, hosted ledger, media state transition or publication is performed.
+
+
+### 2026-11-12 — Staged media and revocation composition (PR candidate)
+- Connected the read-only byte-bound private staged-media proof to independently signed revocation-chain validation, with final pending-record consistency check.
+- Added tampered-media, wrong-tenant, changed-head, revoked-scan and withdrawn-rights regressions. No upload state mutation or live scanning was introduced.

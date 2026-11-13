@@ -348,3 +348,8 @@ Hosting this source publicly is under consideration to reduce GitHub Actions com
 ### Offline signed media revocation audit
 
 `trusted_media_revocation.py` extends the existing independent HMAC scan/rights evidence verifier with a separately keyed, hash-chained revocation proof. Removing or changing events, presenting an obsolete independently pinned chain head, using shared issuer/audit keys, and replaying revoked claims fail closed. The chain is **not** persisted or connected to an authoritative source; scanner and copyright-review workers still do not exist, and the module never approves media or publishing. A durable authenticated revocation register and trusted real scanner/reviewer service are prerequisites for Beta.
+
+
+### Private staged-media revocation probe (offline only)
+
+`probe_staged_signed_media_with_revocations` now composes actual local staged-inode/digest reinspection with independent signed scan/rights claims and a separately pinned revocation audit proof. It refuses revoked evidence while leaving the attachment pending. This is an optional **CI-only** read-only path, not an active AV engine, rights reviewer, persistent revocation authority, verified media status, publishing API or authorization to expose the gateway.
