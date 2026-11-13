@@ -1,6 +1,13 @@
 # Changelog
 
-## November 12, 2026 — Session-verified attachment reference binding for held drafts (candidate)
+## November 12, 2026 — Metadata-only attachment integrity checks before future migration (candidate)
+
+- Add local-only SQLite aggregate checks for `content_attachments` references that point to missing drafts or drafts in a different tenant. Detect attachment metadata incompatible with stage-8 PostgreSQL checks (ID/item shape, MIME type, SHA-256 format, nonempty storage key, allowed status and nonnegative timestamps).
+- Keep reporting counts and fixed check names only; never export media paths, hashes, IDs, tenant names or customer copy. `require_clean_offline_fixture` refuses unsafe records, but passing it does **not** enable a production migration.
+- Add regression fixtures for a valid attachment, orphaned and wrong-business references, and malformed local data. No external access, downloads, scanner, approvals, scheduling or social provider calls.
+- Last verified baseline: PR #57 merged `7a97c6c`, [full merged-main Actions 43333173764](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43333173764) success. Current candidate pending PR/main CI. $0 new costs; no hosted database, paid AI or publishing.
+
+## November 12, 2026 — Session-verified attachment reference binding for held drafts (verified PR #57)
 
 - Add a single revision-CAS PostgreSQL UPDATE that links an existing synthetic **verified** attachment to precisely its own tenant, held draft, required item and authenticated owner/manager/creator session. Pending/rejected, mismatched, stale, held or foreign-business media cannot be attached.
 - Match existing offline Content Requests behavior by incrementing draft revision and marking the request `ready_for_review` only when required item keys are complete, with no unexpected provided keys. This status remains an editorial state, not owner approval or social publishing authority.

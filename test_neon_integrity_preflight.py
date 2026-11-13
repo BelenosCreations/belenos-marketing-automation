@@ -102,5 +102,60 @@ class NeonIntegrityPreflightTests(unittest.TestCase):
             inspect_offline_integrity(object())
 
 
+    def test_valid_private_media_metadata_keeps_preflight_clean(self):
+        aid=self.app.attachments.register_pending(
+            tenant_id='shop',request_id=self.rid,item='image',
+            media_type='image/png',sha256='a'*64,
+            storage_key='private/do-not-export',now=100)
+        report=require_clean_offline_fixture(self.db)
+        self.assertEqual(report['aggregate_issue_counts'][
+            'orphan_or_cross_tenant_attachments'],0)
+        self.assertEqual(report['aggregate_issue_counts'][
+            'invalid_attachment_metadata'],0)
+        for secret in (aid,'a'*64,'private/do-not-export',self.rid):
+            self.assertNotIn(secret,str(report))
+        self.assertFalse(report['production_ready'])
+        self.assertFalse(report['postgres_connection_attempted'])
+
+    def test_cross_tenant_attachment_preflight_refuses_fixture(self):
+        orphan=self.app.attachments.register_pending(
+            tenant_id='shop',request_id='f'*32,item='image',
+            media_type='image/png',sha256='b'*64,
+            storage_key='private/orphan',now=100)
+        cross=self.app.attachments.register_pending(
+            tenant_id='another-shop',request_id=self.rid,item='image',
+            media_type='image/png',sha256='c'*64,
+            storage_key='private/cross-tenant',now=101)
+        report=inspect_offline_integrity(self.db)
+        counts=report['aggregate_issue_counts']
+        self.assertEqual(counts['orphan_or_cross_tenant_attachments'],2)
+        self.assertEqual(counts['invalid_attachment_metadata'],0)
+        self.assertTrue(report['migration_fixture_issues_found'])
+        with self.assertRaises(ValueError):
+            require_clean_offline_fixture(self.db)
+        for secret in (orphan,cross,'private/orphan',
+                       'private/cross-tenant','b'*64,'c'*64):
+            self.assertNotIn(secret,str(report))
+
+    def test_invalid_media_metadata_is_counted_without_exporting_it(self):
+        self.db.execute("""INSERT INTO content_attachments
+            (attachment_id,tenant_id,request_id,item,media_type,
+             sha256,storage_key,status,created_at)
+            VALUES (?,?,?,'bad item','image/png',
+                    'bad-sha','private/bad','pending',-1)""",
+            ('e'*32,'shop',self.rid))
+        report=inspect_offline_integrity(self.db)
+        self.assertEqual(report['aggregate_issue_counts'][
+            'orphan_or_cross_tenant_attachments'],0)
+        self.assertEqual(report['aggregate_issue_counts'][
+            'invalid_attachment_metadata'],1)
+        self.assertTrue(report['migration_fixture_issues_found'])
+        self.assertNotIn('bad-sha',str(report))
+        self.assertNotIn('private/bad',str(report))
+        with self.assertRaises(ValueError):
+            require_clean_offline_fixture(self.db)
+
+
+
 if __name__=='__main__':
     unittest.main()

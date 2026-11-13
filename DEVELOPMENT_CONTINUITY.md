@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Local-only attachment migration integrity preflight candidate — November 12, 2026
+
+**Last verified state:** PR #57 merged `7a97c6c0a7c0b9e5f947731fb1d7c93d36a44b5e` into `main`; exact [merged-main Actions 43333173764](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43333173764) **passed**. Both branches safely synchronized without force. PR #56 had previously added stage-8 constraint hardening; total reviewed table count remains 46.
+
+**Current unverified candidate:** Modify `neon_integrity_preflight.py` and its regression tests to detect aggregate counts of orphan/cross-business attachment references and malformed local media metadata (invalid IDs, item names, SHA, MIME/status, storage-key shape and timestamps) *before* any potential PostgreSQL foreign key/check migration. This reads only the trusted offline SQLite database and emits check names + counts, never customer media/data. Verify exact PR-head CI, merge only green, verify merged-main CI, then safely fast-forward development.
+
+**Next engineering priorities:** Complete tenant-safe read-only editorial review readiness against the durable PostgreSQL attachment references; continue migration and backup/restore testing. All real storage, scanner permissions, producer trust, hosted multi-user gateway and provider activation remain unimplemented and separately gated.
+
+**Mandatory boundaries:** $0 added costs, only disposable CI tools; no new Render/Neon or EdgePilot sharing, paid OpenAI, production credentials, real uploads or publication.
+
 ## Verified attachment reference binding in CI-only PostgreSQL (candidate — November 12, 2026)
 
 **Last verified state:** PR #56 merged into `main` as `1cfcca10b8bb44b72972d02cdcd7b07db2ad4f10`, full [merged-main Actions 43332328800](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43332328800) **success** and `development/phase-3-5-account-directory` safely synchronized. PR #56 uncovered the existing `content_attachments` stage-3 table and properly implemented **stage-8 constraint-only hardening** instead of duplicating a 47th table. Exact reviewed table count remains **46** across seven creation groups, plus stage 8 constraints.

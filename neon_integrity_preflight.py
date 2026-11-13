@@ -39,6 +39,23 @@ _CHECKS={
  'invalid_active_member_roles': """SELECT COUNT(*) FROM members
     WHERE active=1 AND role NOT IN
     ('owner','marketing_manager','content_creator','employee','viewer')""",
+ 'orphan_or_cross_tenant_attachments': """SELECT COUNT(*)
+    FROM content_attachments a LEFT JOIN content_requests c
+      ON c.tenant_id=a.tenant_id AND c.request_id=a.request_id
+    WHERE c.request_id IS NULL""",
+ 'invalid_attachment_metadata': """SELECT COUNT(*) FROM content_attachments
+    WHERE length(attachment_id)<>32
+       OR attachment_id GLOB '*[^0-9a-f]*'
+       OR length(item)<1 OR length(item)>64
+       OR substr(item,1,1) NOT GLOB '[a-z]'
+       OR item GLOB '*[^a-z0-9_-]*'
+       OR media_type NOT IN
+            ('image/jpeg','image/png','image/webp','video/mp4',
+             'text/plain','application/pdf')
+       OR length(sha256)<>64 OR sha256 GLOB '*[^0-9a-f]*'
+       OR length(storage_key)=0
+       OR status NOT IN ('pending','verified','rejected')
+       OR created_at<0""",
 }
 
 
