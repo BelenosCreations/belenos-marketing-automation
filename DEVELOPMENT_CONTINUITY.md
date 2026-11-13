@@ -1,21 +1,32 @@
 # BAM development continuity checkpoint
 
-## PR #81 candidate — durable local revocation audit proof
+**Latest independently verified BAM engineering checkpoint — November 12, 2026:** PRs [#79](https://github.com/BelenosCreations/belenos-marketing-automation/pull/79), [#80](https://github.com/BelenosCreations/belenos-marketing-automation/pull/80) and [#81](https://github.com/BelenosCreations/belenos-marketing-automation/pull/81) merged through main `2b01175e424c91121f78830ed169d705e426e8c1`. Exact-head and separate merged-main CI all passed: #79 [43352486026](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43352486026) / [43352747474](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43352747474); #80 [43353272446](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43353272446) / [43353494577](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43353494577); #81 [43354006070](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43354006070) / [43354211421](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43354211421). Main and development were confirmed identical, zero ahead/behind, after #81.
+
+**Scope of verified work:** #79: deterministically pinnable offline source-column inventory and non-executable eight-step migration plan; target-column/data transformation parity, transactional customer migration, source write fence and rollback remain unreviewed. #80: externally keyed HMAC/SHA-linked manifest of synthetic local ciphertext recovery points with signer/encryption key rotation, retention-window checks and independently pinned AES-GCM restore; no actual key vault, authoritative head store, backup retention execution or offsite replica. #81: locally durable append-only signed revocation event files with fsync, no-replace publication and complete pinned-chain validation; no production tenant-specific trust authority, actual malware scanner, legal rights reviewer or media approval. All private Beta authentication, hosted ingress, real PostgreSQL/Neon cutover, live social publishing, OpenAI spending, external provider credentials and EdgePilot resources remain disabled/unapproved. Additional costs authorized: **$0**. Passing synthetic CI is NOT production acceptance.
+
+## Verified recovery checkpoint after PRs #79–#81 (November 12, 2026)
+
+Main and development synchronized at `2b01175e424c91121f78830ed169d705e426e8c1`; exact-head + merged-main Actions completed successfully: #79 43352486026/43352747474, #80 43353272446/43353494577 and #81 43354006070/43354211421. See each GitHub PR. No unmerged functional candidate is assumed. The required production data mapping, real cutover/rollback with application fencing, managed off-host backups/head/key escrow, actual scanner and rights worker, private object storage, hosted session/tenant/CSRF/proxy hardening and operator signoff remain blockers. Never call a disposable PostgreSQL restore or local ciphertext archive a production recovery plan. No Render, Neon, paid AI, publishing or EdgePilot resource activation; $0 added costs.
+
+**Next candidate:** Review exact source-to-target data transformations and transactional staging acceptance tests; independently validate real scanner/database provenance and durable tenant-scoped authoritative revocation and rights audit. Do not activate any production connector or automatically delete local audit/backup evidence.
+
+
+## Verified PR #81 — durable local revocation audit proof
 
 Add private synthetic append-only event files, fsync/no-replace operations and independently pinned HMAC-chain reinspection. Tests cover missing, altered, replayed, stale and linked records. Externally trusted latest-head custody, per-tenant key management, real scanner and rights-revocation authority, legal retention, verified status transition and publication remain blocked; CI pending. $0 and all production services inactive.
 
 
-## PR #80 candidate — externally keyed synthetic recovery manifest chain
+## Verified PR #80 — externally keyed synthetic recovery manifest chain
 
 CI-only HMAC-signed, SHA-256-linked ciphertext receipts with independent newest-head pin, signer/encryption key rotation, retention metadata, and local pinned AES-GCM restore. Negative trust/expiry/fork cases. No persistent authoritative manifest or offsite replica, escrow, deletion, production backup or release authorization; verify PR and merged-main CI before marking complete. $0 additional charges, all integrations disabled.
 
 
-## PR #79 candidate — inactive migration source-column and operator-step plan
+## Verified PR #79 — inactive migration source-column and operator-step plan
 
 Offline deterministic 8-phase, 46-target inventory and safe source column metadata; all row transformations and target-column mappings unreviewed, source/plan pins fail closed on drift, no live SQL execution or writer fencing. CI pending. Continue from exact GitHub refs; do not claim production migration. $0 additional cost and all external providers inactive.
 
 
-## Latest fully verified recovery checkpoint — November 12, 2026, PR #73
+## Earlier verified recovery checkpoint — November 12, 2026, PR #73
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`. **Branches:** `main` and `development/phase-3-5-account-directory` are synchronized without force at `7f4248940a84ad40d097c4541d11eba49b3f5b4a`. [Merged-main GitHub Actions #43347901980](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43347901980) passed. PR #73 exact-head Actions 43347696317 passed.
 
