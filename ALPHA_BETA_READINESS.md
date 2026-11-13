@@ -1,3 +1,9 @@
+## Alternate writer and recovery review
+
+The [alternate writer inventory and rehearsal](MIGRATION_ALTERNATE_WRITER_INVENTORY.md)
+cover repository evidence and disposable SQLite only. Operational writer
+inventory, independent operator authorization and recovery remain open.
+
 ## Editorial and AI migration review
 
 The [offline review](MIGRATION_WSGI_EDITORIAL_WRITE_REVIEW.md) records SQLite

@@ -1,3 +1,12 @@
+## Alternate writer inventory and split-commit rehearsal (2026-11-13)
+
+- Documented alternate CLI, startup, operator, provider, analytics, scanner
+  and recovery write paths alongside the gateway reviews.
+- Added a disposable SQLite rehearsal for a freeze between draft persistence
+  and request completion. Recovery requires a matching committed receipt.
+- Tested stale and replayed operations, missing or mismatched receipts,
+  lost acknowledgements, rollback on close and lock ordering.
+
 ## Offline editorial and AI write review (2026-11-13)
 
 - Mapped posting preferences, calendar proposals, review feedback, AI facts,
