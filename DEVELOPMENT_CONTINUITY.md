@@ -1,14 +1,15 @@
 # BAM development continuity checkpoint
 
-## Live-session PostgreSQL editorial media readiness preview candidate — November 12, 2026
+## Fully verified media/tenant-safety checkpoint — November 12, 2026
 
-**Last verified checkpoint:** PR #58 merged at `6a121ca1689d8835b5190e2cf828ccef4949e0b0`. Exact [merged-main Actions 43333804031](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43333804031) passed, and `development/phase-3-5-account-directory` safely fast-forwarded to main. PR #58 preflight detects orphan/cross-business and corrupt media metadata without leaking private values. Previous candidate headings below are historical.
+**Last verified implementation merge:** [PR #59](https://github.com/BelenosCreations/belenos-marketing-automation/pull/59) merged at `e0fa3c1fc051bb8ccda2357cd9b1193b4bf22183`, with [full merged-main Actions 43334593446](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43334593446) **success**. `main` and `development/phase-3-5-account-directory` safely synchronized without force. Inspect actual GitHub branch refs and current CI when resuming; do not infer success from interrupted chat turns.
 
-**Current unverified candidate:** `neon_session_review_readiness_contract.py`, strict contract tests, CI-only `EphemeralSessionPostgres.read_review_readiness`, real synthetic PostgreSQL regression tests. Single SELECT sees draft required/provided JSON and a bounded list of matching synthetic verified attachment IDs, checks active session/tenant/role/identity and protects storage paths and SHA-256. Python derives the existing offline review readiness blockers for missing/unverified/unexpected items and holds, and *unconditionally* adds TruthGuard, owner approval absent and publishing disabled. It is never a trust scanner or publication gate.
+**Verified development batch (#56–#59):** PR #56 hardened the already-existing stage-3 `content_attachments` table with stage-8 constraints (no duplicate table; **46 reviewed tables**, seven creation groups plus constraint-only stage 8) and added redacted session-only attachment reads. PR #57 added exact tenant/request/item verified-reference binding under current editor permissions and draft revision CAS; only `ready_for_review` can result. PR #58 added aggregate-only orphan/cross-tenant/malformed attachment checks before any future migration. PR #59 added one-statement current-session PostgreSQL editorial readiness snapshot with missing/unverified/held blockers, always requiring TruthGuard and owner review, and always disabling social publishing. Full PR and post-merge main GitHub CI passed for each milestone.
 
-**Next:** Exact PR-head GitHub tests, fix on development as necessary, merge only green, verify merged-main exact SHA CI, safe non-force dev sync. Future phases require immutable media proof, actual migration/backup/restore, verified production gateway and separately authorized provider flows.
+**Product state:** Offline **Alpha** only. Real hosted PostgreSQL, public/production gateway, secrets, object media, trusted scanning, backup/restore and direct provider publication are NOT configured or authorized. Passing synthetic tests does not approve a real migration or any social post. Current additional development cost authorization remains **$0**; no Render/Neon activation or EdgePilot infrastructure sharing.
 
-**Limits:** $0 incremental charges; no Render/Neon provisioning, EdgePilot sharing, paid AI, real upload or social publishing.
+**Next engineering work:** Close remaining production data model/migration and backup-restore gaps; add trusted media-scanning/rights attestation and complete review gate; prepare a secure, tenant-isolated backend ingress for private beta. Do not activate hosting, paid OpenAI, automated scheduling or provider publishing without separate owner authorization. Continue large efficient batches, exact-head PR/merged-main CI, and non-force synchronization. Update README, CHANGELOG and this file with each verified milestone.
+
 
 ## Local-only attachment migration integrity preflight candidate — November 12, 2026
 
