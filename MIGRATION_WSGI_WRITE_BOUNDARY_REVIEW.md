@@ -47,8 +47,9 @@ check inside those transactions.
 - [Local product/service draft handlers](bam_local_draft_wsgi.py#L124-L126)
   select a callable through a local variable. The upstream scan emits no
   direct delegate for them. The identity review adds a separate pinned alias
-  mapping and traces auth, invitations and membership. Preferences, calendar,
-  review feedback and other AI state remain open.
+  mapping and traces auth, invitations and membership. The [editorial and AI
+  review](MIGRATION_WSGI_EDITORIAL_WRITE_REVIEW.md) traces preferences,
+  calendar, review feedback and manual AI writes.
 - The tracked [hosting plan](BAM_HOSTING_PLAN.json) lists deployment and job
   activation as disabled. It provides no independent inventory of actual
   workers, callbacks, provider retries, scheduled jobs, operator tools,
