@@ -36,6 +36,13 @@ version, account and write permissions, storage target, transaction boundary,
 and how it drains or rejects stale work. Independent deployment evidence is
 required to establish completeness.
 
+An independent GitHub metadata check on 2026-11-13 returned zero deployments,
+zero repository environments, zero releases and Pages disabled. The only
+listed Actions workflows were the test suite and public history audit.
+The tracked files had no release manifest for a hosted process. These checks
+describe GitHub's record and checked-in configuration. External hosts, job
+schedulers, callbacks and separately operated writers remain unverified.
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).
