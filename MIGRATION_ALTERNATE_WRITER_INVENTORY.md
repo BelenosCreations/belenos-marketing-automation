@@ -88,6 +88,14 @@ show separate readers and writers that need operational attribution.
 | [OAuth attempt consumption](oauth_attempt_ledger.py), [analytics sync](analytics_sync_coordinator.py) and [scanner subprocess](bam_clamav_worker_boundary.py) | Actual callback registration, worker and retry identities, lease/drain behavior, and evidence of scanner image and signature provenance. |
 | [Durable revocation ledger rehearsal](bam_offline_revocation_ledger.py) and claim index restore | Identify index and ledger appenders, backup and restore principals, historical issuer-key custody and the authority supplying the independently retained checkpoint. Include any direct database or storage clients. |
 
+The signed replica rehearsal introduces three distinct trust inputs in its
+test fixture. An operational inventory would need to identify the witness
+authority that supplies the current epoch and pin, the custodian for the
+historical issuer catalog, and the backup principal that can retrieve
+ciphertext and request decryption. Include any tool capable of restoring
+database authority rows and check that it cannot rewrite the witness.
+The fixture keeps these inputs outside the snapshot in the test process.
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).

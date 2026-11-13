@@ -361,3 +361,29 @@ restored head and reconciliation. Actual disaster recovery requires an
 independent witness, issuer key custody, authenticated operators and
 measured off-host backup restore. The fixture grants no editorial approval
 and supplies no new runtime attachment reader or migration transform.
+
+### Authenticated witness and encrypted replica rehearsal
+
+A disposable SQLite test takes a consistent snapshot, serializes it in
+memory, and uses the existing AES-GCM archive and signed manifest helpers.
+It relocates ciphertext to a separate private directory on the same host
+and restores it after simulated loss of the original ciphertext. A separate
+Ed25519 fixture witness binds the checkpoint to the archive manifest head,
+archive name, revocation and claim-index digest, and issuer-key fingerprints
+and issuance windows. Restore receives the current witness key, epoch and
+checkpoint pin independently from the replica. Historical issuer keys
+remain available for verifying prior revocations.
+
+The test rejects a previously valid witness and archive, a missing witness
+key, an old key signing the current epoch, and removed, substituted or
+re-windowed issuer keys. SQLite integrity and foreign keys are checked before
+the existing review gate runs in memory. An interrupted restore produces no
+review result and can retry against the same independently pinned checkpoint.
+
+In disposable PostgreSQL, confirmation and a signed rotation share the
+authority lock. Rotation advances the revocation head and key epoch and
+closes the confirmed generation. After restoring an older row, the fixture
+stages a generation above the independent floor and requires a current-key
+confirmation. The test uses preauthorized fixture keys and an in-process
+witness. Operational key custody, cross-instance admission and measured
+off-host recovery remain open.

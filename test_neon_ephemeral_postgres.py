@@ -1156,6 +1156,86 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(peer.execute("""SELECT generation,revocation_head,mode
             FROM ci_restore_authority""").fetchone(), (4, 'head-1', 'frozen'))
 
+    def test_ci_witness_rotation_closes_open_authority_and_fences_old_restore(self):
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+        self.conn.execute("""CREATE TABLE ci_witness_authority (
+            id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
+            witness_epoch INTEGER NOT NULL, revocation_head TEXT NOT NULL,
+            mode TEXT NOT NULL CHECK (mode IN ('pending','open','frozen'))
+        )""")
+        self.addCleanup(self.conn.execute, "DROP TABLE ci_witness_authority")
+        self.conn.execute("INSERT INTO ci_witness_authority VALUES (1,2,1,'head-1','pending')")
+        peer = self._connect()
+        self.addCleanup(peer.close)
+        old_key = Ed25519PrivateKey.generate()
+        new_key = Ed25519PrivateKey.generate()
+        public_keys = {1: old_key.public_key(), 2: new_key.public_key()}
+        lock = """SELECT generation,witness_epoch,revocation_head,mode
+                  FROM ci_witness_authority WHERE id=1 FOR UPDATE NOWAIT"""
+
+        def signed(purpose, state, key):
+            return key.sign(json.dumps(['bam-ci-witness-v1', purpose, *state]).encode())
+
+        def check(purpose, state, signature):
+            public_keys[state[1]].verify(
+                signature, json.dumps(['bam-ci-witness-v1', purpose, *state]).encode())
+
+        def confirm(db, state, signature, witness):
+            with db.transaction():
+                current = db.execute(lock).fetchone()
+                if state != witness or current != (*state, 'pending'):
+                    return 0
+                check('confirm', state, signature)
+                return db.execute("UPDATE ci_witness_authority SET mode='open' WHERE id=1").rowcount
+
+        def rotate(db, previous, new, signature):
+            with db.transaction():
+                current = db.execute(lock).fetchone()
+                if (current[:3] != previous or new[0] != previous[0] + 1
+                        or new[1] != previous[1] + 1 or new[2] == previous[2]):
+                    return 0
+                # The fixture preauthorizes the new key independently and
+                # requires its signature over both ends of the transition.
+                public_keys[new[1]].verify(signature, json.dumps(
+                    ['bam-ci-witness-v1', 'rotate', *previous, *new]).encode())
+                return db.execute("""UPDATE ci_witness_authority SET generation=%s,
+                    witness_epoch=%s,revocation_head=%s,mode='frozen' WHERE id=1""", new).rowcount
+
+        old = (2, 1, 'head-1')
+        current = (3, 2, 'head-2')
+        old_signature = signed('confirm', old, old_key)
+        rotation = new_key.sign(json.dumps(
+            ['bam-ci-witness-v1', 'rotate', *old, *current]).encode())
+        with self.conn.transaction():
+            self.assertEqual(confirm(self.conn, old, old_signature, old), 1)
+            with self.assertRaises(self.psycopg.errors.LockNotAvailable):
+                rotate(peer, old, current, rotation)
+        with self.assertRaises(InvalidSignature):
+            rotate(peer, old, current, signed('confirm', current, new_key))
+        self.assertEqual(rotate(peer, old, current, rotation), 1)
+        self.assertEqual(rotate(peer, old, current, rotation), 0)
+        self.assertEqual(confirm(peer, old, old_signature, current), 0)
+        self.assertEqual(peer.execute("""SELECT generation,witness_epoch,revocation_head,mode
+            FROM ci_witness_authority""").fetchone(), (*current, 'frozen'))
+
+        # Rehearse an older restored row. New recovery must advance the
+        # independent generation floor and preserve the current witness epoch.
+        peer.execute("""UPDATE ci_witness_authority
+            SET generation=1,witness_epoch=1,revocation_head='head-0',mode='frozen'""")
+        with peer.transaction():
+            restored = peer.execute(lock).fetchone()
+            next_state = (max(restored[0], current[0]) + 1, current[1], current[2])
+            peer.execute("""UPDATE ci_witness_authority SET generation=%s,
+                witness_epoch=%s,revocation_head=%s,mode='pending' WHERE id=1""", next_state)
+        self.assertEqual(next_state, (4, 2, 'head-2'))
+        self.assertEqual(confirm(peer, current, signed('confirm', current, new_key), next_state), 0)
+        with self.assertRaises(InvalidSignature):
+            confirm(peer, next_state, signed('confirm', next_state, old_key), next_state)
+        self.assertEqual(confirm(peer, next_state, signed('confirm', next_state, new_key),
+                                 next_state), 1)
+
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.
         with self.conn.transaction(force_rollback=True):

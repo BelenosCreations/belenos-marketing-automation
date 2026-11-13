@@ -26,6 +26,9 @@ issuer keys against a separately retained checkpoint. Confirmation and
 restore also compete on a disposable authority row. Private Beta still
 requires authenticated external checkpoints, authorized operational restore
 and independent evidence from deployed readers and writers.
+The authenticated recovery rehearsal uses a rotating synthetic witness
+and a same-host ciphertext copy. Independent custody, real off-host restore
+and database admission across deployed processes remain release gates.
 
 ## Alternate writer and recovery review
 

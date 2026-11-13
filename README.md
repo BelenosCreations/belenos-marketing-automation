@@ -24,7 +24,9 @@ revocation across claim versions, and retry after an interrupted discard.
 A restored SQLite fixture ties the revocation head to its claim index and
 tests typed review visibility after colliding IDs or issuer key rotation.
 Disposable PostgreSQL tests exercise both lock orders for confirmation
-racing a restore.
+racing a restore. A signed checkpoint now binds the claim index, issuer-key
+catalog and encrypted synthetic replica. The authority rehearsal tests
+witness rotation and recovery above an independently supplied generation.
 
 ## Alternate writer inventory and offline recovery rehearsal
 

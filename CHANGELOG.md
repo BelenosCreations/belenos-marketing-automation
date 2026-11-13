@@ -1,3 +1,11 @@
+## Authenticated attachment recovery rehearsal (2026-11-13)
+
+- Restored a synthetic SQLite attachment index from a same-host encrypted
+  replica after removing the original ciphertext. Checked a signed witness
+  and its pinned epoch, exact issuer-key catalog and a failed admission retry.
+- Exercised PostgreSQL revocation-head and witness rotation after confirmation,
+  refusal of stale signatures, and recovery above an independent generation.
+
 ## Disposable attachment review and restore (2026-11-13)
 
 - Tested ordinary and subject-scoped AI attachment reads and review
