@@ -1,3 +1,10 @@
+## Candidate #105 — offline ingress-to-writer static trace (2026-11-13)
+
+- Started from independently verified #104 SHA 0cd22728bf63966252d7893dde526f44c986105f, main Actions #43430594571 PASSED, branches identical 0/0, zero open PRs.
+- Added CI-gated AST-only possible direct-call paths connecting Python entrypoints, simple import aliases and candidate writer signals. Preserved unresolved calls, untraced mutation sites and stable source fingerprint binding.
+- Added synthetic regression tests for cross-module alias, class method dispatch, dynamic-call gaps, source drift, gate and unsafe source refusal.
+- No runtime coverage, real fencing, external authority, customer migration, Postgres connection, hosting or publishing. Beta blocked; $0 additional spend. Exact-head/merged-main CI pending.
+
 ## Verified #102–#103; candidate #104 documentation checkpoint (2026-11-13)
 
 - #102 merged `5ccff62cd27ffb2230026a8b008478a788e8c83f`: exact-head Actions #43428652129 and merged-main #43428902180 PASSED. CI-gated AST Python/WSGI writer candidate inventory; deterministic digest; adversarial tests; fencing architecture review.

@@ -1,3 +1,11 @@
+## Candidate PR #105; verified recovery starting point #104 (2026-11-13)
+
+Verified merged-main 0cd22728bf63966252d7893dde526f44c986105f, GitHub Actions #43430594571 PASSED. Main and development/phase-3-5-account-directory independently compared identical, 0 ahead/behind; no open PRs. PRs #102–#104 completed and CI independently verified.
+
+Candidate #105 adds read-only CI-only AST possible route/worker/callback-to-write call-path review, basic cross-module alias resolution, unresolved-call reporting and source fingerprint binding; tests and MIGRATION_DISPATCH_REVIEW.md. It does NOT establish deployed writer coverage or a shared generation fence. **Do not call #105 verified until successful exact-head PR Actions and merged-main Actions, non-force development sync and 0/0 check.**
+
+Remaining: all actual deployed dynamic/non-Python/callback/scheduled writes, independent persisted epoch and trusted operator heads/keys, transactional distributed admission, approved Postgres semantics, offsite encrypted backup and measured restore, authentic ClamAV binary/signature/isolation, human media rights/revocation, hostile private Beta session/CSRF/tenant/proxy/abuse tests and explicit owner release approval. No Render/Neon/paid AI/social publishing/EdgePilot/customer migration; $0 added spend.
+
 ## Verified checkpoint after PRs #102–#103, before documentation PR #104
 
 Repository `BelenosCreations/belenos-marketing-automation`. Development branch `development/phase-3-5-account-directory`. **Latest independently verified merged-main `099b79e5a92035af812d08ed6f612405fffac5cb`**, merged-main GitHub Actions **#43429752709 PASSED**, exact SHA. Main/development non-force fast-forward synchronized and compared identical, zero ahead/behind; zero open PRs before #104.
