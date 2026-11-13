@@ -1,3 +1,7 @@
+## Candidate #103 — synthetic generation transitions, no hosted write fence
+
+`neon_disposable_generation_authority.py` is CI-only: private disposable SQLite generation increments and test canary writes, never application/Render/Neon state. No real source or target database is locked; no WSGI or background task is gated. Independent generation custody, atomic cross-process admission, stale network participant rejection, operator approval, offsite recovery and measured rollback require future operator-reviewed architecture. Private Beta remains blocked; no new cost or activation.
+
 ## Candidate #102 — inactive migration writer review
 
 The CI-only Python source inventory enumerates candidate API/WSGI, SQL transaction and file-write sites. It never executes production services and cannot establish end-to-end fencing, stale-worker safety, callback drain, independent authority, off-host recovery or production RPO/RTO. Require a verified hosted deployment topology and independently observable writer-fencing enforcement before any cutover. The existing infrastructure remains unchanged and disabled; no new subscriptions or deployments; private Beta still requires explicit authorization.

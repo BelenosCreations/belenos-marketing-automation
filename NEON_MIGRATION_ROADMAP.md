@@ -1,3 +1,7 @@
+## Candidate #103 — local transaction-bound generation ordering only
+
+Test `neon_disposable_generation_authority.py` uses disposable SQLite CAS generation transitions and local `BEGIN IMMEDIATE` writer admission. It models that every writer must validate the authoritative generation **inside** the same durable write transaction and never reuse a pre-freeze generation after a restart. It does not implement shared production generation authority, distributed stale-node fencing, scheduler/callback drain, source-to-target mapping, PostgreSQL transactions or rollback. The cutover remains disallowed; see `MIGRATION_EPOCH_FENCE_REHEARSAL.md`.
+
 ## Candidate #102: source writer-surface inventory (no cutover)
 
 `neon_static_writer_surface_inventory.py` statically parses top-level `*.py` in the checked-out BAM source with an explicit CI flag, recording possible SQL write/unknown/read, transaction, filesystem and WSGI/HTTP surfaces. It emits a digest for independent review but does **not** prove deployed worker/callback coverage. Follow the architecture and extensive negative evidence caveats in [MIGRATION_WRITER_SURFACE_REVIEW.md](MIGRATION_WRITER_SURFACE_REVIEW.md). No PostgreSQL transaction, migration, schema deployment, production writer gate or rollback executable. Source-to-target semantic approvals and independent offsite recovery remain mandatory. Keep every cutover action inactive.
