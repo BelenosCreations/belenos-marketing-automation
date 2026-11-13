@@ -101,7 +101,9 @@ def inspect_ci_wsgi_delegated_calls(*, source_root=None,
             for candidate in call["candidate_constructors"]:
                 module = candidate["module"]
                 klass = candidate["class"]
-                if (type(module) is not str or type(klass) is not str or
+                if (candidate["status"] != "declared_class_candidate" or
+                        call["binding_status"] != "declared_class_candidate" or
+                        type(module) is not str or type(klass) is not str or
                         not re.fullmatch(r"[A-Za-z0-9_]+", module)):
                     status, calls = "unresolved_candidate", []
                 else:
