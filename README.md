@@ -1,3 +1,11 @@
+## Offline identity and local draft write review
+
+The offline review now traces local product and service drafts, authentication,
+session switching, membership changes and invitation writes to SQLite. It
+identifies commits that can succeed before a later step fails and records
+unresolved Google verifier and invitation delivery implementations.
+[Identity write review](MIGRATION_WSGI_IDENTITY_WRITE_REVIEW.md)
+
 ## Offline held-draft and media write review
 
 The CI-only review locates the SQLite transaction contexts for draft creation,

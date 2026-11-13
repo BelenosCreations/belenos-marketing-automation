@@ -1,14 +1,18 @@
-"""CI-only source evidence for selected offline content and media write paths."""
+"""CI-only source evidence for selected offline WSGI write paths."""
 
 from pathlib import Path
 
 from neon_ci_wsgi_binding_review import _read
 from neon_ci_wsgi_delegate_review import _fingerprint, inspect_ci_wsgi_delegated_calls
+from neon_ci_wsgi_identity_write_paths import (
+    HANDLERS, LOCAL_DRAFT_METHODS, SOURCE_HASHES, UNRESOLVED_DEPENDENCIES, WRITE_PATHS,
+)
 
 
 # Pin the inspected source, including authorization and data-store dependencies.
 # Review changes to the source paths before replacing these pins.
 _REVIEWED_SOURCE = {
+    **SOURCE_HASHES,
     "access_policy.py": "1a0e6d513a5921a037a2d059f7aef360206340be83f4605af0ba982affa6a257",
     "account_dashboard.py": "4dca5cc7366e66b0c6eb65ea4c34f3ef493fac00ce090b00493c251234385539",
     "account_read_api.py": "bf7c56fff210d7a05d4d64cade17ae8b91efe42d727e0eb75aab9a602913a516",
@@ -67,6 +71,7 @@ _MEDIA_READS = {
 }
 
 _HANDLER_BINDINGS = {
+    **HANDLERS,
     "content_write_wsgi": ("bam_content_write_wsgi", "BAMContentWriteWSGI"),
     "content_priority_wsgi": ("bam_content_priority_wsgi", "BAMContentPriorityWSGI"),
     "content_revise_wsgi": ("bam_content_revise_wsgi", "BAMContentReviseWSGI"),
@@ -77,12 +82,18 @@ _HANDLER_BINDINGS = {
 }
 
 
+def _mutation_site(kind, module, line, context, commit=None):
+    return {"kind": kind, "module": module, "line": line,
+            "sqlite_context_line": context, "sqlite_explicit_commit_line": commit}
+
+
 def _review_delegate(handler, call, drifted_files, writes):
     key = (handler["gateway_attribute"], call["dependency_attribute"],
            call["candidate_method"])
     constructor = "constructor_parameter:" + call["dependency_attribute"]
     binding = (handler["handler_module"], handler["handler_class"])
     result = {**call, "boundary_status": "unreviewed_delegate",
+              "unresolved_dependencies": list(UNRESOLVED_DEPENDENCIES.get(key, ())),
               "source_chain": [], "mutation_sites": []}
     if key not in writes and key not in _MEDIA_READS:
         return result
@@ -103,9 +114,7 @@ def _review_delegate(handler, call, drifted_files, writes):
         "boundary_status": "reviewed_source_write_path",
         "source_chain": list(chain),
         "mutation_sites": [
-            {"kind": kind, "module": module, "line": line,
-             "sqlite_context_line": transaction}
-            for kind, module, line, transaction in sites
+            _mutation_site(*site) for site in sites
         ],
     }
 
@@ -131,7 +140,7 @@ def inspect_ci_wsgi_write_boundaries(*, source_root=None):
         if name in observed and observed[name] != digest:
             raise ValueError("Handler changed during source inspection: " + name)
 
-    writes = dict(_MEDIA_WRITES)
+    writes = {**_MEDIA_WRITES, **WRITE_PATHS}
     for handler, api_method, method, sql, transaction, line in _DRAFT_WRITES:
         writes[handler, "api", api_method] = (
             ("account_read_api.AccountReadAPI." + api_method,
@@ -143,15 +152,28 @@ def inspect_ci_wsgi_write_boundaries(*, source_root=None):
     handlers = []
     for handler in upstream["handler_candidates"]:
         delegates = handler["syntactic_delegate_calls"]
+        alias_method = LOCAL_DRAFT_METHODS.get(handler["gateway_attribute"])
+        alias_review = []
+        if alias_method:
+            # Keep the original AST result visible. Only the exact pinned
+            # composition can attribute this separate manually reviewed call.
+            alias_review.append(_review_delegate(handler, {
+                "line": 126, "dependency_attribute": "api",
+                "source_evidence": "manual_pinned_alias",
+                "candidate_method": alias_method,
+                "constructor_dependency_hint": "constructor_parameter:api",
+                "actual_service_or_write_proven": False,
+            }, drifted, writes))
         handlers.append({
             **handler,
             "boundary_scope": "syntactic_delegates" if delegates else "unresolved_no_delegate",
+            "manually_reviewed_alias_calls": alias_review,
             "syntactic_delegate_calls": [
                 _review_delegate(handler, call, drifted, writes) for call in delegates
             ],
         })
     evidence = {
-        "format": "bam-ci-wsgi-write-boundaries-v1",
+        "format": "bam-ci-wsgi-write-boundaries-v2",
         "source_delegate_review_sha256": upstream["review_sha256"],
         "observed_source_sha256": observed,
         "drifted_reviewed_source": drifted,

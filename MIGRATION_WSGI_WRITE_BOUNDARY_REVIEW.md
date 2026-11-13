@@ -1,5 +1,8 @@
 # Offline held-draft and pending-media write boundaries
 
+For auth, membership, invitations and the local product/service draft alias,
+see the [offline identity write review](MIGRATION_WSGI_IDENTITY_WRITE_REVIEW.md).
+
 This source review follows selected calls through the local-only
 `BAMOfflineGateway` to their SQL and filesystem sites. The CI report in
 `neon_ci_wsgi_write_boundary_review.py` binds the hand-reviewed paths to the
@@ -43,8 +46,9 @@ check inside those transactions.
   can create a directory. Both need explicit treatment in any freeze plan.
 - [Local product/service draft handlers](bam_local_draft_wsgi.py#L124-L126)
   select a callable through a local variable. The upstream scan emits no
-  direct delegate for them. Auth, invitations, membership, preferences,
-  calendar, review feedback and AI state also remain outside this mapping.
+  direct delegate for them. The identity review adds a separate pinned alias
+  mapping and traces auth, invitations and membership. Preferences, calendar,
+  review feedback and other AI state remain open.
 - The tracked [hosting plan](BAM_HOSTING_PLAN.json) lists deployment and job
   activation as disabled. It provides no independent inventory of actual
   workers, callbacks, provider retries, scheduled jobs, operator tools,
