@@ -1,3 +1,11 @@
+## Verified #102 and candidate #103 (November 13, 2026)
+
+#102 exact-head GitHub Actions #43428652129 passed, merged-main `5ccff62cd27ffb2230026a8b008478a788e8c83f`, merged-main Actions #43428902180 passed. Main/development synchronized via non-force fast-forward, independently compared 0/0. #102 creates the CI-only AST Python/WSGI write-surface inventory and `MIGRATION_WRITER_SURFACE_REVIEW.md`; no runtime writer enforcement.
+
+Candidate #103 adds a separate, **disposable SQLite-only** transaction-bound generation guard demo with CI tests for freeze/resume, persistent-on-reopen generation, stale-worker and duplicate operation rejection, close rollback and write-lock ordering. See `MIGRATION_EPOCH_FENCE_REHEARSAL.md`. Do **not** mistake it for a BAM application fence or production PostgreSQL cutover. #103 CI and merge verification remain pending.
+
+Mandatory blockers: enumerate all real hosted API/WSGI, schedule and callback write surfaces; independently controlled persistent epoch and latest-head/signing keys; authenticated operator; reviewed null/default/JSON/constraint/tenant/identity mappings; actual offsite encrypted recoverable backups and RPO/RTO; genuine ClamAV publisher signature/binary/isolated worker; usage-rights and authoritative revocation; private-Beta session/CSRF/proxy/tenant/abuse tests and owner authorization. $0 extra cost. No Render, Neon, paid AI, publishing, EdgePilot or customer migration.
+
 ## Candidate #102 continuation from independently verified #101
 
 Before proposed change, main and development independently confirmed identical at `9a19829997ef09c5a8f163c5c872fb042501b3e9`, 0 ahead/behind, no open PRs. Main Actions #43380395873 passed for the exact SHA. This replaces prior documentation's *candidate #101* status with a verified #101 checkpoint; historical candidate sections below remain unchanged.

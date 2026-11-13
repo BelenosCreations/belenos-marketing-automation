@@ -1,3 +1,11 @@
+## Candidate #103 — CI-only disposable generation admission test (2026-11-13)
+
+- Independently verified #102: exact-head Actions #43428652129 and merged-main Actions #43428902180 passed, merged at `5ccff62cd27ffb2230026a8b008478a788e8c83f`, development fast-forward synced 0/0.
+- Added `neon_disposable_generation_authority.py` with private auto-cleaned SQLite fixture, transactional generation/mode CAS, synthetic canary admission inside the same transaction, freeze and resume with epoch increments and duplicate request rejection.
+- Added adversarial tests for stale generations, crash/connection reopening, transaction rollback, concurrent writer locks, invalid requests, and CI-only gate.
+- Added `MIGRATION_EPOCH_FENCE_REHEARSAL.md` with explicit omitted distributed/operator/backup/production boundaries.
+- No live BAM writer or PostgreSQL integration, customer data migration, publishing or infrastructure activation; #103 requires exact-head and merged-main CI before verification.
+
 ## Candidate #102 — CI-only migration writer-surface source inventory (2026-11-13)
 
 - Added `neon_static_writer_surface_inventory.py` static, non-executing AST discovery of top-level BAM Python source SQL/transaction/file and WSGI/HTTP ingress candidates, including unknown SQL and deterministic source/inventory hashes.

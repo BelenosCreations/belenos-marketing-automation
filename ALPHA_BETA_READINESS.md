@@ -1,3 +1,7 @@
+## Candidate #103 — local SQLite generation test is not a Beta deployment control
+
+The disposable CI demonstration can reject test canary writes from stale epochs across fixture connection restarts. It does not fence actual BAM API handlers, scheduled jobs or provider callbacks, nor prove off-host recovery, independent authority or operator authentication. Private Beta still blocked pending all hosted/authentication/CSRF/tenant/proxy/abuse and media/backup/migration operational requirements. No infrastructure or paid integration activated; $0 incremental cost.
+
 ## Candidate #102 — source inventory is not application-wide fencing
 
 A CI-only AST inventory can improve visibility into BAM Python SQLite/WSGI writer candidates and unknown SQL. It neither sees all runtime callers nor stops any existing write. **Private Beta remains blocked** pending authenticated sessions and revocation, CSRF/host/proxy isolation, verified tenant isolation and abuse protection; operational PostgreSQL planning with independently enforced persistent generations, signed operator approval, offsite restores, genuine ClamAV signature/binary and isolated workers, human rights/revocations, and owner approval. No Render/Neon/publishing activation and $0 incremental spend. See `MIGRATION_WRITER_SURFACE_REVIEW.md`.

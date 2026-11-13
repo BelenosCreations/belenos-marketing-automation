@@ -1,3 +1,11 @@
+## CI-only generation experiment after #102
+
+Candidate #103 adds `neon_disposable_generation_authority.py` to model a
+transaction-bound epoch check with private canary rows. The model must NOT be
+mistaken for deployed, authoritative writer coverage. See
+`MIGRATION_EPOCH_FENCE_REHEARSAL.md` for explicit crash, retry and
+distributed-systems limitations.
+
 # BAM inactive application writer-surface review
 
 This document is a **source-code discovery artifact**, not a migration runner or
