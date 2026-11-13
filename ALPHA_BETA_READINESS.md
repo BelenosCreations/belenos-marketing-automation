@@ -1,3 +1,10 @@
+## Held-draft and pending-media write boundary review
+
+The [offline write review](MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md) maps selected
+SQLite and filesystem effects. Deployed writers, transaction-bound generation
+checks, independent recovery and hosted security evidence remain outstanding.
+The media file and metadata operations need separate crash and retry testing.
+
 ## Verified #107 and candidate #108 do not unblock private Beta
 
 #107 CI-only static gateway bindings independently passed merged-main Actions #43439178092 at 7c557ed43f7696982e5e2bcf8130e807707636c9; #108 candidate downstream service-call names remain a read-only syntactic hypothesis, not hosted IAM/session/CSRF/tenant/proxy/abuse acceptance, real writer fencing or authenticated operator, offsite recovery, genuine ClamAV database/binary provenance, isolated scanner or human rights/revocation approval. $0 new spend; production integrations and publishing remain off.

@@ -1,8 +1,17 @@
-## Documentation-only handoff simplification candidate (2026-11-13)
+## Offline held-draft and media write boundary review (2026-11-13)
 
-- Made `DEVELOPMENT_CONTINUITY.md` the canonical, in-repository resume and next-steps instruction source, with current independently verified baseline, strict restrictions, verification/merge policy and priorities.
-- Future user-facing recovery prompts are intentionally compact file references; update canonical section in place at verified milestones.
-- No code, runtime, deployment, migration, hosting or external publishing changes. Requires independent exact-head and merged-main Actions before counting this documentation milestone as verified. $0 additional cost.
+- Added CI-only, source-pinned maps for draft creation, hold, revision, priority,
+  pending attachment registration, media receipt and media discard.
+- Documented the SQLite and filesystem boundaries, including discard's split
+  file/metadata effects, startup writes and unresolved indirect local draft calls.
+- Added regression tests for source drift, linked files, ambiguous attribution,
+  deterministic evidence and the CI gate. No application write path was enabled.
+
+## Verified #109 handoff simplification (2026-11-13)
+
+- Made `DEVELOPMENT_CONTINUITY.md` the canonical handoff for future checkpoints.
+- Exact-head Actions #43443398238 and merged-main Actions #43443740177 passed.
+  Main and development matched at `f855a265a2973324637db23621de1e5cfcfbf62e`.
 
 ## Verified #107; candidate #108 WSGI downstream source call review (2026-11-13)
 

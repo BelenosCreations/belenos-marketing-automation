@@ -1,6 +1,15 @@
-## Continuity handoff is now repository-based (2026-11-13; documentation-only candidate)
+## Offline held-draft and media write review
 
-The full development recovery prompt, previously pasted into chat, now resides in the **canonical top section** of [DEVELOPMENT_CONTINUITY.md](DEVELOPMENT_CONTINUITY.md). Future chat handoffs should contain only a short instruction to read that file and independently verify live GitHub status. This is process documentation, not a new verified code milestone or production authorization. Keep the top section refreshed in place after independently passing exact-head and merged-main checks; do not presume a recorded SHA remains latest. No operational integrations changed; $0 incremental cost.
+The CI-only review locates the SQLite transaction contexts for draft creation,
+hold, revision, priority and attachment preflight. It also records where local
+media receipt writes files and where discard unlinks files before deleting
+metadata. The report withholds mappings on source drift and keeps indirect or
+unreviewed routes visible. Deployed writer coverage and an enforced generation
+fence remain prerequisites for cutover. [Write boundary review](MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md)
+
+PR #109 made [DEVELOPMENT_CONTINUITY.md](DEVELOPMENT_CONTINUITY.md) the canonical
+handoff. Use its top section for the next offline work and verify the current
+GitHub checkpoint before resuming.
 
 ## Candidate #108 — CI-only WSGI service-delegation review (2026-11-13)
 

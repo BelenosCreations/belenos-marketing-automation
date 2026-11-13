@@ -4,22 +4,21 @@
 
 ## Short copyable resume instruction
 
-Continue BAM development autonomously. Repository: `BelenosCreations/belenos-marketing-automation`; development branch: `development/phase-3-5-account-directory`. Read the **CANONICAL BAM DEVELOPMENT RESUME INSTRUCTIONS** at the top of `DEVELOPMENT_CONTINUITY.md` on GitHub main, independently verify the latest merged-main SHA, its successful exact-SHA Actions, both branch heads, divergence and open PRs, and then execute the next safe offline development milestone under every restriction in that file. At the next verified checkpoint, update the continuity file in place and give me only this short resume instruction plus a brief plain-language summary.
+Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation, verify the GitHub checkpoint, and follow the next steps and restrictions in that file.
 
-## Last independently verified baseline when this section was written (2026-11-13)
+## Last independently verified baseline (2026-11-13)
 
-- Main and development SHA: `80e14303a971fd3b2fdae93e7856c718c0986e7a`.
-- Successful merged-main Actions: **#43440640927 — PASSED** for that exact SHA.
-- Main and development were independently compared **identical, zero commits ahead / behind** after a **non-force fast-forward**; no open PRs.
-- PR **#107**: CI-only offline WSGI constructor/route binding review, merged main `7c557ed43f7696982e5e2bcf8130e807707636c9`, exact-head Actions **#43438915110 PASSED**, merged-main Actions **#43439178092 PASSED**. Added `neon_ci_wsgi_binding_review.py`, tests and `MIGRATION_WSGI_BINDING_REVIEW.md`.
-- PR **#108**: CI-only handler-to-service delegation source review, merged main `80e14303a971fd3b2fdae93e7856c718c0986e7a`, final exact-head Actions **#43440315310 PASSED**, merged-main Actions **#43440640927 PASSED**. Added `neon_ci_wsgi_delegate_review.py`, tests and `MIGRATION_WSGI_SERVICE_REVIEW.md`. An initial classification test failed at Actions #43439946055; the implementation was corrected to preserve unresolved candidate status before final passing CI.
-- PRs **#75–#106**: prior synthetic migration planning, signed/replay studies, encrypted recovery research, ClamAV metadata limitations, writer-surface inventory, generation-fence rehearsal and WSGI call-path documentation.
+- Main and development SHA: `f855a265a2973324637db23621de1e5cfcfbf62e`.
+- Merged-main Actions **#43443740177 passed** for that exact SHA. Branches were independently compared identical, 0 ahead/behind, with no open PRs.
+- PR **#109** made this file the canonical handoff. Exact-head Actions **#43443398238 passed** at `caa89c5d901b8d1f7f5763ca3c1f750ed0a64448`.
+- PRs **#107–#108** added offline WSGI binding and handler-to-service source discovery. PRs **#75–#106** cover earlier offline migration, recovery, media and writer-review work.
+- Candidate after #109 maps held-draft and pending-media source calls to SQL and filesystem boundaries. See `MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md`. Recheck its PR and merged-main Actions before treating it as verified.
 
 **Important:** This baseline is not a future SHA prediction or automatically updated live status. The next chat must discover and verify whichever main/Actions/PRs are newest. A documentation-only commit/merge may advance main after this baseline without changing production readiness. If branches diverge or CI is pending, investigate rather than assuming a clean checkpoint.
 
 ## Next safe development milestone
 
-1. Continue **read-only/offline** mapping from candidate WSGI service-method calls to actual SQL transaction boundaries, filesystem/object writes, and other downstream mutation sites, with fail-closed treatment of indirect or dynamic dependencies. Review `MIGRATION_WRITER_SURFACE_REVIEW.md`, `MIGRATION_DISPATCH_REVIEW.md`, `MIGRATION_WSGI_BINDING_REVIEW.md` and `MIGRATION_WSGI_SERVICE_REVIEW.md`. Produce deterministic evidence, adversarial regression tests and honest unresolved-path reporting.
+1. Extend the **read-only/offline** boundary review to local product/service draft alias dispatch and the auth, session and membership writers. Trace the configured gateway, loopback demo and startup paths to their write sites. Review `MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md` and the preceding WSGI and writer-surface reviews. Retain unresolved dependencies and add regression coverage for any new source evidence.
 2. Independently inventory all deployed and alternative writers—WSGI routes, callbacks, provider retries, scheduled jobs, workers, processes, file/object stores and non-Python clients—before making any claim of comprehensive coverage. A source graph is not a deployed graph.
 3. Design (only; do not activate) persistent shared generation/epoch fencing enforced **inside the actual write transaction**, including stale worker denial after freeze/crash, independently authenticated operator transitions and independently custodied latest heads/keys. Preserve existing offline/synthetic fixtures as research, not production guards.
 4. Continue human review of PostgreSQL column nullability/defaults/JSON/identity/constraints/foreign-key/tenant ownership transforms; off-host encrypted independently recoverable backups and measured restore/rollback; genuine ClamAV engine/database publisher signatures, isolated authenticated scanner, rights review and authoritative revocation; hostile hosted IAM/session/CSRF/tenant/proxy/abuse testing.
