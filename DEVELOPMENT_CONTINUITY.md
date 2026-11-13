@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Current candidate — separate cryptographically signed media trust claims (November 12, 2026)
+
+**Last fully verified:** [PR #66](https://github.com/BelenosCreations/belenos-marketing-automation/pull/66) merged as `51944ce3b222979b6d5a69a1ee4dff9894224b3f`; exact-head Actions 43342519053 and [post-merge main Actions 43342715656](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43342715656) passed. `main` and `development/phase-3-5-account-directory` safely synchronized. PRs #61–#66 are historical completed work; prior 'candidate' paragraphs below are outdated.
+
+**New unverified candidate:** Pure offline verifier for independently keyed scanner-clean and human rights-grant claims, bound to tenant/draft/item/attachment/hash/MIME and channel with expiry; malformed, untrusted or stale claims must fail closed. No actual scanner, rights adjudication, private blob store, evidence audit DB or production call path is included. Complete exact PR-head CI, merge only green, full post-merge CI, synchronize development without force. Next: production-ready migration/backup policy and durable, separately authorized trust audit, then private Beta ingress review. Never deploy/activate or spend without approval.
+
 ## Active unverified candidate — PostgreSQL constraint/index parity (November 12, 2026)
 
 **Verified baseline:** PR #65 merged at `7ea77bed8b673501e61f62f65dfd19fe640d1d3d`; [merged-main Actions 43340767900](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43340767900) succeeded; `main` and `development/phase-3-5-account-directory` synchronized before this candidate. Existing older candidate headings are historical.
