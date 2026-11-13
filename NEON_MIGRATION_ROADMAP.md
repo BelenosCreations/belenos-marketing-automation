@@ -1,6 +1,6 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
-**Current unverified restore consistency milestone:** Exercise a REPEATABLE READ PostgreSQL transaction across the synthetic 47-object logical restore and deliberately interleave a concurrently committed source change, while preserving exact point-in-time row parity. Verified baseline: PR #67 / merged-main Actions 43343554641. This does not implement durable encrypted PostgreSQL backups, retention, off-host storage, PITR, hosted Neon or production cutover.
+**Last verified restore milestone:** PR #68 merged as `3052f1e2`; exact-head Actions 43344020606 and main Actions 43344264999 succeeded. A CI-only REPEATABLE READ restore preserves one coherent MVCC source snapshot even when another connection changes and commits a draft after COPY. The 47-object column, FK/constraint/index and row parity checks remain in place. This does **not** create a durable encrypted backup, offsite retention, point-in-time recovery, a hosted PostgreSQL migration, or a production failover path.
 
 **Last verified CI-only restore integrity:** PR #66 merged at `51944ce3`; full main Actions 43342715656 passed. The rehearsal compares row, column, FK/constraint/index catalog parity across all 47 objects, but has neither a durable encrypted archive nor an off-host recovery point. The new signed-media-evidence milestone is a separate offline contract and does not make migration or backup production-ready.
 

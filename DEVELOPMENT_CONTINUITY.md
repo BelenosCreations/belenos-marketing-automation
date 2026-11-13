@@ -1,5 +1,16 @@
 # BAM development continuity checkpoint
 
+## Current verified recovery checkpoint — November 12, 2026 (PR #68)
+
+**Repository:** `BelenosCreations/belenos-marketing-automation`. **Branches:** `main` and `development/phase-3-5-account-directory` synchronized at `3052f1e2a7ab65c4a19cf7b8a31e854fc94b6b88` after PR #68. PR #68 exact-head Actions 43344020606 and [post-merge main Actions 43344264999](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43344264999) passed. PR #67 merged at `fdc179b5` with main Actions 43343554641 successful; PR #66 merged at `51944ce3` with main Actions 43342715656 successful. Older headings below containing "current candidate" describe historic pre-merge work only.
+
+**Verified in this session:** (1) full disposable CI PostgreSQL column/constraint/index/FK catalog and row parity; (2) independently signed scanner/rights *offline contract only*, with no actual trusted worker or verification persisted; (3) transactional repeatable-read restore snapshot consistency while a second source connection commits a separate change. All strictly synthetic/local CI. Read-only private data boundary and all publishing-disabled safeguards remain.
+
+**Next engineering sequence:** Build a production-ready but disabled migration runner and restore-plan acceptance checks; validate real encrypted off-host backups/retention with a safe test-only provider; add audited trusted scanner/rights evidence worker integration and revocation without self-asserted approvals; then harden private Beta service ingress and authorization. Do not provision Neon/Render (even free-tier), use EdgePilot resources, enable paid AI or real social publishing without explicit approval. Additional spend authorization remains **$0**.
+
+**Safe continuation:** Verify GitHub main, development, recent PRs and the exact latest merged-main Actions result first. Use the development branch, test exact PR head, merge verified milestones, verify main CI, sync development non-force, and refresh README/CHANGELOG/this checkpoint. Stop only at major decisions or verified branch points; do not rely on stale historic candidate sections.
+
+
 ## Active unverified milestone — consistent MVCC snapshot in disposable PostgreSQL restore
 
 **Verified baseline:** PR #67 merged `fdc179b5ba8260458019cb1f8092f71d34604734`, exact-head Actions 43343292465 and full [merged-main Actions 43343554641](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43343554641) passed. Development branch safely synchronized. PR #66 also fully verified. Historical candidate headings below are not current status.

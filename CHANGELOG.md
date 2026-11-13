@@ -1,5 +1,12 @@
 # Changelog
 
+## November 12, 2026 — Snapshot-consistent synthetic restore (verified PR #68)
+
+- PR #68 merged as `3052f1e2a7ab65c4a19cf7b8a31e854fc94b6b88`; [exact-head CI 43344020606](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43344020606) and [merged-main CI 43344264999](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43344264999) passed. Development synchronized without force.
+- Repeatable-read snapshot consistency is proven under a separate simultaneous PostgreSQL writer; source row changes committed by another connection survive while the synthetic target is discarded. Not durable backup, offsite recovery, hosted Neon, or release authorization.
+- Status: all three milestones in this session, PRs #66–#68, fully verified. Prior "unverified candidate" changelog entries below are historical proposals.
+
+
 ## November 12, 2026 — Consistent-snapshot restore under concurrent edits (unverified candidate)
 
 - In CI-only PostgreSQL logical restore, set the transaction to REPEATABLE READ before any schema/data access. Exercise a second connection changing a source draft immediately after its table COPY; both exported rows and parity checks must use the original MVCC snapshot while the committed external edit survives. No live backup or point-in-time recovery is claimed.
