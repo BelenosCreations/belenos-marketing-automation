@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+## PR #79 candidate — inactive migration source-column and operator-step plan
+
+Offline deterministic 8-phase, 46-target inventory and safe source column metadata; all row transformations and target-column mappings unreviewed, source/plan pins fail closed on drift, no live SQL execution or writer fencing. CI pending. Continue from exact GitHub refs; do not claim production migration. $0 additional cost and all external providers inactive.
+
+
 ## Latest fully verified recovery checkpoint — November 12, 2026, PR #73
 
 **Repository:** `BelenosCreations/belenos-marketing-automation`. **Branches:** `main` and `development/phase-3-5-account-directory` are synchronized without force at `7f4248940a84ad40d097c4541d11eba49b3f5b4a`. [Merged-main GitHub Actions #43347901980](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43347901980) passed. PR #73 exact-head Actions 43347696317 passed.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-12 — Inactive migration planning (PR #79 candidate)
+
+- Added deterministic, metadata-only, eight-step source-column/target-table inventory and independent source/plan drift pins.
+- Explicitly blocks all row mapping, PostgreSQL execution, writer fencing, cutover, application rollback and publication.
+- Added private-content, drift and malformed-pin regressions. No new costs or services.
+
+
 ## November 12, 2026 — Fully verified PR #70–#73 engineering checkpoint
 
 - PR #70: [merged main `9b1ad4fc`](https://github.com/BelenosCreations/belenos-marketing-automation/pull/70); exact-head Actions 43346035365 and merged-main Actions 43346263328 passed. CI-gated in-memory AES-256-GCM/HKDF recovery envelope; no retained backup.
