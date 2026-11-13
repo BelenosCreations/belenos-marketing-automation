@@ -23,7 +23,7 @@ _SOURCE_TYPES = {"TEXT", "INTEGER", "BLOB"}
 _TARGET_TYPES = {"TEXT", "SMALLINT", "INTEGER", "BIGINT", "BYTEA", "DOUBLE PRECISION"}
 _COLUMN = re.compile(
     r"(?<![a-z0-9_])([a-z][a-z0-9_]*)\s+"
-    r"(TEXT|SMALLINT|INTEGER|BIGINT|BYTEA)\b", re.I)
+    r"(TEXT|SMALLINT|INTEGER|BIGINT|BYTEA|DOUBLE\s+PRECISION)\b", re.I)
 _SHA = re.compile(r"[a-f0-9]{64}\Z")
 _CATALOGS = (_BASE, _COLLAB, _EXTRA, _BUDGET, _DATA, _DDL, _REVIEW)
 
