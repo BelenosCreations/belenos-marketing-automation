@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-12 — CI-only signed recovery manifests and key-rotation rehearsal (PR #80 candidate)
+
+- Added externally keyed, separately pinned HMAC manifest chain for local synthetic encrypted recovery points with signer/encryption key ID rotation and bounded retention metadata.
+- Added ciphertext reinspection/AEAD restore, missing-key, altered-byte, wrong-pin, truncation, tamper, replay and expiry regressions.
+- No persistent audit/head custody, offsite replication, retention deletion, customer restore or production backup activation.
+
+
 ## 2026-11-12 — Inactive migration planning (PR #79 candidate)
 
 - Added deterministic, metadata-only, eight-step source-column/target-table inventory and independent source/plan drift pins.

@@ -1,5 +1,8 @@
 # BAM Alpha → Private Beta Readiness Gate
 
+**Candidate PR #80 — recovery-manifest evidence only:** Signed local ciphertext inventory, independent supplied head pin and key-rotation/retention simulation strengthen offline CI; they do not satisfy actual offsite backup, key escrow, immutable policy retention, independent disaster restoration or private Beta readiness. No hosting or publishing activation.
+
+
 **Verified checkpoint November 12, 2026 (PR #73; main `7f424894`, Actions 43347901980 succeeded):** PRs #70–#73 passed exact-head and post-merge CI and both branches synchronized. CI-only synthetic encrypted recovery, read-only staged media/signed evidence matching, 47-object encrypted in-memory PostgreSQL restore and offline-only ingress guards are **not** a passed private Beta release gate. Still required: actual scan+rights workers with audit/revocation, private durable attachment storage, production migration/rollback, encrypted offsite retained backup and independent recovery drill with secure keys, production authentication/proxy/abuse/tenant review, operator approval and separately authorized live social connectors. No hosting, paid APIs, external publish or EdgePilot use; incremental spend $0.
 
 **Candidate PR #73 — offline ingress hardening:** Local auth and private image byte-receipt WSGI are constrained to detectable loopback hosts/addresses and reject untrusted proxy and conflicting transfer metadata before processing secrets. This protects only offline direct-call adapters; production TLS termination, trusted proxy configuration, ingress ACLs, CSRF/CORS review, abuse throttling and operator-managed secrets remain Beta blockers.
