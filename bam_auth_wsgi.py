@@ -8,6 +8,7 @@ credential storage, verified email delivery, and session lifecycle controls.
 import json
 import re
 import time
+from bam_offline_network_guard import offline_gateway_request_allowed
 
 _MAX_JSON_BYTES = 8192
 _PATHS = {
@@ -104,6 +105,8 @@ class BAMAuthWSGI:
         reply = lambda status, body: self._response(start_response, status, body)
         if environ.get('wsgi.url_scheme') != 'https':
             return reply('403 Forbidden', {'error': 'HTTPS required'})
+        if not offline_gateway_request_allowed(environ):
+            return reply('403 Forbidden', {'error': 'Private preview only'})
         path = environ.get('PATH_INFO')
         if path not in _PATHS:
             return reply('404 Not Found', {'error': 'Not found'})

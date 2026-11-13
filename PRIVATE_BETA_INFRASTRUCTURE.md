@@ -1,5 +1,7 @@
 # BAM private beta infrastructure — proposed, not authorized
 
+**Candidate PR #73:** Local WSGI authentication and media-receipt transports explicitly refuse remote/forwarded/ambiguous HTTP ingress. This is defense-in-depth for disabled-by-default offline previews; deploying the same adapters behind Render, an Internet reverse proxy or public TLS is not authorized or supported without a separately reviewed production ingress architecture.
+
 **November 12, 2026 | Planning only.** This document does not create hosting, authorize charges, enable publishing or mark BAM Beta-ready.
 
 

@@ -23,6 +23,22 @@ class OfflineNetworkGuardTests(unittest.TestCase):
             got.update(status=status,headers=dict(headers))))
         return got,raw
 
+    def test_unrecognized_proxy_and_ambiguous_http_framing_denied(self):
+        for metadata in (
+            {'HTTP_X_FORWARDED_PREFIX':'/external'},
+            {'HTTP_X_ORIGINAL_URI':'/api/v1/auth/password'},
+            {'HTTP_TRANSFER_ENCODING':'chunked'},
+            {'HTTP_CONTENT_LENGTH':'42'},
+            {'HTTP_X_HTTP_METHOD_OVERRIDE':'POST'},
+            {'HTTP_CF_CONNECTING_IP':'192.0.2.7'},
+            {'HTTP_PROXY':'http://proxy.local'},
+            {123:'not-a-wsgi-name'}):
+            with self.subTest(metadata=metadata):
+                self.assertFalse(offline_gateway_request_allowed(metadata))
+                if all(type(k) is str for k in metadata):
+                    self.assertEqual(self.call('/api/v1/dashboard',
+                        **metadata)[0]['status'],'403 Forbidden')
+
     def test_normal_offline_fixtures_and_loopback(self):
         self.assertTrue(offline_gateway_request_allowed({}))
         for authority in ('localhost','LOCALHOST:443','127.0.0.1:8080',

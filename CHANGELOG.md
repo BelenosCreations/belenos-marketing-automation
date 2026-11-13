@@ -1,5 +1,10 @@
 # Changelog
 
+## November 12, 2026 — Candidate PR #73: fail-closed local identity/upload network ingress
+
+- Standalone local HTTPS login and pending-media byte adapters now share the loopback-only network restriction already applied by the offline gateway. The guard also rejects unknown `X-Forwarded-*`/`X-Original-*`, proxy-address headers, `Transfer-Encoding`/duplicate-framing indicators and method override inputs. Negative tests verify requests are rejected before credentials or media reach handlers. This is private Beta ingress preparation, not a hosted/public reverse-proxy configuration or publishing enablement.
+
+
 ## November 12, 2026 — Candidate PR #72: encrypted synthetic PostgreSQL COPY roundtrips
 
 - Integrate the existing CI-only authenticated AES-256-GCM envelope into every one of the 47 disposable PostgreSQL table-copy paths; each table has a distinct migration-plan/table fingerprint. Corrupted ciphertext must abort and rollback without a residual restore schema. Both the per-run key and ciphertext stay in memory; no durable encrypted file, recovery point, customer export, hosted database or social publishing is enabled.
