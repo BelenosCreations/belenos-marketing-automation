@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Current recovery checkpoint and fault-injection milestone — November 12, 2026
+
+**Verified:** PR #62 merged as `7beccbbd8c448de277744aedd5d798e8662ed9e3`; exact-head Actions 43338521752 and full merged-main Actions 43338797005 passed. `development/phase-3-5-account-directory` safely synchronized. PR #61 was also fully green. No new costs, no hosted Neon/Render, EdgePilot sharing, paid AI or publishing.
+
+**Development candidate:** Test interrupted PostgreSQL preview table COPY and intentionally altered restored draft in disposable CI-only schema. Require an exception, full transactional cleanup, unchanged original multi-business data, and a successful clean retry. Run exact-head PR CI, merge only green, verify merged-main exact SHA CI, fast-forward development with no force. This is NOT a production restore or customer-data migration.
+
 ## Current next milestone — disposable PostgreSQL restore probe (candidate)
 
 **Verified starting state:** PR #61 merged into `main` as `82b1a0bd27cd5bf8c34ca373b890774b12dd43c7`, PR-head Actions 43337875235 successful and full merged-main Actions 43338078991 successful. Development safely synchronized. Media signature, container structure and hash sanity checks now reject additional truncated file formats; this is not malware, rights, owner or publishing permission.
