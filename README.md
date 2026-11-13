@@ -1,3 +1,7 @@
+## Continuity handoff is now repository-based (2026-11-13; documentation-only candidate)
+
+The full development recovery prompt, previously pasted into chat, now resides in the **canonical top section** of [DEVELOPMENT_CONTINUITY.md](DEVELOPMENT_CONTINUITY.md). Future chat handoffs should contain only a short instruction to read that file and independently verify live GitHub status. This is process documentation, not a new verified code milestone or production authorization. Keep the top section refreshed in place after independently passing exact-head and merged-main checks; do not presume a recorded SHA remains latest. No operational integrations changed; $0 incremental cost.
+
 ## Candidate #108 — CI-only WSGI service-delegation review (2026-11-13)
 
 PR #107 independently verified: exact-head Actions #43438915110 PASSED; merged-main SHA 7c557ed43f7696982e5e2bcf8130e807707636c9 Actions #43439178092 PASSED. Main/development non-force synchronized, identical 0/0, no open PRs. Candidate #108 adds a second source-only inspection hop from offline WSGI handlers into direct service-method call names and constructor dependency hints, bound to source digests. See MIGRATION_WSGI_SERVICE_REVIEW.md. No actual SQL commit, worker fencing, tenant authorization, hosted readiness, customer migration or paid/publishing activation. Full CI for #108 pending; additional cost $0.

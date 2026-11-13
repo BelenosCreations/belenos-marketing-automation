@@ -1,3 +1,51 @@
+# CANONICAL BAM DEVELOPMENT RESUME INSTRUCTIONS — READ THIS FIRST
+
+> **This section is the authoritative in-repository handoff for the next development chat.** Do not construct or paste a lengthy recovery prompt into ChatGPT. A short instruction to open this file is sufficient. Historical checkpoint/candidate sections further down are retained as historical records and may be stale. Verify GitHub's *current* state before treating any recorded SHA or run as current. Update this top section **in place** after each verified milestone; do not create a new long handoff in chat.
+
+## Short copyable resume instruction
+
+Continue BAM development autonomously. Repository: `BelenosCreations/belenos-marketing-automation`; development branch: `development/phase-3-5-account-directory`. Read the **CANONICAL BAM DEVELOPMENT RESUME INSTRUCTIONS** at the top of `DEVELOPMENT_CONTINUITY.md` on GitHub main, independently verify the latest merged-main SHA, its successful exact-SHA Actions, both branch heads, divergence and open PRs, and then execute the next safe offline development milestone under every restriction in that file. At the next verified checkpoint, update the continuity file in place and give me only this short resume instruction plus a brief plain-language summary.
+
+## Last independently verified baseline when this section was written (2026-11-13)
+
+- Main and development SHA: `80e14303a971fd3b2fdae93e7856c718c0986e7a`.
+- Successful merged-main Actions: **#43440640927 — PASSED** for that exact SHA.
+- Main and development were independently compared **identical, zero commits ahead / behind** after a **non-force fast-forward**; no open PRs.
+- PR **#107**: CI-only offline WSGI constructor/route binding review, merged main `7c557ed43f7696982e5e2bcf8130e807707636c9`, exact-head Actions **#43438915110 PASSED**, merged-main Actions **#43439178092 PASSED**. Added `neon_ci_wsgi_binding_review.py`, tests and `MIGRATION_WSGI_BINDING_REVIEW.md`.
+- PR **#108**: CI-only handler-to-service delegation source review, merged main `80e14303a971fd3b2fdae93e7856c718c0986e7a`, final exact-head Actions **#43440315310 PASSED**, merged-main Actions **#43440640927 PASSED**. Added `neon_ci_wsgi_delegate_review.py`, tests and `MIGRATION_WSGI_SERVICE_REVIEW.md`. An initial classification test failed at Actions #43439946055; the implementation was corrected to preserve unresolved candidate status before final passing CI.
+- PRs **#75–#106**: prior synthetic migration planning, signed/replay studies, encrypted recovery research, ClamAV metadata limitations, writer-surface inventory, generation-fence rehearsal and WSGI call-path documentation.
+
+**Important:** This baseline is not a future SHA prediction or automatically updated live status. The next chat must discover and verify whichever main/Actions/PRs are newest. A documentation-only commit/merge may advance main after this baseline without changing production readiness. If branches diverge or CI is pending, investigate rather than assuming a clean checkpoint.
+
+## Next safe development milestone
+
+1. Continue **read-only/offline** mapping from candidate WSGI service-method calls to actual SQL transaction boundaries, filesystem/object writes, and other downstream mutation sites, with fail-closed treatment of indirect or dynamic dependencies. Review `MIGRATION_WRITER_SURFACE_REVIEW.md`, `MIGRATION_DISPATCH_REVIEW.md`, `MIGRATION_WSGI_BINDING_REVIEW.md` and `MIGRATION_WSGI_SERVICE_REVIEW.md`. Produce deterministic evidence, adversarial regression tests and honest unresolved-path reporting.
+2. Independently inventory all deployed and alternative writers—WSGI routes, callbacks, provider retries, scheduled jobs, workers, processes, file/object stores and non-Python clients—before making any claim of comprehensive coverage. A source graph is not a deployed graph.
+3. Design (only; do not activate) persistent shared generation/epoch fencing enforced **inside the actual write transaction**, including stale worker denial after freeze/crash, independently authenticated operator transitions and independently custodied latest heads/keys. Preserve existing offline/synthetic fixtures as research, not production guards.
+4. Continue human review of PostgreSQL column nullability/defaults/JSON/identity/constraints/foreign-key/tenant ownership transforms; off-host encrypted independently recoverable backups and measured restore/rollback; genuine ClamAV engine/database publisher signatures, isolated authenticated scanner, rights review and authoritative revocation; hostile hosted IAM/session/CSRF/tenant/proxy/abuse testing.
+5. All the above are **private-Beta blockers**. Do not advance Beta or cutover without explicit owner authorization.
+
+## Mandatory non-negotiable restrictions
+
+- **$0 additional spending.** Do not activate Render, Neon, new hosting, paid APIs, social publishing, EdgePilot services or any paid AI/media generation.
+- Do not migrate, export or change customer data; do not enable PostgreSQL production cutover or automatic external publishing.
+- Keep production integrations disabled. Preserve architecture, accounts, credentials, security controls, existing storage and recovery systems.
+- No destructive actions, force pushes, unauthorized infrastructure changes, silent credentials/key handling or production database connections.
+- No synthetic test result, AST source hint, metadata fingerprint, offline ClamAV header check or local restore drill may be described as deployed protection or production readiness.
+
+## Required autonomous verification and handoff process
+
+1. **Before editing**, independently fetch current GitHub `main`, `development/phase-3-5-account-directory`, current Actions, PRs and ahead/behind comparison. Resume from the newest independently verified successful merged-main SHA, not a stale citation here.
+2. Make substantial safe offline-only changes on development. Update `README.md`, `CHANGELOG.md`, `DEVELOPMENT_CONTINUITY.md` and applicable security, migration, Beta or infrastructure documentation. Preserve source/test separation and record meaningful negative tests.
+3. Create PR; require passing **exact-head GitHub Actions** before merge. Merge only verified work; independently verify **merged-main Actions** for the actual new main SHA.
+4. Synchronize development by **non-force fast-forward** only after successful merged-main CI; verify main/development identical, zero ahead/behind and no unexpected open PRs.
+5. Refresh this top canonical section **in place** with the latest independently verified evidence, merged PR numbers, concise accomplishments, remaining blockers and next safe milestone. Never mark a pending candidate as verified. Historical sections below can remain chronological.
+6. At a logical breakpoint return a **very short copyable prompt referring to this file**, not a long pasted checkpoint, followed by **one or two short plain-language sentences** about what was actually completed. Do this for similar projects when their repository continuity file has been designated as authoritative.
+
+---
+
+## Historical development continuity and verification notes
+
 ## Verified after #107; candidate #108 (2026-11-13)
 
 Latest independently verified main 7c557ed43f7696982e5e2bcf8130e807707636c9, Actions #43439178092 PASSED. #107 exact-head Actions #43438915110 PASSED, merged, development non-force FF identical 0 ahead/behind; no open PRs. #107 is source-only bound WSGI handler/route hint analysis, not operational fencing. Candidate #108 extends one hop to source-level handler self.dependency.method call candidates and constructor dependency assignments; see MIGRATION_WSGI_SERVICE_REVIEW.md. It does not prove runtime reachability, database writes, tenant checks or operator authority. Require exact-head and merged-main CI and new branch sync before updating recovery checkpoint.

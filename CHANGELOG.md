@@ -1,3 +1,9 @@
+## Documentation-only handoff simplification candidate (2026-11-13)
+
+- Made `DEVELOPMENT_CONTINUITY.md` the canonical, in-repository resume and next-steps instruction source, with current independently verified baseline, strict restrictions, verification/merge policy and priorities.
+- Future user-facing recovery prompts are intentionally compact file references; update canonical section in place at verified milestones.
+- No code, runtime, deployment, migration, hosting or external publishing changes. Requires independent exact-head and merged-main Actions before counting this documentation milestone as verified. $0 additional cost.
+
 ## Verified #107; candidate #108 WSGI downstream source call review (2026-11-13)
 
 - #107 exact-head GitHub Actions #43438915110 PASSED; independently verified merged-main 7c557ed43f7696982e5e2bcf8130e807707636c9 Actions #43439178092 PASSED, main/development non-force synchronized identical 0/0 and no open PRs.
