@@ -110,6 +110,30 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
 
 
+    def test_ci_restore_encrypts_each_table_before_copy_and_rejects_tamper(self):
+        """All 47 synthetic tables cross an authenticated in-memory envelope."""
+        from unittest.mock import patch
+        import neon_ci_restore_probe as probe
+        actual=probe.seal_disposable_backup
+        fingerprints=[]
+        def capture(**params):
+            fingerprints.append(params['schema_fingerprint'])
+            return actual(**params)
+        with patch.object(probe,'seal_disposable_backup',side_effect=capture):
+            result=probe.run_ephemeral_ci_logical_restore(self.conn)
+        self.assertEqual(result['ephemeral_encryption_roundtrips_checked'],47)
+        self.assertFalse(result['encrypted_backup_retained'])
+        self.assertEqual(len(fingerprints),47)
+        self.assertEqual(len(set(fingerprints)),47)
+        def corrupt(**params):
+            ciphertext=actual(**params)
+            return ciphertext[:-1]+b'0'
+        with patch.object(probe,'seal_disposable_backup',side_effect=corrupt):
+            with self.assertRaises((ValueError,PermissionError)):
+                probe.run_ephemeral_ci_logical_restore(self.conn)
+        self.assertIsNone(self.conn.execute(
+            "SELECT to_regnamespace('bam_ci_restore_probe')").fetchone()[0])
+
     def test_ci_restore_uses_one_snapshot_during_concurrent_source_edit(self):
         """A parallel edit after copying one table cannot split the restore."""
         from unittest.mock import patch

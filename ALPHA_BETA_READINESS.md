@@ -1,5 +1,7 @@
 # BAM Alpha → Private Beta Readiness Gate
 
+**Candidate PR #72 — encrypted CI restore path, not production recovery:** The 47-table disposable PostgreSQL restore now exercises an ephemeral authenticated-encryption layer, but archives are not retained, recoverable across processes or backed up offsite; no production credentials, key escrow, retention, PITR, restore RTO/RPO or customer migration exists. Private Beta remains blocked.
+
 **Candidate PR #71 — staged media trust bridge (CI-only):** A private staged image can be rechecked against its pending registry and existing offline signed claims, but no real scanner, human rights adjudication, durable audit trail, revocation, verified-state transition, production storage or publisher is provided. Remain blocked for private Beta.
 
 **Candidate PR #70 (offline only):** CI-gated AES-GCM synthetic backup-envelope authentication is not durable encrypted customer backup, off-host retention, key custody, operator recovery or private Beta authorization. These remain release blockers.

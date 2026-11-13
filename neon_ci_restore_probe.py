@@ -2,10 +2,12 @@
 
 This streams synthetic table contents through memory into a second schema,
 verifies exact relational parity, and destroys that schema atomically. It is
-not pg_dump, an encrypted/durable backup, a customer migration, a recovery
+not pg_dump, a retained encrypted/durable backup, a customer migration, a recovery
 point guarantee, or approval to run production PostgreSQL.
 """
 import os
+import hashlib
+from offline_encrypted_backup import seal_disposable_backup, open_disposable_backup
 
 from neon_schema_inventory import REVIEWED_PREVIEW_NAMES
 from neon_ephemeral_ci_migrations import _PLANS
@@ -15,6 +17,25 @@ _SOURCE='bam_ci_integration'
 _RESTORE='bam_ci_restore_probe'
 _TABLES=REVIEWED_PREVIEW_NAMES+('bam_ci_migration_journal',)
 _MAX_TABLE_BYTES=2*1024*1024
+_SCHEMA_FINGERPRINT=hashlib.sha256(repr(tuple(
+    (version,tuple(statements)) for version,statements in _PLANS
+)).encode('utf-8')).hexdigest()
+
+
+def _synthetic_encrypted_roundtrip(name,data,key):
+    """In-memory per-table authenticated restore rehearsal; no archive retained."""
+    fingerprint=hashlib.sha256(
+        (_SCHEMA_FINGERPRINT+':'+name).encode('utf-8')).hexdigest()
+    envelope=seal_disposable_backup(
+        plaintext=b'BAM_CI_CSV:'+data,root_key=key,
+        schema_fingerprint=fingerprint,now=1000)
+    recovered=open_disposable_backup(
+        envelope=envelope,root_key=key,
+        expected_schema_fingerprint=fingerprint,now=1001)
+    if not recovered.startswith(b'BAM_CI_CSV:'):
+        raise PermissionError('Invalid authenticated disposable table marker')
+    return recovered[len(b'BAM_CI_CSV:'):]
+
 
 
 def _check_disposable_connection(conn):
@@ -173,9 +194,13 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
         # This single operator-policy row is seeded by the schema DDL.
         # Replace it with the exact source snapshot, never issue unpause.
         conn.execute('TRUNCATE '+_RESTORE+'.bam_ai_operator_control')
+        # Per-table CI-only authenticated encrypt/decrypt before restore COPY.
+        # No envelope, key or source bytes are retained outside this process.
+        one_run_key=os.urandom(32)
         for number,name in enumerate(_TABLES):
-            _import_csv(conn,_RESTORE+'.'+name,
-                        _export_csv(conn,_SOURCE+'.'+name))
+            exported=_export_csv(conn,_SOURCE+'.'+name)
+            restored=_synthetic_encrypted_roundtrip(name,exported,one_run_key)
+            _import_csv(conn,_RESTORE+'.'+name,restored)
             if fail_mode=='abort_after_copy' and number==0:
                 raise RuntimeError('Deliberately interrupted CI restore')
         if fail_mode=='corrupt_restored_draft':
@@ -219,6 +244,8 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
             'restored_session_checks_passed':len(session_checks),
             'separate_schema_discarded':True,
             'synthetic_ci_only':True,
+             'ephemeral_encryption_roundtrips_checked':len(_TABLES),
+             'encrypted_backup_retained':False,
             'backup_file_created':False,
             'customer_records_exported':False,
             'durable_backup_available':False,

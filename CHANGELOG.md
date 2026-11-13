@@ -1,5 +1,10 @@
 # Changelog
 
+## November 12, 2026 — Candidate PR #72: encrypted synthetic PostgreSQL COPY roundtrips
+
+- Integrate the existing CI-only authenticated AES-256-GCM envelope into every one of the 47 disposable PostgreSQL table-copy paths; each table has a distinct migration-plan/table fingerprint. Corrupted ciphertext must abort and rollback without a residual restore schema. Both the per-run key and ciphertext stay in memory; no durable encrypted file, recovery point, customer export, hosted database or social publishing is enabled.
+
+
 ## November 12, 2026 — Candidate PR #71: staged file and dual-signed proof probe
 
 - Add a CI-only, read-only bridge between private pending image bytes, current tenant/draft attachment metadata, and two independently signed media evidence contracts. Reject swapped/corrupt or unsafe inodes, stale/foreign/closed records, tampered claims and wrong-channel rights. Keep pending status, evidence audit, review, scheduling and publishing untouched. Real scanner, rights reviewer and audit/revocation remain Beta blockers.
