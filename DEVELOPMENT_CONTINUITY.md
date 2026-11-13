@@ -1,5 +1,10 @@
 # BAM development continuity checkpoint
 
+## PR #80 candidate — externally keyed synthetic recovery manifest chain
+
+CI-only HMAC-signed, SHA-256-linked ciphertext receipts with independent newest-head pin, signer/encryption key rotation, retention metadata, and local pinned AES-GCM restore. Negative trust/expiry/fork cases. No persistent authoritative manifest or offsite replica, escrow, deletion, production backup or release authorization; verify PR and merged-main CI before marking complete. $0 additional charges, all integrations disabled.
+
+
 ## PR #79 candidate — inactive migration source-column and operator-step plan
 
 Offline deterministic 8-phase, 46-target inventory and safe source column metadata; all row transformations and target-column mappings unreviewed, source/plan pins fail closed on drift, no live SQL execution or writer fencing. CI pending. Continue from exact GitHub refs; do not claim production migration. $0 additional cost and all external providers inactive.

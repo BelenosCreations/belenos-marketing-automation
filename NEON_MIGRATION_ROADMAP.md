@@ -1,5 +1,10 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## CI-only local recovery manifest and rotation rehearsal (PR #80 candidate)
+
+A new synthetic ciphertext receipt manifest uses an independently controlled signer keyring (separate from encryption roots), per-entry HMAC, sequential SHA-256 head chain and externally supplied latest-head pin. Key IDs model signer and AES key rotation without persisting any key; retention metadata can flag expired points but never deletes data. Restore reopens the existing 0600 local archive using independent ciphertext hash and AEAD validation. No authoritative head service, offsite transfers, escrow, independent operator recovery, customer data or production backup exists. No production cutover is authorized.
+
+
 ## Inactive source-to-target migration execution plan (November 12, 2026; candidate PR #79)
 
 `neon_inactive_migration_plan.py` adds a read-only, deterministic and independently pinnable preview of the eight existing PostgreSQL DDL versions, reviewed target table names, **actual local SQLite source column metadata**, missing/unreviewed tables, and eight mandatory operator cutover steps. Both schema and plan drift fail closed and output does not contain customer rows, default expressions, passwords or DDL. Every source-to-target row transformation and target-column match remains explicitly **unreviewed**. There is no executable production transaction runner, app write fence, rollback or PostgreSQL connection; identical independent pins cannot activate anything. Unit tests include mutated schema, bad pins and private-content non-disclosure. This is an offline Alpha engineering acceptance test, not a finished 46-table customer-data mapping. $0 additional cost; no service, AI, media approval or external publication activated.

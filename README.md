@@ -1,5 +1,8 @@
 # BAM — Belenos Automatic Marketing
 
+**Candidate PR #80 (CI-only signed recovery manifest):** A bounded HMAC-authenticated, hash-chained manifest binds existing local ciphertext receipts to operator-provided key IDs, retention windows and a separately pinned latest head. Independently supplied signer/encryption keys can be rotated across synthetic archives; actual disk bytes and AES-GCM authentication are rechecked on restore. There is no persisted manifest/head authority, off-host copy, deletion, escrow, production data, recovery SLA or production approval. No new service or cost.
+
+
 **Candidate PR #79 (inactive migration planning):** New read-only source-column / reviewed target-table inventory, 8-step operator execution checklist and two separately supplied drift pins. It neither maps customer rows nor executes PostgreSQL DDL, maintenance/write-fencing, recovery or publishing. The existing 46-table preview is not a production migration.
 
 
