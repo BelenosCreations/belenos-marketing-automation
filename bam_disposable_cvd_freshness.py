@@ -35,7 +35,11 @@ def _parse_header(block, *, now, maximum_age_seconds):
     if b"\x00" in stripped or any(c < 32 or c > 126 for c in stripped):
         raise PermissionError("Malformed CVD ASCII header")
     try:
-        values = stripped.decode("ascii").split(":")
+        # The documented human-readable build time itself contains HH:MM.
+        # Peel off the prefix, then split exactly seven trailing metadata
+        # delimiters from the right; never split the timestamp's colon.
+        prefix, remainder = stripped.decode("ascii").split(":", 1)
+        values = [prefix, *remainder.rsplit(":", 7)]
     except UnicodeDecodeError as exc:
         raise PermissionError("Non-ASCII CVD metadata") from None
     if len(values) != 9 or values[0] != "ClamAV-VDB":
