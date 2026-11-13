@@ -11,7 +11,7 @@
 **Next engineering priorities:** Complete safe production persistence and migration/restore tests, tenant-isolated authenticating gateway, private durable media storage with trusted scanning and usage-rights verification, and a tested approval-to-publishing architecture. Direct provider integrations, AI API spending, production scheduling, hosting and social publishing remain disabled and require separate review/authorization. No unmerged functional work is assumed complete. See [development continuity](DEVELOPMENT_CONTINUITY.md) and [private beta readiness](ALPHA_BETA_READINESS.md).
 
 
-## Product experience
+**Media boundary hardening in progress (November 12, 2026):** A new offline file preflight rejects several malformed or truncated container formats after SHA-256 matching; this is preliminary sanity checking only, never malware/rights verification. Before claiming verification, check the exact PR-head GitHub Actions result and post-merge `main` test run. All provider writes and real uploads stay disabled.\n\n## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:
 
