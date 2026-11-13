@@ -81,7 +81,7 @@ def _read_records(dirfd):
         if type(event) is not dict or _canonical(event) != raw:
             raise PermissionError("Noncanonical private revocation audit event")
         records.append(event)
-    if os.listdir(dirfd) != names:
+    if sorted(os.listdir(dirfd)) != names:
         raise PermissionError("Private revocation directory changed during read")
     return tuple(records)
 
