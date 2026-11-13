@@ -1915,5 +1915,113 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(current[1:],('ready_for_review',2))
 
 
+    def test_pg_session_review_readiness_media_blockers(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Readiness_Owner_1234567890123456'
+        viewer='Synthetic_PG_Readiness_Viewer_123456789012345'
+        for bearer,subject,role in (
+            (token,self.a,'owner'),(viewer,self.viewer,'viewer')):
+            self.conn.execute("""INSERT INTO sessions
+                (token_hash,subject_id,tenant_id,role,expires_at)
+                VALUES (%s,%s,'shop-a',%s,3600)""",
+                (hashlib.sha256(bearer.encode()).hexdigest(),subject,role))
+        app=EphemeralSessionPostgres(self.conn)
+        params={'raw_session_token':token,'tenant_id':'shop-a',
+                'request_id':self.rid_a,'server_now':101}
+        initial=app.read_review_readiness(**params)
+        self.assertEqual(initial['status'],'review_preview_only')
+        self.assertEqual(initial['held_count'],1)
+        self.assertEqual(initial['editorial_material_complete_count'],0)
+        self.assertEqual(initial['items'][0]['missing_items'],['image'])
+        self.assertIn('social_publishing_disabled',
+                      initial['items'][0]['blockers'])
+        self.assertEqual(app.read_review_readiness(
+            **(params|{'raw_session_token':viewer})),initial)
+        self.assertEqual(app.read_review_readiness(
+            **(params|{'tenant_id':'shop-b','request_id':self.rid_b})
+        )['held_count'],0)
+        aid='5'*32
+        self.conn.execute("""INSERT INTO content_attachments
+            (attachment_id,tenant_id,request_id,item,media_type,
+             sha256,storage_key,status,created_at)
+            VALUES (%s,'shop-a',%s,'image','image/png',%s,
+                    'private/never-expose','pending',101)""",
+            (aid,self.rid_a,'e'*64))
+        with self.assertRaises(PermissionError):
+            app.bind_verified_attachment(
+                raw_session_token=token,tenant_id='shop-a',
+                request_id=self.rid_a,item='image',attachment_id=aid,
+                expected_revision=1,server_now=102)
+        self.conn.execute("""UPDATE content_attachments SET status='verified'
+            WHERE attachment_id=%s""",(aid,))
+        bound=app.bind_verified_attachment(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=self.rid_a,item='image',attachment_id=aid,
+            expected_revision=1,server_now=102)
+        self.assertEqual(bound['status'],'ready_for_review')
+        ready=app.read_review_readiness(
+            **(params|{'server_now':103}))
+        self.assertEqual(ready['editorial_material_complete_count'],1)
+        self.assertTrue(ready['items'][0]['editorial_material_complete'])
+        self.assertEqual(ready['items'][0]['blockers'],[
+            'truthguard_review_required','owner_approval_not_implemented',
+            'social_publishing_disabled'])
+        self.assertEqual(ready['approved_count'],0)
+        self.assertFalse(ready['publishing_enabled'])
+        for secret in ('private/never-expose','e'*64):
+            self.assertNotIn(secret,str(ready))
+        self.conn.execute("""UPDATE content_attachments SET status='rejected'
+            WHERE attachment_id=%s""",(aid,))
+        revoked=app.read_review_readiness(
+            **(params|{'server_now':104}))
+        self.assertFalse(revoked['items'][0]['editorial_material_complete'])
+        self.assertEqual(revoked['items'][0]['unverified_items'],['image'])
+        self.conn.execute("""UPDATE content_requests SET status='postponed'
+            WHERE request_id=%s""",(self.rid_a,))
+        held=app.read_review_readiness(
+            **(params|{'server_now':105}))
+        self.assertIn('draft_held',held['items'][0]['blockers'])
+        self.assertEqual(held['approved_count'],0)
+        self.assertEqual(self.conn.execute(
+            'SELECT COUNT(*) FROM bam_calendar_proposals').fetchone()[0],0)
+        self.conn.execute("""UPDATE sessions SET revoked_at=106
+            WHERE token_hash=%s""",
+            (hashlib.sha256(token.encode()).hexdigest(),))
+        self.assertEqual(app.read_review_readiness(
+            **(params|{'server_now':107}))['held_count'],0)
+
+    def test_pg_review_readiness_unexpected_items_fail_editorial_completion(self):
+        import hashlib
+        from neon_ci_session_adapter import EphemeralSessionPostgres
+        token='Synthetic_PG_Readiness_Extra_Items_123456789'
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at)
+            VALUES (%s,%s,'shop-a','owner',3600)""",
+            (hashlib.sha256(token.encode()).hexdigest(),self.a))
+        aid='6'*32
+        self.conn.execute("""INSERT INTO content_attachments
+            (attachment_id,tenant_id,request_id,item,media_type,
+             sha256,storage_key,status,created_at)
+            VALUES (%s,'shop-a',%s,'image','image/png',%s,
+                    'private/synthetic','verified',101)""",
+            (aid,self.rid_a,'a'*64))
+        self.conn.execute("""UPDATE content_requests
+            SET status='ready_for_review',provided_items=%s
+            WHERE request_id=%s""",
+            ('{"image":"verified-attachment:'+aid+
+             '","unexpected":"verified-attachment:'+aid+'"}',
+             self.rid_a))
+        gateway=EphemeralSessionPostgres(self.conn)
+        result=gateway.read_review_readiness(
+            raw_session_token=token,tenant_id='shop-a',
+            request_id=self.rid_a,server_now=102)
+        self.assertEqual(result['editorial_material_complete_count'],0)
+        self.assertIn('unverified_or_unexpected_content',
+                      result['items'][0]['blockers'])
+        self.assertFalse(result['items'][0]['approved'])
+        self.assertFalse(result['publishing_enabled'])
+
+
 if __name__=='__main__':
     unittest.main()

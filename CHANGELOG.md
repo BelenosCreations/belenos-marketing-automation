@@ -1,6 +1,13 @@
 # Changelog
 
-## November 12, 2026 — Metadata-only attachment integrity checks before future migration (candidate)
+## November 12, 2026 — Read-only PostgreSQL editorial readiness with media status checks (candidate)
+
+- Introduce a session-hash-bound, tenant/private single-draft SELECT returning bounded held-draft state and only synthetic **verified attachment IDs + item names**, excluding media bytes, hashes and private storage keys.
+- Compute missing, unverified, unexpected and held-material blockers in Python from the one-statement snapshot. Even fully complete material always retains TruthGuard review, owner approval not implemented, and social publishing disabled blockers.
+- Add strict JSON/row-shape fail-closed validation and synthetic SQLite-free contract tests, plus real temporary PostgreSQL tests for pending/rejected media, foreign business/viewer access, revoked sessions, changed media status and malformed extraneous items.
+- Verified baseline PR #58 merged at `6a121ca`, [post-merge Actions 43333804031](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43333804031) passed. This new candidate needs exact-head and main CI. No paid API, provider, uploader, scheduler or hosted app.
+
+## November 12, 2026 — Metadata-only attachment integrity checks before future migration (verified PR #58)
 
 - Add local-only SQLite aggregate checks for `content_attachments` references that point to missing drafts or drafts in a different tenant. Detect attachment metadata incompatible with stage-8 PostgreSQL checks (ID/item shape, MIME type, SHA-256 format, nonempty storage key, allowed status and nonnegative timestamps).
 - Keep reporting counts and fixed check names only; never export media paths, hashes, IDs, tenant names or customer copy. `require_clean_offline_fixture` refuses unsafe records, but passing it does **not** enable a production migration.
