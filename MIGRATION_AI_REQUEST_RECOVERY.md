@@ -330,3 +330,34 @@ and AI read and review queries with the same parent ID and different subjects.
 Keep legacy and ambiguous rows unavailable to approval paths and preserve
 historical evidence for review. Gate rollout on an independently verified
 runtime writer and reader inventory and an authorized operational restore.
+
+### Disposable claim-index restore and review results
+
+The SQLite rehearsal commits each revocation and its canonical signed claim
+together, then copies the database with the SQLite backup API. A separate
+fixture witness retains a digest of the ledger head and ordered claim index.
+The restored read verifies the complete chain, requires a one-to-one match
+between revocation digests and index entries, checks the canonical bytes
+and historical issuer signature, and verifies the attachment binding before
+returning review candidates. Missing, extra, corrupt or unknown evidence
+holds the read. A stale copy fails against the latest independently supplied
+pin even when its own earlier ledger and index agree.
+
+The synthetic issuer catalog supplies separate historical scan keys and a
+rights key, with issuance windows. A legacy claim retains its original
+tenant, attachment ID and parent ID. Typed claims additionally verify the
+parent type and subject. The test claim formats are private fixture formats.
+An attachment ID has one immutable typed parent, ordinary and AI readers
+resolve different scopes for the same parent ID, and ordinary viewers can
+see scoped metadata while review eligibility requires an active reviewer.
+Pending and legacy-held records stay outside the review candidates.
+
+A disposable PostgreSQL test runs confirmation and restore staging on two
+connections. Restore takes the authority lock, advances the generation and
+stages a frozen row. Confirmation under a stale pin is refused. When
+confirmation obtains the lock first, restore waits for a retry and the
+subsequent restore closes admission again. The fixture models staging a
+restored head and reconciliation. Actual disaster recovery requires an
+independent witness, issuer key custody, authenticated operators and
+measured off-host backup restore. The fixture grants no editorial approval
+and supplies no new runtime attachment reader or migration transform.

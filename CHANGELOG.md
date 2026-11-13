@@ -1,3 +1,13 @@
+## Disposable attachment review and restore (2026-11-13)
+
+- Tested ordinary and subject-scoped AI attachment reads and review
+  eligibility after restoring colliding parent IDs. Legacy rows remain held.
+- Rehearsed atomic revocation and claim-index storage, independently
+  pinned SQLite restore, historical issuer key rotation and safe refusal
+  of stale, missing, substituted or unrecognized evidence.
+- Exercised both confirmation-versus-restore lock orders in disposable
+  PostgreSQL and rechecked the repository deployment inventory.
+
 ## Disposable typed attachment evidence and authority checks (2026-11-13)
 
 - Tested typed scan and rights evidence against attachment, parent and

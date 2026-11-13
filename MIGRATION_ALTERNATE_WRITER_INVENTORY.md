@@ -75,6 +75,19 @@ repository path should both identify the version and writer principal.
 | File and object writes | Mount and bucket grants, worker and admin principals, and the observed order of metadata commits and storage effects. |
 | External and non-Python writers | Authorized database and storage principal inventory, access logs, and owner-reviewed list of direct clients or admin tools. |
 
+## Attachment reader and restore follow-up
+
+Rechecked GitHub metadata at main `e339b37750829835bbafbf233d019ebc9d2a64dd`
+on 2026-11-13. GitHub returned zero deployments, environments and releases,
+a 404 for Pages, and the same two CI workflows. Repository paths still
+show separate readers and writers that need operational attribution.
+
+| Source boundary | Runtime evidence to obtain |
+| --- | --- |
+| [Ordinary attachment status](neon_session_media_contract.py), [approval intent](approval_intent_service.py) and [AI draft links](ai_content_drafts.py) | Route-to-reader mappings and direct database grants. Check that review paths reject legacy holds and that the typed parent and current session are enforced together. |
+| [OAuth attempt consumption](oauth_attempt_ledger.py), [analytics sync](analytics_sync_coordinator.py) and [scanner subprocess](bam_clamav_worker_boundary.py) | Actual callback registration, worker and retry identities, lease/drain behavior, and evidence of scanner image and signature provenance. |
+| [Durable revocation ledger rehearsal](bam_offline_revocation_ledger.py) and claim index restore | Identify index and ledger appenders, backup and restore principals, historical issuer-key custody and the authority supplying the independently retained checkpoint. Include any direct database or storage clients. |
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).

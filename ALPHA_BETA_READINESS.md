@@ -21,6 +21,11 @@ collision attribution and operational evidence remain release blockers.
 Typed signatures, discard recovery and restored revocation state now have
 synthetic coverage. Authoritative claim retention, independent revocation
 custody and live typed readers and writers still require verification.
+A disposable restore now checks claim-index completeness and historical
+issuer keys against a separately retained checkpoint. Confirmation and
+restore also compete on a disposable authority row. Private Beta still
+requires authenticated external checkpoints, authorized operational restore
+and independent evidence from deployed readers and writers.
 
 ## Alternate writer and recovery review
 
