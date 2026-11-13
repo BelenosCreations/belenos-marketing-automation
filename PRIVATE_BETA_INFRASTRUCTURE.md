@@ -1,5 +1,7 @@
 # BAM private beta infrastructure — proposed, not authorized
 
+**Verified security-checkpoint November 12, 2026:** PR #73 merged as `7f4248940a84ad40d097c4541d11eba49b3f5b4a` and full [merged-main Actions 43347901980](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43347901980) passed. Standalone local authentication and media byte-receipt WSGI transports now share loopback-only restrictions and reject untrusted proxy/original URI/method-override or ambiguous framing metadata. This applies only to deliberately local/disposable previews; production proxy trust/TLS/session/rate limits, secrets management and operational logging require separate review. No public deployment or provider provisioning has occurred. The active incremental spending limit remains **$0**.
+
 **Candidate PR #73:** Local WSGI authentication and media-receipt transports explicitly refuse remote/forwarded/ambiguous HTTP ingress. This is defense-in-depth for disabled-by-default offline previews; deploying the same adapters behind Render, an Internet reverse proxy or public TLS is not authorized or supported without a separately reviewed production ingress architecture.
 
 **November 12, 2026 | Planning only.** This document does not create hosting, authorize charges, enable publishing or mark BAM Beta-ready.

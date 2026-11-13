@@ -1,5 +1,13 @@
 # Changelog
 
+## November 12, 2026 — Fully verified PR #70–#73 engineering checkpoint
+
+- PR #70: [merged main `9b1ad4fc`](https://github.com/BelenosCreations/belenos-marketing-automation/pull/70); exact-head Actions 43346035365 and merged-main Actions 43346263328 passed. CI-gated in-memory AES-256-GCM/HKDF recovery envelope; no retained backup.
+- PR #71: [merged main `f7259ff3`](https://github.com/BelenosCreations/belenos-marketing-automation/pull/71); exact-head Actions 43346697060 and merged-main Actions 43346980909 passed. Private pending file-byte and independently signed scan/rights claim read-only cross-check; no real scanner/reviewer, state approval or publishing.
+- PR #72: [merged main `016ebce4`](https://github.com/BelenosCreations/belenos-marketing-automation/pull/72); exact-head Actions 43347258606 and merged-main Actions 43347460345 passed. All 47 disposable PostgreSQL table restore payloads now cross authenticated in-memory encryption and tamper rollback tests, not durable disaster recovery.
+- PR #73: [merged main `7f424894`](https://github.com/BelenosCreations/belenos-marketing-automation/pull/73); exact-head Actions 43347696317 and [merged-main Actions 43347901980](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43347901980) passed. Disabled-by-default local authentication and media byte-receipt transports reject remote/proxy-tainted/ambiguous framing.
+- `main` and `development/phase-3-5-account-directory` synchronized without force at `7f4248940a84ad40d097c4541d11eba49b3f5b4a`. Candidate headings below are historical pre-verification notes. Production PostgreSQL adapter/migration, off-host encrypted retained backups/key custody/recovery targets, actual scanning/rights review with auditable revocation, and production Beta ingress all remain open. No hosting, paid services, customer data transfer, social posting or EdgePilot integrations activated; $0 added cost.
+
 ## November 12, 2026 — Candidate PR #73: fail-closed local identity/upload network ingress
 
 - Standalone local HTTPS login and pending-media byte adapters now share the loopback-only network restriction already applied by the offline gateway. The guard also rejects unknown `X-Forwarded-*`/`X-Original-*`, proxy-address headers, `Transfer-Encoding`/duplicate-framing indicators and method override inputs. Negative tests verify requests are rejected before credentials or media reach handlers. This is private Beta ingress preparation, not a hosted/public reverse-proxy configuration or publishing enablement.
