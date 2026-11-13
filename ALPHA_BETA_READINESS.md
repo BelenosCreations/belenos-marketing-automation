@@ -6,7 +6,8 @@
 
 | Acceptance gate | Current status | Evidence required before marking complete |
 | --- | --- | --- |
-| Local attachment-integrity preflight for PostgreSQL migration | **New aggregate-only orphan/cross-tenant and media-field validation candidate** | Detect corrupt or mismatched SQLite references before migration; never export private values or treat clean synthetic data as permission to migrate |
+| Authenticated PostgreSQL editorial review readiness preview | **Single-read synthetic verified media snapshot candidate; CI pending** | Validate fail-closed JSON and tenant/role/revocation, pending or rejected media and unconditional approval/publishing blockers; never treat media-ready as approval |
+| Local attachment-integrity preflight for PostgreSQL migration | **Verified PR #58, merged-main Actions 43333804031 passed; local-only** | Detect corrupt or mismatched SQLite references before migration; never export private values or treat clean synthetic data as permission to migrate |
 | Verified attachment reference binding to held drafts | **Verified PR #57, merged-main Actions 43333173764 passed; CI-only** | Verify pending/rejected/foreign registry denial, reviewed-required item rules, live editor role/revocation, concurrent CAS and nonpublishing result; production scanner/storage still absent |
 | Tenant-safe attachment metadata PostgreSQL schema + status read | **Verified PR #56; post-merge Actions 43332328800 passed; CI-only** | Prove composite tenant/draft FK, private storage-key/hash redaction and role/revocation isolation with disposable real PostgreSQL; no uploads or verification worker |
 | Session-backed scheduling settings + revision CAS | **Verified PR #55, merged-main Actions 43329651094 passed; CI-only** | Verify live role, tenant, revocation, IANA timezone, validated time sets and two-client revision behavior before implementing real background jobs |

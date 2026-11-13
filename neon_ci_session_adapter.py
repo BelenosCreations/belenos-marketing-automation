@@ -41,6 +41,9 @@ from neon_session_media_contract import (
 from neon_session_media_bind_contract import (
     prepare_session_verified_attachment_binding,
     summarize_session_verified_attachment_binding)
+from neon_session_review_readiness_contract import (
+    prepare_session_review_readiness,
+    summarize_session_review_readiness)
 
 _CI_SCHEMA='bam_ci_integration'
 
@@ -244,6 +247,15 @@ class EphemeralSessionPostgres:
                 row,tenant_id=tenant_id,request_id=request_id,
                 item=item,attachment_id=attachment_id,
                 expected_revision=expected_revision)
+
+    def read_review_readiness(self,*,raw_session_token,tenant_id,
+                              request_id,server_now):
+        sql,params=prepare_session_review_readiness(
+            raw_session_token=raw_session_token,tenant_id=tenant_id,
+            request_id=request_id,server_now=server_now)
+        row=self._conn.execute(sql,params).fetchone()
+        return summarize_session_review_readiness(
+            row,tenant_id=tenant_id,request_id=request_id)
 
     def update_draft_priority(self,*,raw_session_token,tenant_id,request_id,
                               expected_priority_token,priority,server_now):

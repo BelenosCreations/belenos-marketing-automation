@@ -1,5 +1,15 @@
 # BAM development continuity checkpoint
 
+## Live-session PostgreSQL editorial media readiness preview candidate — November 12, 2026
+
+**Last verified checkpoint:** PR #58 merged at `6a121ca1689d8835b5190e2cf828ccef4949e0b0`. Exact [merged-main Actions 43333804031](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43333804031) passed, and `development/phase-3-5-account-directory` safely fast-forwarded to main. PR #58 preflight detects orphan/cross-business and corrupt media metadata without leaking private values. Previous candidate headings below are historical.
+
+**Current unverified candidate:** `neon_session_review_readiness_contract.py`, strict contract tests, CI-only `EphemeralSessionPostgres.read_review_readiness`, real synthetic PostgreSQL regression tests. Single SELECT sees draft required/provided JSON and a bounded list of matching synthetic verified attachment IDs, checks active session/tenant/role/identity and protects storage paths and SHA-256. Python derives the existing offline review readiness blockers for missing/unverified/unexpected items and holds, and *unconditionally* adds TruthGuard, owner approval absent and publishing disabled. It is never a trust scanner or publication gate.
+
+**Next:** Exact PR-head GitHub tests, fix on development as necessary, merge only green, verify merged-main exact SHA CI, safe non-force dev sync. Future phases require immutable media proof, actual migration/backup/restore, verified production gateway and separately authorized provider flows.
+
+**Limits:** $0 incremental charges; no Render/Neon provisioning, EdgePilot sharing, paid AI, real upload or social publishing.
+
 ## Local-only attachment migration integrity preflight candidate — November 12, 2026
 
 **Last verified state:** PR #57 merged `7a97c6c0a7c0b9e5f947731fb1d7c93d36a44b5e` into `main`; exact [merged-main Actions 43333173764](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43333173764) **passed**. Both branches safely synchronized without force. PR #56 had previously added stage-8 constraint hardening; total reviewed table count remains 46.

@@ -1,5 +1,9 @@
 # BAM SQLite → Neon PostgreSQL transition (offline preparation)
 
+## Authenticated review readiness against tenant-safe synthetic attachment metadata (candidate — November 12, 2026)
+
+Verified base: PR #58 merged as `6a121ca`, main Actions 43333804031 successful. Add a read-only single-statement PostgreSQL snapshot of an exact held draft's required/provided JSON and matching synthetic attachment rows currently marked verified, with live tenant/member/verified-identity/session guard in the same SELECT. Bound the attachment snapshot to 100 and reject malformed source JSON or unexpected rows. Derive missing and unverified item blockers, but always include TruthGuard review, owner approval not implemented and social publishing disabled. This is *editorial preparation*, not a scanner, proof of image rights, production migration, owner approval, executable scheduling or social posting API.
+
 ## Pre-migration media integrity checks (candidate — November 12, 2026)
 
 PR #57 is verified at `7a97c6c` with merged-main Actions 43333173764 successful. Before a real SQLite-to-PostgreSQL transition, local legacy attachments must be checked for rows that violate the new tenant/request foreign key or stricter metadata CHECK constraints; existing SQLite attachment records have no tenant-scoped foreign key and may have been written through legacy code. Add private, aggregate-only `orphan_or_cross_tenant_attachments` and `invalid_attachment_metadata` preflight findings. Fail `require_clean_offline_fixture` on either count without exposing file paths, hashes, attachment IDs or customer content. An all-clean synthetic check is **not** migration approval, backup proof or a scanner; actual production migration tooling and secure object storage are still separate blockers.
