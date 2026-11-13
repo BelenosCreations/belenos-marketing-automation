@@ -1,5 +1,8 @@
 # BAM — Belenos Automatic Marketing
 
+**Candidate PR #81 (durable offline media-revocation audit):** An append-only private 0700 directory of canonical 0600 HMAC-linked revocation events uses no-replace atomics, fsync and full independent-head revalidation. Missing, altered, replayed, linked or public-permission events fail closed. The authoritative latest-head pin, per-tenant key custody, verified scanner output, rights decision, production logs and media state transitions remain absent. No new services, costs or publishing.
+
+
 **Candidate PR #80 (CI-only signed recovery manifest):** A bounded HMAC-authenticated, hash-chained manifest binds existing local ciphertext receipts to operator-provided key IDs, retention windows and a separately pinned latest head. Independently supplied signer/encryption keys can be rotated across synthetic archives; actual disk bytes and AES-GCM authentication are rechecked on restore. There is no persisted manifest/head authority, off-host copy, deletion, escrow, production data, recovery SLA or production approval. No new service or cost.
 
 
