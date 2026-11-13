@@ -2710,3 +2710,9 @@ The original `main` branch approved BAM's branding: light/dark SVG wordmarks, ap
 - Added metadata-only source integrity, unknown-table and pinned-schema drift checks for a future reviewed cutover, plus deterministic SHA-256 fingerprints for eight existing CI DDL preview stages.
 - Added negative regression tests for schema drift, unsafe inputs, confidential data leakage and the non-authorizing nature of a passing source pin.
 - No production migration executor, connection, customer export, rollback, publishing activation or new cost.
+
+
+### 2026-11-12 — Disposable ciphertext durability rehearsal (PR candidate)
+- Added atomic, no-overwrite and fsync-backed local ciphertext archive prototype reusing authenticated AES-256-GCM synthetic envelopes and a separately pinned ciphertext SHA-256.
+- Added tests for durable roundtrip, wrong-key/modified bytes, duplicate names, untrusted directories, pathname injection and symlink/hardlink exposure.
+- Preserved no-activation CI gate, no key persistence, no production PG dump, no offsite replication or retention execution.

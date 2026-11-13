@@ -338,3 +338,8 @@ Hosting this source publicly is under consideration to reduce GitHub Actions com
 ### Inactive PostgreSQL operator preflight (November 12, 2026)
 
 `neon_migration_operator_preflight.py` emits deterministic reviewed-DDL fingerprints and a metadata-only SQLite integrity/drift checklist. It flags unreviewed and optional uninitialized source tables; even a matching pinned digest cannot authorize a live cutover. No PostgreSQL connection, customer export, production migration, backup, rollback or publishing occurs. Run `python -m unittest -q test_neon_migration_operator_preflight` locally with the existing offline environment. All live infrastructure and additional spending remain unapproved ($0).
+
+
+### Disposable durable encrypted archive experiment
+
+`bam_offline_durable_archive.py` writes only AES-GCM ciphertext envelopes to a trusted owner-only local directory with atomic no-replace publication, fsync and external ciphertext-hash pin verification. It rejects altered, hard-linked, symlinked and incorrectly permissioned objects. **CI-only, synthetic, maximum 4 MiB plaintext per existing envelope:** no PostgreSQL streaming backup, real key vault, retained offsite replica, disaster-recovery guarantee or unattended retention. A separate reviewed production backup stack remains mandatory, and production and publishing remain disabled at $0 added cost.
