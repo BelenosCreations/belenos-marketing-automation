@@ -73,20 +73,20 @@ def webhook_callback():
         root = self._fixture({"worker.py": """
 class Worker:
     def worker_job(self):
-        return self.commit_job()
-    def commit_job(self):
+        return self.persist()
+    def persist(self):
         self.db.execute('UPDATE x SET a=1')
 """})
         a = inspect_ci_candidate_writer_paths(source_root=root)
         worker = next(x for x in a["entrypoint_review"]
                       if x["entrypoint"] == "worker::Worker.worker_job")
         self.assertEqual(worker["candidate_writer_paths"][0]["site"],
-                         "worker::Worker.commit_job")
+                         "worker::Worker.persist")
         (root / "worker.py").write_text("""
 class Worker:
     def worker_job(self):
-        return getattr(self, 'commit_job')()
-    def commit_job(self):
+        return getattr(self, 'persist')()
+    def persist(self):
         self.db.execute('UPDATE x SET a=1')
 """, encoding="utf-8")
         b = inspect_ci_candidate_writer_paths(source_root=root)
@@ -95,7 +95,7 @@ class Worker:
                         if x["entrypoint"] == "worker::Worker.worker_job")
         self.assertEqual(worker_b["candidate_writer_site_count"], 0)
         self.assertGreater(worker_b["unresolved_call_count"], 0)
-        self.assertIn({"site": "worker::Worker.commit_job", "line": 6,
+        self.assertIn({"site": "worker::Worker.persist", "line": 6,
                        "kind": "sql_write:update"},
                       b["unmapped_writer_candidates"])
 
