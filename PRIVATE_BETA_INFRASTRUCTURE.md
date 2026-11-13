@@ -1,3 +1,7 @@
+## Candidate #97 — no hosted migration authority or Beta activation
+
+Offline schema-pinned intent/semantic validation now precedes disposable SQLite protocol rehearsal; no validated source-to-target customer rows are migrated and no runtime pathway uses this CI-only module. Hashes are caller-provided and not externally custodied, writer/replay fencing is not durable or BAM-wide, encrypted offsite backups remain unverified, and private Beta infrastructure/security evidence is still outstanding. Render, Neon, external publishing, paid AI and EdgePilot remain disabled; $0 additional cost.
+
 ## Candidate synthetic transaction protocol — inactive infrastructure
 
 Versioned migration-protocol tests run in disposable SQLite shared memory, not Neon, Render or a deployed service. No persistent operation replay authority, real writer fencing, customer data migration, isolated scanner worker or offsite disaster recovery is introduced. Hosted Beta is still blocked by authenticated tenancy/session/CSRF/proxy/media hardening and explicit release authorization. Keep all live integrations disabled and spending at $0.
