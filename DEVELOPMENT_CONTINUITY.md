@@ -8,18 +8,12 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 
 ## Last independently verified engineering checkpoint (2026-11-13)
 
-- PR **#110** mapped seven offline write paths for held drafts and pending media. The review records SQLite transaction contexts, filesystem writes and the split between file unlink and metadata deletion. It rejects source drift and leaves unreviewed and indirect paths visible. See [the write boundary review](MIGRATION_WSGI_WRITE_BOUNDARY_REVIEW.md).
-- Exact-head Actions [#43447087316](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43447087316) passed at `8a507c091ee719a69212cc42d113bad7c4d1f57e`. Merged-main Actions [#43447377425](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43447377425) passed at `62d9eac274f12937746cafdf5215939bae7141c1`.
-- At the #110 checkpoint, main and development were independently verified identical, 0 ahead/behind, following a non-force fast-forward, with no open PRs.
-- PR **#109** established this handoff. PRs **#107–#108** added gateway binding and handler-to-service discovery. PRs **#75–#106** cover earlier offline migration, recovery, media and writer-review work.
+- PR **#112** mapped offline local draft, sign-in, session switch, team membership and invitation writes. It identified separate commits and the injected Google verifier and delivery gaps, and documented startup and loopback paths. See [the identity write review](MIGRATION_WSGI_IDENTITY_WRITE_REVIEW.md).
+- Exact-head Actions [#43449937829](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43449937829) passed at `de4732877de4ab25fc097656d418d43390d99f2e`. Merged-main Actions [#43450257349](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43450257349) passed at `6cb396071852c13cf42dae4827467599523a3a1d`.
+- At the #112 checkpoint, main and development matched after a non-force fast-forward. Comparison was 0 ahead/behind, with no open PRs.
+- PR **#110** mapped offline held-draft and pending-media writes. PR **#111** refreshed the handoff and passed merged-main Actions #43448086550. Earlier reviews and offline rehearsals are recorded below.
 
-PR **#111** refreshed this handoff only. Its merged-main Actions #43448086550
-passed at `04268b7e5ad9745720dc3afbda83d1a6cd10ffb3`, and both branches matched
-with no open PRs before the identity write review began.
-
-The candidate identity review traces local draft aliases, sessions and
-membership/invitation writes. Verify its exact-head and merged-main Actions
-before treating it as an engineering checkpoint.
+Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above.
 
 ## Next safe development milestone
 
