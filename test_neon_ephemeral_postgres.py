@@ -107,6 +107,47 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                         'needs_content',0,%s,100,100,1)""",
                 (rid,tenant,copy,self.priority_token))
 
+
+    def test_full_preview_ci_copy_restore_rehearsal(self):
+        """Restore all reviewed table rows to a second disposable PG schema."""
+        import hashlib
+        from unittest.mock import patch
+        from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
+        secret='Synthetic_Revoked_Session_Restore_1234567890'
+        digest=hashlib.sha256(secret.encode('ascii')).hexdigest()
+        self.conn.execute("""INSERT INTO sessions
+            (token_hash,subject_id,tenant_id,role,expires_at,revoked_at)
+            VALUES (%s,%s,'shop-a','owner',500,101)""",(digest,self.a))
+        self.conn.execute("""INSERT INTO bam_password_credentials
+            (subject_id,salt,digest,iterations)
+            VALUES (%s,%s,%s,210000)""",
+            (self.a,b'fake-salt-for-tests',b'fake-digest-for-tests'))
+        self.conn.execute("""INSERT INTO content_attachments
+            (attachment_id,tenant_id,request_id,item,media_type,sha256,
+             storage_key,status,created_at)
+            VALUES (%s,'shop-a',%s,'image','image/png',%s,
+                    'private/synthetic-only','pending',101)""",
+            ('d'*32,self.rid_a,'e'*64))
+        report=run_ephemeral_ci_logical_restore(self.conn)
+        self.assertEqual(report['reviewed_tables_rehearsed'],46)
+        self.assertTrue(report['migration_journal_rehearsed'])
+        self.assertTrue(report['separate_schema_discarded'])
+        self.assertFalse(report['backup_file_created'])
+        self.assertFalse(report['production_restore_validated'])
+        self.assertFalse(report['customer_records_exported'])
+        self.assertFalse(report['publishing_enabled'])
+        self.assertIsNone(self.conn.execute(
+            "SELECT to_regnamespace('bam_ci_restore_probe')").fetchone()[0])
+        self.assertEqual(self.conn.execute("""SELECT revoked_at
+            FROM sessions WHERE token_hash=%s""",(digest,)).fetchone()[0],101)
+        self.assertEqual(self.conn.execute("""SELECT status FROM content_attachments
+            WHERE attachment_id=%s""",('d'*32,)).fetchone()[0],'pending')
+        with self.assertRaises(TypeError):
+            run_ephemeral_ci_logical_restore(object())
+        with patch.dict(os.environ,{'BAM_EPHEMERAL_PG_TEST':'0'}):
+            with self.assertRaises(PermissionError):
+                run_ephemeral_ci_logical_restore(self.conn)
+
     def test_ci_schema_migration_journal_is_idempotent(self):
         self.assertEqual(self.migration_result['versions_present'],8)
         self.assertEqual(self.migration_result['versions_applied'],[1,2,3,4,5,6,7,8])

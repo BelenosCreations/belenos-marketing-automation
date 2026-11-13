@@ -1,5 +1,11 @@
 # BAM development continuity checkpoint
 
+## Current next milestone — disposable PostgreSQL restore probe (candidate)
+
+**Verified starting state:** PR #61 merged into `main` as `82b1a0bd27cd5bf8c34ca373b890774b12dd43c7`, PR-head Actions 43337875235 successful and full merged-main Actions 43338078991 successful. Development safely synchronized. Media signature, container structure and hash sanity checks now reject additional truncated file formats; this is not malware, rights, owner or publishing permission.
+
+**Candidate:** A self-cleaning second-schema 46-table plus journal data round-trip in the strictly synthetic CI-only PostgreSQL database, with in-memory COPY and exact row parity; no backup files, customer migration, Neon/Render or production restore. Confirm exact-head PR CI, merge only green, verify merged-main CI, non-force sync development. Then continue durable data migration and trust/rights permission gates.
+
 ## Current engineering candidate — November 12, 2026
 
 Starting from verified synchronized `bc08327b4b04641fff4e095fd5646c4a745296a8` (PR #60, merged-main Actions 43335386575 succeeded), harden offline attachment container sanity checks and preserve synthetic tests. PR and merged-main verification required. No malware scan, media rights attestation, bytes upload, customer migration, new paid services or publishing.

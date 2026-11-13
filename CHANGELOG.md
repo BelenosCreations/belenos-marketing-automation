@@ -1,5 +1,16 @@
 # Changelog
 
+## November 12, 2026 — Disposable PostgreSQL logical copy/restore rehearsal (candidate)
+
+- Add a CI-only, loopback-restricted second-schema rehearsal that copies all 46 reviewed PostgreSQL preview tables plus the eight-stage migration journal through bounded in-memory CSV, checks exact two-way row parity and drops the temporary schema transactionally.
+- Exercise synthetic cross-business drafts, revoked session digest, password test bytes and pending attachment metadata. Neither a durable/encrypted backup nor a production restore is created; private beta remains blocked until independent backup/restore and gateway work.
+- Require exact PR-head and merged-main CI before treating this as verified. No new hosting, paid APIs, EdgePilot infrastructure reuse or provider publishing.
+
+## November 12, 2026 — Media preflight container integrity (verified PR #61)
+
+- PR #61 merged as `82b1a0bd27cd5bf8c34ca373b890774b12dd43c7`; exact-head [PR CI 43337875235](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43337875235) passed and [merged-main CI 43338078991](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43338078991) passed. The development branch was safely fast-forwarded without force.
+- Strengthened preliminary hash-matched PNG/WebP/MP4/JPEG/PDF structure checks; repaired synthetic fixture images. These are **not** malware scanning, usage-rights verification, customer media storage or approval to publish.
+
 ## November 12, 2026 — Offline media container boundary hardening (candidate PR)
 
 - Tighten hash-matched, local-only file preflight to reject truncated/CRC-invalid PNG chunks, corrupt WebP RIFF boundaries, malformed MP4 top-level boxes and incomplete PDF/JPEG wrappers. This does **not** decode content, scan for malware, determine rights, store uploads, approve drafts or publish anything.
