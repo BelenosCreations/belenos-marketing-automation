@@ -1,3 +1,9 @@
+## Verified #107; candidate #108 WSGI downstream source call review (2026-11-13)
+
+- #107 exact-head GitHub Actions #43438915110 PASSED; independently verified merged-main 7c557ed43f7696982e5e2bcf8130e807707636c9 Actions #43439178092 PASSED, main/development non-force synchronized identical 0/0 and no open PRs.
+- #108 candidate adds CI-only AST inspection of direct WSGI handler dependency method names and constructor-parameter hints, deterministic digest binding and adversarial tests; migration/Beta documentation refreshed.
+- Runtime/deployed service graph, transactional fencing, operator approval, actual backups, media safety and hostile hosted Beta security remain blockers. Exact-head and merged-main #108 checks pending. $0 additional spend, all external services off.
+
 ## Candidate #107 (2026-11-13) — static offline gateway binding candidates
 
 - Added CI-only neon_ci_wsgi_binding_review.py and its adversarial tests, deterministic inventory-bound AST handler binding and literal guard hints.

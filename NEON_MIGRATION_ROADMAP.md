@@ -1,3 +1,7 @@
+## Candidate #108 — WSGI service delegation syntax is not a generation fence
+
+Candidate offline source-only mapping of direct WSGI handler self.dependency.method calls may narrow manual review but cannot prove SQL transactions, actual tenant or role guards, dynamically injected services, callback retries or a persistent shared epoch at the commit boundary. Independent operator/head/key custody and approved PostgreSQL migration/rollback remain mandatory; no Neon connection or migration enabled. See MIGRATION_WSGI_SERVICE_REVIEW.md, $0 incremental cost.
+
 ## Candidate #107 bound offline WSGI source inventory
 
 AST-level pairing of offline gateway handler attributes with constructor/imported class candidates and literal API guard hints cannot prove executed paths, tenant checks, dynamic workers, transaction fencing or PostgreSQL migration readiness. Require independently reviewed real deployed ingress and writer commits, operator authority, shared persistent generation, schema semantics and recovery before enabling a migration. All production migrations disabled; $0 extra.

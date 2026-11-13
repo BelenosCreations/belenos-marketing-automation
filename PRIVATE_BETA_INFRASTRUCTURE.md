@@ -1,3 +1,7 @@
+## Candidate #108 WSGI downstream source method review remains offline
+
+One-hop AST candidate handler-to-service method mapping is not deployed WSGI execution, tenant/session enforcement, CSRF mitigation, persistent DB-level epoch fencing, backup recovery, scanner provenance or legal media rights. Actual hostile hosted security testing and explicit owner authorization are still required. No Render, Neon, paid AI, social publishing or EdgePilot activation. $0 additional cost.
+
 ## Candidate #107 source-handler hints are not hosted protection
 
 CI-only AST analysis of offline gateway constructor assignments and bound WSGI handler call candidates is not an authenticated operational gateway or a persistent transaction-bound writer fence. Genuine hosted auth/tenant/CSRF/proxy/abuse validation, durable recovery and ClamAV/rights approval still need independent verification and owner approval. No infrastructure touched, $0 new costs.

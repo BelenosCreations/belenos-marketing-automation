@@ -1,3 +1,7 @@
+## Verified #107 and candidate #108 (2026-11-13)
+
+#107 exact-head Actions #43438915110 and merged-main Actions #43439178092 PASSED, merged main 7c557ed43f7696982e5e2bcf8130e807707636c9, development fast-forward identical 0/0. Candidate #108: CI-only WSGI handler-to-direct-service-method AST call name evidence, constructor injection hints and adversarial tests, no runtime or DB commit proof. CI pending, $0 additional cost, integrations disabled.
+
 ## Candidate #107 — CI-only gateway handler attribute resolution
 
 From independently verified #106 merged-main ee7c385303efa150a0c38fea02b71951521ad85c Actions #43436668950 PASSED. New AST read-only candidate constructor bindings and route/method hints for offline WSGI dispatcher plus adversarial tests. Not actual deployed writer fencing or private Beta authorization; CI pending, additional cost $0.
