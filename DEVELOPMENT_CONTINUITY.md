@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Candidate PR #73 — protect offline auth/upload adapters from public/proxy-tainted ingress
+
+Baseline: PR #72 merged main `016ebce497df1b489ca88da3b2de8faa5990375f`; post-merge main Actions must pass before development sync. Candidate extends the existing offline loopback/host/proxy guard to standalone local authentication and image byte-receipt WSGI adapters, rejecting forwarded/original URI headers, ambiguous body framing and method overrides before touching credentials or staging bytes. Add adversarial regression across the guard and both transports. This is NOT private Beta deployment, production reverse-proxy trust policy, complete IP/account throttling or publication authorization. Verify exact PR CI, merge, full post-merge main CI and non-force branch sync. $0 added costs; no hosting/API/publishing or EdgePilot infrastructure. Next branch: genuine production migration/retained encrypted off-host recovery and auditable scanner/rights workers require owner design decisions and later deployment authorization.
+
 ## Candidate PR #72 — encrypt every disposable PostgreSQL table restore payload
 
 Baseline PR #71 merged as `f7259ff3e9dd9fd494c9a96c752650fe9b52be89` after exact-head Actions 43346697060 passed. Candidate: use independently fingerprinted authenticated in-memory envelopes on all 47 synthetic CI PostgreSQL export/import payloads, check tamper rejection and transactional rollback, preserve repeatable-read source snapshots, session/tenant parity and schema invariants. No durable/offsite encrypted backups, operator key custody, production migration runner, hosted service, media rights audit or publishing. Before declaring verified: exact PR-head Actions success, merge, separate merged-main Actions success, non-force synchronize development. All additional charges forbidden; next logical branch: production migration operator safety and private Beta ingress.

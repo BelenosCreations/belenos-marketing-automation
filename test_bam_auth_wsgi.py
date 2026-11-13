@@ -72,6 +72,18 @@ class BAMAuthWSGITests(unittest.TestCase):
             metadata.update(status=status, headers=dict(headers))))
         return metadata, json.loads(data.decode('utf-8'))
 
+    def test_auth_transport_rejects_remote_and_proxy_tainted_requests(self):
+        for metadata in (
+            {'REMOTE_ADDR':'203.0.113.9'},
+            {'HTTP_HOST':'bam.example.com'},
+            {'HTTP_X_FORWARDED_PREFIX':'/auth'},
+            {'HTTP_TRANSFER_ENCODING':'chunked'},
+            {'HTTP_X_HTTP_METHOD_OVERRIDE':'GET'}):
+            with self.subTest(metadata=metadata):
+                response,_=self.call(**metadata)
+                self.assertEqual(response['status'],'403 Forbidden')
+        self.assertEqual(self.api.calls,[])
+
     def test_disabled_by_default(self):
         app = BAMAuthWSGI(self.api)
         meta, payload = self.call(app=app)

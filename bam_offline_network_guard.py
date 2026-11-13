@@ -28,8 +28,19 @@ def _local_host(value,*,server_name=False):
     return port is None or 1<=int(port)<=65535
 
 def offline_gateway_request_allowed(environ):
-    """Fail closed for detectable external and forwarded WSGI requests."""
-    if type(environ) is not dict or any(k in environ for k in _FORWARDING):
+    """Block remote, proxy-tainted and ambiguous local-preview WSGI ingress."""
+    if type(environ) is not dict:
+        return False
+    # Any forwarding/original URI variant is untrusted, not just known names.
+    # Reject ambiguous body framing and method override before parsing secrets.
+    forbidden=frozenset(('HTTP_TRANSFER_ENCODING','HTTP_CONTENT_LENGTH',
+        'HTTP_X_HTTP_METHOD_OVERRIDE','HTTP_X_METHOD_OVERRIDE',
+        'HTTP_PROXY','HTTP_PROXY_CONNECTION','HTTP_CF_CONNECTING_IP',
+        'HTTP_TRUE_CLIENT_IP','HTTP_X_CLUSTER_CLIENT_IP'))
+    if any(type(k) is not str or k in _FORWARDING or k in forbidden
+           or k.startswith('HTTP_X_FORWARDED_')
+           or k.startswith('HTTP_X_ORIGINAL_')
+           for k in environ):
         return False
     address=environ.get('REMOTE_ADDR')
     if 'REMOTE_ADDR' in environ and (type(address) is not str or

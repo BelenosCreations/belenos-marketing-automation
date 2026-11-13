@@ -38,6 +38,18 @@ class PendingMediaWSGITests(unittest.TestCase):
         data=b''.join((app or self.app)(env,lambda status,headers:
             got.update(status=status,headers=dict(headers))))
         return got,json.loads(data)
+    def test_private_media_transport_rejects_untrusted_network_metadata(self):
+        for metadata in (
+            {'REMOTE_ADDR':'198.51.100.9'},
+            {'HTTP_HOST':'public.example.com'},
+            {'HTTP_X_FORWARDED_PREFIX':'/upload'},
+            {'HTTP_TRANSFER_ENCODING':'chunked'},
+            {'HTTP_X_HTTP_METHOD_OVERRIDE':'POST'}):
+            with self.subTest(metadata=metadata):
+                self.assertEqual(self.call(**metadata)[0]['status'],
+                                 '403 Forbidden')
+        self.assertEqual(self.store.calls,[])
+
     def test_pending_receipt_accepted_and_safe(self):
         meta,result=self.call()
         self.assertEqual(meta['status'],'202 Accepted')

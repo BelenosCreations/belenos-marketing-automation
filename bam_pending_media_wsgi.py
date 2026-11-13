@@ -6,6 +6,7 @@ approval, scanner bypass, public upload or publishing capability.
 import json
 import re
 import time
+from bam_offline_network_guard import offline_gateway_request_allowed
 
 _ID=re.compile(r'[a-f0-9]{32}\Z')
 _TOKEN=re.compile(r'[A-Za-z0-9_-]{32,2048}\Z')
@@ -38,6 +39,8 @@ class BAMPendingMediaWSGI:
         send=lambda status,body:self._reply(start_response,status,body)
         if environ.get('wsgi.url_scheme')!='https':
             return send('403 Forbidden',{'error':'HTTPS required'})
+        if not offline_gateway_request_allowed(environ):
+            return send('403 Forbidden',{'error':'Private preview only'})
         if environ.get('PATH_INFO')!=_PATH:
             return send('404 Not Found',{'error':'Not found'})
         if environ.get('REQUEST_METHOD')!='PUT':
