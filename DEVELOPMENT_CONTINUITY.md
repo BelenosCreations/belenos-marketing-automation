@@ -1,5 +1,9 @@
 # BAM development continuity checkpoint
 
+## Candidate PR #71 — signed evidence tested against staged private image bytes
+
+Verified baseline PR #70: merge `9b1ad4fc139fc755c782e3ce7abc437db6ce51fd`, exact-head Actions 43346035365 and post-merge Actions 43346263328 passed; both branches safely synced. Candidate adds a CI-only read-only probe comparing staged file inode/security/hash/container to the exact current pending SQLite attachment and draft, plus independently HMAC-signed fresh scanner/rights claims. It never supplies scanning, actual consent/licensing adjudication, evidence durability/revocation, attachment verification or posting. Require exact PR-head CI, merge, main Actions, non-force sync. Next: disabled operator migration acceptance and private Beta ingress review. $0 additional spending; all hosted/external services off.
+
 ## Candidate PR #70 — authenticated synthetic recovery envelope
 
 Verified starting point: PR #69 merged main and development synchronized at `cceb1003c18acdd1d3d78894f34094408372b607`, merged-main Actions 43344937760 passed. Candidate: add offline-only, bounded AES-GCM/HKDF authenticated envelope for synthetic migration rehearsal bytes and failure tests; not a retained or off-host customer backup, production restore, key custody or hosted migration. Require exact PR-head CI green, merge, merged-main CI green, then non-force synchronize development. Next priorities: read-only staged-media signed evidence integration, operator-safe production migration planning and private Beta security. Authorization is $0 added spending; no hosting, paid API, publishing or EdgePilot resources.

@@ -1,5 +1,7 @@
 # BAM — Belenos Automatic Marketing
 
+**Candidate PR #71 — read-only staged-byte trust check:** On the private offline media staging path, require an exact current pending SQLite attachment and active held draft, private regular-file inode (no symlink/hardlink or group/other access), bounded actual bytes matching declared SHA-256/container, and two independently authenticated fresh scanner/rights claims for that draft's actual channel. This does not run malware or rights review, does not persist/revoke evidence, never marks an attachment verified, and cannot publish. Disabled outside disposable CI.
+
 **Candidate PR #70 — encrypted recovery envelope (offline only):** Adds a bounded, in-memory AES-256-GCM backup envelope with HKDF-derived per-envelope keys, authenticated schema fingerprint/freshness, random salt/nonce, and fail-closed recovery tests. The only enabled context is the disposable CI PostgreSQL flag. It writes no backup files and supplies neither off-host retention, key custody nor production migration or restore. Customer data and real services remain inactive.
 
 **BAM is an AI-assisted marketing planning, creation, collaboration, scheduling and analytics platform for businesses.** It is designed to support multiple independent businesses and teams, with direct social-media platform integrations instead of requiring Metricool. Each business has its own voice, products, media, permissions, calendar and performance reporting. The Belenos name identifies the product's origin, not a restriction to one store or industry.

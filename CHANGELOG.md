@@ -1,5 +1,10 @@
 # Changelog
 
+## November 12, 2026 — Candidate PR #71: staged file and dual-signed proof probe
+
+- Add a CI-only, read-only bridge between private pending image bytes, current tenant/draft attachment metadata, and two independently signed media evidence contracts. Reject swapped/corrupt or unsafe inodes, stale/foreign/closed records, tampered claims and wrong-channel rights. Keep pending status, evidence audit, review, scheduling and publishing untouched. Real scanner, rights reviewer and audit/revocation remain Beta blockers.
+
+
 ## November 12, 2026 — Candidate PR #70: synthetic encrypted backup envelope
 
 - Add offline-only AES-256-GCM authenticated encryption for bounded synthetic restore rehearsal payloads, with random per-envelope salt/nonce, HKDF key separation, schema/freshness binding and tamper/wrong-key/expiry rejection. CI uses pinned `cryptography==46.0.2`. No durable backup, storage provider, key escrow, hosted database, customer migration, live publishing or spending is enabled.
