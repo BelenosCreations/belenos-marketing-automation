@@ -3,6 +3,7 @@ import os
 import sqlite3
 import unittest
 
+from audience_observation_store import AudienceObservationStore
 from bam_offline_gateway import BAMOfflineGateway
 from neon_column_transform_review import compile_offline_column_transform_review
 from neon_synthetic_type_acceptance import inspect_disposable_typed_cell
@@ -14,6 +15,8 @@ class SyntheticTypeAcceptanceTests(unittest.TestCase):
         os.environ["BAM_EPHEMERAL_PG_TEST"] = "1"
         self.db = sqlite3.connect(":memory:")
         self.gateway = BAMOfflineGateway(self.db, enabled=False)
+        # This optional table is lazily initialized by the feature store.
+        self.audience = AudienceObservationStore(self.db)
         report = compile_offline_column_transform_review(self.db)
         self.source = report["source_schema_sha256"]
         self.mapping = report["mapping_sha256"]
