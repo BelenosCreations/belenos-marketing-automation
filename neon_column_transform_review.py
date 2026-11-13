@@ -20,7 +20,7 @@ from neon_schema_inventory import inventory_sqlite_for_neon
 from neon_inactive_migration_plan import _column_inventory
 
 _SOURCE_TYPES = {"TEXT", "INTEGER", "BLOB"}
-_TARGET_TYPES = {"TEXT", "SMALLINT", "INTEGER", "BIGINT", "BYTEA"}
+_TARGET_TYPES = {"TEXT", "SMALLINT", "INTEGER", "BIGINT", "BYTEA", "DOUBLE PRECISION"}
 _COLUMN = re.compile(
     r"(?<![a-z0-9_])([a-z][a-z0-9_]*)\s+"
     r"(TEXT|SMALLINT|INTEGER|BIGINT|BYTEA)\b", re.I)
@@ -52,6 +52,8 @@ def _proposal(source_type, target_type):
         return "text_encoding_collation_json_and_semantics_review"
     if source_type == "INTEGER" and target_type in ("SMALLINT", "INTEGER", "BIGINT"):
         return "integer_range_null_boolean_and_constraint_review"
+    if source_type == "REAL" and target_type == "DOUBLE PRECISION":
+        return "finite_floating_point_precision_and_null_review"
     if source_type == "BLOB" and target_type == "BYTEA":
         return "blob_to_bytea_binary_adapter_review"
     return "unsupported_type_pair_manual_mapping_required"
