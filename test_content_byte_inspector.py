@@ -3,23 +3,13 @@ import sqlite3
 import unittest
 from content_attachments import AttachmentRegistry
 from content_byte_inspector import AttachmentByteInspector
+from synthetic_media_fixture import PNG
 
 class ByteInspectorTests(unittest.TestCase):
-    @staticmethod
-    def _chunk(kind,payload):
-        import zlib
-        return (len(payload).to_bytes(4,'big')+kind+payload+
-                (zlib.crc32(kind+payload)&0xffffffff).to_bytes(4,'big'))
-
     def setUp(self):
         self.registry=AttachmentRegistry(sqlite3.connect(':memory:'))
         self.inspector=AttachmentByteInspector(self.registry)
-        self.png=(b'\\x89PNG\\r\\n\\x1a\\n' +
-            self._chunk(b'IHDR',__import__('struct').pack('>IIBBBBB',
-                1,1,8,6,0,0,0)) +
-            self._chunk(b'IDAT',__import__('zlib').compress(
-                b'\\x00\\xff\\x00\\x00\\xff')) +
-            self._chunk(b'IEND',b''))
+        self.png=PNG
         self.digest=hashlib.sha256(self.png).hexdigest()
 
     def test_valid_png_bytes(self):
@@ -91,7 +81,7 @@ class ByteInspectorTests(unittest.TestCase):
         for sample in (self.png[:-1],
                        self.png+b'extra',
                        self.png[:45]+bytes([self.png[45]^1])+self.png[46:],
-                       b'\\x89PNG\\r\\n\\x1a\\n'+b'test-data'):
+                       b'\x89PNG\r\n\x1a\n'+b'test-data'):
             with self.subTest(size=len(sample)):
                 with self.assertRaises(ValueError):
                     self.inspector.inspect(content=sample,media_type='image/png',
@@ -99,9 +89,9 @@ class ByteInspectorTests(unittest.TestCase):
 
     def test_riff_length_and_mp4_box_boundaries_fail(self):
         samples=(
-            ('image/webp',b'RIFF'+(100).to_bytes(4,'little')+b'WEBPVP8 '+b'\\x00'*8),
-            ('video/mp4',b'\\x00\\x00\\x00\\x10ftypisom0000'),
-            ('video/mp4',b'\\x00\\x00\\x00\\x00ftypisom0000'),
+            ('image/webp',b'RIFF'+(100).to_bytes(4,'little')+b'WEBPVP8 '+b'\x00'*8),
+            ('video/mp4',b'\x00\x00\x00\x10ftypisom0000'),
+            ('video/mp4',b'\x00\x00\x00\x00ftypisom0000'),
         )
         for media_type,data in samples:
             with self.subTest(media_type=media_type):
@@ -111,8 +101,8 @@ class ByteInspectorTests(unittest.TestCase):
 
     def test_incomplete_pdf_and_jpeg_fail_even_with_matching_digest(self):
         for media_type,data in (
-            ('application/pdf',b'%PDF-1.7\\nobjects only'),
-            ('image/jpeg',b'\\xff\\xd8\\xff not finished')):
+            ('application/pdf',b'%PDF-1.7\nobjects only'),
+            ('image/jpeg',b'\xff\xd8\xff not finished')):
             with self.assertRaises(ValueError):
                 self.inspector.inspect(content=data,media_type=media_type,
                     expected_sha256=hashlib.sha256(data).hexdigest())
