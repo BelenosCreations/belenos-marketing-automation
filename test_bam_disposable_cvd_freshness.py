@@ -69,6 +69,13 @@ class DisposableCVDFreshnessTests(unittest.TestCase):
         ):
             self.assertFalse(report[flag], flag)
         self.assertNotIn(str(self.path), str(report))
+        # Both documented HH:MM and legacy HH-MM printed timestamps must
+        # parse without confusing the HH:MM colon with a field delimiter.
+        legacy = datetime.datetime.fromtimestamp(
+            self.now - 3600, datetime.timezone.utc).strftime(
+                "%d %b %Y %H-%M %z")
+        self.write_fixture(self.now - 3600, human=legacy)
+        self.assertEqual(self.inspect()["claimed_header_age_seconds"], 3600)
 
     def test_stale_future_disagreeing_or_forged_header_rejected(self):
         samples = (
