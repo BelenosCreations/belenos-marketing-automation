@@ -115,6 +115,23 @@ acknowledgement cannot reopen a prior generation.
 | Request recovery authorization | Verify the scoped request, operation kind, fingerprint, admitted generation, receipt and current request status while holding the transaction locks. Confirm recovery cannot stage output, call a provider or adjust quota. |
 | Deployment inventory and drain | Reconcile running instances, worker versions, ingress routes, scheduled and retry jobs, provider callbacks and storage writers against independently reviewed runtime evidence. Verify each principal's write path and the outcome for stale work. |
 
+## AI store migration mapping review
+
+The [identity and provider preview](neon_identity_provider_schema.py) and
+[AI budget preview](neon_ai_budget_schema.py) describe the target shapes.
+The following review is based on their DDL and the current store methods.
+It records decisions to validate using synthetic rows before proposing
+transformations. No customer rows were inspected.
+
+| Fields or relationship | Proposed mapping and verification |
+| --- | --- |
+| Facts and memories | Keep JSON as text for the initial mapping. Validate the bounded string-object shape and UTF-8 limits from the existing stores, including duplicate keys. Preserve the text used by memory compare-and-swap. Flag malformed or noncanonical legacy text for a reviewed normalization decision. An absent facts row and an empty memory object have different meanings. |
+| Request status and draft reference | Preserve the composite tenant, subject and request key and exact fingerprint. Validate a completed request's scoped draft ID. Keep `draft_id` null for held or failed requests. Legacy requests lack receipts and must enter reconciliation without fabricated generation, dispatch or provider evidence. |
+| Draft revision and verified media | Preserve nullable image prompts, positive revisions and the existing integer media flag, rejecting values outside its accepted range. Verify the full tenant, subject and draft association and the underlying attachment evidence. Report orphaned or mismatched links for review before adding constraints. Later edits must leave historical receipt revisions intact. |
+| Tenant and subject ownership | Map exact opaque IDs and validate references against the reviewed identity and tenant inventories. Establish how inactive or removed memberships and historical authors are retained before adding live membership foreign keys or deletion rules. Report unknown or ambiguous identities. |
+| Quota and estimated cost | Preserve counts and micro-USD integers within target bounds. Historical accepted requests from before cost accounting require the existing unpriced backfill rule, which must be reviewed for each source version. A null usage hash preserves legacy lack of deduplication. Never reconstruct a provider charge from aggregate counters or default an unknown reservation to priced zero. |
+| Operator control and vault references | Keep target staging paused. Preserve an absent credential reference as null. References alone need independent validation against the intended vault and scope before use. There are no generated numeric identities in these AI tables. Preserve the source-issued keys and validate uniqueness within each declared scope. |
+
 Before any activation, independently identify the deployed WSGI, callback,
 worker, scheduler, retry, admin and storage writer identities and bindings.
 Review provider behavior using authorized evidence, establish operator identity

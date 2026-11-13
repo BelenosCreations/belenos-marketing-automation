@@ -1,5 +1,7 @@
 ## Disposable PostgreSQL recovery rehearsal (2026-11-13)
 
+- Reviewed AI store migration fields and documented independent evidence
+  required for the deployment writer inventory.
 - Exercised receipt-based request finalization and atomic audit recording,
   with stale authority, mismatched scope, missing receipts and replay cases.
 - Exercised rollback of a draft prompt revision and its media-link removal,
