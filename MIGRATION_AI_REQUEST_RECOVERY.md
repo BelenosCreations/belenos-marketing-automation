@@ -70,6 +70,22 @@ atomic receipt visibility, scoped foreign keys and duplicate denial. A second
 connection tests that freeze conflicts with an admitted write, and that frozen
 or stale generations cannot insert a new request.
 
+Additional PostgreSQL fixtures exercise receipt-based finalization after a
+generation change. The statement compares the approved scope, fingerprint,
+draft, revision and receipt generation under the authority lock, then commits
+request status and the operator audit row together. An expired decision, stale
+head, mismatched receipt or missing receipt leaves the request held. Repeating
+successful recovery does not add another audit row, draft or quota entry.
+Fixture inputs represent a preverified approval and trusted clock.
+
+The targeted revision rehearsal rolls back the prompt edit and media-link
+removal when the receipt fails to insert. A successful receipt retains the
+resulting revision after a later manual edit. A separate resume rehearsal
+reopens the database connection after committing a pending transition,
+requires the expected head before admitting writes, and substitutes the
+older authority row to model a stale restore. Independent head custody and
+operational restore remain outside this test.
+
 ## Authority after interruption or restore
 
 The database generation orders local transactions. Keep the latest approved

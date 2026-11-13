@@ -8,6 +8,7 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 
 ## Last independently verified engineering checkpoint (2026-11-13)
 
+- Documentation PR **#119** passed exact-head Actions [#43460115361](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43460115361) at `2d5a042f41dc07d3ba6aea112719660e50c59f72` and merged-main Actions [#43460513286](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43460513286) at `3744eea9deb64a56c718ef631f7a85e327448561`. Both branches matched, with no open PRs before the next candidate.
 - PR **#118** mapped the existing AI request, quota, draft, revision and cost stores to a proposed recovery protocol. Existing SQLite stores held interrupted requests without repeating calls. Disposable PostgreSQL CI verified draft and receipt rollback, receipt scope and freeze lock ordering. See [AI request recovery](MIGRATION_AI_REQUEST_RECOVERY.md).
 - Exact-head Actions [#43459069499](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43459069499) passed at `67fa6b48936acc800c5e141b7cd14085c4db1f18`. Merged-main Actions [#43459508547](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43459508547) passed at `3c1ab2f568abe1cfa841bde33d319b6730c7696c`. Development was fast-forwarded without force and independently compared identical, zero ahead/behind, with no open PRs before the handoff candidate.
 - PR **#116** established the [alternate writer inventory and synthetic SQLite recovery rehearsal](MIGRATION_ALTERNATE_WRITER_INVENTORY.md). PR **#117** refreshed that handoff and passed [merged-main Actions #43456564261](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43456564261).
@@ -15,6 +16,8 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above.
 
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
+
+The current candidate adds disposable PostgreSQL tests for receipt-based finalization, revision rollback and stale restore admission. Verify its exact-head and merged-main Actions before recording it as complete.
 
 ## Next safe development milestone
 
