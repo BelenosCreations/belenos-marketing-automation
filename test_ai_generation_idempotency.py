@@ -1,5 +1,6 @@
 import sqlite3
 import unittest
+from unittest.mock import patch
 from access_policy import Principal,Role
 from accounts import AccountDirectory
 from sessions import SessionStore
@@ -106,6 +107,29 @@ class IdempotentGenerationTests(unittest.TestCase):
         self.assertIsNone(status['draft_id'])
         self.assertEqual(second['reason'],'already_failed')
         self.assertEqual(len(self.calls),1)
+
+    def test_interruption_before_or_after_staging_holds_request(self):
+        for after_stage, key in ((False, self.key), (True, 'b'*32)):
+            with self.subTest(after_stage=after_stage):
+                # Simulate worker exit outside the workflow's Exception
+                # handler. Both stores use their real SQLite transactions.
+                store, method = ((self.dedup, 'finish') if after_stage
+                                 else (self.drafts, 'stage'))
+                with patch.object(store, method, side_effect=SystemExit):
+                    with self.assertRaises(SystemExit):
+                        self.run_generation(request_key=key)
+
+                request = self.dedup.status(token=self.token, now=103,
+                                            request_key=key)
+                self.assertEqual(request['status'], 'in_progress')
+                self.assertIsNone(request['draft_id'])
+                drafts = self.drafts.list_mine(token=self.token, now=103)['drafts']
+                self.assertEqual(len(drafts), int(after_stage))
+                calls = len(self.calls)
+                self.assertEqual(self.run_generation(request_key=key)['reason'],
+                                 'already_in_progress')
+                self.assertEqual(len(self.calls), calls)
+        self.assertEqual(len(self.calls), 2)
 
     def test_scope_isolated(self):
         self.assertTrue(self.run_generation()['created'])

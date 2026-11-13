@@ -1,3 +1,11 @@
+## AI draft request recovery design (2026-11-13)
+
+- Mapped generation and targeted revision to request, quota, draft and
+  usage stores, with separate recovery decisions for missing receipts and
+  uncertain provider results.
+- Added regression coverage for interrupted requests in the existing SQLite
+  stores and atomic receipts and generation locks in disposable PostgreSQL CI.
+
 ## Alternate writer inventory and split-commit rehearsal (2026-11-13)
 
 - Documented alternate CLI, startup, operator, provider, analytics, scanner
