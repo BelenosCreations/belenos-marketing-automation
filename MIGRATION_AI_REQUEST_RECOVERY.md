@@ -140,6 +140,14 @@ path. A deployable design still needs a reviewed function owner and grants,
 trusted generation, independent revocation and head custody, and equivalent
 coverage at every real write path.
 
+For the next grant rehearsal, use a dedicated non-login function owner with
+only the table grants the function needs. Check who may create objects in
+the function schema, who may replace the function, and whether a caller can
+shadow any referenced object through its search path or temporary schema.
+Test a clock read after lock acquisition and require a non-null deadline
+for pending authority. Compare an independently held revocation head with
+the restored database state before accepting a fresh confirmation.
+
 | Evidence required before activation | Verification |
 | --- | --- |
 | Independent operator identity and transition authority | Reject expired, replayed, revoked and wrong-environment approvals, including during role changes. Verify that ordinary app credentials cannot change the generation or run recovery. |
@@ -253,3 +261,23 @@ file and metadata in place. These fixtures expose the limits of untyped
 lookups. A future proposal needs to bind the explicit parent to file receipt,
 discard, scanner and rights evidence, review readiness, and AI draft reads.
 Keep colliding rows held and require independent provenance before approval.
+
+### Typed attachment binding proposal
+
+Use the attachment ID and the immutable parent tuple as the shared binding.
+For a content request, the tuple contains the parent type, tenant and
+request ID. For an AI draft, it contains the parent type, tenant, subject
+and draft ID. The same attachment ID must resolve to exactly one binding.
+Keep verified bytes and the storage key tied to that binding during receipt
+and discard. Ordinary and AI callers each need an explicit lookup path.
+
+| Boundary | Evidence to rehearse |
+| --- | --- |
+| Pending receipt and discard | Load the typed row under the current principal. Verify the same type and complete scope on each read and before file or metadata mutation. Exercise a same-tenant collision, stale membership and an interrupted discard with bytes and metadata in different states. |
+| Byte inspection and signed claims | Include parent type and the complete applicable scope in a new claim version, with attachment ID, byte digest, item and media type. Exercise parent substitution, subject substitution, reused bytes and attempts to use legacy claims as typed evidence. |
+| Revocation | Bind a revocation to the version and digest of the exact claim. Preserve existing legacy records and hold attachments with unresolved legacy claims. Verify that a newly typed claim cannot bypass a relevant unresolved revocation. |
+| Review and AI draft reads | Resolve status and approval prerequisites through the same typed parent. Check current sessions and membership at the read or write boundary. Exercise collisions in both directions and prevent identifiers or storage metadata from leaking through error responses. |
+
+Keep the legacy claims and unresolved parent rows available for review.
+Require new, independently reviewed evidence before promoting any association
+into a typed trust path. Evaluate the proposal only with disposable data.
