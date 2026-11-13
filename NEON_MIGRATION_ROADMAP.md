@@ -1,3 +1,7 @@
+## Candidate #100 — independent media workstream, migration still inactive
+
+#99 replay-ledger exact PR/main Actions 43378330269/43378572835 PASSED, main `5398dbcb3772bb8a291fb1c5201413a57668d771` and dev non-force 0/0. #100 adds CI-only CVD metadata age checks with no migration implementation. Source-target nullability/default/JSON/tenant approval, PG cutover/rollback, durable authoritative operator lock and independent offsite recovery remain blocked. $0 new spend; all production integration off.
+
 ## Candidate PR #99 — private-file replay ledger CI canary
 
 CI-only disposable HMAC-authenticated local SQLite operation ledger (candidate PR #99): uses a generated 0700 temporary directory and 0600 SQLite fixture, caller-supplied synthetic HMAC key and *separately supplied* latest-head pin, strictly ordered signed event receipts, persisted duplicate-operation and epoch checks after connection reopen, stage 08 refusal, terminal-abort/no-promotion semantics, and tamper/private-file negative tests. It records no customer data and never connects to PostgreSQL. The trusted latest-head/key are only caller claims (not independent custody); the fixture is deleted afterward and does NOT supply a production durable replay service, application-wide writer fence, external keys, authenticated operator, PG cutover/rollback, offsite backup, real ClamAV/rights review or hosted Beta. All integrations disabled; $0 new costs. Candidate requires exact-head and merged-main GitHub Actions before verified.
