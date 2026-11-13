@@ -9,6 +9,7 @@ import os
 
 from neon_schema_inventory import REVIEWED_PREVIEW_NAMES
 from neon_ephemeral_ci_migrations import _PLANS
+from neon_authenticated_read_contract import prepare_session_draft_read
 
 _SOURCE='bam_ci_integration'
 _RESTORE='bam_ci_restore_probe'
@@ -57,13 +58,35 @@ def _import_csv(conn,table,data):
                 copier.write(data)
 
 
-def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None):
+
+
+def _prepare_restore_session_checks(session_probes):
+    """Fixed-shape synthetic-only auth claims; raw bearers never returned."""
+    if (type(session_probes) not in (tuple,list)
+            or len(session_probes)>8):
+        raise ValueError('At most eight synthetic restore checks required')
+    checks=[]
+    for item in session_probes:
+        if (type(item) is not dict or set(item)!={
+                'raw_session_token','tenant_id','request_id',
+                'server_now','visible'} or type(item['visible']) is not bool):
+            raise ValueError('Unexpected restore session check')
+        query,params=prepare_session_draft_read(
+            raw_session_token=item['raw_session_token'],
+            tenant_id=item['tenant_id'],
+            request_id=item['request_id'],
+            server_now=item['server_now'])
+        checks.append((query,params,item['visible']))
+    return checks
+
+def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None,session_probes=()):
     """Round-trip all reviewed CI tables, preserving values and constraints.
 
     Data never leaves the same disposable local PostgreSQL instance.
     No backup file or provider credential is created.
     """
     _check_disposable_connection(conn)
+    session_checks=_prepare_restore_session_checks(session_probes)
     if (fail_mode is not None and
             (type(fail_mode) is not str or fail_mode not in (
                 'abort_after_copy','corrupt_restored_draft'))):
@@ -113,11 +136,19 @@ def run_ephemeral_ci_logical_restore(conn,*,fail_mode=None):
                 ' SELECT * FROM '+old+') AS delta').fetchone()[0]
             if missing!=0 or extra!=0:
                 raise ValueError('Disposable logical restore parity failed')
+        # Run restored data through real session-hash tenant-scoped SQL,
+        # while search_path remains bound to the temporary restored schema.
+        # This is a live-authorization regression, NOT a public token API.
+        for sql,params,expected_visible in session_checks:
+            records=conn.execute(sql,params).fetchmany(2)
+            if len(records)>1 or bool(records)!=expected_visible:
+                raise ValueError('Restored session/tenant privacy check failed')
         conn.execute('SET LOCAL search_path TO '+_SOURCE)
         conn.execute('DROP SCHEMA '+_RESTORE+' CASCADE')
     return {'status':'ephemeral_ci_logical_restore_verified',
             'reviewed_tables_rehearsed':len(_TABLES)-1,
             'migration_journal_rehearsed':True,
+            'restored_session_checks_passed':len(session_checks),
             'separate_schema_discarded':True,
             'synthetic_ci_only':True,
             'backup_file_created':False,

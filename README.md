@@ -17,6 +17,8 @@
 
 **Verified PostgreSQL restore rehearsal:** [PR #62](https://github.com/BelenosCreations/belenos-marketing-automation/pull/62) merged at `7beccbbd8c448de277744aedd5d798e8662ed9e3` and passed [merged-main Actions 43338797005](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43338797005). It round-trips the 46 reviewed CI-only PostgreSQL tables and migration journal; this is **not** an encrypted or production backup. Fault-injection rollback rehearsal is in development; never treat a synthetic restored schema as private-Beta recovery readiness.
 
+**Verified recovery-failure coverage:** [PR #63](https://github.com/BelenosCreations/belenos-marketing-automation/pull/63) merged at `fe1fe32ab49ca38add64ec7a25b1915cb4d6a7b5`; [merged-main Actions 43339557139](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43339557139) passed. CI-only rollback now rejects interrupted or altered restores without residue. Next milestone tests restored session revocation, expiry and tenant boundaries inside that disposable schema. No production restore, paid services or posting.
+
 ## Product experience
 
 BAM is designed to let an owner or authorized team run marketing from one place:

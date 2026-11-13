@@ -1,5 +1,15 @@
 # Changelog
 
+## November 12, 2026 — Restored PostgreSQL session isolation drill (candidate)
+
+- Add a bounded, synthetic CI-only restore probe that runs the real token-hash-bound draft SELECT within the restored temporary schema after 46-table parity validation. It must allow active same-business sessions and deny foreign-business, revoked, expired or tampered sessions.
+- The probe returns only the count of checks, never a bearer or private draft; a falsely expected grant fails and rolls back the entire restore. Continue keeping customer backup, hosted Neon/Render and provider publishing disabled.
+
+## November 12, 2026 — Restore rollback/parity fault testing (verified PR #63)
+
+- PR #63 merged as `fe1fe32ab49ca38add64ec7a25b1915cb4d6a7b5`; [exact-head PR CI 43339310351](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43339310351) and [merged-main CI 43339557139](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43339557139) both passed; development synchronized non-force.
+- A partial COPY and deliberately altered restored draft both fail the CI-only recovery exercise, leave no partial second schema, preserve original synthetic records, and allow clean retry. Not a production recovery guarantee.
+
 ## November 12, 2026 — CI restore transaction rollback and parity fault injection (candidate)
 
 - Add constrained synthetic fault modes for a mid-copy interruption and a changed restored draft. Both must fail the disposable PostgreSQL exercise, roll back temporary schema creation, retain original business data and permit a later clean rehearsal.
