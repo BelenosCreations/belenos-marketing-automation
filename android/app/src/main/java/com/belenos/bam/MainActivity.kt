@@ -1,0 +1,241 @@
+package com.belenos.bam
+
+import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.View
+import android.view.WindowInsets
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Switch
+import android.widget.TextView
+import android.widget.Toast
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.Executors
+
+class MainActivity : Activity() {
+    private val handler = Handler(Looper.getMainLooper())
+    private val modelExecutor = Executors.newSingleThreadExecutor()
+    private val preferences by lazy { getSharedPreferences("bam", Context.MODE_PRIVATE) }
+    private val model by lazy { ModelFile(applicationContext) }
+    private val green = Color.rgb(25, 56, 44)
+    private val muted = Color.rgb(77, 95, 85)
+    private lateinit var status: TextView
+    private lateinit var download: Button
+    private lateinit var sample: Button
+    private lateinit var automatic: Switch
+    private lateinit var inbox: LinearLayout
+    private var displayed: List<Draft>? = null
+    private var checkingModel = false
+    private var downloadMessage: String? = null
+
+    private val refresh = object : Runnable {
+        override fun run() {
+            if (!checkingModel && model.downloading()) {
+                checkingModel = true
+                modelExecutor.execute {
+                    val result = runCatching { model.checkDownload() }
+                        .getOrElse { "Could not check the model download. Open BAM again to retry." }
+                    runOnUiThread {
+                        checkingModel = false
+                        downloadMessage = result
+                        if (!isFinishing && !isDestroyed) redraw()
+                    }
+                }
+            }
+            redraw()
+            handler.postDelayed(this, 2500)
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.rgb(239, 243, 237))
+            setOnApplyWindowInsetsListener { view, insets ->
+                if (android.os.Build.VERSION.SDK_INT >= 30) {
+                    val bars = insets.getInsets(WindowInsets.Type.systemBars())
+                    view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+                } else {
+                    @Suppress("DEPRECATION")
+                    view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
+                        insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
+                }
+                insets
+            }
+        }
+        val header = column().apply {
+            setBackgroundColor(green)
+            setPadding(dp(22), dp(16), dp(22), dp(16))
+            addView(text("BAM Scheduled Posts", 25, Color.WHITE, bold = true))
+            addView(text("Belenos Creations · Facebook", 15, Color.rgb(219, 233, 224)))
+        }
+        root.addView(header)
+        val content = column().apply { setPadding(dp(16), dp(14), dp(16), dp(22)) }
+        root.addView(ScrollView(this).apply {
+            addView(content)
+        }, LinearLayout.LayoutParams(-1, 0, 1f))
+        val controls = card(content)
+        controls.addView(text("Draft schedule", 20, bold = true))
+        controls.addView(text("10 AM daily · Morning\n10 AM Thu–Sat · Draft the 11:30 AM opening reminder\n6:30 PM Mon, Wed, Fri, Sat · Evening", 15))
+        controls.addView(text("Eastern time. Android may delay background drafts. Opening reminders require confirmed hours.", 13, muted))
+        automatic = Switch(this).apply {
+            text = "Generate scheduled drafts"
+            isChecked = preferences.getBoolean("enabled", false)
+            setOnCheckedChangeListener { _, enabled ->
+                preferences.edit().putBoolean("enabled", enabled).apply()
+                if (enabled) {
+                    DraftWorker.enable(applicationContext)
+                    DraftWorker.runOnce(applicationContext, sample = false)
+                } else DraftWorker.disable(applicationContext)
+                redraw()
+            }
+        }
+        controls.addView(automatic)
+        controls.addView(button("Confirm regular store hours") { confirmHours() })
+        download = button("Download offline AI · 1.6 GB") {
+            try {
+                model.start()
+                downloadMessage = "Model download started. Connect to Wi-Fi to continue."
+            } catch (error: Exception) {
+                downloadMessage = error.message ?: "Could not start the model download."
+            }
+            redraw()
+        }
+        controls.addView(download)
+        sample = button("Generate test draft") {
+            preferences.edit().putString("status", "Test draft queued…").apply()
+            DraftWorker.runOnce(applicationContext, sample = true)
+            redraw()
+        }
+        controls.addView(sample)
+        status = text("", 14, muted).apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
+        controls.addView(status)
+        content.addView(text("Draft inbox", 21, bold = true).apply {
+            setPadding(dp(2), dp(6), 0, dp(9))
+        })
+        inbox = column()
+        content.addView(inbox)
+        setContentView(root)
+        root.requestApplyInsets()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (preferences.getBoolean("enabled", false)) {
+            DraftWorker.enable(applicationContext)
+            DraftWorker.runOnce(applicationContext, sample = false)
+        }
+        handler.post(refresh)
+    }
+
+    override fun onStop() {
+        handler.removeCallbacks(refresh)
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        modelExecutor.shutdown()
+        super.onDestroy()
+    }
+
+    private fun confirmHours() {
+        val input = EditText(this).apply {
+            hint = "YYYY-MM-DD"
+            setSingleLine()
+            setText(preferences.getString("hours_through", "2026-12-10"))
+        }
+        val dialog = android.app.AlertDialog.Builder(this).setTitle("Regular hours confirmed through")
+            .setMessage("Thursday and Friday noon–3 PM and 4–7 PM, Saturday noon–7 PM. The known holiday closure still applies.")
+            .setView(input).setNegativeButton("Cancel", null).setPositiveButton("Save", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val day = runCatching { LocalDate.parse(input.text.toString().trim()) }.getOrNull()
+                if (day == null) {
+                    input.error = "Enter a date as YYYY-MM-DD."
+                    return@setOnClickListener
+                }
+                preferences.edit().putString("hours_through", day.toString()).apply()
+                if (automatic.isChecked) DraftWorker.runOnce(applicationContext, sample = false)
+                dialog.dismiss()
+                redraw()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun redraw() {
+        val ready = model.ready()
+        val pending = model.downloading()
+        download.visibility = if (ready) View.GONE else View.VISIBLE
+        download.isEnabled = !pending && !checkingModel
+        sample.visibility = if (ready) View.VISIBLE else View.GONE
+        automatic.isEnabled = ready || automatic.isChecked
+        val currentStatus = when {
+            checkingModel -> "Checking the offline model…"
+            pending || !ready -> downloadMessage ?: "Download the model once to enable offline drafting."
+            else -> preferences.getString("status", null) ?: "Model ready. Enable scheduled drafts or run a test."
+        }
+        if (status.text.toString() != currentStatus) status.text = currentStatus
+        val drafts = DraftStore(this).use { it.recent() }
+        if (drafts == displayed) return
+        displayed = drafts
+        inbox.removeAllViews()
+        if (drafts.isEmpty()) {
+            inbox.addView(text("Your drafts will appear here after generation.", 15, muted))
+        }
+        for (draft in drafts) {
+            val panel = card(inbox)
+            panel.addView(text(draft.slot.title, 17, bold = true))
+            panel.addView(text(draft.day.format(DateTimeFormatter.ofPattern("EEE, MMM d")), 13, muted))
+            panel.addView(text(draft.caption, 16).apply {
+                setPadding(0, dp(10), 0, dp(9))
+                setTextIsSelectable(true)
+            })
+            panel.addView(button("Copy caption") {
+                getSystemService(ClipboardManager::class.java).setPrimaryClip(
+                    ClipData.newPlainText("BAM caption", draft.caption))
+                Toast.makeText(this, "Caption copied", Toast.LENGTH_SHORT).show()
+            })
+        }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density + .5f).toInt()
+
+    private fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+
+    private fun text(label: String, size: Int, color: Int = green, bold: Boolean = false) =
+        TextView(this).apply {
+            text = label
+            textSize = size.toFloat()
+            setTextColor(color)
+            if (bold) setTypeface(typeface, Typeface.BOLD)
+            setLineSpacing(dp(2).toFloat(), 1f)
+        }
+
+    private fun button(label: String, action: () -> Unit) = Button(this).apply {
+        text = label
+        isAllCaps = false
+        setOnClickListener { action() }
+    }
+
+    private fun card(parent: LinearLayout): LinearLayout = column().apply {
+        background = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            cornerRadius = dp(14).toFloat()
+        }
+        setPadding(dp(16), dp(14), dp(16), dp(14))
+        parent.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+    }
+}

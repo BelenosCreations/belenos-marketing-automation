@@ -1,4 +1,30 @@
-## BAM Scheduled Posts
+## BAM for Android
+
+BAM Scheduled Posts runs directly on an ARM64 Android phone. The app downloads
+a 1.6 GB Qwen model once over Wi-Fi and then writes drafts on the phone using
+LiteRT-LM. No account, computer, or paid AI API is required for drafting.
+
+1. Install the BAM APK and open the app.
+2. Tap **Download offline AI**. Reopen BAM after the download to verify the model.
+3. Tap **Generate test draft**, then turn on **Generate scheduled drafts**.
+4. Review the captions in the inbox and tap **Copy caption** to post manually.
+
+The app targets 10 AM Eastern for morning drafts and for preparing the
+11:30 AM opening reminders on Thursday through Saturday. It targets 6:30 PM
+Eastern on Monday, Wednesday, Friday and Saturday for evening drafts.
+Android can defer background work while the phone is idle. Opening BAM
+checks for drafts due that day, and opening reminders expire at noon.
+The app uses the known holiday closures and requires reconfirmation of
+regular hours after December 10, 2026.
+
+To build from source, use JDK 21, Android SDK 35 and Gradle 8.13. Run
+`gradle -p android :app:testDebugUnitTest :app:assembleDebug`.
+The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`.
+The model is downloaded into app-specific storage and verified by SHA-256.
+See the [model card](https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct)
+and [LiteRT-LM documentation](https://developers.google.com/edge/litert-lm/android).
+
+## BAM Scheduled Posts on a computer
 
 BAM writes and saves Belenos Creations Facebook drafts on the personal
 marketing schedule. The 10 AM run prepares the daily main post and, on
