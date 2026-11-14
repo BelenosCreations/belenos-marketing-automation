@@ -31,6 +31,20 @@ class ScheduleTest {
         assertEquals(listOf(Slot.MORNING), due("2027-01-08T15:00:00Z"))
     }
 
+    @Test fun campaignOverridesOnlyTheSelectedDatesDrafts() {
+        val day = LocalDate.parse("2026-11-14")
+        val instant = Instant.parse("2026-11-14T15:00:00Z")
+        val campaign = Campaign("Pet memorial portraits", "Can combine separate photos",
+            setOf(Slot.OPENING))
+        assertEquals(listOf(Slot.MORNING), Schedule.due(instant, confirmed, campaign))
+        val prompt = Schedule.prompt(day, Slot.MORNING, emptyList(), campaign)
+        org.junit.Assert.assertTrue(prompt.contains("Campaign topic: Pet memorial portraits"))
+        org.junit.Assert.assertTrue(prompt.contains("Owner-confirmed facts: Can combine separate photos"))
+        assertFalse(Schedule.prompt(day.plusDays(1), Slot.MORNING, emptyList())
+            .contains("Can combine separate photos"))
+        assertThrows(IllegalArgumentException::class.java) { Campaign(skipped = setOf(Slot.SAMPLE)) }
+    }
+
     @Test fun captionChecksBrandAndAddsConfirmedHours() {
         assertThrows(IllegalArgumentException::class.java) { Schedule.caption("See our bees 🐝") }
         assertThrows(IllegalArgumentException::class.java) { Schedule.caption(" ") }

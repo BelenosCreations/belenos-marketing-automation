@@ -7,7 +7,19 @@ LiteRT-LM. No account, computer, or paid AI API is required for drafting.
 1. Install the BAM APK and open the app.
 2. Tap **Download offline AI**. Reopen BAM after the download to verify the model.
 3. Tap **Generate test draft**, then turn on **Generate scheduled drafts**.
-4. Review the captions in the inbox and tap **Copy caption** to post manually.
+4. Review the captions in the inbox. Use **Edit caption** to make changes,
+   then tap **Copy caption** to post manually.
+
+Use **Campaign notes and skips** to choose a date, supply an upcoming topic
+and confirmed details, or skip a slot already handled elsewhere. These
+settings apply to drafts that are still pending. **Generate due drafts now**
+checks today's missing slots even while automatic drafting is paused.
+Existing captions and skipped slots are left out of that run.
+
+The 0.2.0 test APK installs separately as **BAM Personal** because the 0.1.0
+GitHub build used an ephemeral debug signing key. The earlier app keeps its
+drafts. The new app has its own inbox and requires its own model download.
+Pause scheduling in the older app if you enable it in BAM Personal.
 
 The app targets 10 AM Eastern for morning drafts and for preparing the
 11:30 AM opening reminders on Thursday through Saturday. It targets 6:30 PM

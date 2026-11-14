@@ -8,6 +8,7 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 
 ## Last independently verified engineering checkpoint (2026-11-13)
 
+- Handoff PR **#146** passed [merged-main Actions #43549118186](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43549118186) at `fde1b469eb6bfc3a30767340008a6b4b4a8a109e`. Both branches matched before advanced Android drafting.
 - PR **#145** added native Android drafting with a downloadable on-device model and a persistent local inbox. Exact-head Android [Actions #43548397100](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43548397100) and general [Actions #43548397103](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43548397103) passed. Merged-main Android [Actions #43548614792](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43548614792) and general [Actions #43548614789](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43548614789) passed at `0815d4887b36fa4ac37e549b35875ed989e5c9f8`. Branches matched before this handoff. The 0.1.0 ARM64 test APK signature was verified. Installation, actual model inference, and background timing on the owner’s phone remain open.
 - Handoff PR **#144** passed [merged-main Actions #43547241039](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43547241039) at `3e83e910582aebbd52a9dd4c9c7caaf19e0d2dee`. Branches matched before the Android milestone.
 - PR **#143** added automatic personal Belenos Facebook drafts on the existing Eastern schedule using a local Ollama model, with a local draft inbox. Exact-head [Actions #43546608608](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43546608608) passed at `c424b110cf7f94aadf195a80e1fe605542301689`. Merged-main [Actions #43546812471](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43546812471) passed at `3e29978e0d64915fea23a42606f1401050f00130`. Branches matched with no open PRs before this handoff. Fixture tests and a local inbox smoke check passed. Live inference on the owner's device remains open.
@@ -45,7 +46,7 @@ GitHub listed no deployments, environments or releases, and Pages was disabled. 
 
 The owner requires BAM to generate drafts automatically on Android without a companion computer. The personal app uses a downloaded local model and WorkManager. Multiuser collaboration remains the long-term goal. The $0 spending limit and production activation restrictions still apply.
 
-1. Install the Android APK on an ARM64 phone, download the model, and run a test draft. Verify caption quality, copying, local persistence, and morning, opening, and evening background delivery while the app is closed.
+1. Install BAM Personal on an ARM64 phone, download the model, and run a test draft. Verify caption quality, campaign notes and skips, manual recovery, editing and copying, and background delivery while the app is closed.
 2. Check the actual delay on the owner's device before switching away from the existing ChatGPT marketing tasks. Keep Facebook publishing manual.
 3. Resume the deferred operational work when preparing shared deployment and Private Beta.
 
