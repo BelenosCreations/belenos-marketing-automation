@@ -6,7 +6,13 @@ import android.net.Uri
 import java.io.File
 import java.security.MessageDigest
 
-class ModelFile(private val context: Context) {
+class ModelFile internal constructor(
+    private val context: Context,
+    private val expectedSize: Long,
+    private val expectedHash: String
+) {
+    constructor(context: Context) : this(context, SIZE, SHA256)
+
     private val settings = context.getSharedPreferences("bam", Context.MODE_PRIVATE)
     private val downloads = context.getSystemService(DownloadManager::class.java)
     private val directory = context.getExternalFilesDir(null)
@@ -15,14 +21,14 @@ class ModelFile(private val context: Context) {
         get() = directory?.let { File(it, NAME) }
 
     fun ready(): Boolean = settings.getBoolean("verified_model_v1", false) &&
-        file?.length() == SIZE
+        file?.length() == expectedSize
 
     fun downloading(): Boolean = settings.contains("download")
 
     fun start() {
         check(!downloading())
         val model = checkNotNull(file) { "Storage is unavailable." }
-        check(model.parentFile!!.usableSpace > SIZE + 300_000_000L) {
+        check(model.parentFile!!.usableSpace > expectedSize + 300_000_000L) {
             "Free up about 2 GB before downloading."
         }
         if (model.exists()) check(model.delete()) { "Could not replace the incomplete download." }
@@ -49,8 +55,8 @@ class ModelFile(private val context: Context) {
             return "Model download pending. Use Wi-Fi and keep about 2 GB free."
         }
         val model = file
-        val verified = status == DownloadManager.STATUS_SUCCESSFUL && model != null && model.length() == SIZE &&
-            runCatching { digest(model) == SHA256 }.getOrDefault(false)
+        val verified = status == DownloadManager.STATUS_SUCCESSFUL && model != null &&
+            model.length() == expectedSize && runCatching { digest(model) == expectedHash }.getOrDefault(false)
         settings.edit().remove("download").putBoolean("verified_model_v1", verified).commit()
         if (verified) return null
         downloads.remove(id)

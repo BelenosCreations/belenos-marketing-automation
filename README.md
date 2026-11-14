@@ -70,6 +70,11 @@ WorkManager integration tests simulate the morning and evening periodic runs,
 then verify the saved draft sources, an owner edit, a skipped opening reminder,
 and the manual catch-up path with automatic drafting paused.
 
+Model setup tests simulate Android's download manager with a small fixture.
+They check that reopening the app retains a pending download and that only
+a finished file with the expected size and SHA-256 becomes available. A failed,
+missing, truncated, or checksum-mismatched download can be retried.
+
 ### Install the preview or sign a personal build
 
 Starting with 0.4.0, the **BAM Preview** APK installs alongside 0.1.0 through
