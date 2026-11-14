@@ -1,3 +1,11 @@
+## Offline identity sequence restore rehearsal (2026-11-14)
+
+- Loaded synthetic invitation events and team audit IDs through the disposable
+  PostgreSQL restore. An unadjusted sequence encountered a duplicate ID.
+- Checked that a target-only sequence restart uses the SQLite high-water mark
+  for sparse rows and previously used empty tables. A never-used table starts
+  at 1. The test rolls back the target restart and checks the source sequence.
+
 ## Offline checkpoint restart and retry rehearsal (2026-11-14)
 
 - Reopened a separate local SQLite checkpoint after a disposable PostgreSQL
