@@ -206,6 +206,12 @@ Two retries can confirm the same acknowledgement, but only one can advance
 the checkpoint from its exact predecessor. A delayed retry leaves a newer
 checkpoint intact.
 
+The disposable restore also rehearses generated IDs for invitation events
+and team audit entries. Copying explicit IDs preserves the rows while the
+new PostgreSQL sequence still starts at 1. The test uses SQLite's recorded
+high-water mark to avoid reusing deleted IDs, including when the restored
+table is empty. [Identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids)
+
 ## Alternate writer inventory and offline recovery rehearsal
 
 The [alternate writer inventory](MIGRATION_ALTERNATE_WRITER_INVENTORY.md)

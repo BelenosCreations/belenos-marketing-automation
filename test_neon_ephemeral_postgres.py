@@ -180,6 +180,112 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertIsNone(self.conn.execute(
             "SELECT to_regnamespace('bam_ci_restore_probe')").fetchone()[0])
 
+    def test_ci_restore_rehearses_identity_restart_from_sqlite_history(self):
+        """Explicit legacy IDs survive COPY, and later inserts need sequence state."""
+        from unittest.mock import patch
+
+        from psycopg import sql
+
+        from business_invitations import BusinessInvitations
+        import neon_ci_restore_probe as probe
+        from team_membership_admin import TeamMembershipAdmin
+
+        invitation = 'bam_business_invitation_events'
+        team = 'bam_team_member_audit'
+        inserts = {
+            invitation: ('event_id',
+                         'tenant_id,invitation_id,action,actor_id,occurred_at',
+                         ('shop-a', 'synthetic-invitation', 'delivered', self.a, 100)),
+            team: ('id',
+                   'tenant_id,member_id,actor_id,previous_role,resulting_role,action,changed_at,revision_after',
+                   ('shop-b', self.b, self.a, 'viewer', 'employee', 'change_role', 100, 2)),
+        }
+
+        def sequence_state(conn, schema, table, column):
+            sequence = f'{schema}.{table}_{column}_seq'
+            self.assertEqual(conn.execute('SELECT pg_get_serial_sequence(%s,%s)',
+                                          (f'{schema}.{table}', column)).fetchone()[0], sequence)
+            return conn.execute(f'SELECT last_value,is_called FROM {sequence}').fetchone()
+
+        original_import = probe._import_csv
+        for table, issued, deleted, expected_next in (
+            (invitation, (1, 8, 9, 24), (9, 24), 25),
+            (team, (12,), (12,), 13),
+            (invitation, (), (), 1),
+        ):
+            with self.subTest(table=table, issued=issued):
+                column, fields, payload = inserts[table]
+                sqlite_values = ','.join('?' for _ in range(len(payload) + 1))
+                pg_values = ','.join('%s' for _ in payload)
+                with closing(sqlite3.connect(':memory:')) as legacy:
+                    BusinessInvitations(db=legacy, sessions=None, directory=None, auth=None,
+                                        deliver=lambda *_: None)
+                    TeamMembershipAdmin(db=legacy, sessions=None, directory=None)
+                    with legacy:
+                        legacy.executemany(f'INSERT INTO {table} ({column},{fields}) '
+                                           f'VALUES ({sqlite_values})',
+                                           [(number, *payload) for number in issued])
+                        legacy.executemany(f'DELETE FROM {table} WHERE {column}=?',
+                                           [(number,) for number in deleted])
+                    retained = legacy.execute(f'SELECT {column},{fields} FROM {table} '
+                                              f'ORDER BY {column}').fetchall()
+                    history = legacy.execute('SELECT seq FROM sqlite_sequence WHERE name=?',
+                                             (table,)).fetchone()
+
+                source = f'{probe._SOURCE}.{table}'
+                target = f'{probe._RESTORE}.{table}'
+                self.conn.execute(f'TRUNCATE {source}')
+                with self.conn.cursor() as cursor:
+                    cursor.executemany(f'INSERT INTO {source} ({column},{fields}) '
+                                       f'VALUES (%s,{pg_values})', retained)
+                source_sequence = sequence_state(self.conn, probe._SOURCE, table, column)
+                exercised = []
+
+                def import_and_check(conn, destination, data):
+                    original_import(conn, destination, data)
+                    if destination != target:
+                        return
+                    exercised.append(destination)
+                    self.assertEqual(conn.execute(f'SELECT {column},{fields} FROM {target} '
+                                                  f'ORDER BY {column}').fetchall(), retained)
+                    self.assertEqual(sequence_state(conn, probe._RESTORE, table, column), (1, False))
+                    generate = f'INSERT INTO {target} ({fields}) VALUES ({pg_values}) RETURNING {column}'
+                    if retained:
+                        with self.assertRaises(self.psycopg.errors.UniqueViolation):
+                            with conn.transaction():
+                                conn.execute(generate, payload)
+                    else:
+                        with conn.transaction(force_rollback=True):
+                            self.assertEqual(conn.execute(generate, payload).fetchone(), (1,))
+
+                    # The fixture obtains both inputs independently. Comparing
+                    # row maxima alone would reuse a deleted invitation ID.
+                    maximum = conn.execute(f'SELECT MAX({column}) FROM {target}').fetchone()[0]
+                    next_id = max(maximum or 0, history[0] if history else 0) + 1
+                    self.assertEqual(next_id, expected_next)
+                    if deleted:
+                        self.assertGreater(history[0], maximum or 0)
+                    if retained:
+                        self.assertIn(maximum + 1, deleted)
+
+                    before_restart = sequence_state(conn, probe._RESTORE, table, column)
+                    with conn.transaction(force_rollback=True):
+                        conn.execute(sql.SQL('ALTER TABLE {} ALTER COLUMN {} RESTART WITH {}').format(
+                            sql.Identifier(probe._RESTORE, table), sql.Identifier(column),
+                            sql.Literal(next_id)))
+                        self.assertEqual(conn.execute(generate, payload).fetchone(), (expected_next,))
+                        self.assertEqual(conn.execute(generate, payload).fetchone(), (expected_next + 1,))
+                        self.assertEqual(sequence_state(conn, probe._SOURCE, table, column), source_sequence)
+                    self.assertEqual(sequence_state(conn, probe._RESTORE, table, column), before_restart)
+
+                with patch.object(probe, '_import_csv', side_effect=import_and_check):
+                    result = probe.run_ephemeral_ci_logical_restore(self.conn)
+                self.assertEqual(exercised, [target])
+                self.assertTrue(result['separate_schema_discarded'])
+                self.assertEqual(sequence_state(self.conn, probe._SOURCE, table, column), source_sequence)
+                self.assertEqual(self.conn.execute(f'SELECT {column},{fields} FROM {source} '
+                                                   f'ORDER BY {column}').fetchall(), retained)
+
     def test_ci_restore_rejects_unreviewed_constraints_and_indexes(self):
         """Catalog drift must roll back target and allow clean retry."""
         from neon_ci_restore_probe import run_ephemeral_ci_logical_restore
