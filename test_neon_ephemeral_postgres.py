@@ -1527,16 +1527,23 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
                 BEGIN
                     PERFORM id FROM bam_ci_integration.ci_pin_gate WHERE id=1 FOR UPDATE NOWAIT;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM bam_ci_integration.ci_pin_gate
+                        WHERE id=1 AND generation=expected AND (expected,evidence) = (
+                            SELECT generation,digest FROM bam_ci_integration.ci_pin_history
+                            ORDER BY generation DESC LIMIT 1
+                        )
+                    ) THEN
+                        RETURN FALSE;
+                    END IF;
                     UPDATE bam_ci_integration.ci_pin_gate SET opened=TRUE
-                    WHERE id=1 AND generation=expected AND NOT opened
-                      AND (expected,evidence) = (
-                          SELECT generation,digest FROM bam_ci_integration.ci_pin_history
-                          ORDER BY generation DESC LIMIT 1
-                      );
-                    RETURN FOUND;
+                    WHERE id=1 AND NOT opened;
+                    RETURN TRUE;
                 END
                 $$""")
-            self.conn.execute("""CREATE FUNCTION ci_admit_pin(expected INTEGER, operation TEXT)
+            self.conn.execute("""CREATE FUNCTION ci_admit_pin(
+                    expected INTEGER, retained_digest TEXT, operation TEXT
+                )
                 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
                 BEGIN
                     PERFORM id FROM bam_ci_integration.ci_pin_gate
@@ -1544,8 +1551,10 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                     IF NOT EXISTS (
                         SELECT 1 FROM bam_ci_integration.ci_pin_gate
                         WHERE id=1 AND generation=expected AND opened
-                          AND expected=(SELECT max(generation)
-                                        FROM bam_ci_integration.ci_pin_history)
+                          AND (expected,retained_digest) = (
+                              SELECT generation,digest FROM bam_ci_integration.ci_pin_history
+                              ORDER BY generation DESC LIMIT 1
+                          )
                     ) THEN
                         RETURN FALSE;
                     END IF;
@@ -1566,18 +1575,18 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 END
                 $$""")
             self.conn.execute("ALTER FUNCTION ci_publish_pin(INTEGER,TEXT) OWNER TO ci_pin_publish_owner")
-            for function, role in (
-                ('ci_publish_pin', 'ci_pin_publisher'),
-                ('ci_stage_pin', 'ci_pin_stager'),
-                ('ci_ack_pin', 'ci_pin_acknowledger'),
-                ('ci_admit_pin', 'ci_pin_writer'),
+            for signature, role in (
+                ('ci_publish_pin(INTEGER,TEXT)', 'ci_pin_publisher'),
+                ('ci_stage_pin(INTEGER,TEXT)', 'ci_pin_stager'),
+                ('ci_ack_pin(INTEGER,TEXT)', 'ci_pin_acknowledger'),
+                ('ci_admit_pin(INTEGER,TEXT,TEXT)', 'ci_pin_writer'),
             ):
-                self.conn.execute(f"REVOKE ALL ON FUNCTION {function}(INTEGER,TEXT) FROM PUBLIC")
-                self.conn.execute(f"GRANT EXECUTE ON FUNCTION {function}(INTEGER,TEXT) TO {role}")
+                self.conn.execute(f"REVOKE ALL ON FUNCTION {signature} FROM PUBLIC")
+                self.conn.execute(f"GRANT EXECUTE ON FUNCTION {signature} TO {role}")
 
         def cleanup():
             self.conn.execute("""DROP FUNCTION ci_publish_pin(INTEGER,TEXT),
-                ci_ack_pin(INTEGER,TEXT),ci_admit_pin(INTEGER,TEXT),ci_stage_pin(INTEGER,TEXT);
+                ci_ack_pin(INTEGER,TEXT),ci_admit_pin(INTEGER,TEXT,TEXT),ci_stage_pin(INTEGER,TEXT);
                 DROP TABLE ci_pin_gate,ci_pin_history,ci_pin_writes;
                 REVOKE USAGE ON SCHEMA bam_ci_integration FROM ci_pin_publish_owner,
                     ci_pin_publisher,ci_pin_acknowledger,ci_pin_writer,ci_pin_stager;
@@ -1585,10 +1594,11 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
 
         self.addCleanup(cleanup)
 
-        def run(db, role, function, expected, value):
+        def run(db, role, function, *arguments):
+            placeholders = ','.join(['%s'] * len(arguments))
             with db.transaction():
                 db.execute(f"SET LOCAL ROLE {role}")
-                return db.execute(f"SELECT {function}(%s,%s)", (expected, value)).fetchone()[0]
+                return db.execute(f"SELECT {function}({placeholders})", arguments).fetchone()[0]
 
         def publish(db, previous, evidence):
             return run(db, 'ci_pin_publisher', 'ci_publish_pin', previous, evidence)
@@ -1596,16 +1606,21 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         def acknowledge(db, generation, evidence):
             return run(db, 'ci_pin_acknowledger', 'ci_ack_pin', generation, evidence)
 
-        def admit(db, generation, operation):
-            return run(db, 'ci_pin_writer', 'ci_admit_pin', generation, operation)
+        def admit(db, retained_pin, operation):
+            generation, digest = retained_pin
+            return run(db, 'ci_pin_writer', 'ci_admit_pin', generation, digest, operation)
 
         for role, statement in (
             ('ci_pin_publisher', "UPDATE ci_pin_gate SET generation=4,opened=TRUE"),
             ('ci_pin_publisher', "INSERT INTO ci_pin_history VALUES (4,'bypass')"),
             ('ci_pin_publisher', "SELECT ci_stage_pin(2,'second')"),
             ('ci_pin_publisher', "SELECT ci_ack_pin(1,'first')"),
-            ('ci_pin_publisher', "SELECT ci_admit_pin(1,'bypass')"),
+            ('ci_pin_publisher', "SELECT ci_admit_pin(1,'first','bypass')"),
             ('ci_pin_acknowledger', "SELECT ci_publish_pin(1,'second')"),
+            ('ci_pin_acknowledger', "SELECT ci_admit_pin(1,'first','bypass')"),
+            ('ci_pin_acknowledger', "UPDATE ci_pin_gate SET opened=TRUE"),
+            ('ci_pin_writer', "SELECT ci_ack_pin(1,'first')"),
+            ('ci_pin_writer', "INSERT INTO ci_pin_writes VALUES ('bypass',1)"),
             ('ci_pin_writer', "SELECT ci_publish_pin(1,'second')"),
             ('ci_pin_stager', "SELECT ci_publish_pin(1,'second')"),
         ):
@@ -1615,13 +1630,15 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                     self.conn.execute(statement)
 
         busy = self.psycopg.errors.LockNotAvailable
+        first_pin = (1, 'first')
+        second_pin = (2, 'second')
         with closing(self._connect()) as peer:
             with self.conn.transaction():
                 self.assertTrue(acknowledge(self.conn, 1, 'first'))
                 with self.assertRaises(busy):
                     publish(peer, 1, 'second')
             with self.conn.transaction():
-                self.assertTrue(admit(self.conn, 1, 'before-publication'))
+                self.assertTrue(admit(self.conn, first_pin, 'before-publication'))
                 with self.assertRaises(busy):
                     publish(peer, 1, 'second')
             with peer.transaction():
@@ -1629,17 +1646,17 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 with self.assertRaises(busy):
                     acknowledge(self.conn, 1, 'first')
                 with self.assertRaises(busy):
-                    admit(self.conn, 1, 'during-publication')
+                    admit(self.conn, first_pin, 'during-publication')
             self.assertFalse(publish(peer, 1, 'competing-publication'))
             self.assertFalse(acknowledge(self.conn, 1, 'first'))
-            self.assertFalse(admit(self.conn, 1, 'after-publication'))
+            self.assertFalse(admit(self.conn, first_pin, 'after-publication'))
 
             self.assertFalse(run(self.conn, 'ci_pin_stager', 'ci_stage_pin', 2, 'first'))
             self.assertTrue(run(self.conn, 'ci_pin_stager', 'ci_stage_pin', 2, 'second'))
-            self.assertFalse(admit(self.conn, 2, 'pending'))
+            self.assertFalse(admit(self.conn, second_pin, 'pending'))
             self.assertFalse(acknowledge(self.conn, 2, 'first'))
             self.assertTrue(acknowledge(self.conn, 2, 'second'))
-            self.assertTrue(admit(self.conn, 2, 'after-acknowledgement'))
+            self.assertTrue(admit(self.conn, second_pin, 'after-acknowledgement'))
         self.assertEqual(self.conn.execute("""SELECT operation,generation FROM ci_pin_writes
             ORDER BY generation""").fetchall(),
             [('before-publication', 1), ('after-acknowledgement', 2)])
@@ -1650,6 +1667,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 with self.subTest(isolation=isolation):
                     evidence = 'second' if generation == 2 else f'pin-{generation}'
                     next_evidence = f'pin-{generation + 1}'
+                    retained_pin = (generation, evidence)
+                    pending_pin = (generation + 1, next_evidence)
                     with peer.transaction(force_rollback=True):
                         self.assertTrue(publish(peer, generation, next_evidence))
                     self.assertEqual(self.conn.execute("SELECT max(generation) FROM ci_pin_history")
@@ -1666,24 +1685,39 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                         for operation, args in (
                             (publish, (generation, 'competing-pin')),
                             (acknowledge, (generation, evidence)),
-                            (admit, (generation, f'stale-{generation}')),
+                            (admit, (retained_pin, f'stale-{generation}')),
                         ):
                             with self.assertRaises(serialization):
                                 operation(self.conn, *args)
 
                     self.assertFalse(publish(peer, generation, next_evidence))
                     self.assertFalse(acknowledge(peer, generation, evidence))
-                    self.assertFalse(admit(peer, generation, f'retry-{generation}'))
+                    self.assertFalse(admit(peer, retained_pin, f'retry-{generation}'))
                     self.assertEqual(self.conn.execute("""SELECT generation,digest FROM ci_pin_history
                         ORDER BY generation DESC LIMIT 1""").fetchone(), (generation + 1, next_evidence))
-                    self.assertTrue(run(peer, 'ci_pin_stager', 'ci_stage_pin', generation + 1, next_evidence))
+                    self.assertTrue(run(peer, 'ci_pin_stager', 'ci_stage_pin', *pending_pin))
                     with peer.transaction(force_rollback=True):
-                        self.assertTrue(acknowledge(peer, generation + 1, next_evidence))
-                    self.assertFalse(admit(peer, generation + 1, f'unacknowledged-{generation + 1}'))
-                    with peer.transaction():
-                        acknowledge(peer, generation + 1, next_evidence)
-                    self.assertFalse(acknowledge(peer, generation + 1, next_evidence))
-                    self.assertTrue(admit(peer, generation + 1, f'current-{generation + 1}'))
+                        self.assertTrue(acknowledge(peer, *pending_pin))
+                    self.assertFalse(admit(peer, pending_pin, f'unacknowledged-{generation + 1}'))
+
+                    # Commit the acknowledgement and drop its response before the separate
+                    # checkpoint advances. Retry uses a fresh connection.
+                    with closing(self._connect()) as acknowledger:
+                        acknowledge(acknowledger, *pending_pin)
+                    opened_row = """SELECT generation,opened,xmin FROM ci_pin_gate WHERE id=1"""
+                    before_retry = self.conn.execute(opened_row).fetchone()
+                    self.assertEqual(before_retry[:2], (generation + 1, True))
+                    self.assertFalse(admit(peer, retained_pin, f'checkpoint-lag-{generation}'))
+                    wrong_pin = (generation + 1, evidence)
+                    self.assertFalse(acknowledge(peer, *retained_pin))
+                    self.assertFalse(acknowledge(peer, *wrong_pin))
+                    self.assertFalse(admit(peer, wrong_pin, f'wrong-digest-{generation}'))
+                    self.assertTrue(acknowledge(peer, *pending_pin))
+                    self.assertEqual(self.conn.execute(opened_row).fetchone(), before_retry)
+                    self.assertFalse(admit(peer, retained_pin, f'recovered-but-stale-{generation}'))
+
+                    retained_pin = pending_pin
+                    self.assertTrue(admit(peer, retained_pin, f'current-{generation + 1}'))
         self.assertEqual(self.conn.execute("""SELECT operation,generation FROM ci_pin_writes
             ORDER BY generation""").fetchall(), [('before-publication', 1),
             ('after-acknowledgement', 2), ('current-3', 3), ('current-4', 4)])
