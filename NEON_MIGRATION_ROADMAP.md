@@ -235,12 +235,25 @@ with generated IDs verify the result. Rolling back the target restart restores
 its earlier sequence state, and the PostgreSQL source retains its rows and
 sequence state. The test keeps the restart inside the disposable fixture.
 
-Production review still needs provenance and snapshot consistency for the
-historical high-water mark, a policy for missing or inconsistent evidence or
-an exhausted `BIGINT` range, and verification of sequence ownership and write
-fencing. The current restore probe checks row parity and schema shape.
+The SQLite WAL fixture establishes a read transaction while a separate
+connection commits an issued and deleted ID. It checks both read orders.
+The rows and high-water mark stay paired in the reader's snapshot and a new
+snapshot sees the committed history, even if the newest ID was deleted.
 
-[SQLite AUTOINCREMENT](https://sqlite.org/autoinc.html) · [PostgreSQL COPY](https://www.postgresql.org/docs/16/sql-copy.html) · [PostgreSQL sequence restart](https://www.postgresql.org/docs/16/sql-altersequence.html)
+The PostgreSQL test validates the synthetic history before any target
+sequence restart. A history entry must be unique and integer-valued, cover
+every retained positive ID, and leave a generated ID in the `BIGINT` range.
+An empty table with missing history requires independent evidence that it
+has never issued an ID. A previously used table can be empty and retain its
+history. Deleted, duplicated, stale, malformed and exhausted history stop
+the rehearsal and roll back the temporary target schema with the source
+rows and sequence intact.
+
+Production review still needs authenticated provenance for the historical
+mark and never-used evidence, a consistent snapshot throughout capture and
+restore, and verification of sequence ownership and write fencing.
+
+[SQLite AUTOINCREMENT](https://sqlite.org/autoinc.html) · [SQLite isolation](https://sqlite.org/isolation.html) · [PostgreSQL COPY](https://www.postgresql.org/docs/16/sql-copy.html) · [PostgreSQL sequence restart](https://www.postgresql.org/docs/16/sql-altersequence.html)
 
 ## Versioned schema replay on disposable CI PostgreSQL
 

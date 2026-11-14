@@ -1,3 +1,12 @@
+## Offline identity history validation rehearsal (2026-11-14)
+
+- Read retained IDs and `sqlite_sequence` in one synthetic SQLite WAL snapshot
+  while another connection issued and deleted IDs.
+- Stopped the disposable PostgreSQL restore before the sequence restart when
+  history was missing, duplicated, inconsistent, malformed or exhausted.
+  The fixture still accepts a known never-used table and a previously used
+  empty table with valid history.
+
 ## Offline identity sequence restore rehearsal (2026-11-14)
 
 - Loaded synthetic invitation events and team audit IDs through the disposable

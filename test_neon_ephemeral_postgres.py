@@ -49,6 +49,21 @@ from neon_scoped_writes import (
     prepare_draft_priority_cas,priority_cas_result)
 
 _SCHEMA='bam_ci_integration'
+_BIGINT_MAX = (1 << 63) - 1
+
+
+def _ci_next_identity_id(maximum, history, *, known_unused):
+    """Check synthetic SQLite history before restarting a fresh target sequence."""
+    if not history and maximum is None and known_unused:
+        return 1
+    if len(history) != 1 or known_unused:
+        raise ValueError('Missing or ambiguous identity history')
+    mark, = history[0]
+    if type(mark) is not int or mark < max(0, maximum or 0):
+        raise ValueError('Inconsistent identity history')
+    if mark >= _BIGINT_MAX:
+        raise ValueError('Exhausted identity history')
+    return mark + 1
 
 class NeonEphemeralPostgresTests(unittest.TestCase):
     @classmethod
@@ -208,12 +223,18 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             return conn.execute(f'SELECT last_value,is_called FROM {sequence}').fetchone()
 
         original_import = probe._import_csv
-        for table, issued, deleted, expected_next in (
-            (invitation, (1, 8, 9, 24), (9, 24), 25),
-            (team, (12,), (12,), 13),
-            (invitation, (), (), 1),
+        for case, table, issued, deleted, history_override, expected in (
+            ('sparse', invitation, (1, 8, 9, 24), (9, 24), None, 25),
+            ('previously used', team, (12,), (12,), None, 13),
+            ('never used', invitation, (), (), None, 1),
+            ('missing with rows', invitation, (8,), (), (), 'Missing or ambiguous'),
+            ('missing after deletion', team, (12,), (12,), (), 'Missing or ambiguous'),
+            ('duplicate history', invitation, (8,), (), (8, 9), 'Missing or ambiguous'),
+            ('stale history', invitation, (8,), (), (7,), 'Inconsistent'),
+            ('malformed history', team, (12,), (12,), ('invalid',), 'Inconsistent'),
+            ('exhausted', team, (_BIGINT_MAX,), (_BIGINT_MAX,), None, 'Exhausted'),
         ):
-            with self.subTest(table=table, issued=issued):
+            with self.subTest(case=case, table=table):
                 column, fields, payload = inserts[table]
                 sqlite_values = ','.join('?' for _ in range(len(payload) + 1))
                 pg_values = ','.join('%s' for _ in payload)
@@ -227,10 +248,15 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                                            [(number, *payload) for number in issued])
                         legacy.executemany(f'DELETE FROM {table} WHERE {column}=?',
                                            [(number,) for number in deleted])
+                        if history_override is not None:
+                            legacy.execute('DELETE FROM sqlite_sequence WHERE name=?', (table,))
+                            legacy.executemany('INSERT INTO sqlite_sequence(name,seq) VALUES (?,?)',
+                                               [(table, mark) for mark in history_override])
+                    legacy.execute('BEGIN')
                     retained = legacy.execute(f'SELECT {column},{fields} FROM {table} '
                                               f'ORDER BY {column}').fetchall()
                     history = legacy.execute('SELECT seq FROM sqlite_sequence WHERE name=?',
-                                             (table,)).fetchone()
+                                             (table,)).fetchall()
 
                 source = f'{probe._SOURCE}.{table}'
                 target = f'{probe._RESTORE}.{table}'
@@ -248,7 +274,15 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                     exercised.append(destination)
                     self.assertEqual(conn.execute(f'SELECT {column},{fields} FROM {target} '
                                                   f'ORDER BY {column}').fetchall(), retained)
-                    self.assertEqual(sequence_state(conn, probe._RESTORE, table, column), (1, False))
+                    target_before = sequence_state(conn, probe._RESTORE, table, column)
+                    self.assertEqual(target_before, (1, False))
+                    maximum = conn.execute(f'SELECT MAX({column}) FROM {target}').fetchone()[0]
+                    try:
+                        next_id = _ci_next_identity_id(maximum, history, known_unused=case == 'never used')
+                    except ValueError:
+                        self.assertEqual(sequence_state(conn, probe._RESTORE, table, column), target_before)
+                        raise
+                    self.assertEqual(next_id, expected)
                     generate = f'INSERT INTO {target} ({fields}) VALUES ({pg_values}) RETURNING {column}'
                     if retained:
                         with self.assertRaises(self.psycopg.errors.UniqueViolation):
@@ -258,13 +292,8 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                         with conn.transaction(force_rollback=True):
                             self.assertEqual(conn.execute(generate, payload).fetchone(), (1,))
 
-                    # The fixture obtains both inputs independently. Comparing
-                    # row maxima alone would reuse a deleted invitation ID.
-                    maximum = conn.execute(f'SELECT MAX({column}) FROM {target}').fetchone()[0]
-                    next_id = max(maximum or 0, history[0] if history else 0) + 1
-                    self.assertEqual(next_id, expected_next)
                     if deleted:
-                        self.assertGreater(history[0], maximum or 0)
+                        self.assertGreater(history[0][0], maximum or 0)
                     if retained:
                         self.assertIn(maximum + 1, deleted)
 
@@ -273,18 +302,71 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                         conn.execute(sql.SQL('ALTER TABLE {} ALTER COLUMN {} RESTART WITH {}').format(
                             sql.Identifier(probe._RESTORE, table), sql.Identifier(column),
                             sql.Literal(next_id)))
-                        self.assertEqual(conn.execute(generate, payload).fetchone(), (expected_next,))
-                        self.assertEqual(conn.execute(generate, payload).fetchone(), (expected_next + 1,))
+                        self.assertEqual(conn.execute(generate, payload).fetchone(), (expected,))
+                        self.assertEqual(conn.execute(generate, payload).fetchone(), (expected + 1,))
                         self.assertEqual(sequence_state(conn, probe._SOURCE, table, column), source_sequence)
                     self.assertEqual(sequence_state(conn, probe._RESTORE, table, column), before_restart)
 
                 with patch.object(probe, '_import_csv', side_effect=import_and_check):
-                    result = probe.run_ephemeral_ci_logical_restore(self.conn)
+                    if isinstance(expected, str):
+                        with self.assertRaisesRegex(ValueError, expected):
+                            probe.run_ephemeral_ci_logical_restore(self.conn)
+                    else:
+                        result = probe.run_ephemeral_ci_logical_restore(self.conn)
+                        self.assertTrue(result['separate_schema_discarded'])
                 self.assertEqual(exercised, [target])
-                self.assertTrue(result['separate_schema_discarded'])
+                self.assertIsNone(self.conn.execute('SELECT to_regnamespace(%s)',
+                                                    (probe._RESTORE,)).fetchone()[0])
                 self.assertEqual(sequence_state(self.conn, probe._SOURCE, table, column), source_sequence)
                 self.assertEqual(self.conn.execute(f'SELECT {column},{fields} FROM {source} '
                                                    f'ORDER BY {column}').fetchall(), retained)
+
+    def test_ci_identity_rows_and_history_share_one_sqlite_snapshot(self):
+        from business_invitations import BusinessInvitations
+
+        def retained_ids(db):
+            return db.execute('SELECT event_id FROM bam_business_invitation_events ORDER BY event_id').fetchall()
+
+        def history(db):
+            return db.execute("SELECT seq FROM sqlite_sequence WHERE name='bam_business_invitation_events'").fetchall()
+
+        def issue(db):
+            return db.execute("""INSERT INTO bam_business_invitation_events
+                (tenant_id,invitation_id,action,actor_id,occurred_at)
+                VALUES ('shop-a','synthetic-invitation','delivered',?,100)""", (self.a,)).lastrowid
+
+        path = Path(self.enterContext(TemporaryDirectory())) / 'identity.sqlite3'
+        with closing(sqlite3.connect(path)) as writer, closing(sqlite3.connect(path)) as reader:
+            self.assertEqual(writer.execute('PRAGMA journal_mode=WAL').fetchone(), ('wal',))
+            BusinessInvitations(db=writer, sessions=None, directory=None, auth=None, deliver=lambda *_: None)
+            with writer:
+                self.assertEqual(issue(writer), 1)
+
+            reader.execute('BEGIN')
+            self.assertEqual(retained_ids(reader), [(1,)])
+            with writer:
+                self.assertEqual(issue(writer), 2)
+                writer.execute('DELETE FROM bam_business_invitation_events WHERE event_id=1')
+            self.assertEqual(history(reader), [(1,)])
+            self.assertEqual(retained_ids(reader), [(1,)])
+            reader.commit()
+
+            # Reverse the order of reads. Deleting the newly issued ID leaves
+            # a higher historical mark with the same surviving rows.
+            reader.execute('BEGIN')
+            self.assertEqual(history(reader), [(2,)])
+            with writer:
+                self.assertEqual(issue(writer), 3)
+                writer.execute('DELETE FROM bam_business_invitation_events WHERE event_id=3')
+            self.assertEqual(retained_ids(reader), [(2,)])
+            self.assertEqual(history(reader), [(2,)])
+            reader.commit()
+
+            reader.execute('BEGIN')
+            self.assertEqual(retained_ids(reader), [(2,)])
+            self.assertEqual(history(reader), [(3,)])
+            self.assertEqual(_ci_next_identity_id(2, history(reader), known_unused=False), 4)
+            reader.commit()
 
     def test_ci_restore_rejects_unreviewed_constraints_and_indexes(self):
         """Catalog drift must roll back target and allow clean retry."""
