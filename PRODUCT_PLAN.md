@@ -14,6 +14,12 @@ BAM is an industry-independent, multi-business platform. Initial test workspaces
 
 When an actual functioning app warrants hosted testing **or** an essential development task cannot reasonably be completed with free alternatives, present a priced proposal for owner decision. That milestone does not authorize spending, service creation, public hosting, OAuth or real publishing by itself. Preserve the planned full multi-user SaaS capabilities and strict per-business/user isolation during the free-first phase.
 
+## Personal use comes first
+
+The owner prioritized a working personal app for writing AI-assisted posts. The first delivery is a standalone, mobile-friendly Facebook draft studio with a manual ChatGPT handoff, local saving, editing and copy. Personal feedback on this workflow determines the next increment. One-step generation through the existing OpenAI architecture remains a possible follow-up that requires separate authorization for any paid API calls.
+
+Multiuser collaboration, business isolation, direct publishing and analytics remain the long-term product goals. Hosted Beta and migration work are secondary to making the owner's personal post workflow useful. Existing operational gates continue to apply to shared or hosted release.
+
 ## 1. Outcomes the product must deliver
 
 1. A business owner can sign in to **one BAM account** using email/password or Google and manage multiple independently configured businesses.

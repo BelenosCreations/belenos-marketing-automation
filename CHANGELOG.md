@@ -1,3 +1,8 @@
+## Personal Post Studio (2026-11-13)
+
+- Added a standalone Facebook draft workspace with business presets, factual ChatGPT prompts, manual response import, local draft saving and copy.
+- Prioritized the owner's personal workflow while retaining the multiuser product goal.
+
 ## Signed witness-head publication (2026-11-13)
 
 - Recovered a committed, unpublished SQLite witness record after restart.

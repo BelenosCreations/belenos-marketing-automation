@@ -8,6 +8,7 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 
 ## Last independently verified engineering checkpoint (2026-11-13)
 
+- Handoff PR **#140** passed [merged-main Actions #43540509204](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43540509204) at `d99c6c8c9e96fa9491fcf09ba7642fe17bfe43ca`. Both branches matched with no open PRs before the personal studio candidate.
 - PR **#139** rehearsed recovery after a journal commit and before independently signed head publication, stale publisher keys, and PostgreSQL lock ordering for publication, acknowledgement and admission. Exact-head Actions [#43539892492](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43539892492) passed at `61a275584d4cafbc14da9bb8250f31c646b868ce`. Merged-main Actions [#43540078308](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43540078308) passed at `422ded794c83b5d2aceb1cbda6477d63c4f6b23a`. Both branches matched with zero ahead/behind and no open PRs before this handoff.
 - Handoff PR **#138** passed exact-head Actions [#43496765620](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43496765620) at `8cf3df68bbba431f458399c4b88b098f9ad9d404` and merged-main Actions [#43497096856](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43497096856) at `305d43cff85d8f20e58e4030aa7a877e22b28020`. Both branches matched with no open PRs before the publication candidate.
 - PR **#137** tested signed witness-journal restart and rollback, revocation racing reconciliation, restricted PostgreSQL function owners and superseded receipt denial. Exact-head Actions [#43496120863](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43496120863) passed at `ec000f233dbc74dd0c8293baca89b88a0aadafd7`. Merged-main Actions [#43496446772](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43496446772) passed at `cf9fe77bdba3631ee94005d0ae8cce1c18a65565`. Both branches matched with zero ahead/behind and no open PRs before this handoff.
@@ -36,6 +37,14 @@ Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
 
 ## Next safe development milestone
+
+The owner prioritized a useful personal app for writing AI-assisted posts. Multiuser collaboration remains the long-term goal and comes after personal usability. The $0 spending limit and service-activation restrictions still apply.
+
+1. Make the [Personal Post Studio](personal-post-studio.html) easy to use on the owner's phone. Verify the manual ChatGPT round trip, editing, saving and copying a finished Facebook draft. Use personal feedback to decide the next improvement.
+2. Continue the personal workflow first. Treat in-app AI generation as a follow-up using the existing OpenAI architecture, subject to separate authorization for any billable calls. Keep scheduling, posting automation and account connections gated.
+3. Resume the deferred operational work below when preparing the shared deployment and Private Beta.
+
+### Deferred shared deployment work
 
 1. Extend the [signed publication rehearsal](MIGRATION_AI_REQUEST_RECOVERY.md#signed-witness-head-publication) with an independently retained publication sequence and digest. Restore the journal and publication stores together to a valid older pair and prove that the independent checkpoint keeps review and writes closed. Test recovery across a publisher-key rotation and refusal of a stale pending head. Keep transforms inactive.
 2. Continue independent inventory of deployed and alternative writers, including WSGI routes, callbacks, retries, scheduled jobs, workers, file/object stores and non-Python clients. Use the [evidence checklist](MIGRATION_ALTERNATE_WRITER_INVENTORY.md#deployment-evidence-still-needed) to compare runtime observations and repository paths. Require independent runtime evidence for external writer coverage.
