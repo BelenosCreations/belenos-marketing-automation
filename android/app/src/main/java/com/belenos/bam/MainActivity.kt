@@ -85,7 +85,7 @@ class MainActivity : Activity() {
         val header = column().apply {
             setBackgroundColor(green)
             setPadding(dp(22), dp(16), dp(22), dp(16))
-            addView(text("BAM Personal", 25, Color.WHITE, bold = true))
+            addView(text(applicationInfo.loadLabel(packageManager).toString(), 25, Color.WHITE, bold = true))
             addView(text("Belenos Creations · Facebook", 15, Color.rgb(219, 233, 224)))
         }
         root.addView(header)
