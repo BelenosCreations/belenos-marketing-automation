@@ -533,6 +533,23 @@ updating the row again. The previous pin and a current generation with
 the wrong digest fail acknowledgement and admission. Only after the caller
 advances its retained pin does the fixture admit a write.
 
-The independent checkpoint is a test-held value. Durable storage,
-authenticated checkpoint reads and updates, and independent custody still
-require operational evidence.
+The caller checkpoint is a SQLite file in a separate temporary directory
+from the disposable PostgreSQL database. With the PostgreSQL acknowledgement
+committed and its response discarded, the restarted caller reads the
+previous pin from a fresh SQLite connection. Two fresh PostgreSQL sessions
+confirm the same acknowledged generation and digest. Both callers then race
+to update the SQLite row. The update matches the exact predecessor's
+generation and digest and permits only the next generation. One update
+commits. The other reports that it changed no row.
+
+A wrong predecessor digest and a generation skip both leave the SQLite
+checkpoint unchanged. After another acknowledged transition advances the
+file, PostgreSQL refuses the superseded acknowledgement and write admission.
+The local update also refuses the old transition that had already been
+confirmed, so delayed work leaves the newer checkpoint intact. The write
+canary accepts the pin read from the file after each successful advance.
+
+The restart is simulated by closing and reopening connections. Both stores
+run locally under the test runner. Authenticated checkpoint reads and
+updates, crash and storage guarantees on the chosen infrastructure, and
+independent operational custody still require evidence.

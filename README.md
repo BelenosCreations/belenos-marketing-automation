@@ -201,7 +201,10 @@ tests order publication against acknowledgement and write admission, including
 stale snapshots and retries after an interrupted response. In the fixture,
 a committed acknowledgement leaves writes closed for a caller whose
 independent checkpoint still holds the previous generation or wrong digest.
-An exact retry confirms the acknowledgement before the checkpoint advances.
+The caller reopens a separate local SQLite checkpoint after the interruption.
+Two retries can confirm the same acknowledgement, but only one can advance
+the checkpoint from its exact predecessor. A delayed retry leaves a newer
+checkpoint intact.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
