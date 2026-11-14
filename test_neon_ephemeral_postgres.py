@@ -368,6 +368,146 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             self.assertEqual(_ci_next_identity_id(2, history(reader), known_unused=False), 4)
             reader.commit()
 
+    def test_ci_restore_binds_identity_evidence_to_a_pinned_capture(self):
+        from unittest.mock import patch
+
+        from psycopg import sql
+
+        from business_invitations import BusinessInvitations
+        import neon_ci_restore_probe as probe
+        from offline_encrypted_backup import open_disposable_backup, seal_disposable_backup
+        from team_membership_admin import TeamMembershipAdmin
+
+        invitation = 'bam_business_invitation_events'
+        team = 'bam_team_member_audit'
+        columns = {invitation: 'event_id', team: 'id'}
+        key = os.urandom(32)
+
+        def digest(data):
+            return hashlib.sha256(data).hexdigest()
+
+        def row_digest(rows):
+            ordered = json.dumps(rows, ensure_ascii=True, separators=(',', ':')).encode('ascii')
+            return digest(ordered)
+
+        def context(table):
+            return digest(f'{probe._SCHEMA_FINGERPRINT}:identity-capture-v1:{table}:{columns[table]}'.encode())
+
+        def capture(db, table, capture_id, *, known_unused=False):
+            with db:
+                db.execute('BEGIN')
+                rows = db.execute(f'SELECT * FROM {table} ORDER BY {columns[table]}').fetchall()
+                history = db.execute('SELECT seq FROM sqlite_sequence WHERE name=?', (table,)).fetchall()
+            evidence = json.dumps({'capture_id': capture_id, 'rows_sha256': row_digest(rows),
+                                   'history': history, 'known_unused': known_unused},
+                                  separators=(',', ':')).encode('ascii')
+            envelope = seal_disposable_backup(plaintext=evidence, root_key=key,
+                                              schema_fingerprint=context(table), now=1000)
+            return rows, envelope
+
+        def next_id_from_evidence(table, rows, envelope, reference_pin):
+            if digest(envelope) != reference_pin:
+                raise PermissionError('Identity capture differs from retained pin')
+            payload = open_disposable_backup(envelope=envelope, root_key=key,
+                                             expected_schema_fingerprint=context(table), now=1001)
+            evidence = json.loads(payload)
+            if evidence['rows_sha256'] != row_digest(rows):
+                raise PermissionError('Identity capture differs from restored rows')
+            maximum = rows[-1][0] if rows else None
+            return _ci_next_identity_id(maximum, evidence['history'], known_unused=evidence['known_unused'])
+
+        with closing(sqlite3.connect(':memory:')) as legacy:
+            BusinessInvitations(db=legacy, sessions=None, directory=None, auth=None, deliver=lambda *_: None)
+            TeamMembershipAdmin(db=legacy, sessions=None, directory=None)
+            empty_invitation_rows, empty_invitation_envelope = capture(
+                legacy, invitation, 'capture-0', known_unused=True)
+            with legacy:
+                legacy.execute(f"INSERT INTO {invitation} VALUES (8,'shop-a','original','delivered',?,100)",
+                               (self.a,))
+            original_rows, original_envelope = capture(legacy, invitation, 'capture-1')
+            with legacy:
+                legacy.execute(f"UPDATE {invitation} SET invitation_id='current' WHERE event_id=8")
+            prior_rows, prior_envelope = capture(legacy, invitation, 'capture-2')
+            with legacy:
+                legacy.execute(f"INSERT INTO {invitation} VALUES (12,'shop-a','retired','delivered',?,101)",
+                               (self.a,))
+                legacy.execute(f'DELETE FROM {invitation} WHERE event_id=12')
+            current_rows, current_envelope = capture(legacy, invitation, 'capture-3')
+            team_rows, team_envelope = capture(legacy, team, 'capture-3', known_unused=True)
+
+        # Model the observer retaining these before any restore inputs are selected.
+        current_pins = {invitation: digest(current_envelope), team: digest(team_envelope)}
+        self.assertEqual(next_id_from_evidence(invitation, original_rows, original_envelope,
+                                               digest(original_envelope)), 9)
+        self.assertEqual(prior_rows, current_rows)
+        self.assertEqual(empty_invitation_rows, team_rows)
+        self.assertEqual(next_id_from_evidence(invitation, prior_rows, prior_envelope,
+                                               digest(prior_envelope)), 9)
+        modified = json.loads(current_envelope)
+        ciphertext = modified['ciphertext']
+        replacement = 'B' if ciphertext.startswith('A') else 'A'
+        modified['ciphertext'] = replacement + ciphertext[1:]
+        damaged = json.dumps(modified).encode('ascii')
+
+        original_import = probe._import_csv
+        for case, table, rows, envelope, pin, expected in (
+            ('current capture', invitation, current_rows, current_envelope, current_pins[invitation], 13),
+            ('known-unused capture', team, team_rows, team_envelope, current_pins[team], 1),
+            ('old rows under current evidence', invitation, original_rows, current_envelope,
+             current_pins[invitation], 'differs from restored rows'),
+            ('old evidence with identical rows', invitation, current_rows, prior_envelope,
+             current_pins[invitation], 'differs from retained pin'),
+            ('authentic evidence for different table', team, team_rows, empty_invitation_envelope,
+             digest(empty_invitation_envelope), 'source or freshness'),
+            ('modified ciphertext matching supplied digest', invitation, current_rows, damaged,
+             digest(damaged), 'authentication failed'),
+        ):
+            with self.subTest(case=case):
+                column = columns[table]
+                source = f'{probe._SOURCE}.{table}'
+                target = f'{probe._RESTORE}.{table}'
+                self.conn.execute(f'TRUNCATE {source}')
+                if rows:
+                    placeholders = ','.join('%s' for _ in rows[0])
+                    with self.conn.cursor() as cursor:
+                        cursor.executemany(f'INSERT INTO {source} VALUES ({placeholders})', rows)
+                sequence = f'{table}_{column}_seq'
+                source_state = self.conn.execute(
+                    f'SELECT last_value,is_called FROM {probe._SOURCE}.{sequence}').fetchone()
+                restarts = []
+
+                def restore_and_check(conn, destination, data):
+                    original_import(conn, destination, data)
+                    if destination != target:
+                        return
+                    restored = conn.execute(f'SELECT * FROM {target} ORDER BY {column}').fetchall()
+                    state = f'SELECT last_value,is_called FROM {probe._RESTORE}.{sequence}'
+                    self.assertEqual(conn.execute(state).fetchone(), (1, False))
+                    try:
+                        next_id = next_id_from_evidence(table, restored, envelope, pin)
+                    except PermissionError:
+                        self.assertEqual(conn.execute(state).fetchone(), (1, False))
+                        raise
+                    conn.execute(sql.SQL('ALTER TABLE {} ALTER COLUMN {} RESTART WITH {}').format(
+                        sql.Identifier(probe._RESTORE, table), sql.Identifier(column), sql.Literal(next_id)))
+                    self.assertEqual(conn.execute(state).fetchone(), (next_id, False))
+                    self.assertEqual(conn.execute('SELECT nextval(%s)',
+                                                  (f'{probe._RESTORE}.{sequence}',)).fetchone(), (next_id,))
+                    restarts.append(next_id)
+
+                with patch.object(probe, '_import_csv', side_effect=restore_and_check):
+                    if isinstance(expected, str):
+                        with self.assertRaisesRegex(PermissionError, expected):
+                            probe.run_ephemeral_ci_logical_restore(self.conn)
+                        self.assertEqual(restarts, [])
+                    else:
+                        self.assertTrue(probe.run_ephemeral_ci_logical_restore(self.conn)['separate_schema_discarded'])
+                        self.assertEqual(restarts, [expected])
+                self.assertIsNone(self.conn.execute('SELECT to_regnamespace(%s)', (probe._RESTORE,)).fetchone()[0])
+                self.assertEqual(self.conn.execute(f'SELECT * FROM {source} ORDER BY {column}').fetchall(), rows)
+                self.assertEqual(self.conn.execute(
+                    f'SELECT last_value,is_called FROM {probe._SOURCE}.{sequence}').fetchone(), source_state)
+
     def test_ci_restore_rejects_unreviewed_constraints_and_indexes(self):
         """Catalog drift must roll back target and allow clean retry."""
         from neon_ci_restore_probe import run_ephemeral_ci_logical_restore

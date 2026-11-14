@@ -1,3 +1,12 @@
+## Offline authenticated identity capture rehearsal (2026-11-14)
+
+- Sealed the ordered row digest, ID history and known-unused state from one
+  SQLite read transaction in the existing authenticated backup envelope.
+- Checked the retained ciphertext digest and reviewed table context before
+  restarting the disposable PostgreSQL sequence. Older authentic captures,
+  rows from another capture, evidence for another table and altered
+  ciphertext all stopped the rehearsal before restart.
+
 ## Offline identity history validation rehearsal (2026-11-14)
 
 - Read retained IDs and `sqlite_sequence` in one synthetic SQLite WAL snapshot

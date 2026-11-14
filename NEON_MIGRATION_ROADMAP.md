@@ -249,9 +249,26 @@ history. Deleted, duplicated, stale, malformed and exhausted history stop
 the rehearsal and roll back the temporary target schema with the source
 rows and sequence intact.
 
-Production review still needs authenticated provenance for the historical
-mark and never-used evidence, a consistent snapshot throughout capture and
-restore, and verification of sequence ownership and write fencing.
+The authenticated fixture reads the rows and sequence metadata in one SQLite
+transaction. It seals the ordered row digest, history, known-unused assertion
+and capture identifier in the existing in-memory backup envelope. The envelope
+authenticates a context derived from the reviewed schema, table and identity
+column. A separate test observer retains the current ciphertext digest before
+restore selects its inputs. After `COPY`, the fixture verifies the retained
+digest, opens the envelope for the target table, and recomputes the row digest
+from the restored rows before calculating the restart value.
+
+An older authentic capture can have the same surviving rows and a lower
+historical mark. The current digest rejects that replay. The rehearsal also
+rejects rows from a different capture with the same ID, a valid envelope for
+another table with identical empty rows, and changed ciphertext. Rejected
+cases leave the target sequence at its starting state and roll back the
+temporary schema. The two valid cases generate the expected IDs.
+
+The observer and key live in the test process. Production review still needs
+independent key and digest custody, proof of capture and never-used assertions,
+a coordinated snapshot across all selected tables, and verification of sequence
+ownership and write fencing.
 
 [SQLite AUTOINCREMENT](https://sqlite.org/autoinc.html) · [SQLite isolation](https://sqlite.org/isolation.html) · [PostgreSQL COPY](https://www.postgresql.org/docs/16/sql-copy.html) · [PostgreSQL sequence restart](https://www.postgresql.org/docs/16/sql-altersequence.html)
 
