@@ -1,6 +1,7 @@
 package com.belenos.bam
 
 import android.app.Application
+import android.app.AlertDialog
 import android.content.ClipboardManager
 import android.os.Looper
 import android.view.View
@@ -48,13 +49,15 @@ class MainActivityTest {
             })
 
             root.button("Edit caption").performClick()
-            val dialog = ShadowAlertDialog.getLatestAlertDialog() as android.app.AlertDialog
+            shadowOf(Looper.getMainLooper()).idle()
+            val dialog = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
             val editor = dialog.window!!.decorView.descendants().filterIsInstance<EditText>().single()
             editor.setText(" ")
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
-            assertEquals("Enter a caption.", editor.error.toString())
+            val save = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            save.performClick()
+            assertEquals("Enter a caption.", editor.error?.toString())
             editor.setText("Edited caption for Facebook")
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
+            save.performClick()
 
             root.button("Copy caption").performClick()
             val clipboard = activity.getSystemService(ClipboardManager::class.java)
