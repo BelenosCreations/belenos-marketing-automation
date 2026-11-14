@@ -475,3 +475,30 @@ A newer pin blocks an older pending acknowledgement and invalidates an
 older open generation on a subsequent admission. These tests observe
 already-committed witness rows. Concurrent witness updates, external
 latest-head custody and deployed role membership remain operational gates.
+
+### Signed witness-head publication
+
+A disposable SQLite rehearsal signs publication with a key distinct from
+the journal and promotion completion keys. A publication identifies its
+key epoch, sequence, predecessor and latest journal digest. The publisher
+validates the journal chain and checks the committed promotion while
+holding the authority, journal and publication reservations. The signed
+publication lives in a separate local file. Exact retry is idempotent.
+
+The test closes and reopens the files after the journal commits and before
+the head is published. The old publication cannot authenticate the newer
+journal. An old key epoch, a journal key acting as publisher, or a signed
+fork cannot publish the pending head. A second connection encounters the
+publication lock and may retry after it is released. Review and writes
+remain closed until the new publication is verified and reconciled.
+
+Disposable PostgreSQL tests put publication, acknowledgement and write
+admission on a common authority-row lock across two connections. When
+acknowledgement or admission takes the lock first, publication must retry.
+When publication takes it first, the competing acknowledgement and
+admission cannot proceed and are refused on retry with the old generation.
+The publisher's function owner can append a pin and lock the authority row.
+Caller grants separately cover publication, staging, acknowledgement and
+write admission. The PostgreSQL fixture uses synthetic digests and database
+roles. Operational key custody, independent persistence and deployed
+reader and writer coverage still require verification.

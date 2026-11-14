@@ -119,6 +119,14 @@ change public execution defaults, insert or restore witness rows, or reset
 the independent latest-head pin. Source and fixture grants document the
 boundary to test. Runtime identity and deployment evidence remain open.
 
+The witness publication review at `305d43cff85d8f20e58e4030aa7a877e22b28020`
+separates journal append, head publication, acknowledgement, and admission.
+Collect the running release and effective principal for each, along with
+who can rotate publisher keys, replay a pending head after restart, or
+restore publication metadata. Record any client able to write the journal,
+pin or authority state outside the common transaction boundary. The
+repository review establishes fixture paths only.
+
 ## Isolated freeze and retry rehearsal
 
 The selected split is [AI draft persistence before request finalization](ai_generation_workflow.py#L64-L110).

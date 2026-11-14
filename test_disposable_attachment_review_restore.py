@@ -564,7 +564,7 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
         return closing(db)
 
     @staticmethod
-    def read_witness_journal(db, key, expected_head):
+    def witness_records(db, key):
         head, latest = _EMPTY_HEAD, (0, None, None)
         records = db.execute(
             "SELECT sequence,body,signature FROM witness_record ORDER BY sequence")
@@ -576,6 +576,13 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                     or previous != head or generation <= latest[0]):
                 raise PermissionError('Invalid witness journal sequence')
             head, latest = _sha(body + signature), (generation, state_pin, receipt)
+            yield head, latest
+
+    @classmethod
+    def read_witness_journal(cls, db, key, expected_head):
+        head, latest = _EMPTY_HEAD, (0, None, None)
+        for head, latest in cls.witness_records(db, key):
+            pass
         if head != expected_head:
             raise PermissionError('Witness journal differs from independent head')
         return latest
@@ -801,3 +808,154 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                 self.admitted_write(db, 3, current['state'], independent, 'current')
                 self.assertEqual(db.execute("SELECT * FROM recovery_canary").fetchall(),
                                  [('current', 3, receipt)])
+
+    def publication_store(self, *, initialize=False):
+        db = sqlite3.connect(self.directory / 'published-head.sqlite', timeout=0)
+        if initialize:
+            db.execute("""CREATE TABLE published_head (
+                sequence INTEGER PRIMARY KEY, body BLOB NOT NULL, signature BLOB NOT NULL
+            )""")
+        return closing(db)
+
+    @staticmethod
+    def verify_publication(row, keys):
+        body, signature = row
+        purpose, epoch, sequence, previous, head = json.loads(body)
+        if purpose != 'ci-witness-publication-v1' or epoch not in keys:
+            raise PermissionError('Invalid publication purpose or key epoch')
+        keys[epoch].verify(signature, body)
+        return epoch, sequence, previous, head
+
+    def publish_pending(self, authority, journal, publication, journal_key,
+                        keys, current_epoch, signed):
+        epoch, sequence, previous, head = self.verify_publication(signed, keys)
+        if epoch != current_epoch:
+            raise PermissionError('Publication key epoch is stale')
+        # Acquire all three reservations before checking the durable state.
+        # Only the publication store is changed by this transaction.
+        with authority, journal, publication:
+            for db in (authority, journal, publication):
+                db.execute('BEGIN IMMEDIATE')
+            records = list(self.witness_records(journal, journal_key))
+            if not records or (sequence, head) != (len(records), records[-1][0]):
+                raise PermissionError('Publication must name the latest journal record')
+            predecessor = records[-2][0] if len(records) > 1 else _EMPTY_HEAD
+            if previous != predecessor:
+                raise PermissionError('Publication predecessor differs from journal')
+            local = authority.execute("""SELECT generation,state_pin,receipt FROM promotion
+                WHERE id=1 AND active IS NOT NULL""").fetchone()
+            if local != records[-1][1]:
+                raise PermissionError('Publication differs from committed promotion')
+            last = publication.execute("""SELECT body,signature FROM published_head
+                ORDER BY sequence DESC LIMIT 1""").fetchone()
+            if last == signed:
+                return
+            if last is None:
+                last_sequence, last_head = 0, _EMPTY_HEAD
+            else:
+                _, last_sequence, _, last_head = self.verify_publication(last, keys)
+            if (last_sequence, last_head) != (sequence - 1, previous):
+                raise PermissionError('Published predecessor is no longer current')
+            publication.execute("INSERT INTO published_head VALUES (?,?,?)",
+                                (sequence, *signed))
+
+    def published_witness(self, journal, publication, journal_key, keys, current_epoch):
+        row = publication.execute("""SELECT body,signature FROM published_head
+            ORDER BY sequence DESC LIMIT 1""").fetchone()
+        if row is None:
+            raise PermissionError('Witness head is not published')
+        epoch, _, _, head = self.verify_publication(row, keys)
+        if epoch != current_epoch:
+            raise PermissionError('Published witness key epoch is stale')
+        return self.read_witness_journal(journal, journal_key, head)
+
+    def test_pending_publication_survives_restart_and_competing_publishers(self):
+        with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
+            archive_key = Ed25519PrivateKey.generate()
+            completion_key = Ed25519PrivateKey.generate()
+            journal_key = Ed25519PrivateKey.generate()
+            publishers = {epoch: Ed25519PrivateKey.generate() for epoch in (1, 2)}
+            keys = {epoch: key.public_key() for epoch, key in publishers.items()}
+            journal_public = journal_key.public_key()
+
+            def signed(epoch, sequence, previous, head):
+                body = _canonical(['ci-witness-publication-v1', epoch, sequence, previous, head])
+                return body, publishers[epoch].sign(body)
+
+            def stage_and_record(authority, journal, generation, replica, manifest, previous):
+                checkpoint, sig, pin = replica
+                options = dict(pin=pin, epoch=checkpoint['epoch'], key=archive_key.public_key(),
+                               chain=manifest[0])
+                self.stage_promotion(authority, generation, checkpoint, sig, **options)
+                args = generation, checkpoint['state'], pin
+                proof = completion_key.sign(_canonical(['ci-completion-v1', *args]))
+                receipt = self.promote(authority, *args, proof, completion_key.public_key())
+                state = generation, checkpoint['state'], receipt
+                head = self.append_witness_record(journal, journal_key, previous, state)
+                return head, state, options
+
+            old, prior = self.archive_checkpoint(1, archive_key)
+            with self.promotion_store(initialize=True) as authority, (
+                    self.witness_journal(initialize=True)) as journal, (
+                    self.publication_store(initialize=True)) as publication:
+                first, old_state, old_options = stage_and_record(
+                    authority, journal, 1, old, prior, _EMPTY_HEAD)
+                self.publish_pending(authority, journal, publication, journal_public, keys,
+                                     1, signed(1, 1, _EMPTY_HEAD, first))
+                self.reconcile_promotion(authority, old_state)
+
+            self.revoke(_claim(_ALICE, version=1))
+            current, manifest = self.archive_checkpoint(2, archive_key, previous=prior)
+            checkpoint, sig, _ = current
+            with self.promotion_store() as authority, self.witness_journal() as journal:
+                generation = self.begin_recovery(authority, (1, checkpoint['state'], None))
+                _, current_state, options = stage_and_record(
+                    authority, journal, generation, current, manifest, first)
+                # Simulate restart after append commits but before publication.
+
+            with self.promotion_store() as authority, self.witness_journal() as journal, (
+                    self.publication_store()) as publication, self.publication_store() as competitor:
+                with self.assertRaisesRegex(PermissionError, 'independent head'):
+                    self.published_witness(journal, publication, journal_public, keys, 1)
+                with self.assertRaisesRegex(PermissionError, 'key epoch'):
+                    self.published_witness(journal, publication, journal_public, keys, 2)
+                with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
+                    self.promoted_review(authority, 1, *old[:2], independent=old_state,
+                                         **old_options)
+                with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
+                    self.admitted_write(authority, generation, checkpoint['state'], current_state,
+                                        'unpublished')
+                pending_head, recovered = list(self.witness_records(journal, journal_public))[-1]
+                self.assertEqual(recovered, current_state)
+                with self.assertRaisesRegex(PermissionError, 'key epoch is stale'):
+                    self.publish_pending(authority, journal, publication, journal_public, keys,
+                                         2, signed(1, 2, first, pending_head))
+                pin = signed(2, 2, first, pending_head)
+                with self.assertRaises(InvalidSignature):
+                    self.publish_pending(authority, journal, publication, journal_public, keys,
+                                         2, (pin[0], journal_key.sign(pin[0])))
+                with self.assertRaisesRegex(PermissionError, 'predecessor differs'):
+                    self.publish_pending(authority, journal, publication, journal_public, keys,
+                                         2, signed(2, 2, _EMPTY_HEAD, pending_head))
+                with publication:
+                    publication.execute('BEGIN IMMEDIATE')
+                    with self.assertRaisesRegex(sqlite3.OperationalError, 'locked'):
+                        self.publish_pending(authority, journal, competitor, journal_public,
+                                             keys, 2, pin)
+                self.publish_pending(authority, journal, publication, journal_public, keys, 2, pin)
+                self.publish_pending(authority, journal, competitor, journal_public, keys, 2, pin)
+                with self.assertRaisesRegex(PermissionError, 'latest journal record'):
+                    self.publish_pending(authority, journal, competitor, journal_public, keys,
+                                         2, signed(2, 2, first, 'f' * 64))
+                self.assertEqual(publication.execute("SELECT count(*) FROM published_head").fetchone(),
+                                 (2,))
+                verified = self.published_witness(journal, publication, journal_public, keys, 2)
+                with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
+                    self.promoted_review(authority, generation, checkpoint, sig, independent=verified,
+                                         **options)
+                self.reconcile_promotion(authority, verified)
+                self.assertEqual(self.promoted_review(
+                    authority, generation, checkpoint, sig, independent=verified, **options), ())
+                self.admitted_write(authority, generation, checkpoint['state'], verified, 'published')
+                self.assertEqual(authority.execute("SELECT operation FROM recovery_canary").fetchall(),
+                                 [('published',)])

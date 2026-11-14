@@ -1,3 +1,12 @@
+## Signed witness-head publication (2026-11-13)
+
+- Recovered a committed, unpublished SQLite witness record after restart.
+  Tested separate signatures, signing-key epochs, contested publication
+  and idempotent retry before review or write admission.
+- Exercised both PostgreSQL lock orders for publication versus
+  acknowledgement and write admission. Checked separate caller grants
+  for publishing, staging, acknowledging and writing.
+
 ## Signed witness journal and restricted function owners (2026-11-13)
 
 - Reopened a signed SQLite witness journal after a lost acknowledgement and
