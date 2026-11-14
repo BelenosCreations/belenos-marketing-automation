@@ -62,6 +62,12 @@ class ScheduleTest {
         ))
         assertEquals("A photo with a label that reads \"Best dog\".",
             Schedule.caption("A photo with a label that reads \"Best dog\"."))
+        assertEquals("Christmas custom orders close December 3. Message us!",
+            Schedule.caption("Campaign note: Christmas custom orders close December 3. [Message us!](#)"))
+        val prompt = Schedule.prompt(LocalDate.parse("2026-11-14"), Slot.MORNING,
+            listOf("Ask about custom 3D prints for your desk today."))
+        org.junit.Assert.assertTrue(prompt.contains("Ask about custom 3D prints for"))
+        assertFalse(prompt.contains("your desk today"))
         for (hours in listOf("noon to 7 PM", "4 p.m.", "16:30", "12pm")) {
             assertThrows(IllegalArgumentException::class.java) {
                 Schedule.caption("Come in at $hours!", "noon–7 PM")

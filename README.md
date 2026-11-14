@@ -21,8 +21,9 @@ checks today's missing slots even while automatic drafting is paused.
 Existing captions and skipped slots are left out of that run.
 
 BAM 0.6.0 asks the model for one short caption focused on a single subject.
-Before saving a new generated draft, BAM removes common AI labels and wrapping
-quotes and checks for generated operating times or immediate visit wording.
+Before saving a new generated draft, BAM removes common AI labels, wrapping
+quotes, and Markdown link destinations. It checks for generated operating times
+and immediate visit wording.
 Opening reminders can invite a visit and get their hours from the app's
 confirmed schedule. Review captions before posting to Facebook.
 

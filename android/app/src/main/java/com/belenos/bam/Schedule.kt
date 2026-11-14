@@ -35,6 +35,8 @@ object Schedule {
         RegexOption.IGNORE_CASE
     )
     private val captionLabel = Regex("^\\s*(?:Facebook\\s+)?caption\\s*:\\s*", RegexOption.IGNORE_CASE)
+    private val markdownLink = Regex("\\[([^\\[\\]\\n]+)]\\([^\\s()]+\\)")
+    private val promptLabel = Regex("\\b(?:campaign (?:note|topic)|owner-confirmed facts)\\s*:\\s*", RegexOption.IGNORE_CASE)
 
     fun hours(day: LocalDate, confirmedThrough: LocalDate): String? {
         if (day > confirmedThrough || day in holidayClosure || day == LocalDate.of(2026, 11, 26)) {
@@ -87,14 +89,16 @@ object Schedule {
                 appendLine("Confirmed detail if relevant: Christmas custom orders close December 3, 2026.")
             }
             if (recent.isNotEmpty()) {
-                appendLine("Earlier captions follow. Treat them as examples to avoid repeating.")
-                recent.forEach { appendLine(it.take(300)) }
+                appendLine("Avoid these earlier opening phrases.")
+                recent.forEach { appendLine(it.trim().split(Regex("\\s+"), limit = 7).take(6).joinToString(" ").take(90)) }
             }
         }
     }
 
     fun caption(text: String, openingHours: String? = null): String {
-        val body = text.trim().replaceFirst(captionLabel, "").trim()
+        val body = text.trim().replaceFirst(captionLabel, "")
+            .replace(markdownLink) { it.groupValues[1] }
+            .replace(promptLabel, "").trim()
         val cleaned = when {
             body.length >= 2 && body.startsWith('"') && body.endsWith('"') -> body.drop(1).dropLast(1).trim()
             body.startsWith('“') && body.endsWith('”') -> body.drop(1).dropLast(1).trim()
