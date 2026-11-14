@@ -1486,6 +1486,161 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             self.assertEqual(self.conn.execute("SELECT * FROM ci_recovery_write").fetchall(),
                              [('current', 3)])
 
+    def test_ci_witness_publication_serializes_with_acknowledgement_and_admission(self):
+        with self.conn.transaction():
+            for role in ('ci_pin_publisher', 'ci_pin_publish_owner',
+                         'ci_pin_acknowledger', 'ci_pin_writer', 'ci_pin_stager'):
+                self.conn.execute(f"CREATE ROLE {role} NOLOGIN")
+                self.conn.execute(f"GRANT USAGE ON SCHEMA bam_ci_integration TO {role}")
+            self.conn.execute("""CREATE TABLE ci_pin_gate (
+                id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
+                opened BOOLEAN NOT NULL, lock_permission INTEGER
+            )""")
+            self.conn.execute("INSERT INTO ci_pin_gate VALUES (1,1,FALSE,NULL)")
+            self.conn.execute("""CREATE TABLE ci_pin_history (
+                generation INTEGER PRIMARY KEY, digest TEXT NOT NULL
+            )""")
+            self.conn.execute("INSERT INTO ci_pin_history VALUES (1,'first')")
+            self.conn.execute("""CREATE TABLE ci_pin_writes (
+                operation TEXT PRIMARY KEY, generation INTEGER NOT NULL
+            )""")
+            self.conn.execute("""GRANT SELECT (id),UPDATE (lock_permission)
+                ON ci_pin_gate TO ci_pin_publish_owner""")
+            self.conn.execute("""GRANT SELECT (generation),INSERT
+                ON ci_pin_history TO ci_pin_publish_owner""")
+            self.conn.execute("""CREATE FUNCTION ci_publish_pin(expected INTEGER, evidence TEXT)
+                RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+                BEGIN
+                    PERFORM id FROM bam_ci_integration.ci_pin_gate WHERE id=1 FOR UPDATE NOWAIT;
+                    IF (SELECT max(generation) FROM bam_ci_integration.ci_pin_history)
+                            IS DISTINCT FROM expected THEN
+                        RETURN FALSE;
+                    END IF;
+                    INSERT INTO bam_ci_integration.ci_pin_history VALUES (expected+1,evidence);
+                    RETURN TRUE;
+                END
+                $$""")
+            self.conn.execute("""CREATE FUNCTION ci_ack_pin(expected INTEGER, evidence TEXT)
+                RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+                BEGIN
+                    PERFORM id FROM bam_ci_integration.ci_pin_gate WHERE id=1 FOR UPDATE NOWAIT;
+                    UPDATE bam_ci_integration.ci_pin_gate SET opened=TRUE
+                    WHERE id=1 AND generation=expected AND NOT opened
+                      AND (expected,evidence) = (
+                          SELECT generation,digest FROM bam_ci_integration.ci_pin_history
+                          ORDER BY generation DESC LIMIT 1
+                      );
+                    RETURN FOUND;
+                END
+                $$""")
+            self.conn.execute("""CREATE FUNCTION ci_admit_pin(expected INTEGER, operation TEXT)
+                RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+                BEGIN
+                    PERFORM id FROM bam_ci_integration.ci_pin_gate
+                        WHERE id=1 FOR SHARE NOWAIT;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM bam_ci_integration.ci_pin_gate
+                        WHERE id=1 AND generation=expected AND opened
+                          AND expected=(SELECT max(generation)
+                                        FROM bam_ci_integration.ci_pin_history)
+                    ) THEN
+                        RETURN FALSE;
+                    END IF;
+                    INSERT INTO bam_ci_integration.ci_pin_writes VALUES (operation,expected);
+                    RETURN TRUE;
+                END
+                $$""")
+            self.conn.execute("""CREATE FUNCTION ci_stage_pin(expected INTEGER, evidence TEXT)
+                RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+                BEGIN
+                    PERFORM id FROM bam_ci_integration.ci_pin_gate WHERE id=1 FOR UPDATE NOWAIT;
+                    UPDATE bam_ci_integration.ci_pin_gate SET generation=expected,opened=FALSE
+                    WHERE id=1 AND generation<expected AND (expected,evidence) = (
+                        SELECT generation,digest FROM bam_ci_integration.ci_pin_history
+                        ORDER BY generation DESC LIMIT 1
+                    );
+                    RETURN FOUND;
+                END
+                $$""")
+            self.conn.execute("ALTER FUNCTION ci_publish_pin(INTEGER,TEXT) OWNER TO ci_pin_publish_owner")
+            for function, role in (
+                ('ci_publish_pin', 'ci_pin_publisher'),
+                ('ci_stage_pin', 'ci_pin_stager'),
+                ('ci_ack_pin', 'ci_pin_acknowledger'),
+                ('ci_admit_pin', 'ci_pin_writer'),
+            ):
+                self.conn.execute(f"REVOKE ALL ON FUNCTION {function}(INTEGER,TEXT) FROM PUBLIC")
+                self.conn.execute(f"GRANT EXECUTE ON FUNCTION {function}(INTEGER,TEXT) TO {role}")
+
+        def cleanup():
+            self.conn.execute("""DROP FUNCTION ci_publish_pin(INTEGER,TEXT),
+                ci_ack_pin(INTEGER,TEXT),ci_admit_pin(INTEGER,TEXT),ci_stage_pin(INTEGER,TEXT);
+                DROP TABLE ci_pin_gate,ci_pin_history,ci_pin_writes;
+                REVOKE USAGE ON SCHEMA bam_ci_integration FROM ci_pin_publish_owner,
+                    ci_pin_publisher,ci_pin_acknowledger,ci_pin_writer,ci_pin_stager;
+                DROP ROLE ci_pin_publish_owner,ci_pin_publisher,ci_pin_acknowledger,ci_pin_writer,ci_pin_stager""")
+
+        self.addCleanup(cleanup)
+
+        def run(db, role, function, expected, value):
+            with db.transaction():
+                db.execute(f"SET LOCAL ROLE {role}")
+                return db.execute(f"SELECT {function}(%s,%s)", (expected, value)).fetchone()[0]
+
+        def publish(db, previous, evidence):
+            return run(db, 'ci_pin_publisher', 'ci_publish_pin', previous, evidence)
+
+        def acknowledge(db, generation, evidence):
+            return run(db, 'ci_pin_acknowledger', 'ci_ack_pin', generation, evidence)
+
+        def admit(db, generation, operation):
+            return run(db, 'ci_pin_writer', 'ci_admit_pin', generation, operation)
+
+        for role, statement in (
+            ('ci_pin_publisher', "UPDATE ci_pin_gate SET generation=4,opened=TRUE"),
+            ('ci_pin_publisher', "INSERT INTO ci_pin_history VALUES (4,'bypass')"),
+            ('ci_pin_publisher', "SELECT ci_stage_pin(2,'second')"),
+            ('ci_pin_publisher', "SELECT ci_ack_pin(1,'first')"),
+            ('ci_pin_publisher', "SELECT ci_admit_pin(1,'bypass')"),
+            ('ci_pin_acknowledger', "SELECT ci_publish_pin(1,'second')"),
+            ('ci_pin_writer', "SELECT ci_publish_pin(1,'second')"),
+            ('ci_pin_stager', "SELECT ci_publish_pin(1,'second')"),
+        ):
+            with self.assertRaises(self.psycopg.errors.InsufficientPrivilege):
+                with self.conn.transaction():
+                    self.conn.execute(f"SET LOCAL ROLE {role}")
+                    self.conn.execute(statement)
+
+        busy = self.psycopg.errors.LockNotAvailable
+        with closing(self._connect()) as peer:
+            with self.conn.transaction():
+                self.assertTrue(acknowledge(self.conn, 1, 'first'))
+                with self.assertRaises(busy):
+                    publish(peer, 1, 'second')
+            with self.conn.transaction():
+                self.assertTrue(admit(self.conn, 1, 'before-publication'))
+                with self.assertRaises(busy):
+                    publish(peer, 1, 'second')
+            with peer.transaction():
+                self.assertTrue(publish(peer, 1, 'second'))
+                with self.assertRaises(busy):
+                    acknowledge(self.conn, 1, 'first')
+                with self.assertRaises(busy):
+                    admit(self.conn, 1, 'during-publication')
+            self.assertFalse(publish(peer, 1, 'competing-publication'))
+            self.assertFalse(acknowledge(self.conn, 1, 'first'))
+            self.assertFalse(admit(self.conn, 1, 'after-publication'))
+
+            self.assertFalse(run(self.conn, 'ci_pin_stager', 'ci_stage_pin', 2, 'first'))
+            self.assertTrue(run(self.conn, 'ci_pin_stager', 'ci_stage_pin', 2, 'second'))
+            self.assertFalse(admit(self.conn, 2, 'pending'))
+            self.assertFalse(acknowledge(self.conn, 2, 'first'))
+            self.assertTrue(acknowledge(self.conn, 2, 'second'))
+            self.assertTrue(admit(self.conn, 2, 'after-acknowledgement'))
+        self.assertEqual(self.conn.execute("""SELECT operation,generation FROM ci_pin_writes
+            ORDER BY generation""").fetchall(),
+            [('before-publication', 1), ('after-acknowledgement', 2)])
+
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.
         with self.conn.transaction(force_rollback=True):

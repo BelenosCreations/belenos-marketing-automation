@@ -39,6 +39,9 @@ independent evidence of deployed grants still need verification. The
 signed journal and function ownership rehearsals cover synthetic rollback
 and privilege checks. Separately operated witness storage, externally
 retained latest-head evidence and deployed grants remain release gates.
+The publication rehearsal exercises a local restart before the latest
+head is signed and published. Deployed publisher identity, independent
+key custody and cross-instance admission still require operational evidence.
 
 ## Alternate writer and recovery review
 
