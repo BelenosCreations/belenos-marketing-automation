@@ -26,10 +26,34 @@ jobs:
         with:
           gradle-version: '8.13'
       - run: test -f "$ANDROID_HOME/platforms/android-35/android.jar"
-      - run: gradle -p android :app:testDebugUnitTest :app:assembleDebug
+      - run: gradle -p android :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
+      - name: Verify preview and owner-signable packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_tools="$ANDROID_HOME/build-tools/35.0.0"
+          preview=android/app/build/outputs/apk/debug/app-debug.apk
+          release=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          "$sdk_tools/apksigner" verify "$preview"
+          preview_info=$("$sdk_tools/aapt" dump badging "$preview")
+          release_info=$("$sdk_tools/aapt" dump badging "$release")
+          grep -Fq "package: name='com.belenos.bam.owner.preview'" <<< "$preview_info"
+          grep -Fq "application-label:'BAM Preview'" <<< "$preview_info"
+          grep -Fq "package: name='com.belenos.bam.owner'" <<< "$release_info"
+          grep -Fq "application-label:'BAM Personal'" <<< "$release_info"
+          grep -Fxq "native-code: 'arm64-v8a'" <<< "$preview_info"
+          grep -Fxq "native-code: 'arm64-v8a'" <<< "$release_info"
+          if grep -Fq 'application-debuggable' <<< "$release_info"; then
+            echo 'Owner APK must not be debuggable.' >&2
+            exit 1
+          fi
+          "$sdk_tools/zipalign" -c -P 16 4 "$preview"
+          "$sdk_tools/zipalign" -c -P 16 4 "$release"
       - uses: actions/upload-artifact@v4
         with:
           name: bam-android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 3

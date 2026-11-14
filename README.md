@@ -48,18 +48,48 @@ original text and display no inferred timing.
 4. Repeat for a morning and an evening slot before replacing the existing
    ChatGPT tasks. Facebook posting is manual.
 
-CI uses a temporary debug signing key. A CI APK from a later build cannot
-update a copy installed with a different key. Keep the existing install and
-its drafts if Android rejects an update. Use the 0.3.0 CI APK for a fresh
-install on a test device, or use the same owner-managed signing key across
-builds for an install that can receive future updates.
+### Install the preview or sign a personal build
 
-To build from source, use JDK 21, Android SDK 35 and Gradle 8.13. Run
-`gradle -p android :app:testDebugUnitTest :app:assembleDebug`.
-The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`.
+Starting with 0.4.0, the **BAM Preview** APK installs alongside 0.1.0 through
+0.3.0. It has its own inbox, settings and one-time model download. Pause
+automatic drafting in any older installation while testing the preview.
+CI preview builds use temporary signing keys. Android may require a fresh
+preview install for a subsequent preview signed with a different key.
+
+The **BAM Personal** release build also has a new package ID. Sign it with a
+key you keep and use that same key for later updates. The first install has
+its own inbox and model download. Drafts from earlier apps remain accessible
+in those apps. This build path requires a computer for signing once per APK.
+The signed app generates drafts on the phone by itself.
+
+Use JDK 21, Android SDK and Build Tools 35, and Gradle 8.13. Build both variants
+with `gradle -p android :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease`.
+The output paths are `android/app/build/outputs/apk/debug/app-debug.apk` and
+`android/app/build/outputs/apk/release/app-release-unsigned.apk`. For the
+personal build, run these commands from the repository root. Create the key
+once, outside the repository, and keep a private backup. The tools prompt
+for passwords locally.
+
+```sh
+keytool -genkeypair -keystore "$HOME/bam-personal.p12" -storetype PKCS12 \
+  -alias bam-personal -keyalg RSA -keysize 3072 -validity 10000
+
+bam_build_tools="$ANDROID_HOME/build-tools/35.0.0"
+bam_unsigned="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+"$bam_build_tools/apksigner" sign --ks "$HOME/bam-personal.p12" \
+  --ks-key-alias bam-personal --out BAM-Personal.apk "$bam_unsigned"
+"$bam_build_tools/apksigner" verify --verbose --print-certs BAM-Personal.apk
+```
+
+For each later version, reuse the existing key and run only the signing and
+verification commands. Check that the signer certificate SHA-256 digest
+matches the previous APK before installing the update.
+
 The model is downloaded into app-specific storage and verified by SHA-256.
 See the [model card](https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct)
 and [LiteRT-LM documentation](https://developers.google.com/edge/litert-lm/android).
+See [Android app signing](https://developer.android.com/studio/publish/app-signing)
+for signing and key custody.
 
 ## BAM Scheduled Posts on a computer
 

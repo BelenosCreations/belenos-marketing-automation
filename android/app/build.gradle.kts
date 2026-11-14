@@ -6,12 +6,19 @@ android {
     namespace = "com.belenos.bam"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.belenos.bam.personal"
+        applicationId = "com.belenos.bam.owner"
         minSdk = 28
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
+        manifestPlaceholders["bamLabel"] = "BAM Personal"
         ndk { abiFilters += "arm64-v8a" }
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix = ".preview"
+            manifestPlaceholders["bamLabel"] = "BAM Preview"
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

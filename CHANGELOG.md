@@ -1,3 +1,11 @@
+## BAM Personal Android 0.4.0 (2026-11-14)
+
+- Made BAM Preview install alongside earlier Android builds for phone testing.
+- Added an unsigned personal build with a separate package ID and documented
+  signing with an owner-managed key that can be reused for later updates.
+- Added CI checks for app identities, ARM64 packaging, APK alignment and
+  preview signature verification.
+
 ## BAM Personal Android 0.3.0 (2026-11-14)
 
 - Added today's draft timing with Eastern targets, pending and skipped slots,
