@@ -1494,9 +1494,9 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                 self.conn.execute(f"GRANT USAGE ON SCHEMA bam_ci_integration TO {role}")
             self.conn.execute("""CREATE TABLE ci_pin_gate (
                 id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
-                opened BOOLEAN NOT NULL, lock_permission INTEGER
+                opened BOOLEAN NOT NULL, publication_revision INTEGER NOT NULL
             )""")
-            self.conn.execute("INSERT INTO ci_pin_gate VALUES (1,1,FALSE,NULL)")
+            self.conn.execute("INSERT INTO ci_pin_gate VALUES (1,1,FALSE,0)")
             self.conn.execute("""CREATE TABLE ci_pin_history (
                 generation INTEGER PRIMARY KEY, digest TEXT NOT NULL
             )""")
@@ -1504,7 +1504,7 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             self.conn.execute("""CREATE TABLE ci_pin_writes (
                 operation TEXT PRIMARY KEY, generation INTEGER NOT NULL
             )""")
-            self.conn.execute("""GRANT SELECT (id),UPDATE (lock_permission)
+            self.conn.execute("""GRANT SELECT (id,publication_revision),UPDATE (publication_revision)
                 ON ci_pin_gate TO ci_pin_publish_owner""")
             self.conn.execute("""GRANT SELECT (generation),INSERT
                 ON ci_pin_history TO ci_pin_publish_owner""")
@@ -1517,6 +1517,9 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                         RETURN FALSE;
                     END IF;
                     INSERT INTO bam_ci_integration.ci_pin_history VALUES (expected+1,evidence);
+                    -- A lock alone does not invalidate a previously established snapshot.
+                    UPDATE bam_ci_integration.ci_pin_gate
+                       SET publication_revision=publication_revision+1 WHERE id=1;
                     RETURN TRUE;
                 END
                 $$""")
@@ -1640,6 +1643,50 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
         self.assertEqual(self.conn.execute("""SELECT operation,generation FROM ci_pin_writes
             ORDER BY generation""").fetchall(),
             [('before-publication', 1), ('after-acknowledgement', 2)])
+
+        serialization = self.psycopg.errors.SerializationFailure
+        with closing(self._connect()) as peer:
+            for generation, isolation in enumerate(('REPEATABLE READ', 'SERIALIZABLE'), 2):
+                with self.subTest(isolation=isolation):
+                    evidence = 'second' if generation == 2 else f'pin-{generation}'
+                    next_evidence = f'pin-{generation + 1}'
+                    with peer.transaction(force_rollback=True):
+                        self.assertTrue(publish(peer, generation, next_evidence))
+                    self.assertEqual(self.conn.execute("SELECT max(generation) FROM ci_pin_history")
+                                     .fetchone(), (generation,))
+                    self.assertEqual(self.conn.execute("SELECT publication_revision FROM ci_pin_gate")
+                                     .fetchone(), (generation - 1,))
+
+                    with self.conn.transaction():
+                        self.conn.execute(f'SET TRANSACTION ISOLATION LEVEL {isolation}')
+                        self.assertEqual(self.conn.execute("SELECT max(generation) FROM ci_pin_history")
+                                         .fetchone(), (generation,))
+                        # Commit on a separate connection and discard the returned acknowledgement.
+                        publish(peer, generation, next_evidence)
+                        for operation, args in (
+                            (publish, (generation, 'competing-pin')),
+                            (acknowledge, (generation, evidence)),
+                            (admit, (generation, f'stale-{generation}')),
+                        ):
+                            with self.assertRaises(serialization):
+                                operation(self.conn, *args)
+
+                    self.assertFalse(publish(peer, generation, next_evidence))
+                    self.assertFalse(acknowledge(peer, generation, evidence))
+                    self.assertFalse(admit(peer, generation, f'retry-{generation}'))
+                    self.assertEqual(self.conn.execute("""SELECT generation,digest FROM ci_pin_history
+                        ORDER BY generation DESC LIMIT 1""").fetchone(), (generation + 1, next_evidence))
+                    self.assertTrue(run(peer, 'ci_pin_stager', 'ci_stage_pin', generation + 1, next_evidence))
+                    with peer.transaction(force_rollback=True):
+                        self.assertTrue(acknowledge(peer, generation + 1, next_evidence))
+                    self.assertFalse(admit(peer, generation + 1, f'unacknowledged-{generation + 1}'))
+                    with peer.transaction():
+                        acknowledge(peer, generation + 1, next_evidence)
+                    self.assertFalse(acknowledge(peer, generation + 1, next_evidence))
+                    self.assertTrue(admit(peer, generation + 1, f'current-{generation + 1}'))
+        self.assertEqual(self.conn.execute("""SELECT operation,generation FROM ci_pin_writes
+            ORDER BY generation""").fetchall(), [('before-publication', 1),
+            ('after-acknowledgement', 2), ('current-3', 3), ('current-4', 4)])
 
     def test_typed_attachment_parent_constraints_and_private_reads(self):
         # The rollback removes the model table without changing preview DDL.
