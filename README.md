@@ -210,7 +210,10 @@ The disposable restore also rehearses generated IDs for invitation events
 and team audit entries. Copying explicit IDs preserves the rows while the
 new PostgreSQL sequence still starts at 1. The test uses SQLite's recorded
 high-water mark to avoid reusing deleted IDs, including when the restored
-table is empty. [Identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids)
+table is empty. The follow-up exercise reads the rows and their ID history
+in one SQLite snapshot during concurrent writes. It stops before restarting
+the target sequence if the history is ambiguous, inconsistent or exhausted.
+[Identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids)
 
 ## Alternate writer inventory and offline recovery rehearsal
 
