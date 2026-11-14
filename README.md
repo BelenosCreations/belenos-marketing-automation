@@ -48,6 +48,11 @@ original text and display no inferred timing.
 4. Repeat for a morning and an evening slot before replacing the existing
    ChatGPT tasks. Facebook posting is manual.
 
+The Android CI suite uses simulated Android 15 and synthetic captions to
+exercise opening the inbox, editing and copying a caption, database upgrades,
+and how retries handle a caption you already edited. The phone check above
+measures real model inference and background timing on your device.
+
 ### Install the preview or sign a personal build
 
 Starting with 0.4.0, the **BAM Preview** APK installs alongside 0.1.0 through

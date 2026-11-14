@@ -1,3 +1,9 @@
+## BAM Personal Android validation (2026-11-14)
+
+- Added Android JVM coverage for draft and campaign upgrades, stale edits,
+  duplicate generation attempts, timing display and copying edited captions.
+- Recorded the checks that still require the ARM64 phone and offline model.
+
 ## BAM Personal Android 0.4.0 (2026-11-14)
 
 - Made BAM Preview install alongside earlier Android builds for phone testing.
