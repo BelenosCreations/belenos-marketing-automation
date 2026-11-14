@@ -4,10 +4,16 @@
 
 ## Short copyable resume instruction
 
-Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation, verify the GitHub checkpoint, and follow the next steps and restrictions in that file.
+```text
+BAM Continuity 001
+Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
+```
+
+BAM has its own sequence. Put it on the first line of the copy block. Increment it when issuing an updated handoff and keep it when repeating the same handoff. Across chats, use the highest verified BAM sequence recorded on main.
 
 ## Last independently verified engineering checkpoint (2026-11-14)
 
+- Continuity sequence **001** begins with the verified writer inventory and PostgreSQL rehearsal below. Handoff PR **#167** passed [merged-main Actions #43618888062](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43618888062) at `f8fa27add6cae585aa2ce099f0601a98a968989f`. Both branches matched before numbering the handoff.
 - PR **#166** refreshed the GitHub writer evidence and mapped separate Android, desktop and browser write paths. Disposable PostgreSQL verified repeatable-read and serializable behavior for stale publication, acknowledgement and admission snapshots, forced rollback and lost responses. Exact-head [Actions #43618337393](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43618337393) passed at `e9c84b20bc2ae50a6b3205ff150287ace8126abe`. Merged-main [Actions #43618482736](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43618482736) passed at `372cb93e7e7943274ff75c6d159bc63f06d671f7`. External runtime and permissions remain unverified.
 - Handoff PR **#165** passed merged-main [Actions #43607924504](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43607924504) at `e5d7c12ff53628519a51fa0fd28c501e8166b59a`. Both branches matched before this review.
 - PR **#164** tested a separately retained sequence and signed-publication digest in the synthetic SQLite rehearsal. Coordinated rollback of the journal and publication was refused even when the authority database was also restored to its old reconciled state. The updated fixture exercised exact retry and stale publisher epoch rejection. Exact-head [Actions #43607395326](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43607395326) passed at `d4d8444e23e242f903cf7c9d69a8ba4948b25211`. Merged-main [Actions #43607545863](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43607545863) passed at `540985d0b7320eeaaa650d53876d2a22808024ba`. No external checkpoint custody or live deployment was tested.
