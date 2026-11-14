@@ -1,3 +1,9 @@
+## Offline publication rollback rehearsal (2026-11-14)
+
+- Tested coordinated rollback of the signed journal and publication stores
+  against an independently retained sequence and digest, including a rollback
+  of the reconciled authority, publisher rotation and exact retry.
+
 ## Android scheduler validation (2026-11-14)
 
 - Tested offline model setup with a simulated Android download manager,
