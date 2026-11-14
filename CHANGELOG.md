@@ -1,3 +1,11 @@
+## BAM Personal Android 0.3.0 (2026-11-14)
+
+- Added today's draft timing with Eastern targets, pending and skipped slots,
+  and opening reminders that expired at noon.
+- New drafts record their save time, delay and generation source. Existing
+  draft captions migrate in place when installed with the same signing key.
+- Added timing and expiry regression cases and documented the phone check.
+
 ## BAM Personal Android 0.2.0
 
 - Added date-specific campaign topics, confirmed facts and per-slot skips.

@@ -7,10 +7,10 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-enum class Slot(val title: String) {
-    MORNING("Morning · 10 AM"),
-    OPENING("Opening reminder · 11:30 AM"),
-    EVENING("Evening · 6:30 PM"),
+enum class Slot(val title: String, val draftTime: LocalTime? = null) {
+    MORNING("Morning · 10 AM", LocalTime.of(10, 0)),
+    OPENING("Opening reminder · 11:30 AM", LocalTime.of(10, 0)),
+    EVENING("Evening · 6:30 PM", LocalTime.of(18, 30)),
     SAMPLE("Test draft")
 }
 
@@ -34,21 +34,21 @@ object Schedule {
         }
     }
 
+    fun planned(day: LocalDate, confirmedThrough: LocalDate): List<Slot> = buildList {
+        if (day != LocalDate.of(2026, 11, 16) && day != LocalDate.of(2026, 11, 13)) {
+            add(Slot.MORNING)
+            if (hours(day, confirmedThrough) != null) add(Slot.OPENING)
+        }
+        if (day.dayOfWeek in eveningDays && day != LocalDate.of(2026, 11, 13)) add(Slot.EVENING)
+    }
+
     fun due(now: Instant, confirmedThrough: LocalDate, campaign: Campaign = Campaign()): List<Slot> {
         val local = now.atZone(eastern)
-        val day = local.toLocalDate()
         val clock = local.toLocalTime()
-        return buildList {
-            if (clock >= LocalTime.of(10, 0) && day != LocalDate.of(2026, 11, 16)
-                && day != LocalDate.of(2026, 11, 13)) {
-                add(Slot.MORNING)
-                if (clock < LocalTime.NOON && hours(day, confirmedThrough) != null) {
-                    add(Slot.OPENING)
-                }
-            }
-            if (day.dayOfWeek in eveningDays && clock >= LocalTime.of(18, 30)
-                && day != LocalDate.of(2026, 11, 13)) add(Slot.EVENING)
-        }.filterNot { it in campaign.skipped }
+        return planned(local.toLocalDate(), confirmedThrough).filter { slot ->
+            slot !in campaign.skipped && clock >= checkNotNull(slot.draftTime) &&
+                (slot != Slot.OPENING || clock < LocalTime.NOON)
+        }
     }
 
     fun prompt(day: LocalDate, slot: Slot, recent: List<String>, campaign: Campaign = Campaign()): String {
