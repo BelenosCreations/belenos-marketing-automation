@@ -1,3 +1,9 @@
+## BAM Personal Post Studio
+
+[Download the standalone HTML file](https://raw.githubusercontent.com/BelenosCreations/belenos-marketing-automation/main/personal-post-studio.html) and open the downloaded file in your browser. Choose a business, enter the topic and confirmed facts, copy the prompt into ChatGPT, then bring the reply back to edit, save and copy. The initial workflow is Facebook-first and includes Belenos Creations and Busy B Cleaning Service LLC. Drafts are stored in the browser that opens the file. Keep the file in the same location to reopen those drafts. ChatGPT is used manually through your own account.
+
+Personal use is the immediate priority. The shared, multiuser BAM platform remains the long-term product goal. See the [product plan](PRODUCT_PLAN.md).
+
 ## Offline AI request recovery design
 
 The [AI request recovery design](MIGRATION_AI_REQUEST_RECOVERY.md) traces

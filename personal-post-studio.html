@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BAM Personal Post Studio</title>
+<style>
+  :root {
+    color-scheme: light;
+    font: 16px/1.55 "DM Sans", system-ui, sans-serif;
+    --ink: #192b24;
+    --muted: #53655d;
+    --accent: #155844;
+    --border: #d3ddd6;
+    --surface: #fff;
+    background: #eff3ed;
+    color: var(--ink);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  header { background: #18362c; color: #fff; }
+  .shell { width: min(100% - 2rem, 66rem); margin-inline: auto; }
+  header .shell { padding: 2.4rem 0 2rem; }
+  h1, h2, p { margin: 0; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.15; }
+  h2 { font-size: 1.26rem; margin-bottom: .85rem; }
+  header p { color: #dbe8e0; margin-top: .55rem; }
+  main { padding-block: 1.5rem 2rem; display: grid; gap: 1rem; align-items: start; }
+  section, aside { background: var(--surface); padding: clamp(1rem, 4vw, 1.5rem);
+    border: 1px solid var(--border); border-radius: 1rem; min-width: 0; }
+  @media (min-width: 50rem) { main { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } }
+  label { display: block; font-weight: 650; margin-top: .85rem; }
+  input, select, textarea { display: block; width: 100%; font: inherit; color: inherit;
+    background: #fbfcfa; border: 1px solid #aab9b0; border-radius: .55rem; padding: .65rem .75rem; }
+  textarea { resize: vertical; }
+  button, .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+    border: 1px solid var(--accent); border-radius: .55rem; background: var(--accent);
+    color: #fff; font: inherit; font-weight: 650; text-decoration: none; padding: .5rem .9rem; cursor: pointer; }
+  .secondary { background: #fff; color: var(--accent); }
+  button:hover, .button:hover { filter: brightness(.94); }
+  :focus-visible { outline: 3px solid #a65a16; outline-offset: 3px; }
+  .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .85rem; }
+  .hint { color: var(--muted); font-size: .93rem; margin-top: .4rem; }
+  .editor { border-top: 1px solid var(--border); margin-top: 1.45rem; padding-top: .5rem; }
+  #status { color: var(--accent); margin-top: .65rem; min-height: 1.6em; }
+  #status.error { color: #982a22; }
+  #drafts { list-style: none; padding: 0; margin: .7rem 0 0; display: grid; gap: .45rem; }
+  #drafts button { width: 100%; text-align: left; justify-content: flex-start;
+    overflow-wrap: anywhere; font-weight: 550; }
+  #drafts [aria-current="true"] { background: #e7f0e9; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="shell">
+    <h1>BAM Personal Post Studio</h1>
+    <p>Draft a Facebook post with ChatGPT, then edit and save it here.</p>
+  </div>
+</header>
+<main class="shell">
+  <section aria-labelledby="compose-title">
+    <h2 id="compose-title">Write a post</h2>
+    <form id="composer">
+      <label for="business">Business</label>
+      <select id="business">
+        <option>Belenos Creations</option>
+        <option>Busy B Cleaning Service LLC</option>
+        <option value="custom">Other business</option>
+      </select>
+      <div id="custom-field" hidden>
+        <label for="custom">Business name</label>
+        <input id="custom" maxlength="100" autocomplete="organization" disabled>
+      </div>
+
+      <label for="topic">Post topic</label>
+      <input id="topic" maxlength="160" required placeholder="Example: Custom pet portraits">
+      <label for="facts">Details to include</label>
+      <textarea id="facts" rows="3" maxlength="3000" placeholder="Add confirmed details, dates, prices or the action you want readers to take."></textarea>
+      <div class="actions">
+        <button id="copy-prompt" type="button">Copy ChatGPT prompt</button>
+        <a class="button secondary" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">Open ChatGPT</a>
+      </div>
+      <p class="hint">Paste the prompt into ChatGPT, then paste the reply into the editor below.</p>
+      <div id="prompt-fallback" hidden>
+        <label for="prompt-text">Prompt to copy</label>
+        <textarea id="prompt-text" rows="5" readonly></textarea>
+      </div>
+
+      <div class="editor">
+        <label for="post">Post draft</label>
+        <textarea id="post" rows="8" maxlength="8000" required placeholder="Paste the reply here and edit it before posting."></textarea>
+        <div class="actions">
+          <button type="submit">Save draft</button>
+          <button class="secondary" id="copy-post" type="button">Copy post</button>
+        </div>
+      </div>
+      <p id="status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  <aside aria-labelledby="saved-title">
+    <h2 id="saved-title">Saved drafts</h2>
+    <button class="secondary" id="new-draft" type="button">New draft</button>
+    <p id="empty" class="hint">Your saved drafts will appear here.</p>
+    <ul id="drafts"></ul>
+    <p class="hint">Drafts are saved in this browser. Copy posts you want to keep elsewhere.</p>
+  </aside>
+</main>
+<script>
+  'use strict';
+  const storageKey = 'bam.personal.posts.v1';
+  const form = document.getElementById('composer');
+  const fields = Object.fromEntries(['business', 'custom', 'topic', 'facts', 'post']
+    .map(id => [id, document.getElementById(id)]));
+  const status = document.getElementById('status');
+  const list = document.getElementById('drafts');
+  const customField = document.getElementById('custom-field');
+  const promptFallback = document.getElementById('prompt-fallback');
+  const promptText = document.getElementById('prompt-text');
+  const businessProfiles = {
+    'Belenos Creations': 'A retail 3D printing and custom creations shop in Marion, Ohio.',
+    'Busy B Cleaning Service LLC': 'A commercial cleaning company in Marion, Ohio that serves offices and facilities.'
+  };
+  let selected = null;
+  let dirty = false;
+  let drafts = [];
+  let storageReadable = true;
+
+  function message(text, error = false) {
+    status.textContent = text;
+    status.classList.toggle('error', error);
+  }
+
+  function readDrafts() {
+    const saved = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    if (!Array.isArray(saved) || saved.some(draft => !draft ||
+        !['id', 'business', 'custom', 'topic', 'facts', 'post'].every(key => typeof draft[key] === 'string') ||
+        !Array.from(fields.business.options).some(option => option.value === draft.business))) {
+      throw new Error('Unreadable draft storage');
+    }
+    return saved;
+  }
+
+  function values() {
+    return Object.fromEntries(Object.entries(fields).map(([key, input]) => [key, input.value.trim()]));
+  }
+
+  function businessName(draft) {
+    return draft.business === 'custom' ? draft.custom : draft.business;
+  }
+
+  function syncBusiness() {
+    const custom = fields.business.value === 'custom';
+    customField.hidden = !custom;
+    fields.custom.required = custom;
+    fields.custom.disabled = !custom;
+  }
+
+  function render() {
+    list.replaceChildren();
+    document.getElementById('empty').hidden = drafts.length > 0 || !storageReadable;
+    for (const draft of drafts) {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'secondary';
+      button.textContent = draft.topic + ' · ' + businessName(draft);
+      if (draft.id === selected) button.setAttribute('aria-current', 'true');
+      button.addEventListener('click', () => loadDraft(draft));
+      li.append(button);
+      list.append(li);
+    }
+  }
+
+  function loadDraft(draft) {
+    if (dirty && !window.confirm('Discard unsaved changes?')) return;
+    selected = draft?.id ?? null;
+    form.reset();
+    if (draft) {
+      for (const [key, input] of Object.entries(fields)) input.value = draft[key];
+    }
+    dirty = false;
+    promptFallback.hidden = true;
+    syncBusiness();
+    render();
+    message(draft ? 'Draft opened.' : '');
+    fields.topic.focus();
+  }
+
+  async function copyText(text, success, fallback) {
+    try {
+      await navigator.clipboard.writeText(text);
+      message(success);
+    } catch {
+      fallback.focus();
+      fallback.select();
+      message('Text selected. Use your browser’s Copy command.');
+    }
+  }
+
+  function marketingDetails() {
+    const draft = values();
+    if (!fields.business.reportValidity() || !fields.custom.reportValidity() ||
+        !fields.topic.reportValidity()) return null;
+    if (!businessName(draft) || !draft.topic) {
+      message('Enter a business name and post topic.', true);
+      return null;
+    }
+    return draft;
+  }
+
+  try {
+    drafts = readDrafts();
+  } catch {
+    storageReadable = false;
+    message('Saved drafts are unavailable in this browser. You can still copy your post.', true);
+  }
+  render();
+
+  fields.business.addEventListener('change', syncBusiness);
+  form.addEventListener('input', () => {
+    dirty = true;
+    promptFallback.hidden = true;
+  });
+
+  document.getElementById('new-draft').addEventListener('click', () => loadDraft(null));
+  document.getElementById('copy-prompt').addEventListener('click', () => {
+    const draft = marketingDetails();
+    if (!draft) return;
+    const profile = businessProfiles[draft.business];
+    const prompt = [
+      'Write one short, ready-to-paste Facebook post for ' + businessName(draft) + '.',
+      profile,
+      'Topic — ' + draft.topic,
+      draft.facts ? 'Confirmed details — ' + draft.facts : '',
+      'Use a natural voice and a fresh opening. Keep it concise and make the next step clear when the facts support one.',
+      'Use only supplied facts. Leave out unconfirmed hours, prices, availability, claims, links, or promises.',
+      'Return only the post.'
+    ].filter(Boolean).join('\n');
+    promptText.value = prompt;
+    copyText(prompt, 'Prompt copied. Open ChatGPT and paste it.', {
+      focus() { promptFallback.hidden = false; promptText.focus(); },
+      select() { promptText.select(); }
+    });
+  });
+
+  document.getElementById('copy-post').addEventListener('click', () => {
+    const post = fields.post.value.trim();
+    if (!post) {
+      message('Paste or write a post first.', true);
+      fields.post.focus();
+      return;
+    }
+    copyText(post, 'Post copied.', fields.post);
+  });
+
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const draft = marketingDetails();
+    if (!draft) return;
+    if (!draft.post) {
+      message('Paste or write a post first.', true);
+      return;
+    }
+    if (!storageReadable) {
+      message('Draft storage is unavailable. Copy your post to keep it.', true);
+      return;
+    }
+    const id = selected ?? Array.from(crypto.getRandomValues(new Uint32Array(4)),
+      value => value.toString(16).padStart(8, '0')).join('');
+    try {
+      const updated = [{ ...draft, id }, ...readDrafts().filter(item => item.id !== id)];
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      drafts = updated;
+      selected = id;
+      dirty = false;
+      render();
+      message('Draft saved in this browser.');
+    } catch {
+      message('The browser could not save this draft. Copy your post to keep it.', true);
+    }
+  });
+</script>
+</body>
+</html>
