@@ -5,7 +5,7 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 005
+BAM Continuity 006
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
@@ -13,6 +13,8 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 ## Last independently verified engineering checkpoint (2026-11-14)
 
+- PR **#177** sealed each reviewed SQLite table's ordered row digest, ID history and known-unused evidence from one read transaction. The disposable PostgreSQL test required a separately retained envelope digest and the correct table and restored rows before restarting the sequence. It refused replay with identical rows, mismatched table or row evidence, and modified ciphertext. [PR Actions #43650337216](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650337216) passed at `3b5ee3917cc8b2caaa3023328609c71a5633de3e`. [Merged-main Actions #43650517350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650517350) passed at `6b8ddf3a4b60773ea76a76330fafbad3b1b40c53`. All 1,398 local Python tests and 80 JavaScript regression scripts passed. Both branches matched after a non-force fast-forward, with zero ahead/behind and no open PRs before this handoff.
+- Handoff PR **#176** established sequence **005**. [Merged-main Actions #43648761938](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43648761938) passed at `f7f7a6456e1d1ac3252b966840ff6257bfaa2ca7`. Both branches matched with no open PRs before the authenticated capture rehearsal.
 - PR **#175** tested both read orders for SQLite rows and ID history in one WAL snapshot during concurrent issuance and deletion. The disposable PostgreSQL fixture stopped before sequence restart when history was missing, duplicated, inconsistent, malformed or exhausted, and verified target rollback and source preservation. It accepted an independently known never-used table. [PR Actions #43648218509](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43648218509) passed at `a641d99a8a2299c994c6a0ca3d7ad86c2cd004a2`. [Merged-main Actions #43648389242](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43648389242) passed at `cb95bdf9be415c27e66e123c10c9c0b269b4c485`. All 1,397 local Python tests and 80 JavaScript regression scripts passed. Both branches matched after a non-force fast-forward, with zero ahead/behind and no open PRs before this handoff.
 - Handoff PR **#174** established sequence **004**. [Merged-main Actions #43631196505](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43631196505) passed at `e19fe3dcb0ab9cb284deee515b0b538e6a9b3e61`. Both branches matched with no open PRs before the identity history rehearsal.
 - PR **#173** rehearsed identity sequence behavior for invitation events and team audit records. Copying explicit IDs left the target sequence at its starting value and produced a duplicate on the first generated insert in the sparse invitation fixture. Using the separate SQLite high-water mark avoided retired IDs even when the table was empty. The test rolls back the target restart and verifies unchanged PostgreSQL source rows and sequence state. [PR Actions #43630575683](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43630575683) passed at `86f99cd39908e851eca3029f9692e6d17811f794`. [Merged-main Actions #43630766844](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43630766844) passed at `f2680b2a8c01e1bebbe461159003b6ef64bfe65a`. All 1,396 local Python tests and 80 JavaScript regression scripts passed. Both branches matched after a non-force fast-forward, with zero ahead/behind and no open PRs before this handoff.
@@ -74,8 +76,6 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above. If the handoff PR has already merged, verify the current main run and complete any outstanding non-force branch sync before editing.
 
-The authenticated identity capture candidate checks restored rows, a reviewed table context and a separately retained envelope digest before restarting a disposable sequence. Verify the candidate and merged-main Actions before recording a new checkpoint.
-
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
 
 ## Next safe development milestone
@@ -83,7 +83,7 @@ GitHub listed no deployments, environments or releases, and Pages was disabled. 
 The owner requires BAM to generate drafts automatically on Android without a companion computer. The personal app uses a downloaded local model and WorkManager. Multiuser collaboration remains the long-term goal. The $0 spending limit and production activation restrictions still apply.
 
 1. The owner directed development to proceed assuming the 0.6.0 Android phone test passed. This is a planning assumption. If actual phone evidence becomes available, record the model result and at least one morning and one evening save time and work source using the [Android phone check](README.md#check-draft-timing-on-your-phone).
-2. Extend the [identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids) with authenticated synthetic evidence that binds the restored row digest, identity history and known-unused state to the same captured SQLite snapshot and reviewed table. Reuse the existing offline recovery manifest or encrypted envelope where it fits. Test swapping valid evidence between captures or tables and replaying an older authentic capture against an independently retained current pin. Require rejection before target sequence restart. Keep production integrations disabled and Facebook publishing manual.
+2. Extend the [identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids) to capture both reviewed tables in one SQLite read transaction under one independently pinned authenticated bundle. Rehearse a concurrent commit between table reads. Verify all bundle members and restored rows before either disposable PostgreSQL sequence restart. Inject a failure after the first valid restart and check that rollback leaves neither restart in effect and the source intact. Keep production integrations disabled and Facebook publishing manual.
 
 ### Deferred shared deployment work
 
