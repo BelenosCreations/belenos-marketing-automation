@@ -522,3 +522,17 @@ after the authority row changes. Tests discard the committed publisher
 and acknowledger responses, then check that retries cannot append a
 competing pin or admit the previous generation. Forced rollbacks leave
 the previous pin or the pending acknowledgement in place.
+
+The acknowledgement rehearsal also leaves the caller's independent
+checkpoint on the previous publication after the database commits and the
+response is discarded. The open database row alone cannot admit a write.
+The writer supplies a generation and digest, both of which must match the
+latest publication while the transaction holds the authority lock. A retry
+on a fresh connection can confirm the exact acknowledged pin without
+updating the row again. The previous pin and a current generation with
+the wrong digest fail acknowledgement and admission. Only after the caller
+advances its retained pin does the fixture admit a write.
+
+The independent checkpoint is a test-held value. Durable storage,
+authenticated checkpoint reads and updates, and independent custody still
+require operational evidence.

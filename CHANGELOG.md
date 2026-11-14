@@ -1,3 +1,10 @@
+## Offline acknowledgement recovery rehearsal (2026-11-14)
+
+- Simulated a committed PostgreSQL acknowledgement with a lost response
+  while a separate checkpoint still held the previous publication pin.
+- Checked that stale generations and wrong digests block writes, and that
+  retrying the exact pin confirms the acknowledgement without another update.
+
 ## Offline writer inventory and transaction rehearsal (2026-11-14)
 
 - Refreshed the GitHub deployment inventory and mapped personal Android,

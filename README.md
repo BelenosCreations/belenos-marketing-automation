@@ -198,7 +198,10 @@ A separate signed publication records the latest fixture head. A synthetic
 checkpoint held outside the restored SQLite files blocks review and writes
 when the journal and publication roll back together. Disposable PostgreSQL
 tests order publication against acknowledgement and write admission, including
-stale snapshots and retries after an interrupted response.
+stale snapshots and retries after an interrupted response. In the fixture,
+a committed acknowledgement leaves writes closed for a caller whose
+independent checkpoint still holds the previous generation or wrong digest.
+An exact retry confirms the acknowledgement before the checkpoint advances.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
