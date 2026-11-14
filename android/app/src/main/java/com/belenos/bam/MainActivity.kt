@@ -7,12 +7,14 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.InputFilter
 import android.view.View
 import android.view.WindowInsets
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -22,6 +24,8 @@ import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import java.time.LocalDate
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -29,12 +33,26 @@ import java.util.Locale
 import java.util.concurrent.Executors
 
 class MainActivity : Activity() {
+    private enum class Page(val title: String) {
+        HOME("Dashboard"), INBOX("Draft inbox"), SCHEDULE("Schedule"),
+        CAMPAIGN("Campaign notes"), MODEL("Offline AI")
+    }
+
     private val handler = Handler(Looper.getMainLooper())
     private val modelExecutor = Executors.newSingleThreadExecutor()
     private val preferences by lazy { getSharedPreferences("bam", Context.MODE_PRIVATE) }
     private val model by lazy { ModelFile(applicationContext) }
     private val muted by lazy { getColor(R.color.bam_muted) }
+    private val backToDashboard by lazy { OnBackInvokedCallback { show(Page.HOME) } }
+    private var page = Page.HOME
+    private lateinit var scroll: ScrollView
+    private lateinit var pageHeader: LinearLayout
+    private lateinit var pageTitle: TextView
+    private val pages = mutableMapOf<Page, LinearLayout>()
+    private val tileDetails = mutableMapOf<Page, TextView>()
+    private lateinit var attention: Button
     private lateinit var status: TextView
+    private lateinit var scheduleStatus: TextView
     private lateinit var download: Button
     private lateinit var sample: Button
     private lateinit var catchUp: Button
@@ -96,10 +114,82 @@ class MainActivity : Activity() {
         root.addView(View(this).apply { setBackgroundColor(getColor(R.color.bam_gold)) },
             LinearLayout.LayoutParams(-1, dp(2)))
         val content = column().apply { setPadding(dp(16), dp(14), dp(16), dp(22)) }
-        root.addView(ScrollView(this).apply {
+        scroll = ScrollView(this).apply {
             setBackgroundColor(getColor(R.color.bam_page))
             addView(content)
-        }, LinearLayout.LayoutParams(-1, 0, 1f))
+        }
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        pageTitle = text("", 24, bold = true).apply { isAccessibilityHeading = true }
+        pageHeader = column().apply {
+            addView(button("Back to dashboard") { show(Page.HOME) })
+            addView(pageTitle)
+        }
+        content.addView(pageHeader)
+        for (destination in Page.entries) pages[destination] = column().also { content.addView(it) }
+        buildDashboard(pages.getValue(Page.HOME))
+        buildSchedule(pages.getValue(Page.SCHEDULE))
+        card(pages.getValue(Page.CAMPAIGN)).apply {
+            addView(text("Add a topic, confirmed facts, or skips for a date.", 15, muted))
+            addView(button("Campaign notes and skips") { chooseCampaignDay() })
+        }
+        buildModel(pages.getValue(Page.MODEL))
+        inbox = pages.getValue(Page.INBOX)
+        setContentView(root)
+        val restoredPage = Page.entries.firstOrNull { it.name == savedInstanceState?.getString("page") }
+        show(restoredPage ?: Page.HOME)
+        root.requestApplyInsets()
+    }
+
+    private fun buildDashboard(content: LinearLayout) {
+        content.addView(text("Dashboard", 25, bold = true).apply {
+            isAccessibilityHeading = true
+            setPadding(0, 0, 0, dp(12))
+        })
+        attention = button("") {}.apply {
+            minHeight = dp(56)
+            isSingleLine = false
+        }
+        content.addView(attention, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        val destinations = listOf(Page.SCHEDULE, Page.INBOX, Page.CAMPAIGN, Page.MODEL)
+        val twoColumns = resources.configuration.screenWidthDp >= 360 && resources.configuration.fontScale <= 1.25f
+        for (row in destinations.chunked(if (twoColumns) 2 else 1)) {
+            val tiles = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            content.addView(tiles)
+            row.forEachIndexed { index, destination ->
+                val tile = panel().apply {
+                    minimumHeight = dp(112)
+                    isFocusable = true
+                    foreground = obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground)).let {
+                        val ripple = it.getDrawable(0)
+                        it.recycle()
+                        ripple
+                    }
+                    setOnClickListener { show(destination) }
+                    accessibilityDelegate = object : View.AccessibilityDelegate() {
+                        override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
+                            super.onInitializeAccessibilityNodeInfo(host, info)
+                            info.className = Button::class.java.name
+                        }
+                    }
+                    addView(text(destination.title, 18, bold = true).apply {
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    })
+                    val detail = text("", 14, muted).apply {
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                        setPadding(0, dp(5), 0, 0)
+                    }
+                    tileDetails[destination] = detail
+                    addView(detail)
+                }
+                tiles.addView(tile, LinearLayout.LayoutParams(0, -1, 1f).apply {
+                    bottomMargin = dp(10)
+                    if (index > 0) marginStart = dp(10)
+                })
+            }
+        }
+    }
+
+    private fun buildSchedule(content: LinearLayout) {
         val controls = card(content)
         controls.addView(text("Draft schedule", 20, bold = true))
         controls.addView(text("10 AM daily · Morning\n10 AM Thu–Sat · Draft the 11:30 AM opening reminder\n6:30 PM Mon, Wed, Fri, Sat · Evening", 15))
@@ -118,7 +208,24 @@ class MainActivity : Activity() {
         }
         controls.addView(automatic)
         controls.addView(button("Confirm regular store hours") { confirmHours() })
-        controls.addView(button("Campaign notes and skips") { chooseCampaignDay() })
+        catchUp = button("Generate due drafts now") {
+            preferences.edit().putString("status", "Checking for missing drafts…").apply()
+            DraftWorker.runOnce(applicationContext, sample = false, manual = true)
+            redraw()
+        }
+        controls.addView(catchUp)
+        scheduleStatus = text("", 14, muted).apply {
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        controls.addView(scheduleStatus)
+        val timing = card(content)
+        timing.addView(text("Today's draft timing", 20, bold = true))
+        timingReport = text("", 14, muted).apply { setTextIsSelectable(true) }
+        timing.addView(timingReport)
+    }
+
+    private fun buildModel(content: LinearLayout) {
+        val controls = card(content)
         download = button("Download offline AI · 1.6 GB") {
             try {
                 model.start()
@@ -135,25 +242,32 @@ class MainActivity : Activity() {
             redraw()
         }
         controls.addView(sample)
-        catchUp = button("Generate due drafts now") {
-            preferences.edit().putString("status", "Checking for missing drafts…").apply()
-            DraftWorker.runOnce(applicationContext, sample = false, manual = true)
-            redraw()
-        }
-        controls.addView(catchUp)
         status = text("", 14, muted).apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
         controls.addView(status)
-        val timing = card(content)
-        timing.addView(text("Today's draft timing", 20, bold = true))
-        timingReport = text("", 14, muted).apply { setTextIsSelectable(true) }
-        timing.addView(timingReport)
-        content.addView(text("Draft inbox", 21, bold = true).apply {
-            setPadding(dp(2), dp(6), 0, dp(9))
-        })
-        inbox = column()
-        content.addView(inbox)
-        setContentView(root)
-        root.requestApplyInsets()
+    }
+
+    private fun show(destination: Page) {
+        if (Build.VERSION.SDK_INT >= 33 && (page == Page.HOME) != (destination == Page.HOME)) {
+            if (destination == Page.HOME) onBackInvokedDispatcher.unregisterOnBackInvokedCallback(backToDashboard)
+            else onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT, backToDashboard)
+        }
+        page = destination
+        pageHeader.visibility = if (page == Page.HOME) View.GONE else View.VISIBLE
+        pageTitle.text = page.title
+        for ((screen, view) in pages) view.visibility = if (screen == page) View.VISIBLE else View.GONE
+        scroll.scrollTo(0, 0)
+        redraw()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("page", page.name)
+    }
+
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onBackPressed() {
+        if (page == Page.HOME) super.onBackPressed() else show(Page.HOME)
     }
 
     override fun onStart() {
@@ -214,12 +328,40 @@ class MainActivity : Activity() {
             else -> preferences.getString("status", null) ?: "Model ready. Enable scheduled drafts or run a test."
         }
         if (status.text.toString() != currentStatus) status.text = currentStatus
+        if (scheduleStatus.text.toString() != currentStatus) scheduleStatus.text = currentStatus
         val now = Instant.now()
         val day = now.atZone(Schedule.eastern).toLocalDate()
         val (drafts, campaign) = DraftStore(this).use { it.recent() to it.campaign(day) }
         val confirmedThrough = LocalDate.parse(preferences.getString("hours_through", "2026-12-10"))
         val todaysDrafts = drafts.filter { it.day == day }.associateBy(Draft::slot)
         val planned = Schedule.planned(day, confirmedThrough)
+        val draftCount = planned.count { it !in campaign.skipped || it in todaysDrafts }
+        val dueCount = Schedule.due(now, confirmedThrough, campaign).count { it !in todaysDrafts }
+        updateTile(Page.SCHEDULE, when (draftCount) {
+            0 -> "No slots today"
+            1 -> "1 slot today"
+            else -> "$draftCount slots today"
+        })
+        updateTile(Page.INBOX, if (drafts.isEmpty()) "No drafts yet" else "Review, edit or copy")
+        updateTile(Page.CAMPAIGN, "Topics, facts and skips")
+        updateTile(Page.MODEL, when {
+            ready -> "Ready to draft"
+            pending || checkingModel -> "Model download in progress"
+            else -> "Set up draft generation"
+        })
+        val alert = when {
+            pending || checkingModel -> "Offline AI setup in progress" to Page.MODEL
+            !ready -> "Set up offline AI to generate drafts" to Page.MODEL
+            day > confirmedThrough -> "Confirm store hours for future opening reminders" to Page.SCHEDULE
+            dueCount == 1 -> "1 draft slot due" to Page.SCHEDULE
+            dueCount > 1 -> "$dueCount draft slots due" to Page.SCHEDULE
+            else -> null
+        }
+        attention.visibility = if (alert == null) View.GONE else View.VISIBLE
+        if (alert != null && attention.text != alert.first) {
+            attention.text = alert.first
+            attention.setOnClickListener { show(alert.second) }
+        }
         val timingRows = listOf(Slot.MORNING, Slot.OPENING, Slot.EVENING).filter { slot ->
             slot in planned || slot in todaysDrafts
         }.map { slot ->
@@ -288,6 +430,7 @@ class MainActivity : Activity() {
                 DraftStore(this).use { it.saveCampaign(day, updated) }
                 Toast.makeText(this, "Campaign saved", Toast.LENGTH_SHORT).show()
                 if (automatic.isChecked) DraftWorker.runOnce(applicationContext, sample = false)
+                redraw()
             }.show()
     }
 
@@ -339,14 +482,25 @@ class MainActivity : Activity() {
         setOnClickListener { action() }
     }
 
-    private fun card(parent: LinearLayout): LinearLayout = column().apply {
+    private fun updateTile(destination: Page, detail: String) {
+        val label = tileDetails.getValue(destination)
+        if (label.text != detail) {
+            label.text = detail
+            (label.parent as View).contentDescription = "${destination.title}. $detail"
+        }
+    }
+
+    private fun panel(): LinearLayout = column().apply {
         background = GradientDrawable().apply {
             setColor(getColor(R.color.bam_surface))
             setStroke(dp(1), getColor(R.color.bam_border))
             cornerRadius = dp(14).toFloat()
         }
         setPadding(dp(16), dp(14), dp(16), dp(14))
-        parent.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+    }
+
+    private fun card(parent: LinearLayout): LinearLayout = panel().also {
+        parent.addView(it, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
     }
 
     companion object {

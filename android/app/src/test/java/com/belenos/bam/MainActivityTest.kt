@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Switch
 import java.time.Instant
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -49,8 +50,9 @@ class MainActivityTest {
             assertTrue(root.descendants().filterIsInstance<ImageView>().any {
                 it.contentDescription == "BAM — Belenos Automatic Marketing" && it.drawable != null
             })
+            root.tile("Draft inbox").performClick()
             assertTrue(root.descendants().filterIsInstance<TextView>().any {
-                it.text == "Periodic background check · saved 10:08 AM ET · 8 min after target"
+                it.isShown && it.text == "Periodic background check · saved 10:08 AM ET · 8 min after target"
             })
 
             root.button("Edit caption").performClick()
@@ -71,8 +73,34 @@ class MainActivityTest {
         }
     }
 
+    @Test fun dashboardOpensEachExistingWorkspaceAndPrioritizesModelSetup() {
+        Robolectric.buildActivity(MainActivity::class.java).setup().use { controller ->
+            shadowOf(Looper.getMainLooper()).idle()
+            val root = controller.get().findViewById<View>(android.R.id.content)
+            val setup = root.button("Set up offline AI to generate drafts")
+            assertTrue(setup.isShown)
+            assertTrue(!root.button("Download offline AI · 1.6 GB").isShown)
+            setup.performClick()
+            assertTrue(root.button("Download offline AI · 1.6 GB").isShown)
+            root.button("Back to dashboard").performClick()
+
+            root.tile("Schedule").performClick()
+            assertTrue(root.descendants().filterIsInstance<Switch>().single().isShown)
+            assertTrue(root.button("Confirm regular store hours").isShown)
+            controller.get().onBackPressed()
+
+            root.tile("Campaign notes").performClick()
+            assertTrue(root.button("Campaign notes and skips").isShown)
+            root.button("Back to dashboard").performClick()
+            assertTrue(root.tile("Offline AI").isShown)
+        }
+    }
+
     private fun View.button(label: String): Button =
         descendants().filterIsInstance<Button>().single { it.text == label }
+
+    private fun View.tile(label: String): View =
+        descendants().single { it.contentDescription?.startsWith("$label.") == true }
 
     private fun View.descendants(): Sequence<View> = sequence {
         yield(this@descendants)

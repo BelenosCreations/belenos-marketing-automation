@@ -1,5 +1,11 @@
 ## BAM for Android
 
+BAM Personal 0.7.0 opens to a tile dashboard. Open **Schedule** for today's
+draft timing, store hours, scheduling, and manual catch-up. Open **Draft
+inbox** to review, edit, and copy captions. Open **Campaign notes** for dated
+topics, confirmed facts, and skips. Open **Offline AI** to download the model
+or generate a test draft. Setup and due-draft alerts appear above the tiles.
+
 BAM 0.5.0 uses the approved Belenos Automatic Marketing wordmark and adaptive
 launcher icon. The screens follow Android's light or dark setting with the
 navy, silver, gold and teal BAM palette.
@@ -9,9 +15,9 @@ a 1.6 GB Qwen model once over Wi-Fi and then writes drafts on the phone using
 LiteRT-LM. No account, computer, or paid AI API is required for drafting.
 
 1. Install the BAM APK and open the app.
-2. Tap **Download offline AI**. Reopen BAM after the download to verify the model.
-3. Tap **Generate test draft**, then turn on **Generate scheduled drafts**.
-4. Review the captions in the inbox. Use **Edit caption** to make changes,
+2. Open **Offline AI** and tap **Download offline AI**. Reopen BAM after the download to verify the model.
+3. Tap **Generate test draft**. In **Schedule**, turn on **Generate scheduled drafts** when ready.
+4. Open **Draft inbox**. Use **Edit caption** to make changes,
    then tap **Copy caption** to post manually.
 
 Use **Campaign notes and skips** to choose a date, supply an upcoming topic

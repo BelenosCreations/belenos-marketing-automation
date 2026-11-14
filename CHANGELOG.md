@@ -1,3 +1,10 @@
+## BAM Personal 0.7.0 dashboard (2026-11-14)
+
+- Added the native Android tile dashboard with links to Schedule, Draft inbox,
+  Campaign notes, and Offline AI. Setup and draft-timing alerts appear first.
+- Prioritized the usable Android app and its approved workflows in the product
+  plan, with shared infrastructure and background reliability work later.
+
 ## Offline authenticated identity capture rehearsal (2026-11-14)
 
 - Sealed the ordered row digest, ID history and known-unused state from one
