@@ -1,3 +1,12 @@
+## BAM Personal Android 0.6.0 (2026-11-14)
+
+- Refined morning, opening and evening prompts after checking the pinned
+  Qwen model on a desktop CPU with synthetic campaign notes.
+- Removed common labels and wrapping quotes from generated captions. Added
+  checks for generated times and immediate visit wording outside opening reminders.
+- Kept the built-in Christmas order deadline in the morning prompt. Campaign
+  facts are still available to every draft on the selected date.
+
 ## BAM Personal Android 0.5.0 (2026-11-14)
 
 - Applied the approved BAM wordmark, adaptive launcher icon and themed icon.

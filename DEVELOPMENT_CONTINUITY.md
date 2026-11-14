@@ -55,7 +55,7 @@ GitHub listed no deployments, environments or releases, and Pages was disabled. 
 The owner requires BAM to generate drafts automatically on Android without a companion computer. The personal app uses a downloaded local model and WorkManager. Multiuser collaboration remains the long-term goal. The $0 spending limit and production activation restrictions still apply.
 
 1. Install the latest BAM Preview on an ARM64 device, or use the [owner-signable build](README.md#install-the-preview-or-sign-a-personal-build) for an installation with a stable signing key. Follow the [Android phone check](README.md#check-draft-timing-on-your-phone) to verify the offline model, caption quality, campaign notes and skips, manual recovery, editing and copying. The Android JVM suite covers the inbox and SQLite upgrade paths with synthetic drafts. Check the approved launcher icon with themed icons enabled and the wordmark and controls in Android light and dark modes.
-2. Capture at least one morning and one evening timing result. Record the target, save time, and work source. A periodic draft saved before reopening BAM is evidence of background delivery on that device. Keep the existing ChatGPT marketing tasks while validating and keep Facebook publishing manual.
+2. Capture at least one morning and one evening timing result. Record the target, save time, and work source. A periodic draft saved before reopening BAM is evidence of background delivery on that device. Review campaign wording and check that opening reminders use the app's confirmed hours. Keep the existing ChatGPT marketing tasks while validating and keep Facebook publishing manual.
 3. Resume the deferred operational work when preparing shared deployment and Private Beta.
 
 ### Deferred shared deployment work

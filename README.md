@@ -20,6 +20,12 @@ settings apply to drafts that are still pending. **Generate due drafts now**
 checks today's missing slots even while automatic drafting is paused.
 Existing captions and skipped slots are left out of that run.
 
+BAM 0.6.0 asks the model for one short caption focused on a single subject.
+Before saving a new generated draft, BAM removes common AI labels and wrapping
+quotes and checks for generated operating times or immediate visit wording.
+Opening reminders can invite a visit and get their hours from the app's
+confirmed schedule. Review captions before posting to Facebook.
+
 The 0.2.0 test APK installs separately as **BAM Personal** because the 0.1.0
 GitHub build used an ephemeral debug signing key. The earlier app keeps its
 drafts. The new app has its own inbox and requires its own model download.

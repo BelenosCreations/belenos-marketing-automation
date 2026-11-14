@@ -52,6 +52,26 @@ class ScheduleTest {
             Schedule.caption(" Browse our custom gifts. ", "noon–7 PM"))
         assertFalse(Schedule.prompt(LocalDate.parse("2026-12-04"), Slot.MORNING, emptyList())
             .contains("orders close December 3"))
+        assertFalse(Schedule.prompt(LocalDate.parse("2026-11-14"), Slot.EVENING, emptyList())
+            .contains("orders close December 3"))
+    }
+
+    @Test fun captionRemovesWrappersAndRejectsGeneratedStoreHours() {
+        assertEquals("Send us a message about a custom portrait.", Schedule.caption(
+            "Facebook caption: “Send us a message about a custom portrait.”"
+        ))
+        assertEquals("A photo with a label that reads \"Best dog\".",
+            Schedule.caption("A photo with a label that reads \"Best dog\"."))
+        for (hours in listOf("noon to 7 PM", "4 p.m.", "16:30", "12pm")) {
+            assertThrows(IllegalArgumentException::class.java) {
+                Schedule.caption("Come in at $hours!", "noon–7 PM")
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) { Schedule.caption("Visit us right now!") }
+        assertThrows(IllegalArgumentException::class.java) { Schedule.caption("We're open today.") }
+        assertEquals("Visit us today.\n\nToday's hours: noon–7 PM.",
+            Schedule.caption("Visit us today.", "noon–7 PM"))
+        assertEquals("Ask about a 20 oz tumbler.", Schedule.caption("Ask about a 20 oz tumbler."))
     }
 
     @Test fun timingDistinguishesDraftTargetFromPostingTime() {
