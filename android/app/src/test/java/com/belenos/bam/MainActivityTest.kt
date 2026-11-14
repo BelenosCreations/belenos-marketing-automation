@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import java.time.Instant
 import java.time.LocalDate
@@ -44,6 +45,10 @@ class MainActivityTest {
             shadowOf(Looper.getMainLooper()).idle()
             val activity = controller.get()
             val root = activity.findViewById<View>(android.R.id.content)
+            assertEquals(R.mipmap.ic_launcher, activity.applicationInfo.icon)
+            assertTrue(root.descendants().filterIsInstance<ImageView>().any {
+                it.contentDescription == "BAM — Belenos Automatic Marketing" && it.drawable != null
+            })
             assertTrue(root.descendants().filterIsInstance<TextView>().any {
                 it.text == "Periodic background check · saved 10:08 AM ET · 8 min after target"
             })

@@ -1,3 +1,9 @@
+## BAM Personal Android 0.5.0 (2026-11-14)
+
+- Applied the approved BAM wordmark, adaptive launcher icon and themed icon.
+- Added BAM colors for Android light and dark modes, including cards, controls
+  and system bars.
+
 ## BAM Personal Android validation (2026-11-14)
 
 - Added Android JVM coverage for draft and campaign upgrades, stale edits,

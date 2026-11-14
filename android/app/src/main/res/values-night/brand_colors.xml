@@ -1,0 +1,9 @@
+<resources>
+    <color name="bam_page">#102731</color>
+    <color name="bam_surface">#18333F</color>
+    <color name="bam_text">@color/bam_silver</color>
+    <color name="bam_muted">#A9C1CC</color>
+    <color name="bam_border">#315460</color>
+    <color name="bam_accent">@color/bam_teal</color>
+    <color name="bam_button">#294955</color>
+</resources>

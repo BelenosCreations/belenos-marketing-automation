@@ -1,10 +1,10 @@
-# Android brand resources for future BAM client
+# BAM Android brand resources
 
-The Android client is not yet implemented. These resources are ready to copy when a Gradle Android app module exists.
+The Android app uses the approved artwork in `android/app/src/main/res/`.
 
-1. Generate PNGs with `python tools/build_branding.py` from the project root (`pip install cairosvg pillow` once).
-2. Copy `android/branding/res/` and `android/branding/generated/res/` into the target app's `src/main/res/` directory, keeping their folder names.
-3. Set `android:icon="@mipmap/ic_launcher"` and `android:roundIcon="@mipmap/ic_launcher_round"` on the `<application>` in the target app's AndroidManifest.xml. Set app label to `BAM` in the app's string resources.
-4. Build the Android app and inspect actual launcher results on circular/squircle masks, themed icons, light/dark wallpapers, and multiple density devices. The `foreground` asset is intentionally transparent, and only the icon background is painted by Android.
+1. Install CairoSVG and Pillow, then run `python tools/build_branding.py` from the project root.
+2. To refresh the packaged artwork, copy the three PNGs from `android/branding/generated/res/drawable-nodpi/` into `android/app/src/main/res/drawable-nodpi/`. Run the renderer with DejaVu Sans installed so the approved wordmark and icon use the intended typeface.
+3. The app includes adaptive round and standard launcher resources for its supported API levels. Android applies the shape and, where available, the themed monochrome layer.
+4. Build the APK and inspect the launcher icon on the phone with themed icons on and off. Check the wordmark and controls in Android light and dark modes.
 
-The templates in `res/mipmap-anydpi-v26/` use `@drawable/bam_launcher_foreground` and `@drawable/bam_launcher_monochrome` generated into `res/drawable-nodpi/`. No manifest or Gradle project is committed by this branding milestone. There is no APK yet.
+The templates in `res/mipmap-anydpi-v26/` preserve the original adaptive resources. The app manifest references the packaged launcher resources. The screen uses the official dark-background wordmark over the navy header in both modes.

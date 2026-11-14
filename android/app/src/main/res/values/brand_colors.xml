@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bam_icon_background">#0B1F28</color>
+    <color name="bam_gold">#D4AF37</color>
+    <color name="bam_teal">#00CFC4</color>
+    <color name="bam_silver">#DCE5EB</color>
+    <color name="bam_navy">#0B1F28</color>
+    <color name="bam_page">#ECF2F4</color>
+    <color name="bam_surface">#FFFFFF</color>
+    <color name="bam_text">@color/bam_navy</color>
+    <color name="bam_muted">#415762</color>
+    <color name="bam_border">#C6D5DC</color>
+    <color name="bam_accent">#006F6B</color>
+    <color name="bam_button">#E1EEEF</color>
+</resources>
