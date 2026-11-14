@@ -27,8 +27,17 @@ class DraftWorker(private val context: Context, parameters: WorkerParameters) :
         val settings = context.getSharedPreferences("bam", Context.MODE_PRIVATE)
         val sample = inputData.getBoolean("sample", false)
         val manual = inputData.getBoolean("manual", false)
+        val origin = when {
+            sample -> DraftOrigin.TEST
+            manual -> DraftOrigin.MANUAL
+            inputData.getBoolean("app_catch_up", false) -> DraftOrigin.APP_OPEN
+            inputData.getBoolean("periodic", false) -> DraftOrigin.BACKGROUND
+            else -> DraftOrigin.UNKNOWN
+        }
         val allowed = { sample || manual || settings.getBoolean("enabled", false) }
-        if (!model.ready() || !allowed()) {
+        if (!allowed()) return@synchronized Result.success()
+        if (!model.ready()) {
+            if (sample || manual) settings.edit().putString("status", "The offline model is unavailable.").apply()
             return@synchronized Result.success()
         }
         val now = Instant.now()
@@ -70,7 +79,8 @@ class DraftWorker(private val context: Context, parameters: WorkerParameters) :
                             if (!isStopped && allowed() &&
                                 day == finished.atZone(Schedule.eastern).toLocalDate() &&
                                 (sample || slot in Schedule.due(finished, currentHours, campaign))) {
-                                if (!store.saveGenerated(Draft(day, slot, caption), campaign)) {
+                                val draft = Draft(day, slot, caption, DraftTiming(finished, origin))
+                                if (!store.saveGenerated(draft, campaign)) {
                                     planChanged = true
                                     break
                                 }
@@ -103,8 +113,9 @@ class DraftWorker(private val context: Context, parameters: WorkerParameters) :
 
         fun enable(context: Context) {
             WorkManager.getInstance(context).enqueueUniquePeriodicWork("scheduled-drafts",
-                ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicWorkRequestBuilder<DraftWorker>(15, TimeUnit.MINUTES).build())
+                ExistingPeriodicWorkPolicy.UPDATE,
+                PeriodicWorkRequestBuilder<DraftWorker>(15, TimeUnit.MINUTES)
+                    .setInputData(workDataOf("periodic" to true)).build())
         }
 
         fun disable(context: Context) {
@@ -117,7 +128,8 @@ class DraftWorker(private val context: Context, parameters: WorkerParameters) :
                 when { sample -> "sample-draft"; manual -> "manual-drafts"; else -> "catch-up" },
                 ExistingWorkPolicy.KEEP,
                 OneTimeWorkRequestBuilder<DraftWorker>()
-                    .setInputData(workDataOf("sample" to sample, "manual" to manual)).build())
+                    .setInputData(workDataOf("sample" to sample, "manual" to manual,
+                        "app_catch_up" to (!sample && !manual))).build())
         }
     }
 }

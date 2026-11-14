@@ -53,4 +53,29 @@ class ScheduleTest {
         assertFalse(Schedule.prompt(LocalDate.parse("2026-12-04"), Slot.MORNING, emptyList())
             .contains("orders close December 3"))
     }
+
+    @Test fun timingDistinguishesDraftTargetFromPostingTime() {
+        val day = LocalDate.parse("2026-11-14")
+        val saved = Instant.parse("2026-11-14T15:08:00Z")
+        val timing = DraftTiming(saved, DraftOrigin.BACKGROUND)
+        val draft = Draft(day, Slot.OPENING, "See you in Marion", timing)
+        assertEquals("Periodic background check · saved 10:08 AM ET · 8 min after target",
+            slotStatus(day, Slot.OPENING, saved, skipped = false, saved = draft))
+        assertEquals("Manual catch-up · saved 10:08 AM ET · 8 min after target",
+            timing.copy(origin = DraftOrigin.MANUAL).description(day, Slot.OPENING))
+        assertEquals("Saved · timing unavailable",
+            slotStatus(day, Slot.OPENING, saved, skipped = true, saved = draft.copy(timing = null)))
+    }
+
+    @Test fun timingShowsPendingSkippedAndExpiredSlots() {
+        val day = LocalDate.parse("2026-11-14")
+        val before = Instant.parse("2026-11-14T14:59:59Z")
+        val target = Instant.parse("2026-11-14T15:00:00Z")
+        val noon = Instant.parse("2026-11-14T17:00:00Z")
+        assertEquals("Upcoming", slotStatus(day, Slot.OPENING, before, false, null))
+        assertEquals("Due · waiting for draft", slotStatus(day, Slot.OPENING, target, false, null))
+        assertEquals("Missed · expired at noon", slotStatus(day, Slot.OPENING, noon, false, null))
+        assertEquals("Skipped for this date", slotStatus(day, Slot.OPENING, noon, true, null))
+        assertEquals("Due · waiting for draft", slotStatus(day, Slot.MORNING, noon, false, null))
+    }
 }

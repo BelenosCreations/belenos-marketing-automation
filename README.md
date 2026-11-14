@@ -1,6 +1,6 @@
 ## BAM for Android
 
-BAM Scheduled Posts runs directly on an ARM64 Android phone. The app downloads
+BAM Personal runs directly on an ARM64 Android phone. The app downloads
 a 1.6 GB Qwen model once over Wi-Fi and then writes drafts on the phone using
 LiteRT-LM. No account, computer, or paid AI API is required for drafting.
 
@@ -28,6 +28,31 @@ Android can defer background work while the phone is idle. Opening BAM
 checks for drafts due that day, and opening reminders expire at noon.
 The app uses the known holiday closures and requires reconfirmation of
 regular hours after December 10, 2026.
+
+### Check draft timing on your phone
+
+In BAM Personal 0.3.0, **Today's draft timing** shows the Eastern target,
+whether the slot is still due, and the save time and delay for each new draft.
+Each draft also identifies the work that saved it: periodic background check,
+app catch-up, manual catch-up, or test. Captions already in the inbox keep their
+original text and display no inferred timing.
+
+1. Download the model and generate a test draft. Read, edit and copy the caption.
+2. Add a dated campaign topic and confirmed facts, then verify they appear in
+   the next relevant caption. Test skipping one slot and use **Generate due
+   drafts now** to check that existing captions and skipped slots are preserved.
+3. Enable scheduling before an upcoming slot. Leave BAM using Home, let the
+   phone idle, and reopen BAM after the target. Record the slot, save time and
+   work source. A draft labeled **Periodic background check** whose save time
+   precedes reopening is evidence of background delivery for that run.
+4. Repeat for a morning and an evening slot before replacing the existing
+   ChatGPT tasks. Facebook posting is manual.
+
+CI uses a temporary debug signing key. A CI APK from a later build cannot
+update a copy installed with a different key. Keep the existing install and
+its drafts if Android rejects an update. Use the 0.3.0 CI APK for a fresh
+install on a test device, or use the same owner-managed signing key across
+builds for an install that can receive future updates.
 
 To build from source, use JDK 21, Android SDK 35 and Gradle 8.13. Run
 `gradle -p android :app:testDebugUnitTest :app:assembleDebug`.

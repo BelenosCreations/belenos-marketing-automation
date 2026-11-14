@@ -25,6 +25,7 @@ import android.widget.Toast
 import java.time.LocalDate
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.concurrent.Executors
 
 class MainActivity : Activity() {
@@ -39,6 +40,7 @@ class MainActivity : Activity() {
     private lateinit var sample: Button
     private lateinit var catchUp: Button
     private lateinit var automatic: Switch
+    private lateinit var timingReport: TextView
     private lateinit var inbox: LinearLayout
     private var displayed: List<Draft>? = null
     private var checkingModel = false
@@ -83,7 +85,7 @@ class MainActivity : Activity() {
         val header = column().apply {
             setBackgroundColor(green)
             setPadding(dp(22), dp(16), dp(22), dp(16))
-            addView(text("BAM Scheduled Posts", 25, Color.WHITE, bold = true))
+            addView(text("BAM Personal", 25, Color.WHITE, bold = true))
             addView(text("Belenos Creations · Facebook", 15, Color.rgb(219, 233, 224)))
         }
         root.addView(header)
@@ -134,6 +136,10 @@ class MainActivity : Activity() {
         controls.addView(catchUp)
         status = text("", 14, muted).apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
         controls.addView(status)
+        val timing = card(content)
+        timing.addView(text("Today's draft timing", 20, bold = true))
+        timingReport = text("", 14, muted).apply { setTextIsSelectable(true) }
+        timing.addView(timingReport)
         content.addView(text("Draft inbox", 21, bold = true).apply {
             setPadding(dp(2), dp(6), 0, dp(9))
         })
@@ -201,7 +207,24 @@ class MainActivity : Activity() {
             else -> preferences.getString("status", null) ?: "Model ready. Enable scheduled drafts or run a test."
         }
         if (status.text.toString() != currentStatus) status.text = currentStatus
-        val drafts = DraftStore(this).use { it.recent() }
+        val now = Instant.now()
+        val day = now.atZone(Schedule.eastern).toLocalDate()
+        val (drafts, campaign) = DraftStore(this).use { it.recent() to it.campaign(day) }
+        val confirmedThrough = LocalDate.parse(preferences.getString("hours_through", "2026-12-10"))
+        val todaysDrafts = drafts.filter { it.day == day }.associateBy(Draft::slot)
+        val planned = Schedule.planned(day, confirmedThrough)
+        val timingRows = listOf(Slot.MORNING, Slot.OPENING, Slot.EVENING).filter { slot ->
+            slot in planned || slot in todaysDrafts
+        }.map { slot ->
+            val target = checkNotNull(slot.draftTime).format(timingClock)
+            val detail = slotStatus(day, slot, now, slot in campaign.skipped, todaysDrafts[slot])
+            "${slot.title.substringBefore(" ·")} · target $target ET\n$detail"
+        }
+        val report = buildString {
+            if (!automatic.isChecked) append("Automatic drafting is paused.\n\n")
+            append(timingRows.joinToString("\n\n").ifEmpty { "No drafts scheduled for today." })
+        }
+        if (timingReport.text.toString() != report) timingReport.text = report
         if (drafts == displayed) return
         displayed = drafts
         inbox.removeAllViews()
@@ -212,6 +235,7 @@ class MainActivity : Activity() {
             val panel = card(inbox)
             panel.addView(text(draft.slot.title, 17, bold = true))
             panel.addView(text(draft.day.format(DateTimeFormatter.ofPattern("EEE, MMM d")), 13, muted))
+            draft.timing?.let { panel.addView(text(it.description(draft.day, draft.slot), 13, muted)) }
             panel.addView(text(draft.caption, 16).apply {
                 setPadding(0, dp(10), 0, dp(9))
                 setTextIsSelectable(true)
@@ -315,5 +339,9 @@ class MainActivity : Activity() {
         }
         setPadding(dp(16), dp(14), dp(16), dp(14))
         parent.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+    }
+
+    companion object {
+        private val timingClock = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
     }
 }
