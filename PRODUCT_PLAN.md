@@ -16,14 +16,19 @@ When an actual functioning app warrants hosted testing **or** an essential devel
 
 ## Personal use comes first
 
-The owner requires scheduled Belenos Facebook drafting to run directly on
-Android. The personal app has its own draft inbox and an on-device model.
-Use the existing morning, opening-reminder, and evening schedule in Eastern
-time, with Android background delivery and catch-up on opening the app.
-Caption copying and Facebook posting are manual. The existing computer app
-is a separate option for desktop use.
+Deliver a usable BAM Personal app on Android first. Use the approved mobile
+dashboard with large tiles and put anything that needs the owner's input above
+the tiles. Keep each tile connected to its real workflow. The owner should be
+able to set up the on-device model, generate and edit a draft, copy it to
+Facebook, manage campaign notes and store hours, and review the morning,
+opening-reminder, and evening schedule directly from the phone. Facebook
+posting is manual in this phase.
 
-Multiuser collaboration, business isolation, direct publishing and analytics remain the long-term product goals. Hosted Beta and migration work are secondary to making the owner's personal post workflow useful. Existing operational gates continue to apply to shared or hosted release.
+Verify the app's on-screen workflows on the owner's phone before expanding
+background work. Check actual scheduled delivery and reliability once those
+workflows are usable. Advanced security, backup and restoration, PostgreSQL
+migration, and multiuser work remain on the roadmap for the shared app.
+Direct publishing and live analytics require approved provider access.
 
 ## 1. Outcomes the product must deliver
 
@@ -94,7 +99,10 @@ Use checked local templates for straightforward factual posts with no model API 
 
 The main BAM screen uses **large, mobile-first summary cards** and a clear active-business identity. Details, charts, queue filters, approval actions, posting-time controls, analytics, connections and AI preferences live inside deeper views. Do not expose business-sensitive data in notifications or stale UI after switching accounts. Support Light/Dark/Auto appearance.
 
-Deliver a usable responsive web interface first while continuing toward an Android app built with Kotlin/Jetpack Compose. Authentication, business logic, durable schedules, tokens and media live on the trusted backend, **not on a phone**.
+Use the responsive web prototype as the design reference for BAM Personal's
+native Android dashboard. The personal app uses local draft storage and
+on-device generation. The later shared app uses a trusted backend for
+authentication, durable shared schedules, provider tokens and media.
 
 ## 6. Hosting, storage and ongoing cost design
 

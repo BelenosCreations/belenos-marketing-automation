@@ -76,16 +76,26 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above. If the handoff PR has already merged, verify the current main run and complete any outstanding non-force branch sync before editing.
 
+The Android 0.7.0 candidate implements the first native dashboard tiles. Verify the general and Android Actions for the candidate and merged-main commits before recording this checkpoint.
+
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
 
 ## Next safe development milestone
 
-The owner requires BAM to generate drafts automatically on Android without a companion computer. The personal app uses a downloaded local model and WorkManager. Multiuser collaboration remains the long-term goal. The $0 spending limit and production activation restrictions still apply.
+The owner directed development to deliver a functioning BAM Personal Android
+app with the approved user-facing workflows first. The approved large tile
+dashboard is the app's starting point. Preserve existing local draft, schedule,
+campaign and model setup behavior. Prioritize the screens and workflows the
+owner can use now. The $0 spending limit and production activation restrictions
+still apply.
 
-1. The owner directed development to proceed assuming the 0.6.0 Android phone test passed. This is a planning assumption. If actual phone evidence becomes available, record the model result and at least one morning and one evening save time and work source using the [Android phone check](README.md#check-draft-timing-on-your-phone).
-2. Extend the [identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids) to capture both reviewed tables in one SQLite read transaction under one independently pinned authenticated bundle. Rehearse a concurrent commit between table reads. Verify all bundle members and restored rows before either disposable PostgreSQL sequence restart. Inject a failure after the first valid restart and check that rollback leaves neither restart in effect and the source intact. Keep production integrations disabled and Facebook publishing manual.
+1. Verify the native tile dashboard and the full phone workflow from offline model setup through generation, review, caption editing and copying, campaign notes and skips, store hours, and schedule controls. Record actual phone evidence when available. The prior direction to assume the 0.6.0 phone test passed remains a planning assumption.
+2. Continue the approved owner-facing workflow, starting with the remaining Content needed and Needs approval interactions and the optional image-prompt handoff. Use real app state for the dashboard. Approved direct platform features remain subject to provider authorization and existing activation restrictions. Facebook publishing is manual in the personal app.
+3. After the visible workflow is usable, verify real morning and evening delivery using the [Android phone check](README.md#check-draft-timing-on-your-phone). Continue advanced security, backups, restoration and multiuser work after the owner-facing app milestones.
 
 ### Deferred shared deployment work
+
+The next [identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids) will capture both reviewed tables in one pinned SQLite snapshot, validate both before restarting either disposable PostgreSQL sequence, and test rollback after the first restart. Keep it queued behind the Android app work.
 
 1. The [signed publication rehearsal](MIGRATION_AI_REQUEST_RECOVERY.md#signed-witness-head-publication) now exercises a caller-retained publication sequence and digest under coordinated rollback. Durable external checkpoint custody still requires operational evidence. Keep transforms inactive.
 2. The [writer inventory](MIGRATION_ALTERNATE_WRITER_INVENTORY.md#deployment-evidence-still-needed) includes refreshed GitHub observations and local Android, desktop and browser write paths. Compare this with an independently supplied inventory of external services, callbacks, queue consumers, storage grants and direct clients before any deployment or freeze.
