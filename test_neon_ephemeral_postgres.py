@@ -10,7 +10,10 @@ import os
 import sqlite3
 import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from ai_account_policy import AIPolicyStore
 from ai_business_facts import AIBusinessFacts
@@ -1661,13 +1664,34 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
             ORDER BY generation""").fetchall(),
             [('before-publication', 1), ('after-acknowledgement', 2)])
 
+        checkpoint = Path(self.enterContext(TemporaryDirectory())) / 'checkpoint.sqlite3'
+        with closing(sqlite3.connect(checkpoint)) as local, local:
+            local.execute("""CREATE TABLE checkpoint (
+                id INTEGER PRIMARY KEY CHECK (id=1), generation INTEGER NOT NULL,
+                digest TEXT NOT NULL
+            )""")
+            local.execute("INSERT INTO checkpoint VALUES (1,?,?)", second_pin)
+
+        def read_checkpoint():
+            with closing(sqlite3.connect(checkpoint)) as local:
+                return local.execute("SELECT generation,digest FROM checkpoint WHERE id=1").fetchone()
+
+        def advance_checkpoint(previous, confirmed):
+            with closing(sqlite3.connect(checkpoint)) as local, local:
+                changed = local.execute("""UPDATE checkpoint SET generation=?,digest=?
+                    WHERE id=1 AND generation=? AND digest=? AND ?=generation+1""",
+                    (*confirmed, *previous, confirmed[0]))
+                return changed.rowcount == 1
+
         serialization = self.psycopg.errors.SerializationFailure
+        confirmed_transitions = []
         with closing(self._connect()) as peer:
             for generation, isolation in enumerate(('REPEATABLE READ', 'SERIALIZABLE'), 2):
                 with self.subTest(isolation=isolation):
-                    evidence = 'second' if generation == 2 else f'pin-{generation}'
                     next_evidence = f'pin-{generation + 1}'
-                    retained_pin = (generation, evidence)
+                    retained_pin = read_checkpoint()
+                    self.assertEqual(retained_pin[0], generation)
+                    evidence = retained_pin[1]
                     pending_pin = (generation + 1, next_evidence)
                     with peer.transaction(force_rollback=True):
                         self.assertTrue(publish(peer, generation, next_evidence))
@@ -1707,17 +1731,46 @@ class NeonEphemeralPostgresTests(unittest.TestCase):
                     opened_row = """SELECT generation,opened,xmin FROM ci_pin_gate WHERE id=1"""
                     before_retry = self.conn.execute(opened_row).fetchone()
                     self.assertEqual(before_retry[:2], (generation + 1, True))
-                    self.assertFalse(admit(peer, retained_pin, f'checkpoint-lag-{generation}'))
+                    restarted_pin = read_checkpoint()
+                    self.assertEqual(restarted_pin, retained_pin)
+                    self.assertFalse(admit(peer, restarted_pin, f'checkpoint-lag-{generation}'))
                     wrong_pin = (generation + 1, evidence)
                     self.assertFalse(acknowledge(peer, *retained_pin))
                     self.assertFalse(acknowledge(peer, *wrong_pin))
                     self.assertFalse(admit(peer, wrong_pin, f'wrong-digest-{generation}'))
-                    self.assertTrue(acknowledge(peer, *pending_pin))
-                    self.assertEqual(self.conn.execute(opened_row).fetchone(), before_retry)
-                    self.assertFalse(admit(peer, retained_pin, f'recovered-but-stale-{generation}'))
 
-                    retained_pin = pending_pin
-                    self.assertTrue(admit(peer, retained_pin, f'current-{generation + 1}'))
+                    # Both retriers confirm the same PostgreSQL pin before either
+                    # attempts to consume the predecessor in the independent file.
+                    with closing(self._connect()) as retry_a, closing(self._connect()) as retry_b:
+                        self.assertTrue(acknowledge(retry_a, *pending_pin))
+                        self.assertTrue(acknowledge(retry_b, *pending_pin))
+                    self.assertEqual(self.conn.execute(opened_row).fetchone(), before_retry)
+                    self.assertFalse(admit(peer, read_checkpoint(), f'recovered-but-stale-{generation}'))
+                    self.assertFalse(advance_checkpoint((generation, next_evidence), pending_pin))
+                    self.assertFalse(advance_checkpoint(restarted_pin, (generation + 2, next_evidence)))
+                    self.assertEqual(read_checkpoint(), restarted_pin)
+
+                    start = threading.Barrier(2, timeout=5)
+
+                    def retry_advance():
+                        start.wait()
+                        return advance_checkpoint(restarted_pin, pending_pin)
+
+                    with ThreadPoolExecutor(max_workers=2) as retriers:
+                        attempts = [retriers.submit(retry_advance) for _ in range(2)]
+                        self.assertCountEqual([attempt.result() for attempt in attempts], [True, False])
+                    self.assertEqual(read_checkpoint(), pending_pin)
+                    self.assertTrue(admit(peer, read_checkpoint(), f'current-{generation + 1}'))
+                    confirmed_transitions.append((retained_pin, pending_pin))
+
+            old_predecessor, superseded_pin = confirmed_transitions[0]
+            latest_pin = confirmed_transitions[-1][1]
+            gate_before_delayed_retry = self.conn.execute(opened_row).fetchone()
+            self.assertFalse(acknowledge(peer, *superseded_pin))
+            self.assertFalse(advance_checkpoint(old_predecessor, superseded_pin))
+            self.assertFalse(admit(peer, superseded_pin, 'superseded-retry'))
+            self.assertEqual(read_checkpoint(), latest_pin)
+            self.assertEqual(self.conn.execute(opened_row).fetchone(), gate_before_delayed_retry)
         self.assertEqual(self.conn.execute("""SELECT operation,generation FROM ci_pin_writes
             ORDER BY generation""").fetchall(), [('before-publication', 1),
             ('after-acknowledgement', 2), ('current-3', 3), ('current-4', 4)])

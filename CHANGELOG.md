@@ -1,3 +1,11 @@
+## Offline checkpoint restart and retry rehearsal (2026-11-14)
+
+- Reopened a separate local SQLite checkpoint after a disposable PostgreSQL
+  acknowledgement committed and its response was lost.
+- Raced two confirmed retries against the same predecessor and checked that
+  only one advanced the checkpoint. A wrong predecessor digest, a skipped
+  generation and a delayed retry after a newer advance left it unchanged.
+
 ## Offline acknowledgement recovery rehearsal (2026-11-14)
 
 - Simulated a committed PostgreSQL acknowledgement with a lost response
