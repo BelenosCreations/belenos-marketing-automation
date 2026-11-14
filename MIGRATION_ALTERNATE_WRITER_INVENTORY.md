@@ -23,6 +23,9 @@ evidence. This review did not start services or access operational data.
 | Scanner worker boundary | The [CI-gated scanner](bam_clamav_worker_boundary.py#L95-L154) reads pinned local files and invokes a subprocess. The result is a candidate scan verdict. | Separate from WSGI receipt and file discard. Actual worker isolation, external process effects, genuine signatures and rights enforcement remain unverified. |
 | Synthetic recovery tools | [Archive](bam_offline_durable_archive.py#L48-L90), [relocation](bam_offline_recovery_relocation.py#L58-L90) and [revocation ledger](bam_offline_revocation_ledger.py#L111-L156) rehearse private filesystem writes and durability. The [migration preflight](neon_migration_operator_preflight.py#L57-L119) reads supplied SQLite metadata. [Schema inventory CLI](neon_schema_inventory.py#L110-L123) builds a separate memory-only database. | Test and operator research. The [PostgreSQL migration helper](neon_ephemeral_ci_migrations.py#L42-L98) writes only under the disposable CI connection checks. |
 | Repository tooling and browser clients | [Branding generation](tools/build_branding.py#L26-L56) writes PNGs. The [history audit](tools/public_git_history_scan.py) invokes Git to read repository data. Browser scripts call gateway HTTP routes. The checked-in [test workflow](.github/workflows/tests.yml) and [history audit workflow](.github/workflows/public-release-audit.yml) run CI. | Repository and client activity does not independently establish database access, a deployed worker, or a live release entry point. |
+| Desktop personal scheduler | [Startup and worker](bam_scheduled_posts.py#L195-L214) initialize a separate SQLite file and run a thread that writes captions or retry state. The [per-slot transaction](bam_scheduled_posts.py#L168-L192) holds a write reservation through generation and saves one row per date and slot. | The desktop process and its loopback model endpoint are separate from the shared WSGI app. The browser's draft feed reads the local database. Confirm the configured directory and process account if a shared installation has started the desktop scheduler. |
+| Android personal scheduler and downloader | [DraftWorker](android/app/src/main/java/com/belenos/bam/DraftWorker.kt) registers periodic and catch-up jobs. [DraftStore](android/app/src/main/java/com/belenos/bam/DraftStore.kt) writes app-local SQLite. [ModelFile](android/app/src/main/java/com/belenos/bam/ModelFile.kt) delegates downloading to Android and records state in app preferences. | The checked-in Android path targets app storage. Any future sync or shared-service integration needs a separate inventory of its endpoint, client identity, and retries. |
+| Standalone browser studio | [Personal Post Studio](personal-post-studio.html#L273) saves drafts to local storage. | Local state is written from JavaScript without passing through the WSGI gateway. Confirm actual browser origin and any separate export or sync tools if the studio is used in a shared deployment. |
 
 ## Deployment evidence still needed
 
@@ -74,6 +77,18 @@ repository path should both identify the version and writer principal.
 | Callbacks, retry workers and scheduled jobs | Registered callback destinations, queue consumers, scheduler entries, service identities and evidence that retries and in-flight work stop or stay fenced. |
 | File and object writes | Mount and bucket grants, worker and admin principals, and the observed order of metadata commits and storage effects. |
 | External and non-Python writers | Authorized database and storage principal inventory, access logs, and owner-reviewed list of direct clients or admin tools. |
+
+### GitHub evidence refresh
+
+On 2026-11-14, public GitHub API observations at main
+`e5d7c12ff53628519a51fa0fd28c501e8166b59a` returned zero deployments,
+environments and releases. The Pages endpoint returned HTTP 404. The
+workflows endpoint listed the Android APK build, offline tests and history
+audit. The [Android workflow](.github/workflows/android.yml) builds and
+uploads APK artifacts to Actions. The checked-in tree contained no hosted
+service or scheduler manifest. These observations are limited to GitHub
+and the tracked source. No external hosting workspace, callback registry,
+queue, database principal inventory or storage grant was verified.
 
 ## Attachment reader and restore follow-up
 

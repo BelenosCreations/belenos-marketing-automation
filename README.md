@@ -197,14 +197,16 @@ fixture journal also checks restart, rollback and superseded receipts.
 A separate signed publication records the latest fixture head. A synthetic
 checkpoint held outside the restored SQLite files blocks review and writes
 when the journal and publication roll back together. Disposable PostgreSQL
-tests order publication against acknowledgement and write admission.
+tests order publication against acknowledgement and write admission, including
+stale snapshots and retries after an interrupted response.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
 The [alternate writer inventory](MIGRATION_ALTERNATE_WRITER_INVENTORY.md)
 covers checked-in preview and CLI paths, provider and operator interfaces,
-and recovery tools. A disposable SQLite rehearsal checks whether a saved
-synthetic draft can be reconciled after freeze without writing it twice.
+personal Android and desktop storage, and recovery tools. A disposable SQLite
+rehearsal checks whether a saved synthetic draft can be reconciled after a
+freeze without writing it twice.
 
 ## Offline editorial and AI write review
 

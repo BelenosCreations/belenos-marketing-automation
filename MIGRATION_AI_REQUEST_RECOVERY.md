@@ -514,3 +514,11 @@ Caller grants separately cover publication, staging, acknowledgement and
 write admission. The PostgreSQL fixture uses synthetic digests and database
 roles. Operational key custody, independent persistence and deployed
 reader and writer coverage still require verification.
+
+The fixture increments a revision on the authority row in the same
+transaction as the new publication pin. Under PostgreSQL `REPEATABLE READ`
+and `SERIALIZABLE`, overlapping transactions with older snapshots must retry
+after the authority row changes. Tests discard the committed publisher
+and acknowledger responses, then check that retries cannot append a
+competing pin or admit the previous generation. Forced rollbacks leave
+the previous pin or the pending acknowledgement in place.

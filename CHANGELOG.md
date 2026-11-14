@@ -1,3 +1,10 @@
+## Offline writer inventory and transaction rehearsal (2026-11-14)
+
+- Refreshed the GitHub deployment inventory and mapped personal Android,
+  desktop and browser writes to their local storage and scheduler paths.
+- Tested PostgreSQL publication and acknowledgement under repeatable read
+  and serializable isolation, with forced rollback and lost response retries.
+
 ## Offline publication rollback rehearsal (2026-11-14)
 
 - Tested coordinated rollback of the signed journal and publication stores
