@@ -2,8 +2,15 @@ package com.belenos.bam
 
 import android.app.Application
 import android.content.Context
+import androidx.work.Data
+import androidx.work.ListenableWorker.Result
+import androidx.work.WorkerParameters
+import androidx.work.ListenableWorker
+import androidx.work.WorkerFactory
+import androidx.work.testing.TestWorkerBuilder
 import java.time.Instant
 import java.time.LocalDate
+import java.util.concurrent.Executor
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.assertEquals
@@ -71,6 +78,67 @@ class DraftStoreTest {
             assertFalse(worker.contains(day, Slot.OPENING))
             assertEquals(listOf(original.copy(caption = "Owner's caption")), worker.recent())
         }
+    }
+
+    @Test fun workerLeavesOpeningSlotEmptyWhenGenerationCrossesNoon() {
+        var at = Instant.parse("2026-11-14T16:59:55Z")
+        val result = runWorker(now = { at }) { prompt ->
+            if (prompt.contains("reason to stop in")) at = Instant.parse("2026-11-14T17:00:01Z")
+            "Ask us about custom gifts."
+        }
+        assertEquals(Result.success(), result)
+        val saved = DraftStore(context).use { it.recent().single() }
+        assertEquals(Slot.MORNING, saved.slot)
+        assertEquals(DraftOrigin.BACKGROUND, saved.timing?.origin)
+    }
+
+    @Test fun workerDoesNotSaveYesterdayAfterMidnight() {
+        var at = Instant.parse("2026-11-15T04:59:55Z")
+        val result = runWorker(now = { at }) {
+            at = Instant.parse("2026-11-15T05:00:01Z")
+            "Ask us about custom gifts."
+        }
+        assertEquals(Result.success(), result)
+        assertTrue(DraftStore(context).use { it.recent().isEmpty() })
+    }
+
+    @Test fun workerRetriesWhenTheCampaignChangesDuringGeneration() {
+        val result = runWorker {
+            DraftStore(context).use { store ->
+                store.saveCampaign(day, Campaign("Skip morning", skipped = setOf(Slot.MORNING)))
+            }
+            "Ask us about custom gifts."
+        }
+        assertEquals(Result.retry(), result)
+        assertTrue(DraftStore(context).use { it.recent().isEmpty() })
+    }
+
+    @Test fun workerWithholdsAnOpeningDraftWhenHoursAreWithdrawn() {
+        val result = runWorker { prompt ->
+            if (prompt.contains("reason to stop in")) {
+                context.getSharedPreferences("bam", Context.MODE_PRIVATE).edit()
+                    .putString("hours_through", "2026-11-13").commit()
+            }
+            "Ask us about custom gifts."
+        }
+        assertEquals(Result.success(), result)
+        assertEquals(Slot.MORNING, DraftStore(context).use { it.recent().single().slot })
+    }
+
+    private fun runWorker(
+        now: () -> Instant = { timing.savedAt },
+        generate: (String) -> String
+    ): Result {
+        context.getSharedPreferences("bam", Context.MODE_PRIVATE).edit().putBoolean("enabled", true).commit()
+        val executor = Executor { it.run() }
+        val factory = object : WorkerFactory() {
+            override fun createWorker(appContext: Context, workerClassName: String,
+                workerParameters: WorkerParameters): ListenableWorker =
+                DraftWorker(appContext, workerParameters, now, { true }, { it(generate) })
+        }
+        return TestWorkerBuilder<DraftWorker>(context, executor)
+            .setInputData(Data.Builder().putBoolean("periodic", true).build())
+            .setWorkerFactory(factory).build().doWork()
     }
 
     private fun seedLegacyStore(version: Int) {

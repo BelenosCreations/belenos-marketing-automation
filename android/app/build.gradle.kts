@@ -36,5 +36,6 @@ dependencies {
     implementation("androidx.work:work-runtime:2.10.5")
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.19.1")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.work:work-testing:2.10.5")
     testImplementation("org.robolectric:robolectric:4.16.1")
 }
