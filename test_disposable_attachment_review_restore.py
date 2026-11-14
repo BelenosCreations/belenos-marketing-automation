@@ -1,5 +1,5 @@
 """CI rehearsal for restoring a typed attachment review and revocation index."""
-from contextlib import closing
+from contextlib import closing, contextmanager, nullcontext
 import hashlib
 import hmac
 import json
@@ -540,20 +540,24 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             raise PermissionError('Restore is not admitted without a reconciled receipt')
         return row[0]
 
-    def promoted_review(self, db, generation, checkpoint, signature, *, independent, **options):
+    def promoted_review(self, db, generation, checkpoint, signature, *, independent,
+                       publication_check=None, **options):
         with db:
             db.execute('BEGIN IMMEDIATE')
-            active = self._require_admission(db, generation, checkpoint['state'], independent)
-            if active != options['pin']:
-                raise PermissionError('Restore is not admitted for this checkpoint')
-            return self.open_checkpoint(checkpoint, signature, **options)
+            with publication_check or nullcontext(independent) as current:
+                active = self._require_admission(db, generation, checkpoint['state'], current)
+                if active != options['pin']:
+                    raise PermissionError('Restore is not admitted for this checkpoint')
+                return self.open_checkpoint(checkpoint, signature, **options)
 
-    def admitted_write(self, db, generation, state_pin, independent, operation):
+    def admitted_write(self, db, generation, state_pin, independent, operation, *,
+                       publication_check=None):
         with db:
             db.execute('BEGIN IMMEDIATE')
-            self._require_admission(db, generation, state_pin, independent)
-            db.execute("INSERT INTO recovery_canary VALUES (?,?,?)",
-                       (operation, generation, independent[2]))
+            with publication_check or nullcontext(independent) as current:
+                self._require_admission(db, generation, state_pin, current)
+                db.execute("INSERT INTO recovery_canary VALUES (?,?,?)",
+                           (operation, generation, current[2]))
 
     def witness_journal(self, *, initialize=False):
         db = sqlite3.connect(self.directory / 'witness.sqlite', timeout=0)
@@ -826,8 +830,25 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
         keys[epoch].verify(signature, body)
         return epoch, sequence, previous, head
 
+    def publication_at(self, publication, keys, sequence=None):
+        if sequence is None:
+            row = publication.execute("""SELECT sequence,body,signature FROM published_head
+                ORDER BY sequence DESC LIMIT 1""").fetchone()
+        else:
+            row = publication.execute("""SELECT sequence,body,signature FROM published_head
+                WHERE sequence=?""", (sequence,)).fetchone()
+        if row is None and sequence in (None, 0):
+            return None, (0, _EMPTY_HEAD), None, _EMPTY_HEAD
+        if row is None:
+            raise PermissionError('Published predecessor is unavailable')
+        stored_sequence, body, signature = row
+        epoch, signed_sequence, _, head = self.verify_publication((body, signature), keys)
+        if signed_sequence != stored_sequence:
+            raise PermissionError('Stored publication sequence differs from signed body')
+        return (body, signature), (signed_sequence, _sha(body + signature)), epoch, head
+
     def publish_pending(self, authority, journal, publication, journal_key,
-                        keys, current_epoch, signed):
+                        keys, current_epoch, signed, retained):
         epoch, sequence, previous, head = self.verify_publication(signed, keys)
         if epoch != current_epoch:
             raise PermissionError('Publication key epoch is stale')
@@ -846,28 +867,40 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                 WHERE id=1 AND active IS NOT NULL""").fetchone()
             if local != records[-1][1]:
                 raise PermissionError('Publication differs from committed promotion')
-            last = publication.execute("""SELECT body,signature FROM published_head
-                ORDER BY sequence DESC LIMIT 1""").fetchone()
+            last, last_pin, _, last_head = self.publication_at(publication, keys)
             if last == signed:
-                return
-            if last is None:
-                last_sequence, last_head = 0, _EMPTY_HEAD
-            else:
-                _, last_sequence, _, last_head = self.verify_publication(last, keys)
-            if (last_sequence, last_head) != (sequence - 1, previous):
+                if last_pin != retained:
+                    _, prior_pin, _, prior_head = self.publication_at(publication, keys, sequence - 1)
+                    if prior_pin != retained or prior_head != previous:
+                        raise PermissionError('Publication retry differs from independent checkpoint')
+                return last_pin
+            if last_pin != retained:
+                raise PermissionError('Published predecessor differs from independent checkpoint')
+            if (last_pin[0], last_head) != (sequence - 1, previous):
                 raise PermissionError('Published predecessor is no longer current')
             publication.execute("INSERT INTO published_head VALUES (?,?,?)",
                                 (sequence, *signed))
+            return sequence, _sha(signed[0] + signed[1])
 
-    def published_witness(self, journal, publication, journal_key, keys, current_epoch):
-        row = publication.execute("""SELECT body,signature FROM published_head
-            ORDER BY sequence DESC LIMIT 1""").fetchone()
+    def published_witness(self, journal, publication, journal_key, keys, current_epoch, retained):
+        row, pin, epoch, head = self.publication_at(publication, keys)
         if row is None:
             raise PermissionError('Witness head is not published')
-        epoch, _, _, head = self.verify_publication(row, keys)
         if epoch != current_epoch:
             raise PermissionError('Published witness key epoch is stale')
-        return self.read_witness_journal(journal, journal_key, head)
+        if pin != retained:
+            raise PermissionError('Publication differs from independent checkpoint')
+        records = list(self.witness_records(journal, journal_key))
+        if len(records) != pin[0] or records[-1][0] != head:
+            raise PermissionError('Witness journal differs from independent head')
+        return records[-1][1]
+
+    @contextmanager
+    def publication_check(self, journal, publication, journal_key, keys, epoch, retained):
+        with journal, publication:
+            for db in (journal, publication):
+                db.execute('BEGIN IMMEDIATE')
+            yield self.published_witness(journal, publication, journal_key, keys, epoch, retained)
 
     def test_pending_publication_survives_restart_and_competing_publishers(self):
         with patch.dict(os.environ, BAM_EPHEMERAL_PG_TEST='1'):
@@ -897,12 +930,18 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             old, prior = self.archive_checkpoint(1, archive_key)
             with self.promotion_store(initialize=True) as authority, (
                     self.witness_journal(initialize=True)) as journal, (
-                    self.publication_store(initialize=True)) as publication:
+                    self.publication_store(initialize=True)) as publication, closing(
+                    sqlite3.connect(self.directory / 'older-journal.sqlite')) as older_journal, closing(
+                    sqlite3.connect(self.directory / 'older-publication.sqlite')) as older_publication, closing(
+                    sqlite3.connect(self.directory / 'older-publication-authority.sqlite')) as older_authority:
                 first, old_state, old_options = stage_and_record(
                     authority, journal, 1, old, prior, _EMPTY_HEAD)
-                self.publish_pending(authority, journal, publication, journal_public, keys,
-                                     1, signed(1, 1, _EMPTY_HEAD, first))
+                first_pin = self.publish_pending(authority, journal, publication, journal_public,
+                    keys, 1, signed(1, 1, _EMPTY_HEAD, first), (0, _EMPTY_HEAD))
                 self.reconcile_promotion(authority, old_state)
+                journal.backup(older_journal)
+                publication.backup(older_publication)
+                authority.backup(older_authority)
 
             self.revoke(_claim(_ALICE, version=1))
             current, manifest = self.archive_checkpoint(2, archive_key, previous=prior)
@@ -916,9 +955,9 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
             with self.promotion_store() as authority, self.witness_journal() as journal, (
                     self.publication_store()) as publication, self.publication_store() as competitor:
                 with self.assertRaisesRegex(PermissionError, 'independent head'):
-                    self.published_witness(journal, publication, journal_public, keys, 1)
+                    self.published_witness(journal, publication, journal_public, keys, 1, first_pin)
                 with self.assertRaisesRegex(PermissionError, 'key epoch'):
-                    self.published_witness(journal, publication, journal_public, keys, 2)
+                    self.published_witness(journal, publication, journal_public, keys, 2, first_pin)
                 with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
                     self.promoted_review(authority, 1, *old[:2], independent=old_state,
                                          **old_options)
@@ -929,33 +968,88 @@ class DisposableAttachmentReviewRestoreTests(unittest.TestCase):
                 self.assertEqual(recovered, current_state)
                 with self.assertRaisesRegex(PermissionError, 'key epoch is stale'):
                     self.publish_pending(authority, journal, publication, journal_public, keys,
-                                         2, signed(1, 2, first, pending_head))
+                                         2, signed(1, 2, first, pending_head), first_pin)
                 pin = signed(2, 2, first, pending_head)
                 with self.assertRaises(InvalidSignature):
                     self.publish_pending(authority, journal, publication, journal_public, keys,
-                                         2, (pin[0], journal_key.sign(pin[0])))
+                                         2, (pin[0], journal_key.sign(pin[0])), first_pin)
                 with self.assertRaisesRegex(PermissionError, 'predecessor differs'):
                     self.publish_pending(authority, journal, publication, journal_public, keys,
-                                         2, signed(2, 2, _EMPTY_HEAD, pending_head))
+                                         2, signed(2, 2, _EMPTY_HEAD, pending_head), first_pin)
                 with publication:
                     publication.execute('BEGIN IMMEDIATE')
                     with self.assertRaisesRegex(sqlite3.OperationalError, 'locked'):
                         self.publish_pending(authority, journal, competitor, journal_public,
-                                             keys, 2, pin)
-                self.publish_pending(authority, journal, publication, journal_public, keys, 2, pin)
-                self.publish_pending(authority, journal, competitor, journal_public, keys, 2, pin)
+                                             keys, 2, pin, first_pin)
+                second_pin = self.publish_pending(
+                    authority, journal, publication, journal_public, keys, 2, pin, first_pin)
+                self.assertEqual(self.publish_pending(
+                    authority, journal, competitor, journal_public, keys, 2, pin, first_pin), second_pin)
+                with self.assertRaisesRegex(PermissionError, 'independent checkpoint'):
+                    self.published_witness(journal, competitor, journal_public, keys, 2, first_pin)
+                with self.assertRaisesRegex(PermissionError, 'independent checkpoint'):
+                    self.published_witness(journal, competitor, journal_public, keys, 2,
+                                           (second_pin[0], 'f' * 64))
                 with self.assertRaisesRegex(PermissionError, 'latest journal record'):
                     self.publish_pending(authority, journal, competitor, journal_public, keys,
-                                         2, signed(2, 2, first, 'f' * 64))
+                                         2, signed(2, 2, first, 'f' * 64), second_pin)
                 self.assertEqual(publication.execute("SELECT count(*) FROM published_head").fetchone(),
                                  (2,))
-                verified = self.published_witness(journal, publication, journal_public, keys, 2)
+                verified = self.published_witness(
+                    journal, publication, journal_public, keys, 2, second_pin)
                 with self.assertRaisesRegex(PermissionError, 'reconciled receipt'):
                     self.promoted_review(authority, generation, checkpoint, sig, independent=verified,
                                          **options)
                 self.reconcile_promotion(authority, verified)
+                def current_publication():
+                    return self.publication_check(journal, publication, journal_public, keys, 2,
+                                                  second_pin)
+
                 self.assertEqual(self.promoted_review(
-                    authority, generation, checkpoint, sig, independent=verified, **options), ())
-                self.admitted_write(authority, generation, checkpoint['state'], verified, 'published')
+                    authority, generation, checkpoint, sig, independent=None,
+                    publication_check=current_publication(), **options), ())
+                self.admitted_write(authority, generation, checkpoint['state'], None, 'published',
+                                    publication_check=current_publication())
                 self.assertEqual(authority.execute("SELECT operation FROM recovery_canary").fetchall(),
                                  [('published',)])
+
+            with self.promotion_store() as authority, self.witness_journal() as journal, (
+                    self.publication_store()) as publication, closing(sqlite3.connect(
+                    self.directory / 'older-journal.sqlite')) as older_journal, closing(sqlite3.connect(
+                    self.directory / 'older-publication.sqlite')) as older_publication:
+                older_journal.backup(journal)
+                older_publication.backup(publication)
+                # The two restored stores still authenticate each other under the old pin.
+                self.assertEqual(self.published_witness(
+                    journal, publication, journal_public, keys, 1, first_pin), old_state)
+                for epoch, reason in ((1, 'independent checkpoint'), (2, 'key epoch')):
+                    def restored_publication():
+                        return self.publication_check(journal, publication, journal_public, keys,
+                                                      epoch, second_pin)
+
+                    with self.subTest(epoch=epoch), self.assertRaisesRegex(PermissionError, reason):
+                        self.promoted_review(authority, generation, checkpoint, sig, independent=None,
+                                             publication_check=restored_publication(), **options)
+                    with self.subTest(epoch=epoch), self.assertRaisesRegex(PermissionError, reason):
+                        self.admitted_write(authority, generation, checkpoint['state'], None,
+                                            'rollback', publication_check=restored_publication())
+                with self.assertRaisesRegex(PermissionError, 'latest journal record'):
+                    self.publish_pending(authority, journal, publication, journal_public, keys, 2,
+                                         pin, second_pin)
+                self.assertEqual(authority.execute("SELECT operation FROM recovery_canary").fetchall(),
+                                 [('published',)])
+
+                with closing(sqlite3.connect(
+                        self.directory / 'older-publication-authority.sqlite')) as older_authority:
+                    older_authority.backup(authority)
+                self.assertEqual(self.promoted_review(
+                    authority, 1, *old[:2], independent=old_state, **old_options), ('c' * 32,))
+                with self.assertRaisesRegex(PermissionError, 'independent checkpoint'):
+                    self.promoted_review(authority, 1, *old[:2], independent=None,
+                        publication_check=self.publication_check(
+                            journal, publication, journal_public, keys, 1, second_pin), **old_options)
+                with self.assertRaisesRegex(PermissionError, 'independent checkpoint'):
+                    self.admitted_write(authority, 1, old[0]['state'], None, 'rolled-back-authority',
+                        publication_check=self.publication_check(
+                            journal, publication, journal_public, keys, 1, second_pin))
+                self.assertEqual(authority.execute("SELECT count(*) FROM recovery_canary").fetchone(), (0,))

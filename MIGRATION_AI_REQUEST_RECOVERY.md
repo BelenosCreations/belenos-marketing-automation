@@ -492,6 +492,18 @@ fork cannot publish the pending head. A second connection encounters the
 publication lock and may retry after it is released. Review and writes
 remain closed until the new publication is verified and reconciled.
 
+The test caller retains the publication sequence and SHA-256 digest of its
+signed bytes independently of the journal, publication and authority files.
+An append requires the retained predecessor. After an interrupted response,
+an exact retry can recover the committed pin from that same predecessor.
+Review and write admission recheck the retained pin and the journal head
+under the fixture's SQLite reservations. Restoring a valid older journal and
+publication together fails the pin check, even when the older publisher key
+is accepted and the authority file is restored to its reconciled state. The
+new key also refuses the older publication and a stale pending head. The
+test caller supplies the pin in memory. Durable external custody is still
+an operational requirement.
+
 Disposable PostgreSQL tests put publication, acknowledgement and write
 admission on a common authority-row lock across two connections. When
 acknowledgement or admission takes the lock first, publication must retry.

@@ -194,8 +194,10 @@ completion and binds review admission to the promoted generation. The
 recovery receipt rehearsal keeps review and writes closed until the
 promoted generation matches an independently retained receipt. A signed
 fixture journal also checks restart, rollback and superseded receipts.
-A separate signed publication records the latest fixture head. Disposable
-PostgreSQL tests order publication against acknowledgement and write admission.
+A separate signed publication records the latest fixture head. A synthetic
+checkpoint held outside the restored SQLite files blocks review and writes
+when the journal and publication roll back together. Disposable PostgreSQL
+tests order publication against acknowledgement and write admission.
 
 ## Alternate writer inventory and offline recovery rehearsal
 
