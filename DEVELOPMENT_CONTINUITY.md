@@ -5,7 +5,7 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 006
+BAM Continuity 007
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
@@ -13,6 +13,8 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 ## Last independently verified engineering checkpoint (2026-11-14)
 
+- PR **#179** moved the approved dashboard into native BAM Personal 0.7.0 with Schedule, Draft inbox, Campaign notes and Offline AI tiles and alerts driven by local state. Updated the product plan so the usable phone app and approved visible workflows come before shared infrastructure and additional background work. [Exact-head Android #43651833196](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43651833196) and [general #43651833192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43651833192) passed at `bef443b8fce263c79c444ce724cd76296ff98470`. [Merged-main Android #43652022723](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43652022723) and [general #43652022728](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43652022728) passed at `a66a97490f47cdf5fe5376d89d538433032d8c9e`. All 1,398 local Python tests and 80 JavaScript regression scripts passed. The Android CI-built preview passed package checks. The branches matched with zero ahead/behind and no open PRs before the handoff. Direct phone verification and the remaining approved personal workflows are pending.
+- Handoff PR **#178** established sequence **006**. [Merged-main Actions #43650908830](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650908830) passed at `b2945c797f62f9e75b9e0c137256803df78d0d1a`. Both branches matched before the Android dashboard milestone.
 - PR **#177** sealed each reviewed SQLite table's ordered row digest, ID history and known-unused evidence from one read transaction. The disposable PostgreSQL test required a separately retained envelope digest and the correct table and restored rows before restarting the sequence. It refused replay with identical rows, mismatched table or row evidence, and modified ciphertext. [PR Actions #43650337216](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650337216) passed at `3b5ee3917cc8b2caaa3023328609c71a5633de3e`. [Merged-main Actions #43650517350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650517350) passed at `6b8ddf3a4b60773ea76a76330fafbad3b1b40c53`. All 1,398 local Python tests and 80 JavaScript regression scripts passed. Both branches matched after a non-force fast-forward, with zero ahead/behind and no open PRs before this handoff.
 - Handoff PR **#176** established sequence **005**. [Merged-main Actions #43648761938](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43648761938) passed at `f7f7a6456e1d1ac3252b966840ff6257bfaa2ca7`. Both branches matched with no open PRs before the authenticated capture rehearsal.
 - PR **#175** tested both read orders for SQLite rows and ID history in one WAL snapshot during concurrent issuance and deletion. The disposable PostgreSQL fixture stopped before sequence restart when history was missing, duplicated, inconsistent, malformed or exhausted, and verified target rollback and source preservation. It accepted an independently known never-used table. [PR Actions #43648218509](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43648218509) passed at `a641d99a8a2299c994c6a0ca3d7ad86c2cd004a2`. [Merged-main Actions #43648389242](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43648389242) passed at `cb95bdf9be415c27e66e123c10c9c0b269b4c485`. All 1,397 local Python tests and 80 JavaScript regression scripts passed. Both branches matched after a non-force fast-forward, with zero ahead/behind and no open PRs before this handoff.
@@ -75,8 +77,6 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 - PRs **#118–#119** mapped the SQLite store and PostgreSQL preview boundaries, established the first receipt and lock-order tests and documented independent confirmation of an operator transition. [Prior merged-main verification #43460513286](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43460513286).
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above. If the handoff PR has already merged, verify the current main run and complete any outstanding non-force branch sync before editing.
-
-The Android 0.7.0 candidate implements the first native dashboard tiles. Verify the general and Android Actions for the candidate and merged-main commits before recording this checkpoint.
 
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
 
