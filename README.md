@@ -1,8 +1,44 @@
-## BAM Personal Post Studio
+## BAM Scheduled Posts
 
-[Download the standalone HTML file](https://raw.githubusercontent.com/BelenosCreations/belenos-marketing-automation/main/personal-post-studio.html) and open the downloaded file in your browser. Choose a business, enter the topic and confirmed facts, copy the prompt into ChatGPT, then bring the reply back to edit, save and copy. The initial workflow is Facebook-first and includes Belenos Creations and Busy B Cleaning Service LLC. Drafts are stored in the browser that opens the file. Keep the file in the same location to reopen those drafts. ChatGPT is used manually through your own account.
+BAM writes and saves Belenos Creations Facebook drafts on the personal
+marketing schedule. The 10 AM run prepares the daily main post and, on
+Thursday through Saturday, a separate 11:30 AM store-opening reminder when
+hours are confirmed. Evening drafts run at 6:30 PM Monday, Wednesday,
+Friday and Saturday. All times are Eastern. The inbox has a separate copy
+button for each caption. Publishing stays manual.
 
-Personal use is the immediate priority. The shared, multiuser BAM platform remains the long-term product goal. See the [product plan](PRODUCT_PLAN.md).
+### Run on your computer
+
+1. [Download the BAM source](https://github.com/BelenosCreations/belenos-marketing-automation/archive/refs/heads/main.zip) and extract it.
+2. Install [Python 3.11 or newer](https://www.python.org/downloads/) and [Ollama](https://ollama.com/download). Start Ollama and run `ollama pull gpt-oss:20b`. See the [local model setup and hardware guide](https://developers.openai.com/cookbook/articles/gpt-oss/run-locally-ollama).
+3. In the extracted folder, run `python bam_scheduled_posts.py` and open [the draft inbox](http://127.0.0.1:8787/). If needed, use `python3` on macOS/Linux or `py` on Windows. If Python reports missing time-zone data, run `python -m pip install tzdata` using the same Python command.
+
+Keep the app and Ollama running on the same awake computer. The browser tab
+can be closed. Restarting catches up on today's due drafts, with opening
+reminders expiring at noon. The app uses the local model with no OpenAI API
+key or API charges. It binds only to the computer running it.
+
+Drafts live under `~/.bam-scheduled-posts`. An optional `marketing.json`
+file in that directory can supply confirmed hours and exceptions. For example:
+
+```json
+{
+  "hours_confirmed_through": "2026-12-10",
+  "closed_dates": ["2026-11-26"],
+  "hours_overrides": {"2026-12-05": "1–5 PM"},
+  "skip_slots": {"2026-11-16": ["morning"]},
+  "extra_facts": {"2026-12-05": "Add confirmed campaign details here."}
+}
+```
+
+The built-in holiday hold suppresses opening reminders December 11–18,
+2026. After December 10, regular-hours reminders require an extended
+confirmation date or a date-specific override. Closed dates take
+precedence over hours. A supplied `skip_slots` map replaces the built-in
+skip map. Review the generated caption before copying it to Facebook.
+
+Personal use comes first. Shared access and multiuser collaboration remain
+the long-term product goal. See the [product plan](PRODUCT_PLAN.md).
 
 ## Offline AI request recovery design
 

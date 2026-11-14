@@ -1,3 +1,11 @@
+## Personal Scheduled Posts (2026-11-13)
+
+- Added a local scheduler and draft inbox for Belenos morning, store-opening,
+  and evening Facebook captions. Matches the Eastern schedule and uses
+  OpenAI's local gpt-oss model via Ollama without API billing.
+- Added date overrides, closure handling, same-day catch-up, retry backoff,
+  and persistent draft deduplication. Publishing remains manual.
+
 ## Personal Post Studio (2026-11-13)
 
 - Added a standalone Facebook draft workspace with business presets, factual ChatGPT prompts, manual response import, local draft saving and copy.
