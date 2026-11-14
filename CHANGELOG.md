@@ -1,5 +1,8 @@
 ## Android scheduler validation (2026-11-14)
 
+- Tested offline model setup with a simulated Android download manager,
+  including reopening during a download, checksum mismatches, truncation,
+  and recovery from failed or missing downloads.
 - Tested the WorkManager scheduling path for morning and evening drafts,
   pause and manual catch-up using synthetic captions.
 - Tested the background worker with synthetic text and a controlled clock.
