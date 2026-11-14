@@ -1,3 +1,9 @@
+## Android scheduler validation (2026-11-14)
+
+- Tested the background worker with synthetic text and a controlled clock.
+- Rechecked eligibility before generating and saving a caption so expired
+  opening reminders and old campaign rules cannot produce a late draft.
+
 ## BAM Personal Android 0.6.0 (2026-11-14)
 
 - Refined morning, opening and evening prompts after checking the pinned

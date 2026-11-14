@@ -61,7 +61,9 @@ original text and display no inferred timing.
 
 The Android CI suite uses simulated Android 15 and synthetic captions to
 exercise opening the inbox, editing and copying a caption, database upgrades,
-and how retries handle a caption you already edited. The phone check above
+and how retries handle a caption you already edited. It also runs the draft
+worker with a controlled clock to check noon, Eastern midnight, and campaign
+changes made during generation. The phone check above
 measures real model inference and background timing on your device.
 
 ### Install the preview or sign a personal build

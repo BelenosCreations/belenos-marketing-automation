@@ -19,11 +19,22 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 
-class DraftWorker(private val context: Context, parameters: WorkerParameters) :
-    Worker(context, parameters) {
+internal typealias CaptionGenerator = (String) -> String
+
+class DraftWorker internal constructor(
+    private val context: Context,
+    parameters: WorkerParameters,
+    private val now: () -> Instant,
+    private val modelReady: () -> Boolean,
+    private val withGenerator: ((CaptionGenerator) -> Unit) -> Unit
+) : Worker(context, parameters) {
+    constructor(context: Context, parameters: WorkerParameters) : this(
+        context, parameters, Instant::now, { ModelFile(context).ready() },
+        { useGenerator(context, it) }
+    )
+
     override fun doWork(): Result = synchronized(generationLock) {
         if (isStopped) return@synchronized Result.success()
-        val model = ModelFile(context)
         val settings = context.getSharedPreferences("bam", Context.MODE_PRIVATE)
         val sample = inputData.getBoolean("sample", false)
         val manual = inputData.getBoolean("manual", false)
@@ -36,16 +47,16 @@ class DraftWorker(private val context: Context, parameters: WorkerParameters) :
         }
         val allowed = { sample || manual || settings.getBoolean("enabled", false) }
         if (!allowed()) return@synchronized Result.success()
-        if (!model.ready()) {
+        if (!modelReady()) {
             if (sample || manual) settings.edit().putString("status", "The offline model is unavailable.").apply()
             return@synchronized Result.success()
         }
-        val now = Instant.now()
-        val day = now.atZone(Schedule.eastern).toLocalDate()
-        val confirmedThrough = LocalDate.parse(settings.getString("hours_through", "2026-12-10"))
+        fun confirmedThrough() = LocalDate.parse(settings.getString("hours_through", "2026-12-10"))
+        val started = now()
+        val day = started.atZone(Schedule.eastern).toLocalDate()
         DraftStore(context).use { store ->
             val campaign = store.campaign(day)
-            val slots = if (sample) listOf(Slot.SAMPLE) else Schedule.due(now, confirmedThrough, campaign)
+            val slots = if (sample) listOf(Slot.SAMPLE) else Schedule.due(started, confirmedThrough(), campaign)
                 .filterNot { store.contains(day, it) }
             if (slots.isEmpty()) {
                 if (manual) settings.edit().putString("status", "No missing drafts are due today.").apply()
@@ -55,30 +66,22 @@ class DraftWorker(private val context: Context, parameters: WorkerParameters) :
             var failed = false
             var planChanged = false
             try {
-                Engine(EngineConfig(modelPath = checkNotNull(model.file).absolutePath,
-                    backend = Backend.CPU(), maxNumTokens = 2048, cacheDir = context.cacheDir.path)).use { engine ->
-                    engine.initialize()
+                withGenerator { generate ->
                     for (slot in slots) {
                         if (isStopped || !allowed()) break
-                        if (slot == Slot.OPENING && Slot.OPENING !in Schedule.due(
-                                Instant.now(), confirmedThrough, campaign)) continue
+                        val before = now()
+                        if (day != before.atZone(Schedule.eastern).toLocalDate()) break
+                        if (!sample && slot !in Schedule.due(before, confirmedThrough(), campaign)) continue
                         try {
                             val recent = store.recent(4).filter { it.slot != Slot.SAMPLE }.map { it.caption }
-                            val text = engine.createConversation(ConversationConfig(
-                                samplerConfig = SamplerConfig(topK = 25, topP = 0.9, temperature = 0.75),
-                                maxOutputToken = 220
-                            )).use { chat ->
-                                chat.sendMessage(Schedule.prompt(day, slot, recent, campaign))
-                                    .contents.contents.filterIsInstance<Content.Text>()
-                                    .joinToString("") { it.text }
-                            }
-                            val hours = if (slot == Slot.OPENING) Schedule.hours(day, confirmedThrough) else null
-                            val caption = Schedule.caption(text, hours)
-                            val finished = Instant.now()
-                            val currentHours = LocalDate.parse(settings.getString("hours_through", "2026-12-10"))
+                            val text = generate(Schedule.prompt(day, slot, recent, campaign))
+                            val finished = now()
+                            val currentHours = confirmedThrough()
                             if (!isStopped && allowed() &&
                                 day == finished.atZone(Schedule.eastern).toLocalDate() &&
                                 (sample || slot in Schedule.due(finished, currentHours, campaign))) {
+                                val hours = if (slot == Slot.OPENING) Schedule.hours(day, currentHours) else null
+                                val caption = Schedule.caption(text, hours)
                                 val draft = Draft(day, slot, caption, DraftTiming(finished, origin))
                                 if (!store.saveGenerated(draft, campaign)) {
                                     planChanged = true
@@ -110,6 +113,23 @@ class DraftWorker(private val context: Context, parameters: WorkerParameters) :
 
     companion object {
         private val generationLock = Any()
+
+        private fun useGenerator(context: Context, consume: (CaptionGenerator) -> Unit) {
+            val model = checkNotNull(ModelFile(context).file)
+            Engine(EngineConfig(modelPath = model.absolutePath,
+                backend = Backend.CPU(), maxNumTokens = 2048, cacheDir = context.cacheDir.path)).use { engine ->
+                engine.initialize()
+                consume { prompt ->
+                    engine.createConversation(ConversationConfig(
+                        samplerConfig = SamplerConfig(topK = 25, topP = 0.9, temperature = 0.75),
+                        maxOutputToken = 220
+                    )).use { chat ->
+                        chat.sendMessage(prompt).contents.contents.filterIsInstance<Content.Text>()
+                            .joinToString("") { it.text }
+                    }
+                }
+            }
+        }
 
         fun enable(context: Context) {
             WorkManager.getInstance(context).enqueueUniquePeriodicWork("scheduled-drafts",
