@@ -74,6 +74,8 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above. If the handoff PR has already merged, verify the current main run and complete any outstanding non-force branch sync before editing.
 
+The authenticated identity capture candidate checks restored rows, a reviewed table context and a separately retained envelope digest before restarting a disposable sequence. Verify the candidate and merged-main Actions before recording a new checkpoint.
+
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
 
 ## Next safe development milestone

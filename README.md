@@ -213,6 +213,9 @@ high-water mark to avoid reusing deleted IDs, including when the restored
 table is empty. The follow-up exercise reads the rows and their ID history
 in one SQLite snapshot during concurrent writes. It stops before restarting
 the target sequence if the history is ambiguous, inconsistent or exhausted.
+An authenticated capture also binds the restored rows and ID history to the
+reviewed table and a separately retained digest. The rehearsal refuses an
+older authentic capture even when the surviving rows are identical.
 [Identity sequence rehearsal](NEON_MIGRATION_ROADMAP.md#identity-sequences-after-restoring-legacy-ids)
 
 ## Alternate writer inventory and offline recovery rehearsal
