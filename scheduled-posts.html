@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAM Scheduled Posts</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f0f3ed; color: #1d3027; font: 16px/1.5 "DM Sans", system-ui, sans-serif; }
+  header { background: #19382c; color: #fff; padding: 2rem 1rem; }
+  header p { color: #d8e9dd; }
+  header > *, main { max-width: 46rem; margin-inline: auto; }
+  h1 { font-size: clamp(1.9rem, 6vw, 2.7rem); line-height: 1.1; }
+  h1, h2, h3, p { margin-block: 0 .45rem; }
+  main { padding: 1rem; }
+  section, article { padding: 1.1rem; margin: 0 0 .85rem; background: #fff;
+    border: 1px solid #d1ddd4; border-radius: .9rem; }
+  .muted { color: #52655a; }
+  textarea { display: block; width: 100%; resize: vertical; min-height: 7rem;
+    font: inherit; color: inherit; border: 1px solid #a0b0a6; border-radius: .55rem;
+    padding: .75rem; margin-block: .65rem; }
+  button { background: #185741; color: white; padding: .55rem 1rem; border: 0;
+    border-radius: .55rem; font: inherit; font-weight: 650; min-height: 44px; cursor: pointer; }
+  :focus-visible { outline: 3px solid #a65a16; outline-offset: 3px; }
+  #status { min-height: 1.5em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>BAM Scheduled Posts</h1>
+  <p>Belenos Creations · Facebook drafts</p>
+</header>
+<main>
+  <section aria-labelledby="schedule">
+    <h2 id="schedule">Draft schedule</h2>
+    <p>10 AM daily · Morning post</p>
+    <p>10 AM Thu–Sat · Draft for the 11:30 AM store-opening reminder when hours are confirmed</p>
+    <p>6:30 PM Mon, Wed, Fri, Sat · Evening post</p>
+    <p class="muted">Eastern time. BAM generates drafts while the local app and model are running.</p>
+  </section>
+  <h2>Draft inbox</h2>
+  <p id="status" role="status" aria-live="polite">Loading drafts…</p>
+  <div id="drafts"></div>
+</main>
+<script>
+  'use strict';
+  const status = document.getElementById('status');
+  const list = document.getElementById('drafts');
+  const labels = { morning: 'Morning marketing · 10 AM',
+    opening: 'Store-opening reminder · 11:30 AM', evening: 'Evening marketing · 6:30 PM' };
+  let lastRows;
+
+  function showDrafts(rows) {
+    list.replaceChildren();
+    for (const row of rows) {
+      const card = document.createElement('article');
+      const title = document.createElement('h3');
+      title.textContent = labels[row.slot];
+      const date = document.createElement('p');
+      date.className = 'muted';
+      date.textContent = row.local_date;
+      card.append(title, date);
+      if (row.caption) {
+        const caption = document.createElement('textarea');
+        caption.value = row.caption;
+        caption.readOnly = true;
+        caption.setAttribute('aria-label', labels[row.slot] + ' caption for ' + row.local_date);
+        const copy = document.createElement('button');
+        copy.textContent = 'Copy caption';
+        copy.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(caption.value);
+            status.textContent = 'Caption copied.';
+          } catch {
+            caption.focus();
+            caption.select();
+            status.textContent = 'Caption selected. Use your browser’s Copy command.';
+          }
+        });
+        card.append(caption, copy);
+      } else {
+        const error = document.createElement('p');
+        error.textContent = row.error;
+        card.append(error);
+      }
+      list.append(card);
+    }
+  }
+
+  async function refresh() {
+    try {
+      const response = await fetch('/drafts.json', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Unavailable');
+      const { drafts, error } = await response.json();
+      const rows = JSON.stringify(drafts);
+      if (lastRows !== rows && !list.contains(document.activeElement)) {
+        showDrafts(drafts);
+        lastRows = rows;
+        status.textContent = error || (drafts.length ? '' : 'Drafts will appear here when a scheduled run completes.');
+      } else if (error) {
+        status.textContent = error;
+      }
+    } catch {
+      status.textContent = 'BAM is unavailable. Check that the local app is running.';
+    } finally {
+      setTimeout(refresh, 15000);
+    }
+  }
+
+  refresh();
+</script>
+</body>
+</html>

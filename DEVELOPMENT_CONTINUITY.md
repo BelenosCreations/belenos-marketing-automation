@@ -8,6 +8,7 @@ Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in
 
 ## Last independently verified engineering checkpoint (2026-11-13)
 
+- Handoff PR **#142** passed [merged-main Actions #43545000642](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43545000642) at `1417158ccfdb8be46b9f70e8b8060bb659b52f80`. Branches matched with no open PRs before the scheduled drafting candidate.
 - PR **#141** added the downloadable Personal Post Studio for manual ChatGPT drafting, browser-local saves, edits and copy. Exact-head [Actions #43544409346](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43544409346) passed at `b5556004ccf6e4fd54403501aa87d7a2c65e376d`. Merged-main [Actions #43544599266](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43544599266) passed at `f2e57f540f902bd8c884b57ba137931e11c86342`. Branches matched with no open PRs before this handoff. Android browser validation remains open.
 - Handoff PR **#140** passed [merged-main Actions #43540509204](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43540509204) at `d99c6c8c9e96fa9491fcf09ba7642fe17bfe43ca`. Both branches matched with no open PRs before the personal studio candidate.
 - PR **#139** rehearsed recovery after a journal commit and before independently signed head publication, stale publisher keys, and PostgreSQL lock ordering for publication, acknowledgement and admission. Exact-head Actions [#43539892492](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43539892492) passed at `61a275584d4cafbc14da9bb8250f31c646b868ce`. Merged-main Actions [#43540078308](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43540078308) passed at `422ded794c83b5d2aceb1cbda6477d63c4f6b23a`. Both branches matched with zero ahead/behind and no open PRs before this handoff.
@@ -39,11 +40,11 @@ GitHub listed no deployments, environments or releases, and Pages was disabled. 
 
 ## Next safe development milestone
 
-The owner prioritized a useful personal app for writing AI-assisted posts. Multiuser collaboration remains the long-term goal and comes after personal usability. The $0 spending limit and service-activation restrictions still apply.
+The owner requires BAM to generate drafts automatically on the existing Belenos morning and evening marketing cadence. The manual prompt handoff does not satisfy the personal milestone. Multiuser collaboration remains the long-term goal. The $0 spending limit and production activation restrictions still apply.
 
-1. Make the [Personal Post Studio](personal-post-studio.html) easy to use on the owner's phone. Verify the manual ChatGPT round trip, editing, saving and copying a finished Facebook draft. Use personal feedback to decide the next improvement.
-2. Continue the personal workflow first. Treat in-app AI generation as a follow-up using the existing OpenAI architecture, subject to separate authorization for any billable calls. Keep scheduling, posting automation and account connections gated.
-3. Resume the deferred operational work below when preparing the shared deployment and Private Beta.
+1. Run [BAM Scheduled Posts](README.md#bam-scheduled-posts) with the real local gpt-oss model on the owner's computer. Verify the generated captions and review/copy workflow on representative morning, opening and evening slots. Fixture tests exercise the scheduler and model adapter without real inference.
+2. Prioritize convenient owner access and reliable operation on the owner's available device. An Android-only or always-on setup needs an agreed runtime. Keep the existing ChatGPT marketing tasks and publishing arrangements in place until the owner approves a switch.
+3. Resume the deferred operational work when preparing shared deployment and Private Beta.
 
 ### Deferred shared deployment work
 
