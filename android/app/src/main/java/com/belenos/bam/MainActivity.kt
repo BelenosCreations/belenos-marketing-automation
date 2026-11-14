@@ -1,6 +1,7 @@
 package com.belenos.bam
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -10,9 +11,11 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputFilter
 import android.view.View
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -20,6 +23,7 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import java.time.LocalDate
+import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
 
@@ -33,6 +37,7 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var download: Button
     private lateinit var sample: Button
+    private lateinit var catchUp: Button
     private lateinit var automatic: Switch
     private lateinit var inbox: LinearLayout
     private var displayed: List<Draft>? = null
@@ -104,6 +109,7 @@ class MainActivity : Activity() {
         }
         controls.addView(automatic)
         controls.addView(button("Confirm regular store hours") { confirmHours() })
+        controls.addView(button("Campaign notes and skips") { chooseCampaignDay() })
         download = button("Download offline AI · 1.6 GB") {
             try {
                 model.start()
@@ -120,6 +126,12 @@ class MainActivity : Activity() {
             redraw()
         }
         controls.addView(sample)
+        catchUp = button("Generate due drafts now") {
+            preferences.edit().putString("status", "Checking for missing drafts…").apply()
+            DraftWorker.runOnce(applicationContext, sample = false, manual = true)
+            redraw()
+        }
+        controls.addView(catchUp)
         status = text("", 14, muted).apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
         controls.addView(status)
         content.addView(text("Draft inbox", 21, bold = true).apply {
@@ -181,6 +193,7 @@ class MainActivity : Activity() {
         download.visibility = if (ready) View.GONE else View.VISIBLE
         download.isEnabled = !pending && !checkingModel
         sample.visibility = if (ready) View.VISIBLE else View.GONE
+        catchUp.visibility = if (ready) View.VISIBLE else View.GONE
         automatic.isEnabled = ready || automatic.isChecked
         val currentStatus = when {
             checkingModel -> "Checking the offline model…"
@@ -203,12 +216,77 @@ class MainActivity : Activity() {
                 setPadding(0, dp(10), 0, dp(9))
                 setTextIsSelectable(true)
             })
+            panel.addView(button("Edit caption") { editCaption(draft) })
             panel.addView(button("Copy caption") {
                 getSystemService(ClipboardManager::class.java).setPrimaryClip(
                     ClipData.newPlainText("BAM caption", draft.caption))
                 Toast.makeText(this, "Caption copied", Toast.LENGTH_SHORT).show()
             })
         }
+    }
+
+    private fun chooseCampaignDay() {
+        val today = Instant.now().atZone(Schedule.eastern).toLocalDate()
+        val picker = android.app.DatePickerDialog(this, { _, year, month, day ->
+            editCampaign(LocalDate.of(year, month + 1, day))
+        }, today.year, today.monthValue - 1, today.dayOfMonth)
+        picker.show()
+    }
+
+    private fun editCampaign(day: LocalDate) {
+        val campaign = DraftStore(this).use { it.campaign(day) }
+        val controls = column().apply { setPadding(dp(22), 0, dp(22), 0) }
+        val focus = input("Campaign topic", campaign.focus, 160)
+        val facts = input("Confirmed facts for this date", campaign.facts, 500)
+        controls.addView(focus)
+        controls.addView(facts)
+        val skipControls = listOf(Slot.MORNING, Slot.OPENING, Slot.EVENING).associateWith { slot ->
+            CheckBox(this).apply {
+                text = "Skip ${slot.title.substringBefore(" ·").lowercase()}"
+                isChecked = slot in campaign.skipped
+                controls.addView(this)
+            }
+        }
+        controls.addView(text("Applies to drafts still to be generated.", 13, muted))
+        AlertDialog.Builder(this).setTitle(day.format(DateTimeFormatter.ofPattern("EEE, MMM d, uuuu")))
+            .setView(ScrollView(this).apply { addView(controls) })
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ ->
+                val updated = Campaign(focus.text.toString().trim(), facts.text.toString().trim(),
+                    skipControls.filterValues { it.isChecked }.keys)
+                DraftStore(this).use { it.saveCampaign(day, updated) }
+                Toast.makeText(this, "Campaign saved", Toast.LENGTH_SHORT).show()
+                if (automatic.isChecked) DraftWorker.runOnce(applicationContext, sample = false)
+            }.show()
+    }
+
+    private fun editCaption(draft: Draft) {
+        val editor = input("Facebook caption", draft.caption, 4000).apply { minLines = 4 }
+        val dialog = AlertDialog.Builder(this).setTitle("Edit caption").setView(editor)
+            .setNegativeButton("Cancel", null).setPositiveButton("Save", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val caption = editor.text.toString().trim()
+                if (caption.isEmpty()) {
+                    editor.error = "Enter a caption."
+                    return@setOnClickListener
+                }
+                val saved = DraftStore(this).use { it.edit(draft, caption) }
+                if (!saved) {
+                    editor.error = "This draft changed. Reopen the editor before saving."
+                    return@setOnClickListener
+                }
+                dialog.dismiss()
+                redraw()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun input(label: String, value: String, maxLength: Int) = EditText(this).apply {
+        hint = label
+        filters = arrayOf(InputFilter.LengthFilter(maxLength))
+        setText(value)
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density + .5f).toInt()

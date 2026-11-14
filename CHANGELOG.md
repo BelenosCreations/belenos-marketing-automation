@@ -1,3 +1,11 @@
+## BAM Personal Android 0.2.0
+
+- Added date-specific campaign topics, confirmed facts and per-slot skips.
+- Added manual recovery for missing due drafts and editing of saved captions.
+- Checked campaign changes when saving generated output so an in-flight run
+  cannot save a draft from a superseded plan.
+- The test APK installs alongside 0.1.0 as BAM Personal.
+
 ## BAM for Android (2026-11-13)
 
 - Added a native Android app for on-device scheduled Facebook drafting, with
