@@ -1,5 +1,7 @@
 ## Android scheduler validation (2026-11-14)
 
+- Tested the WorkManager scheduling path for morning and evening drafts,
+  pause and manual catch-up using synthetic captions.
 - Tested the background worker with synthetic text and a controlled clock.
 - Rechecked eligibility before generating and saving a caption so expired
   opening reminders and old campaign rules cannot produce a late draft.

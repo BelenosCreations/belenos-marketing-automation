@@ -66,6 +66,10 @@ worker with a controlled clock to check noon, Eastern midnight, and campaign
 changes made during generation. The phone check above
 measures real model inference and background timing on your device.
 
+WorkManager integration tests simulate the morning and evening periodic runs,
+then verify the saved draft sources, an owner edit, a skipped opening reminder,
+and the manual catch-up path with automatic drafting paused.
+
 ### Install the preview or sign a personal build
 
 Starting with 0.4.0, the **BAM Preview** APK installs alongside 0.1.0 through
