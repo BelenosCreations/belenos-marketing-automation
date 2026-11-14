@@ -19,12 +19,14 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 
+internal typealias CaptionGenerator = (String) -> String
+
 class DraftWorker internal constructor(
     private val context: Context,
     parameters: WorkerParameters,
     private val now: () -> Instant,
     private val modelReady: () -> Boolean,
-    private val withGenerator: ((String) -> String) -> Unit
+    private val withGenerator: ((CaptionGenerator) -> Unit) -> Unit
 ) : Worker(context, parameters) {
     constructor(context: Context, parameters: WorkerParameters) : this(
         context, parameters, Instant::now, { ModelFile(context).ready() },
@@ -112,7 +114,7 @@ class DraftWorker internal constructor(
     companion object {
         private val generationLock = Any()
 
-        private fun useGenerator(context: Context, consume: ((String) -> String) -> Unit) {
+        private fun useGenerator(context: Context, consume: (CaptionGenerator) -> Unit) {
             val model = checkNotNull(ModelFile(context).file)
             Engine(EngineConfig(modelPath = model.absolutePath,
                 backend = Backend.CPU(), maxNumTokens = 2048, cacheDir = context.cacheDir.path)).use { engine ->
