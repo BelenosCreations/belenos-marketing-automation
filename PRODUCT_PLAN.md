@@ -16,13 +16,12 @@ When an actual functioning app warrants hosted testing **or** an essential devel
 
 ## Personal use comes first
 
-The owner prioritized an app that automatically produces Belenos Facebook
-captions on the same morning and evening cadence as the current marketing
-tasks. The local Scheduled Posts app generates and saves drafts with
-OpenAI's open-weight model through Ollama. Review and copy happen in the
-inbox. The original manual handoff remains available as a fallback.
-Local execution needs an awake computer, and access from a phone or
-generation while the computer is off needs a separately chosen runtime.
+The owner requires scheduled Belenos Facebook drafting to run directly on
+Android. The personal app has its own draft inbox and an on-device model.
+Use the existing morning, opening-reminder, and evening schedule in Eastern
+time, with Android background delivery and catch-up on opening the app.
+Caption copying and Facebook posting are manual. The existing computer app
+is a separate option for desktop use.
 
 Multiuser collaboration, business isolation, direct publishing and analytics remain the long-term product goals. Hosted Beta and migration work are secondary to making the owner's personal post workflow useful. Existing operational gates continue to apply to shared or hosted release.
 

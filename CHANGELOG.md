@@ -1,3 +1,10 @@
+## BAM for Android (2026-11-13)
+
+- Added a native Android app for on-device scheduled Facebook drafting, with
+  an initial model download, a test draft, and a persistent draft inbox.
+- Added background scheduling, Eastern calendar checks and a confirm-through
+  date for opening reminders. Caption copying and publishing are manual.
+
 ## Personal Scheduled Posts (2026-11-13)
 
 - Added a local scheduler and draft inbox for Belenos morning, store-opening,
