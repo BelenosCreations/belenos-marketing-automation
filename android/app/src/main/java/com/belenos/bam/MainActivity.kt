@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -17,6 +16,7 @@ import android.view.WindowInsets
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
@@ -33,8 +33,7 @@ class MainActivity : Activity() {
     private val modelExecutor = Executors.newSingleThreadExecutor()
     private val preferences by lazy { getSharedPreferences("bam", Context.MODE_PRIVATE) }
     private val model by lazy { ModelFile(applicationContext) }
-    private val green = Color.rgb(25, 56, 44)
-    private val muted = Color.rgb(77, 95, 85)
+    private val muted by lazy { getColor(R.color.bam_muted) }
     private lateinit var status: TextView
     private lateinit var download: Button
     private lateinit var sample: Button
@@ -69,7 +68,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(239, 243, 237))
+            setBackgroundColor(getColor(R.color.bam_navy))
             setOnApplyWindowInsetsListener { view, insets ->
                 if (android.os.Build.VERSION.SDK_INT >= 30) {
                     val bars = insets.getInsets(WindowInsets.Type.systemBars())
@@ -83,14 +82,22 @@ class MainActivity : Activity() {
             }
         }
         val header = column().apply {
-            setBackgroundColor(green)
-            setPadding(dp(22), dp(16), dp(22), dp(16))
-            addView(text(applicationInfo.loadLabel(packageManager).toString(), 25, Color.WHITE, bold = true))
-            addView(text("Belenos Creations · Facebook", 15, Color.rgb(219, 233, 224)))
+            setPadding(dp(22), dp(14), dp(22), dp(13))
+            addView(ImageView(this@MainActivity).apply {
+                setImageResource(R.drawable.bam_wordmark_dark)
+                scaleType = ImageView.ScaleType.FIT_START
+                contentDescription = "BAM — Belenos Automatic Marketing"
+            }, LinearLayout.LayoutParams(-1, dp(56)))
+            addView(text("Belenos Creations · Facebook", 15, getColor(R.color.bam_silver)).apply {
+                setPadding(0, dp(7), 0, 0)
+            })
         }
         root.addView(header)
+        root.addView(View(this).apply { setBackgroundColor(getColor(R.color.bam_gold)) },
+            LinearLayout.LayoutParams(-1, dp(2)))
         val content = column().apply { setPadding(dp(16), dp(14), dp(16), dp(22)) }
         root.addView(ScrollView(this).apply {
+            setBackgroundColor(getColor(R.color.bam_page))
             addView(content)
         }, LinearLayout.LayoutParams(-1, 0, 1f))
         val controls = card(content)
@@ -317,7 +324,7 @@ class MainActivity : Activity() {
 
     private fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-    private fun text(label: String, size: Int, color: Int = green, bold: Boolean = false) =
+    private fun text(label: String, size: Int, color: Int = getColor(R.color.bam_text), bold: Boolean = false) =
         TextView(this).apply {
             text = label
             textSize = size.toFloat()
@@ -334,7 +341,8 @@ class MainActivity : Activity() {
 
     private fun card(parent: LinearLayout): LinearLayout = column().apply {
         background = GradientDrawable().apply {
-            setColor(Color.WHITE)
+            setColor(getColor(R.color.bam_surface))
+            setStroke(dp(1), getColor(R.color.bam_border))
             cornerRadius = dp(14).toFloat()
         }
         setPadding(dp(16), dp(14), dp(16), dp(14))

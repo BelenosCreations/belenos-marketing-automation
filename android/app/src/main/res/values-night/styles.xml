@@ -1,0 +1,11 @@
+<resources>
+    <style name="BamTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/bam_accent</item>
+        <item name="android:colorButtonNormal">@color/bam_button</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/bam_navy</item>
+        <item name="android:navigationBarColor">@color/bam_navy</item>
+        <item name="android:windowBackground">@color/bam_navy</item>
+    </style>
+</resources>

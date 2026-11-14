@@ -15,4 +15,4 @@ The canonical sources are the SVG files under `branding/source/`. The silver/nav
 
 Run `python -m pip install cairosvg pillow` and `python tools/build_branding.py` from repository root to generate transparent logo PNGs, legacy icon sizes, and adaptive Android layers. The generated outputs are distributable artifacts and intentionally separate from the source SVGs.
 
-**Not a deployed app:** At Phase 3.5 the repository does not contain an Android application, Gradle project, AndroidManifest, or production publishing service. The source images and Android resource templates are staged here for integration when the Kotlin/Compose client is created. No publishing permissions, provider credentials, or scheduling behavior are changed by branding.
+The Android app packages the approved wordmark and adaptive launcher icon starting in 0.5.0. See the [Android brand resources](../android/branding/README.md) for the artwork refresh and phone checks.

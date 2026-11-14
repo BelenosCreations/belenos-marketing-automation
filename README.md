@@ -1,5 +1,9 @@
 ## BAM for Android
 
+BAM 0.5.0 uses the approved Belenos Automatic Marketing wordmark and adaptive
+launcher icon. The screens follow Android's light or dark setting with the
+navy, silver, gold and teal BAM palette.
+
 BAM Personal runs directly on an ARM64 Android phone. The app downloads
 a 1.6 GB Qwen model once over Wi-Fi and then writes drafts on the phone using
 LiteRT-LM. No account, computer, or paid AI API is required for drafting.

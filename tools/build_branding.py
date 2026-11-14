@@ -50,6 +50,8 @@ def main() -> None:
     assert foreground.getpixel((0, 0))[3] == 0
     save_rgba(foreground, RES / "drawable-nodpi" / "bam_launcher_foreground.png")
     save_rgba(monochrome, RES / "drawable-nodpi" / "bam_launcher_monochrome.png")
+    header = rasterize(SOURCE / "logo_dark.svg", 840)
+    save_rgba(header.crop(header.getbbox()), RES / "drawable-nodpi" / "bam_wordmark_dark.png")
     print(f"BAM brand generated: {DIST} and {RES}")
 
 
