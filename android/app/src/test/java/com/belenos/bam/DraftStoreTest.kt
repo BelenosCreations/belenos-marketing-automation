@@ -57,7 +57,8 @@ class DraftStoreTest {
         DraftStore(context).use { store ->
             val stored = store.recent().associateBy(Draft::slot)
             assertEquals(draft, stored[Slot.OPENING])
-            assertEquals(Draft(day, Slot.MORNING, "Updated caption"), stored[Slot.MORNING])
+            assertEquals(Draft(day, Slot.MORNING, "Updated caption", review = DraftReview(revision = 1)),
+                stored[Slot.MORNING])
         }
     }
 
@@ -76,7 +77,48 @@ class DraftStoreTest {
             assertFalse(worker.saveGenerated(original.copy(slot = Slot.OPENING), initialPlan))
             assertTrue(worker.saveGenerated(original.copy(caption = "Retry output"), revisedPlan))
             assertFalse(worker.contains(day, Slot.OPENING))
-            assertEquals(listOf(original.copy(caption = "Owner's caption")), worker.recent())
+            assertEquals(listOf(original.copy(caption = "Owner's caption", review = DraftReview(revision = 1))),
+                worker.recent())
+        }
+    }
+
+    @Test fun schemaThreeUpgradePreservesTimingAndQueuesTheExistingCaption() {
+        seedLegacyStore(version = 3)
+        DraftStore(context).use { store ->
+            assertEquals(Draft(day, Slot.MORNING, "My edited caption", timing),
+                store.recent(queue = DraftQueue.NEEDS_APPROVAL).single())
+        }
+    }
+
+    @Test fun reviewPersistsAndContentBlocksApprovalUntilItIsCleared() {
+        val original = Draft(day, Slot.MORNING, "Caption", timing)
+        DraftStore(context).use { store ->
+            assertTrue(store.saveGenerated(original, Campaign()))
+            assertEquals(listOf(original), store.recent(queue = DraftQueue.NEEDS_APPROVAL))
+            assertFalse(store.canCopyCaption(original))
+            assertTrue(store.setContentNeeded(original, " Photograph the finished print "))
+            assertFalse(store.setApproval(original, true))
+        }
+        DraftStore(context).use { store ->
+            val held = store.recent(queue = DraftQueue.CONTENT_NEEDED).single()
+            assertEquals("Photograph the finished print", held.review.contentNeeded)
+            assertEquals(0, store.count(DraftQueue.NEEDS_APPROVAL))
+            assertFalse(store.setApproval(held, true))
+            assertTrue(store.setImagePrompt(held, "Illustrate a finished print"))
+            assertFalse(store.setContentNeeded(held, ""))
+            assertTrue(store.setContentNeeded(store.recent().single(), ""))
+            assertTrue(store.setApproval(store.recent(queue = DraftQueue.NEEDS_APPROVAL).single(), true))
+            val approved = store.recent().single()
+            assertTrue(store.canCopyCaption(approved))
+            assertEquals("Illustrate a finished print", approved.review.imagePrompt)
+            assertEquals(timing, approved.timing)
+            assertTrue(store.saveGenerated(original.copy(caption = "Duplicate output"), Campaign()))
+            assertEquals(approved, store.recent().single())
+            assertTrue(store.edit(approved, "Revised caption"))
+            assertFalse(store.canCopyCaption(approved))
+            val revised = store.recent(queue = DraftQueue.NEEDS_APPROVAL).single()
+            assertEquals("Illustrate a finished print", revised.review.imagePrompt)
+            assertEquals("Revised caption", revised.caption)
         }
     }
 
@@ -149,13 +191,19 @@ class DraftStoreTest {
             )""")
             db.execSQL("INSERT INTO draft VALUES (?, ?, ?)",
                 arrayOf(day.toString(), Slot.MORNING.name, "My edited caption"))
-            if (version == 2) {
+            if (version >= 2) {
                 db.execSQL("""CREATE TABLE campaign (
                     day TEXT PRIMARY KEY NOT NULL, focus TEXT NOT NULL,
                     facts TEXT NOT NULL, skipped TEXT NOT NULL
                 )""")
                 db.execSQL("INSERT INTO campaign VALUES (?, ?, ?, ?)",
                     arrayOf(day.toString(), "Tumblers", "20 oz", Slot.EVENING.name))
+            }
+            if (version >= 3) {
+                db.execSQL("ALTER TABLE draft ADD COLUMN saved_at INTEGER")
+                db.execSQL("ALTER TABLE draft ADD COLUMN origin TEXT")
+                db.execSQL("UPDATE draft SET saved_at=?, origin=?",
+                    arrayOf<Any>(timing.savedAt.toEpochMilli(), timing.origin.name))
             }
             db.version = version
         }

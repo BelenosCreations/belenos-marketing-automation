@@ -24,6 +24,11 @@ Facebook, manage campaign notes and store hours, and review the morning,
 opening-reminder, and evening schedule directly from the phone. Facebook
 posting is manual in this phase.
 
+Content needed and Needs approval reflect the personal draft queue. The owner
+can save a missing-material checklist, resolve it, and approve a caption for
+manual copying. Keep the optional image prompt editable separately and let the
+owner copy it into ChatGPT when an image would help.
+
 Verify the app's on-screen workflows on the owner's phone before expanding
 background work. Check actual scheduled delivery and reliability once those
 workflows are usable. Advanced security, backup and restoration, PostgreSQL

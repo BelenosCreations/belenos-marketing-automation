@@ -1,3 +1,12 @@
+## BAM Personal 0.8.0 draft review and image prompts (2026-11-14)
+
+- Added live Android tiles for Content needed and Needs approval, with a
+  persisted checklist and approval per draft.
+- Added an editable, copyable image prompt kept separately from the caption.
+- Existing captions, timing and campaigns survive the database upgrade.
+  Changing an approved caption returns it for review.
+- BAM Review Preview installs alongside earlier test builds.
+
 ## BAM Personal 0.7.0 dashboard (2026-11-14)
 
 - Added the native Android tile dashboard with links to Schedule, Draft inbox,
