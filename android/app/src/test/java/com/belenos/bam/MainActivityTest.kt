@@ -52,6 +52,12 @@ class MainActivityTest {
             })
             root.tile("Draft inbox").performClick()
             assertTrue(root.descendants().filterIsInstance<TextView>().any {
+                it.isShown && it.text == "Post manually · Sat, Nov 14 at 10:00 AM ET"
+            })
+            assertTrue(root.descendants().filterIsInstance<TextView>().any {
+                it.isShown && it.text == "Needs approval"
+            })
+            assertTrue(root.descendants().filterIsInstance<TextView>().any {
                 it.isShown && it.text == "Periodic background check · saved 10:08 AM ET · 8 min after posting time"
             })
 
