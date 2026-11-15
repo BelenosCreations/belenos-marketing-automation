@@ -1,3 +1,11 @@
+## BAM Personal 0.11.0 early scheduled draft preparation (2026-11-15)
+
+- Clarified that 10 AM, 11:30 AM, and 6:30 PM are Facebook posting times, not generation times.
+- Added configurable automatic preparation lead times from at posting time up to 24 hours ahead (default two hours); future-day drafts use that day's campaigns, skips, and opening hours.
+- Added immediate **Generate today's drafts now** and **Generate tomorrow's drafts now** buttons, even when automatic drafting is off. Saved, edited, approved, skipped, or expired opening drafts are not overwritten or revived.
+- Added time-window, WorkManager, manual-generation, date-boundary and dashboard regression tests. Facebook publishing remains entirely manual.
+- BAM Early Draft Preview installs alongside older preview packages; new app storage/model download is separate.
+
 ## BAM Personal 0.10.0 owner-initiated image sharing (2026-11-14)
 
 - Added a **Share approved image** action that opens Android's system chooser
