@@ -1,6 +1,6 @@
 ## BAM for Android
 
-BAM Personal 0.11.0 opens to a tile dashboard. Open **Schedule** for today's
+BAM Personal 0.12.0 opens to a tile dashboard. Open **Schedule** for today's
 draft timing, store hours, scheduling, and manual catch-up. Open **Draft
 inbox** to review, edit, and copy captions. Open **Campaign notes** for dated
 topics, confirmed facts, and skips. Open **Offline AI** to download the model
@@ -31,9 +31,13 @@ text. Use **Copy caption** separately if needed. If the caption, image,
 or checklist changes, share requires another approval; an older image
 link stops returning image bytes after the revision changes.
 
-BAM 0.5.0 uses the approved Belenos Automatic Marketing wordmark and adaptive
-launcher icon. The screens follow Android's light or dark setting with the
-navy, silver, gold and teal BAM palette.
+BAM 0.12.0 uses the owner's November 15 approved metallic gold/silver/teal
+primary logo in the app header, and the matching metallic Android launcher
+icon. Both images are packaged directly from the supplied original artwork
+without generative editing; white outside the icon's gold border is made transparent. The flat interface lockup is included as a
+separate asset. The legacy simplified SVG-era launcher assets have been
+removed from the Android build. The app follows the navy, silver, gold and
+teal BAM palette.
 
 BAM Personal runs directly on an ARM64 Android phone. The app downloads
 a 1.6 GB Qwen model once over Wi-Fi and then writes drafts on the phone using
@@ -93,8 +97,9 @@ original text and display no inferred timing.
 
 1. Download the model and generate a test draft. Read, edit and copy the caption.
 2. Add a dated campaign topic and confirmed facts, then verify they appear in
-   the next relevant caption. Test skipping one slot and use **Generate due
-   drafts now** to check that existing captions and skipped slots are preserved.
+   the next relevant caption. Test skipping one slot and use **Generate today's
+   drafts now** or **Generate tomorrow's drafts now** to check that existing
+   captions and skipped slots are preserved.
 3. Enable scheduling before an upcoming slot. Leave BAM using Home, let the
    phone idle, and reopen BAM after the target. Record the slot, save time and
    work source. A draft labeled **Periodic background check** whose save time
@@ -119,6 +124,13 @@ a finished file with the expected size and SHA-256 becomes available. A failed,
 missing, truncated, or checksum-mismatched download can be retried.
 
 ### Install the preview or sign a personal build
+
+The 0.12.0 **BAM Brand Preview** includes the approved metallic header and
+launcher. It installs separately from 0.11.0 and older previews, with its
+own draft inbox and a new on-device model download. **Do not install the
+unsigned release APK**; extract the Android Actions artifact ZIP and install
+`app-debug.apk`. On the phone, inspect the icon in the launcher and the
+metallic logo inside BAM. Automatic Facebook publishing is still disabled.
 
 The 0.11.0 **BAM Early Draft Preview** installs alongside older previews.
 It has its own private drafts and offline AI model download. The 0.10.0

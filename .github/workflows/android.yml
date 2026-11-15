@@ -37,14 +37,26 @@ jobs:
           "$sdk_tools/apksigner" verify "$preview"
           preview_info=$("$sdk_tools/aapt" dump badging "$preview")
           release_info=$("$sdk_tools/aapt" dump badging "$release")
-          grep -Fq "package: name='com.belenos.bam.owner.preview.advance'" <<< "$preview_info"
-          grep -Fq "application-label:'BAM Early Draft Preview'" <<< "$preview_info"
+          grep -Fq "package: name='com.belenos.bam.owner.preview.brand'" <<< "$preview_info"
+          grep -Fq "application-label:'BAM Brand Preview'" <<< "$preview_info"
           grep -Fq "package: name='com.belenos.bam.owner'" <<< "$release_info"
           grep -Fq "application-label:'BAM Personal'" <<< "$release_info"
           grep -Fxq "native-code: 'arm64-v8a'" <<< "$preview_info"
           grep -Fxq "native-code: 'arm64-v8a'" <<< "$release_info"
           if grep -Fq 'application-debuggable' <<< "$release_info"; then
             echo 'Owner APK must not be debuggable.' >&2
+            exit 1
+          fi
+          # The packaged APK must contain the exact approved owner-supplied brand derivatives.
+          apk_entries=$(unzip -Z1 "$preview")
+          for asset in bam_approved_metallic_primary.webp bam_approved_flat_lockup.webp bam_approved_launcher_foreground.webp; do
+            if ! grep -Fq "$asset" <<< "$apk_entries"; then
+              echo "Missing approved BAM asset: $asset" >&2
+              exit 1
+            fi
+          done
+          if unzip -Z1 "$preview" | grep -Eq 'bam_(wordmark_dark|launcher_monochrome|launcher_foreground)\\.png'; then
+            echo "Unapproved legacy BAM brand resources are still packaged." >&2
             exit 1
           fi
           "$sdk_tools/zipalign" -c -P 16 4 "$preview"

@@ -11,7 +11,7 @@ Canonical owner-supplied reference images, preserved in the project Library unde
 - The owner's **November 15, 2026** source uploads `17472.png` (approved board) and `17473.png` (approved square icon) are the final visual acceptance reference. Original SHA-256: `17472.png` = `0a659fadfabd929a75461b5068c7c6e149ff14c113d0733423cf9450b36df121`; `17473.png` = `f36ea7bbbcee830831806fb3c9c1d6c5fdef148c8e2ae9c51518b92b93c71e08`.
 - The Library file `BAM_Approved_Branding_Android_Patch.zip` under **Belenos Marketing** contains the untouched original uploads, size-adapted WebP copies derived *only* by cropping/resizing the source (not generative re-creation), and explicit Android integration instructions. The pack is a development handoff, not a deployed APK.
 
-**Current blocking defect:** the Android APK still uses `bam_wordmark_dark.png`, `bam_launcher_foreground.png` and `bam_launcher_monochrome.png` generated from the wrong simplified SVGs below. Replace the actual packaged resources with the approved bitmaps, update the screen header and launcher including themed icon handling, build, and verify on the owner's phone. Avoid declaring the branding fixed until those images have been committed and a built APK has been visually checked. The binary source images are not yet present in GitHub; do not infer that adding this README changes the APK.
+**Android 0.12.0 code state:** the app's actual resources now contain cropped/resized originals for the metallic primary header, matching launcher and flat lockup. The legacy simplified drawables and themed monochrome launcher entry have been removed. The GitHub Android build and owner's physical phone still need validation before calling the visual correction fully verified. Exact binary hashes are checked by `test_branding.py` and explained in `android/branding/README.md`.
 
 ## Historical simplified implementation — superseded for the shipped UI
 
@@ -28,6 +28,6 @@ The earlier (superseded) canonical sources were the SVG files under `branding/so
 | `source/adaptive_monochrome.svg` | Android themed icon mask |
 | `palette.json` | Single-source reference for official name, product scope and four brand colors |
 
-Run `python -m pip install cairosvg pillow` and `python tools/build_branding.py` from repository root to generate transparent logo PNGs, legacy icon sizes, and adaptive Android layers. The generated outputs are distributable artifacts and intentionally separate from the source SVGs.
+The historical SVG renderer (`python tools/build_branding.py`) generates the obsolete simplified assets and **must not be used to update the current app**.
 
-The Android app packages the **superseded simplified** wordmark and adaptive launcher icon starting in 0.5.0; the owner's 2026-11-15 correction requires replacement. See the [Android brand resources](../android/branding/README.md) for the artwork refresh and phone checks.
+Android 0.5.0–0.11.0 packaged the **superseded simplified** wordmark and launcher. Android 0.12.0 replaces these with the exact approved metallic artwork derivatives. See the [Android brand resources](../android/branding/README.md) for the artwork refresh and phone checks.
