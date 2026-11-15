@@ -15,11 +15,12 @@ class ScheduleTest {
 
     @Test fun keepsEasternTimesAndOpeningCutoff() {
         assertEquals(emptyList<Slot>(), due("2026-11-14T14:59:59Z"))
-        assertEquals(listOf(Slot.MORNING, Slot.OPENING), due("2026-11-14T15:00:00Z"))
+        assertEquals(listOf(Slot.MORNING), due("2026-11-14T15:00:00Z"))
+        assertEquals(listOf(Slot.MORNING, Slot.OPENING), due("2026-11-14T16:30:00Z"))
         assertEquals(listOf(Slot.MORNING), due("2026-11-14T17:00:00Z"))
         assertEquals(listOf(Slot.MORNING, Slot.EVENING), due("2026-11-14T23:30:00Z"))
         assertEquals(listOf(Slot.MORNING, Slot.OPENING),
-            due("2027-07-03T14:00:00Z", LocalDate.parse("2027-07-03")))
+            due("2027-07-03T15:30:00Z", LocalDate.parse("2027-07-03")))
     }
 
     @Test fun respectsExceptionsAndConfirmedHours() {
@@ -85,9 +86,9 @@ class ScheduleTest {
         val saved = Instant.parse("2026-11-14T15:08:00Z")
         val timing = DraftTiming(saved, DraftOrigin.BACKGROUND)
         val draft = Draft(day, Slot.OPENING, "See you in Marion", timing)
-        assertEquals("Periodic background check · saved 10:08 AM ET · 8 min after target",
+        assertEquals("Periodic background check · saved 10:08 AM ET · 82 min before posting",
             slotStatus(day, Slot.OPENING, saved, skipped = false, saved = draft))
-        assertEquals("Manual catch-up · saved 10:08 AM ET · 8 min after target",
+        assertEquals("Generated manually · saved 10:08 AM ET · 82 min before posting",
             timing.copy(origin = DraftOrigin.MANUAL).description(day, Slot.OPENING))
         assertEquals("Saved · timing unavailable",
             slotStatus(day, Slot.OPENING, saved, skipped = true, saved = draft.copy(timing = null)))
@@ -96,7 +97,7 @@ class ScheduleTest {
     @Test fun timingShowsPendingSkippedAndExpiredSlots() {
         val day = LocalDate.parse("2026-11-14")
         val before = Instant.parse("2026-11-14T14:59:59Z")
-        val target = Instant.parse("2026-11-14T15:00:00Z")
+        val target = Instant.parse("2026-11-14T16:30:00Z")
         val noon = Instant.parse("2026-11-14T17:00:00Z")
         assertEquals("Upcoming", slotStatus(day, Slot.OPENING, before, false, null))
         assertEquals("Due · waiting for draft", slotStatus(day, Slot.OPENING, target, false, null))
@@ -104,4 +105,49 @@ class ScheduleTest {
         assertEquals("Skipped for this date", slotStatus(day, Slot.OPENING, noon, true, null))
         assertEquals("Due · waiting for draft", slotStatus(day, Slot.MORNING, noon, false, null))
     }
+    @Test fun leadTimeLetsAutomaticDraftsBePreparedBeforePosting() {
+        val beforeMorning = Instant.parse("2026-11-14T12:59:59Z") // 7:59:59 AM ET
+        assertEquals(emptyList<PlannedDraft>(),
+            Schedule.automaticTargets(beforeMorning, confirmed, 120))
+        assertEquals(listOf(PlannedDraft(LocalDate.parse("2026-11-14"), Slot.MORNING)),
+            Schedule.automaticTargets(Instant.parse("2026-11-14T13:00:00Z"), confirmed, 120))
+        assertEquals(listOf(PlannedDraft(LocalDate.parse("2026-11-14"), Slot.MORNING)),
+            Schedule.automaticTargets(Instant.parse("2026-11-14T14:29:59Z"), confirmed, 60))
+        assertEquals(listOf(Slot.MORNING, Slot.OPENING),
+            Schedule.automaticTargets(Instant.parse("2026-11-14T15:30:00Z"), confirmed, 60)
+                .map { it.slot })
+        assertEquals(Schedule.DEFAULT_LEAD_MINUTES, Schedule.validLead(-20))
+        assertEquals("2 hours before", Schedule.leadLabel(120))
+    }
+
+    @Test fun advanceWindowCrossesMidnightWithoutBreakingDateSpecificSkips() {
+        val now = Instant.parse("2026-11-14T23:31:00Z") // Saturday 6:31 PM ET
+        val tomorrow = LocalDate.parse("2026-11-15")
+        val targets = Schedule.automaticTargets(now, confirmed, 1440)
+        assertEquals(true, PlannedDraft(tomorrow, Slot.MORNING) in targets)
+        assertEquals(false, PlannedDraft(tomorrow, Slot.OPENING) in targets)
+        assertEquals(false, PlannedDraft(tomorrow, Slot.EVENING) in targets)
+        val skipped = Schedule.automaticTargets(now, confirmed, 1440) {
+            if (it == tomorrow) Campaign(skipped = setOf(Slot.MORNING)) else Campaign()
+        }
+        assertEquals(false, PlannedDraft(tomorrow, Slot.MORNING) in skipped)
+    }
+
+    @Test fun manualGenerateNowWorksBeforePostingAndDoesNotReviveExpiredOpening() {
+        val day = LocalDate.parse("2026-11-14")
+        val early = Instant.parse("2026-11-14T13:00:00Z")
+        assertEquals(listOf(Slot.MORNING, Slot.OPENING, Slot.EVENING),
+            Schedule.manualTargets(day, early, confirmed).map { it.slot })
+        assertEquals(listOf(Slot.MORNING, Slot.EVENING),
+            Schedule.manualTargets(day, Instant.parse("2026-11-14T17:01:00Z"), confirmed)
+                .map { it.slot })
+        assertEquals(listOf(Slot.MORNING),
+            Schedule.manualTargets(day.plusDays(1), early, confirmed).map { it.slot })
+        assertEquals(emptyList<PlannedDraft>(),
+            Schedule.manualTargets(day.minusDays(1), early, confirmed))
+        assertEquals(listOf(Slot.MORNING, Slot.EVENING),
+            Schedule.manualTargets(day, early, confirmed, Campaign(skipped = setOf(Slot.OPENING)))
+                .map { it.slot })
+    }
+
 }
