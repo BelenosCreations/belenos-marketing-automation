@@ -35,6 +35,8 @@ that one image through the system chooser to a manually selected app, with
 caption copy retained separately. The owner must review and publish from the
 destination; this is not a provider connection or automatic publishing.
 
+The personal schedule represents posting times. The owner can configure how far ahead automatic drafting runs, or generate today's and tomorrow's missing drafts at once before the posting deadline. Drafts remain in the same content, approval and manual sharing workflow. Android background scheduling is best effort, not a posting guarantee.
+
 Verify the app's on-screen workflows on the owner's phone before expanding
 background work. Check actual scheduled delivery and reliability once those
 workflows are usable. Advanced security, backup and restoration, PostgreSQL
