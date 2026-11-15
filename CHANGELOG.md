@@ -1,3 +1,15 @@
+## BAM Personal 0.10.0 owner-initiated image sharing (2026-11-14)
+
+- Added a **Share approved image** action that opens Android's system chooser
+  for the currently attached image; the owner finishes posting in Facebook or
+  another receiving app. Caption copying stays available independently.
+- Added a non-exported, read-only Android content provider that grants the
+  chooser access only to the selected URI. Each read checks current approval,
+  exact image ID and draft revision; stale or replaced images fail closed.
+- Added Android regression tests for approval, replacement, revocation,
+  malformed links and the chooser. Live Facebook publishing remains disabled.
+- BAM Share Preview installs separately from earlier test builds.
+
 ## BAM Personal 0.9.0 draft image attachments (2026-11-14)
 
 - Added Android picker, preview, replace, and remove actions for one image
