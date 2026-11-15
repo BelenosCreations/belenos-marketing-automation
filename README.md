@@ -1,6 +1,6 @@
 ## BAM for Android
 
-BAM Personal 0.8.0 opens to a tile dashboard. Open **Schedule** for today's
+BAM Personal 0.9.0 opens to a tile dashboard. Open **Schedule** for today's
 draft timing, store hours, scheduling, and manual catch-up. Open **Draft
 inbox** to review, edit, and copy captions. Open **Campaign notes** for dated
 topics, confirmed facts, and skips. Open **Offline AI** to download the model
@@ -17,8 +17,13 @@ survive an update and regular drafts start in the approval queue.
 
 **Image prompt** opens an optional editable starting prompt based on the
 caption. Save the prompt with its draft or copy it into ChatGPT to create the
-image. The prompt and caption can be edited separately. The checklist tracks
-what you still need and the image stays in your manual posting workflow.
+image. Save the image to your phone and tap **Attach image** on the same draft
+to pick it. BAM keeps a private copy of the original and shows a preview.
+Each draft holds one JPEG, PNG, WebP, or HEIF image up to 16 MB. Use **Replace
+image** or **Remove image** to change it. A change sends a regular draft back
+for approval and keeps its caption, prompt and checklist. Once you have the
+materials you listed, clear the checklist. Continue posting manually from
+Facebook with the caption and the saved photo.
 
 BAM 0.5.0 uses the approved Belenos Automatic Marketing wordmark and adaptive
 launcher icon. The screens follow Android's light or dark setting with the
@@ -96,6 +101,9 @@ a finished file with the expected size and SHA-256 becomes available. A failed,
 missing, truncated, or checksum-mismatched download can be retried.
 
 ### Install the preview or sign a personal build
+
+The 0.9.0 **BAM Image Preview** installs alongside earlier previews and has
+its own inbox, settings and model download.
 
 The 0.8.0 **BAM Review Preview** installs alongside older previews. It uses
 its own draft inbox, settings, and model download. The owner-signed personal

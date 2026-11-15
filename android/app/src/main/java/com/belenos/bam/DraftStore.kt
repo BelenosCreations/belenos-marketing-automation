@@ -6,22 +6,25 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 
 enum class DraftQueue(val predicate: String) {
     CONTENT_NEEDED("slot != 'SAMPLE' AND content_needed != ''"),
     NEEDS_APPROVAL("slot != 'SAMPLE' AND content_needed = '' AND approved = 0")
 }
 
-class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null, 4) {
+class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null, 5) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""CREATE TABLE draft (
             day TEXT NOT NULL, slot TEXT NOT NULL, caption TEXT NOT NULL,
             saved_at INTEGER, origin TEXT,
             content_needed TEXT NOT NULL DEFAULT '', image_prompt TEXT NOT NULL DEFAULT '',
             approved INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0,
+            image_id TEXT,
             PRIMARY KEY (day, slot)
         )""")
         createCampaigns(db)
+        createImages(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, old: Int, new: Int) {
@@ -36,12 +39,22 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
             db.execSQL("ALTER TABLE draft ADD COLUMN approved INTEGER NOT NULL DEFAULT 0")
             db.execSQL("ALTER TABLE draft ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
         }
+        if (old < 5) {
+            db.execSQL("ALTER TABLE draft ADD COLUMN image_id TEXT")
+            createImages(db)
+        }
     }
 
     private fun createCampaigns(db: SQLiteDatabase) {
         db.execSQL("""CREATE TABLE campaign (
             day TEXT PRIMARY KEY NOT NULL, focus TEXT NOT NULL,
             facts TEXT NOT NULL, skipped TEXT NOT NULL
+        )""")
+    }
+
+    private fun createImages(db: SQLiteDatabase) {
+        db.execSQL("""CREATE TABLE draft_image (
+            id TEXT PRIMARY KEY NOT NULL, original BLOB NOT NULL, thumbnail BLOB NOT NULL
         )""")
     }
 
@@ -84,6 +97,37 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
         return update(draft, ContentValues().apply { put("image_prompt", prompt.trim()) })
     }
 
+    internal fun setImage(draft: Draft, image: DraftImage?): Boolean {
+        val db = writableDatabase
+        val id = image?.let { UUID.randomUUID().toString() }
+        db.beginTransaction()
+        try {
+            if (!update(draft, ContentValues().apply {
+                    put("image_id", id)
+                    put("approved", 0)
+                })) return false
+            if (image != null) db.insertOrThrow("draft_image", null, ContentValues().apply {
+                put("id", id)
+                put("original", image.original)
+                put("thumbnail", image.thumbnail)
+            })
+            deleteImage(db, draft.review.imageId)
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    internal fun thumbnail(id: String): ByteArray? =
+        readableDatabase.rawQuery("SELECT thumbnail FROM draft_image WHERE id=?", arrayOf(id)).use {
+            if (it.moveToFirst()) it.getBlob(0) else null
+        }
+
+    private fun deleteImage(db: SQLiteDatabase, id: String?) {
+        if (id != null) db.delete("draft_image", "id=?", arrayOf(id))
+    }
+
     fun setApproval(draft: Draft, approved: Boolean): Boolean {
         if (draft.slot == Slot.SAMPLE || (approved && draft.review.contentNeeded.isNotEmpty())) return false
         return update(draft, ContentValues().apply { put("approved", if (approved) 1 else 0) },
@@ -123,11 +167,16 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
         ).use { it.moveToFirst() }
     }
 
+    internal fun find(day: LocalDate, slot: Slot): Draft? =
+        readDrafts("day=? AND slot=?", arrayOf(day.toString(), slot.name, "1")).singleOrNull()
+
     fun recent(limit: Int = 60, queue: DraftQueue? = null): List<Draft> =
+        readDrafts(queue?.predicate ?: "1", arrayOf(limit.toString()))
+
+    private fun readDrafts(where: String, args: Array<String>): List<Draft> =
         readableDatabase.rawQuery(
             "SELECT day, slot, caption, saved_at, origin, content_needed, image_prompt, approved, revision " +
-                "FROM draft WHERE ${queue?.predicate ?: "1"} ORDER BY day DESC, rowid DESC LIMIT ?",
-            arrayOf(limit.toString())
+                ", image_id FROM draft WHERE $where ORDER BY day DESC, rowid DESC LIMIT ?", args
         ).use { cursor ->
             buildList {
                 while (cursor.moveToNext()) {
@@ -135,7 +184,7 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
                         DraftTiming(Instant.ofEpochMilli(cursor.getLong(3)), DraftOrigin.valueOf(cursor.getString(4)))
                     add(Draft(LocalDate.parse(cursor.getString(0)), Slot.valueOf(cursor.getString(1)),
                         cursor.getString(2), timing, DraftReview(cursor.getString(5), cursor.getString(6),
-                            cursor.getInt(7) != 0, cursor.getLong(8))))
+                            cursor.getInt(7) != 0, cursor.getLong(8), cursor.getString(9))))
                 }
             }
         }
@@ -153,9 +202,12 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
                 put("saved_at", timing.savedAt.toEpochMilli())
                 put("origin", timing.origin.name)
             }
-            db.insertWithOnConflict("draft", null, values,
+            val previousSample = if (draft.slot == Slot.SAMPLE) find(draft.day, draft.slot) else null
+            previousSample?.let { values.put("revision", it.review.revision + 1) }
+            val inserted = db.insertWithOnConflict("draft", null, values,
                 if (draft.slot == Slot.SAMPLE) SQLiteDatabase.CONFLICT_REPLACE
                 else SQLiteDatabase.CONFLICT_IGNORE)
+            if (inserted != -1L) deleteImage(db, previousSample?.review?.imageId)
             db.setTransactionSuccessful()
             return true
         } finally {

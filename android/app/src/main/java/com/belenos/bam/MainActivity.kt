@@ -2,15 +2,20 @@ package com.belenos.bam
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.text.InputFilter
 import android.view.View
 import android.view.WindowInsets
@@ -41,6 +46,7 @@ class MainActivity : Activity() {
 
     private val handler = Handler(Looper.getMainLooper())
     private val modelExecutor = Executors.newSingleThreadExecutor()
+    private val imageExecutor = Executors.newSingleThreadExecutor()
     private val preferences by lazy { getSharedPreferences("bam", Context.MODE_PRIVATE) }
     private val model by lazy { ModelFile(applicationContext) }
     private val muted by lazy { getColor(R.color.bam_muted) }
@@ -61,8 +67,11 @@ class MainActivity : Activity() {
     private lateinit var timingReport: TextView
     private var displayed: List<Draft>? = null
     private var draftLimit = 30
+    private var imageTarget: ImageTarget? = null
     private var checkingModel = false
     private var downloadMessage: String? = null
+
+    private data class ImageTarget(val day: LocalDate, val slot: Slot, val revision: Long)
 
     private val refresh = object : Runnable {
         override fun run() {
@@ -85,6 +94,10 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        savedInstanceState?.getBundle("image_target")?.let { saved ->
+            imageTarget = ImageTarget(LocalDate.parse(checkNotNull(saved.getString("day"))),
+                Slot.valueOf(checkNotNull(saved.getString("slot"))), saved.getLong("revision"))
+        }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(getColor(R.color.bam_navy))
@@ -268,6 +281,13 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString("page", page.name)
+        imageTarget?.let { target ->
+            outState.putBundle("image_target", Bundle().apply {
+                putString("day", target.day.toString())
+                putString("slot", target.slot.name)
+                putLong("revision", target.revision)
+            })
+        }
     }
 
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
@@ -291,6 +311,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         modelExecutor.shutdown()
+        imageExecutor.shutdown()
         super.onDestroy()
     }
 
@@ -420,6 +441,7 @@ class MainActivity : Activity() {
             })
             panel.addView(button("Edit caption") { editCaption(draft) })
             panel.addView(button("Image prompt") { editImagePrompt(draft) })
+            addImageControls(panel, draft)
             if (draft.slot != Slot.SAMPLE) {
                 panel.addView(text(when {
                     review.contentNeeded.isNotEmpty() -> "Content needed · ${review.contentNeeded}"
@@ -449,6 +471,84 @@ class MainActivity : Activity() {
                 displayed = null
                 redraw()
             })
+        }
+    }
+
+    private fun addImageControls(panel: LinearLayout, draft: Draft) {
+        val id = draft.review.imageId
+        if (id != null) {
+            val thumbnail = DraftStore(this).use { it.thumbnail(id) }
+            val bitmap = thumbnail?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            if (bitmap == null) panel.addView(text("Image preview unavailable", 14, muted))
+            else panel.addView(ImageView(this).apply {
+                setImageBitmap(bitmap)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                contentDescription = "Attached draft image"
+            }, LinearLayout.LayoutParams(-1, dp(180)))
+        }
+        panel.addView(button(if (id == null) "Attach image" else "Replace image") { chooseImage(draft) })
+        if (id != null) panel.addView(button("Remove image") {
+            if (DraftStore(this).use { it.setImage(draft, null) }) redraw() else refreshChangedDraft()
+        })
+    }
+
+    @Suppress("DEPRECATION")
+    private fun chooseImage(draft: Draft) {
+        if (imageTarget != null) return
+        imageTarget = ImageTarget(draft.day, draft.slot, draft.review.revision)
+        if (Build.VERSION.SDK_INT >= 33) {
+            try {
+                startActivityForResult(Intent(MediaStore.ACTION_PICK_IMAGES).setType("image/*"), PICK_IMAGE)
+                return
+            } catch (_: ActivityNotFoundException) {
+                // Use the system document picker on devices without the photo picker.
+            }
+        }
+        try {
+            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).setType("image/*")
+                .addCategory(Intent.CATEGORY_OPENABLE), PICK_IMAGE)
+        } catch (_: ActivityNotFoundException) {
+            imageTarget = null
+            Toast.makeText(this, "No image picker is available.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != PICK_IMAGE) return
+        val target = imageTarget ?: return
+        imageTarget = null
+        if (resultCode != RESULT_OK) return
+        val uri = data?.data
+        if (uri?.scheme != "content") {
+            Toast.makeText(this, "Choose an image from the system picker.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        importImage(target, uri)
+    }
+
+    private fun importImage(target: ImageTarget, uri: Uri) {
+        val app = applicationContext
+        imageExecutor.execute {
+            val message = try {
+                val image = checkNotNull(app.contentResolver.openInputStream(uri)).use { DraftImage.read(it) }
+                val saved = DraftStore(app).use { store ->
+                    val draft = store.find(target.day, target.slot)
+                    draft != null && draft.review.revision == target.revision && store.setImage(draft, image)
+                }
+                if (saved) "Image saved to draft." else "Draft changed. Choose the image again from the latest draft."
+            } catch (error: IllegalArgumentException) {
+                error.message ?: "Choose a supported image."
+            } catch (_: Exception) {
+                "Could not save this image. Choose a readable image and try again."
+            }
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) {
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    redraw()
+                }
+            }
         }
     }
 
@@ -599,6 +699,7 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        private const val PICK_IMAGE = 81
         private val timingClock = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
     }
 }
