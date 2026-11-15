@@ -39,6 +39,20 @@ separate asset. The legacy simplified SVG-era launcher assets have been
 removed from the Android build. The app follows the navy, silver, gold and
 teal BAM palette.
 
+**Next preview UX (unreleased):** Prepared regular drafts display their
+**manual posting target** (date and Eastern posting time) independently
+from the earlier time the offline AI saved them. Approved drafts indicate
+whether an image can be shared or a caption copied. Current BAM Brand
+Preview 0.12.0 still needs on-phone verification; these label changes
+will appear in a subsequent APK build, not retroactively in 0.12.0.
+
+**Future multi-business knowledge requirement:** One owner-provided ChatGPT
+export may contribute *reviewed, approved* business facts to several
+isolated business profiles under one BAM account. No raw export is
+automatically read or uploaded, no model fine-tuning is performed, and
+no profile/import UI is shipped yet. See
+[the knowledge import design](docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md).
+
 BAM Personal runs directly on an ARM64 Android phone. The app downloads
 a 1.6 GB Qwen model once over Wi-Fi and then writes drafts on the phone using
 LiteRT-LM. No account, computer, or paid AI API is required for drafting.
