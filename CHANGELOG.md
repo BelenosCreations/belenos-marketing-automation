@@ -1,3 +1,10 @@
+## BAM Personal 0.12.0 — approved metallic branding (2026-11-15)
+
+- Replaced the simplified Android splash/header artwork with the owner's exact approved metallic BAM primary logo, and the simplified launcher foreground with the approved metallic square app icon. These are downsampled/cropped from the original supplied files, never regenerated.
+- Kept the approved flat lockup as an optional interface resource. Removed all three simplified Android drawable-nodpi images and the alternate monochrome themed icon to avoid an unintended visual fallback.
+- Added SHA-256 tests pinning the precise packaged WebP derivatives and APK resource inventory checks for the approved images.
+- BAM Brand Preview installs separately from older preview builds. AI drafting, review, sharing and publishing-disabled behavior are unchanged; actual phone icon/header appearance still needs verification.
+
 ## BAM Personal 0.11.0 early scheduled draft preparation (2026-11-15)
 
 - Clarified that 10 AM, 11:30 AM, and 6:30 PM are Facebook posting times, not generation times.
