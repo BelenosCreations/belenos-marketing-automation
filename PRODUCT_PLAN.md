@@ -50,6 +50,37 @@ workflows are usable. Advanced security, backup and restoration, PostgreSQL
 migration, and multiuser work remain on the roadmap for the shared app.
 Direct publishing and live analytics require approved provider access.
 
+## Approved future requirement — one ChatGPT export, separate business knowledge (November 15, 2026)
+
+The owner confirmed that **one BAM account should manage multiple independent
+business profiles**, and **one user-supplied ChatGPT data export should be
+eligible to populate several distinct business knowledge bases**. This is
+*not* approval to merge businesses' knowledge, to train a model's weights,
+to read/export ChatGPT account data automatically, to ingest private
+conversations without review, or to activate any hosted/publishing service.
+
+The importer will classify candidate information, let the owner review,
+correct, exclude and assign it to distinct profiles, and persist **only
+owner-approved business-specific facts**. Uncertain assignments remain
+unassigned until reviewed. Personal/sensitive material is excluded by
+default. Profile switches must isolate knowledge retrieval, marketing
+style, schedule, drafts, social pages, permissions and recent captions;
+information from Belenos Creations must not influence Busy B Cleaning
+Service, or vice versa.
+
+Use on-device retrieval from reviewed knowledge rather than costly
+offline-model fine-tuning. Preserve source provenance, freshness,
+expiration, consent, deletion and a safe, local-only import workflow.
+A manual knowledge-entry path must also be available without an export.
+
+This remains **future work** behind completing the present BAM Personal
+Android approval, image-sharing, early-generation and timed-generation
+phone verification. Do not display an unfinished multi-business switch
+or import feature in the current Android preview.
+
+See [the reviewed multi-business export design](docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md)
+for staged implementation and acceptance gates.
+
 ## 1. Outcomes the product must deliver
 
 1. A business owner can sign in to **one BAM account** using email/password or Google and manage multiple independently configured businesses.
