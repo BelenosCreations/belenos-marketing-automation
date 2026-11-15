@@ -1,6 +1,6 @@
 ## BAM for Android
 
-BAM Personal 0.9.0 opens to a tile dashboard. Open **Schedule** for today's
+BAM Personal 0.10.0 opens to a tile dashboard. Open **Schedule** for today's
 draft timing, store hours, scheduling, and manual catch-up. Open **Draft
 inbox** to review, edit, and copy captions. Open **Campaign notes** for dated
 topics, confirmed facts, and skips. Open **Offline AI** to download the model
@@ -22,8 +22,14 @@ to pick it. BAM keeps a private copy of the original and shows a preview.
 Each draft holds one JPEG, PNG, WebP, or HEIF image up to 16 MB. Use **Replace
 image** or **Remove image** to change it. A change sends a regular draft back
 for approval and keeps its caption, prompt and checklist. Once you have the
-materials you listed, clear the checklist. Continue posting manually from
-Facebook with the caption and the saved photo.
+materials you listed, clear the checklist. Once a regular draft has its image and no missing content, tap **Approve
+caption**, then **Share approved image**. Android asks which destination
+app should receive that one photo. Choose Facebook to finish posting in
+Facebook; BAM does not publish the post itself. BAM also includes the
+caption in the share request, but some receiving apps discard shared
+text. Use **Copy caption** separately if needed. If the caption, image,
+or checklist changes, share requires another approval; an older image
+link stops returning image bytes after the revision changes.
 
 BAM 0.5.0 uses the approved Belenos Automatic Marketing wordmark and adaptive
 launcher icon. The screens follow Android's light or dark setting with the
@@ -101,6 +107,13 @@ a finished file with the expected size and SHA-256 becomes available. A failed,
 missing, truncated, or checksum-mismatched download can be retried.
 
 ### Install the preview or sign a personal build
+
+The 0.10.0 **BAM Share Preview** installs alongside older preview apps.
+It has its own private inbox and offline model download. The Android
+share chooser grants only temporary read access to the one selected
+approved image. BAM rechecks the current approval and attachment
+revision when the destination opens it. There is no automatic Facebook
+publishing or provider account connection.
 
 The 0.9.0 **BAM Image Preview** installs alongside earlier previews and has
 its own inbox, settings and model download.

@@ -3,6 +3,9 @@
     <application android:allowBackup="false" android:label="${bamLabel}"
         android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
         android:usesCleartextTraffic="false" android:theme="@style/BamTheme">
+        <provider android:name=".DraftShareProvider"
+            android:authorities="${applicationId}.draftshare"
+            android:exported="false" android:grantUriPermissions="true" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

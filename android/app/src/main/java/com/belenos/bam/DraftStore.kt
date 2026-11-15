@@ -124,6 +124,32 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
             if (it.moveToFirst()) it.getBlob(0) else null
         }
 
+    /**
+     * The exact approved attachment is checked at the moment a receiving app reads
+     * its one granted URI. Caption, content, approval and image changes increment
+     * the revision, so an older URI stops returning image bytes.
+     */
+    internal fun approvedImage(day: LocalDate, slot: Slot, revision: Long, imageId: String): ByteArray? {
+        if (slot == Slot.SAMPLE || revision < 0) return null
+        return readableDatabase.rawQuery(
+            """SELECT i.original FROM draft d JOIN draft_image i ON i.id=d.image_id
+               WHERE d.day=? AND d.slot=? AND d.revision=? AND d.image_id=?
+               AND d.approved=1 AND d.content_needed='' AND d.slot!='SAMPLE'""",
+            arrayOf(day.toString(), slot.name, revision.toString(), imageId)
+        ).use { cursor -> if (cursor.moveToFirst()) cursor.getBlob(0) else null }
+    }
+
+    internal fun canShareImage(draft: Draft): Boolean {
+        val id = draft.review.imageId ?: return false
+        if (draft.slot == Slot.SAMPLE || !draft.review.approved || draft.review.contentNeeded.isNotEmpty()) return false
+        return readableDatabase.rawQuery(
+            """SELECT 1 FROM draft d JOIN draft_image i ON i.id=d.image_id
+               WHERE d.day=? AND d.slot=? AND d.revision=? AND d.image_id=?
+               AND d.caption=? AND d.approved=1 AND d.content_needed='' AND d.slot!='SAMPLE'""",
+            arrayOf(draft.day.toString(), draft.slot.name, draft.review.revision.toString(), id, draft.caption)
+        ).use { it.moveToFirst() }
+    }
+
     private fun deleteImage(db: SQLiteDatabase, id: String?) {
         if (id != null) db.delete("draft_image", "id=?", arrayOf(id))
     }
