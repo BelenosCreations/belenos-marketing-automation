@@ -9,15 +9,15 @@ android {
         applicationId = "com.belenos.bam.owner"
         minSdk = 28
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.11.0"
+        versionCode = 12
+        versionName = "0.12.0"
         manifestPlaceholders["bamLabel"] = "BAM Personal"
         ndk { abiFilters += "arm64-v8a" }
     }
     buildTypes {
         debug {
-            applicationIdSuffix = ".preview.advance"
-            manifestPlaceholders["bamLabel"] = "BAM Early Draft Preview"
+            applicationIdSuffix = ".preview.brand"
+            manifestPlaceholders["bamLabel"] = "BAM Brand Preview"
         }
     }
     compileOptions {
