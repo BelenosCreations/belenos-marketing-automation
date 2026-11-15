@@ -78,6 +78,10 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above. If the handoff PR has already merged, verify the current main run and complete any outstanding non-force branch sync before editing.
 
+Android 0.8.0 is a candidate with local Content needed and Needs approval
+queues, caption approval and the optional manual image-prompt handoff. Verify
+the Android and general workflows before recording a new checkpoint.
+
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
 
 ## Next safe development milestone

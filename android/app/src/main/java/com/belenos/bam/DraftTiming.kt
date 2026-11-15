@@ -15,7 +15,20 @@ enum class DraftOrigin(val label: String) {
     UNKNOWN("Draft check")
 }
 
-data class Draft(val day: LocalDate, val slot: Slot, val caption: String, val timing: DraftTiming? = null)
+data class DraftReview(
+    val contentNeeded: String = "",
+    val imagePrompt: String = "",
+    val approved: Boolean = false,
+    val revision: Long = 0
+)
+
+data class Draft(
+    val day: LocalDate,
+    val slot: Slot,
+    val caption: String,
+    val timing: DraftTiming? = null,
+    val review: DraftReview = DraftReview()
+)
 
 data class DraftTiming(val savedAt: Instant, val origin: DraftOrigin) {
     fun description(day: LocalDate, slot: Slot): String {

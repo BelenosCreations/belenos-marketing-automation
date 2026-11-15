@@ -35,6 +35,7 @@ import java.util.concurrent.Executors
 class MainActivity : Activity() {
     private enum class Page(val title: String) {
         HOME("Dashboard"), INBOX("Draft inbox"), SCHEDULE("Schedule"),
+        CONTENT("Content needed"), APPROVAL("Needs approval"),
         CAMPAIGN("Campaign notes"), MODEL("Offline AI")
     }
 
@@ -58,8 +59,8 @@ class MainActivity : Activity() {
     private lateinit var catchUp: Button
     private lateinit var automatic: Switch
     private lateinit var timingReport: TextView
-    private lateinit var inbox: LinearLayout
     private var displayed: List<Draft>? = null
+    private var queueLimit = 30
     private var checkingModel = false
     private var downloadMessage: String? = null
 
@@ -133,7 +134,6 @@ class MainActivity : Activity() {
             addView(button("Campaign notes and skips") { chooseCampaignDay() })
         }
         buildModel(pages.getValue(Page.MODEL))
-        inbox = pages.getValue(Page.INBOX)
         setContentView(root)
         val restoredPage = Page.entries.firstOrNull { it.name == savedInstanceState?.getString("page") }
         show(restoredPage ?: Page.HOME)
@@ -150,7 +150,7 @@ class MainActivity : Activity() {
             isSingleLine = false
         }
         content.addView(attention, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
-        val destinations = listOf(Page.SCHEDULE, Page.INBOX, Page.CAMPAIGN, Page.MODEL)
+        val destinations = listOf(Page.CONTENT, Page.APPROVAL, Page.SCHEDULE, Page.INBOX, Page.CAMPAIGN, Page.MODEL)
         val twoColumns = resources.configuration.screenWidthDp >= 360 && resources.configuration.fontScale <= 1.25f
         for (row in destinations.chunked(if (twoColumns) 2 else 1)) {
             val tiles = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -247,12 +247,17 @@ class MainActivity : Activity() {
     }
 
     private fun show(destination: Page) {
+        if (page == Page.INBOX || page == Page.CONTENT || page == Page.APPROVAL) {
+            pages.getValue(page).removeAllViews()
+        }
         if (Build.VERSION.SDK_INT >= 33 && (page == Page.HOME) != (destination == Page.HOME)) {
             if (destination == Page.HOME) onBackInvokedDispatcher.unregisterOnBackInvokedCallback(backToDashboard)
             else onBackInvokedDispatcher.registerOnBackInvokedCallback(
                 OnBackInvokedDispatcher.PRIORITY_DEFAULT, backToDashboard)
         }
         page = destination
+        displayed = null
+        queueLimit = 30
         pageHeader.visibility = if (page == Page.HOME) View.GONE else View.VISIBLE
         pageTitle.text = page.title
         for ((screen, view) in pages) view.visibility = if (screen == page) View.VISIBLE else View.GONE
@@ -331,7 +336,16 @@ class MainActivity : Activity() {
         if (scheduleStatus.text.toString() != currentStatus) scheduleStatus.text = currentStatus
         val now = Instant.now()
         val day = now.atZone(Schedule.eastern).toLocalDate()
-        val (drafts, campaign) = DraftStore(this).use { it.recent() to it.campaign(day) }
+        val queue = when (page) {
+            Page.CONTENT -> DraftQueue.CONTENT_NEEDED
+            Page.APPROVAL -> DraftQueue.NEEDS_APPROVAL
+            else -> null
+        }
+        val (drafts, campaign, counts) = DraftStore(this).use { store ->
+            Triple(store.recent(), store.campaign(day), DraftQueue.entries.associateWith(store::count))
+        }
+        val contentCount = counts.getValue(DraftQueue.CONTENT_NEEDED)
+        val approvalCount = counts.getValue(DraftQueue.NEEDS_APPROVAL)
         val confirmedThrough = LocalDate.parse(preferences.getString("hours_through", "2026-12-10"))
         val todaysDrafts = drafts.filter { it.day == day }.associateBy(Draft::slot)
         val planned = Schedule.planned(day, confirmedThrough)
@@ -343,6 +357,8 @@ class MainActivity : Activity() {
             else -> "$draftCount slots today"
         })
         updateTile(Page.INBOX, if (drafts.isEmpty()) "No drafts yet" else "Review, edit or copy")
+        updateTile(Page.CONTENT, if (contentCount == 0) "All clear" else draftCountLabel(contentCount))
+        updateTile(Page.APPROVAL, if (approvalCount == 0) "All clear" else draftCountLabel(approvalCount))
         updateTile(Page.CAMPAIGN, "Topics, facts and skips")
         updateTile(Page.MODEL, when {
             ready -> "Ready to draft"
@@ -350,6 +366,8 @@ class MainActivity : Activity() {
             else -> "Set up draft generation"
         })
         val alert = when {
+            contentCount > 0 -> "${draftCountLabel(contentCount)} with missing content" to Page.CONTENT
+            approvalCount > 0 -> "${draftCountLabel(approvalCount)} awaiting approval" to Page.APPROVAL
             pending || checkingModel -> "Offline AI setup in progress" to Page.MODEL
             !ready -> "Set up offline AI to generate drafts" to Page.MODEL
             day > confirmedThrough -> "Confirm store hours for future opening reminders" to Page.SCHEDULE
@@ -374,14 +392,25 @@ class MainActivity : Activity() {
             append(timingRows.joinToString("\n\n").ifEmpty { "No drafts scheduled for today." })
         }
         if (timingReport.text.toString() != report) timingReport.text = report
+        when {
+            queue != null -> renderDrafts(DraftStore(this).use { it.recent(queueLimit + 1, queue) },
+                if (page == Page.CONTENT) "No drafts are waiting for content." else "No drafts are waiting for approval.",
+                hasQueue = true)
+            page == Page.INBOX -> renderDrafts(drafts, "Your drafts will appear here after generation.")
+        }
+    }
+
+    private fun draftCountLabel(count: Int) = if (count == 1) "1 draft" else "$count drafts"
+
+    private fun renderDrafts(drafts: List<Draft>, emptyMessage: String, hasQueue: Boolean = false) {
         if (drafts == displayed) return
         displayed = drafts
-        inbox.removeAllViews()
-        if (drafts.isEmpty()) {
-            inbox.addView(text("Your drafts will appear here after generation.", 15, muted))
-        }
-        for (draft in drafts) {
-            val panel = card(inbox)
+        val content = pages.getValue(page)
+        content.removeAllViews()
+        if (drafts.isEmpty()) content.addView(text(emptyMessage, 15, muted))
+        for (draft in if (hasQueue) drafts.take(queueLimit) else drafts) {
+            val panel = card(content)
+            val review = draft.review
             panel.addView(text(draft.slot.title, 17, bold = true))
             panel.addView(text(draft.day.format(DateTimeFormatter.ofPattern("EEE, MMM d")), 13, muted))
             draft.timing?.let { panel.addView(text(it.description(draft.day, draft.slot), 13, muted)) }
@@ -390,12 +419,74 @@ class MainActivity : Activity() {
                 setTextIsSelectable(true)
             })
             panel.addView(button("Edit caption") { editCaption(draft) })
-            panel.addView(button("Copy caption") {
-                getSystemService(ClipboardManager::class.java).setPrimaryClip(
-                    ClipData.newPlainText("BAM caption", draft.caption))
-                Toast.makeText(this, "Caption copied", Toast.LENGTH_SHORT).show()
+            panel.addView(button("Image prompt") { editImagePrompt(draft) })
+            if (draft.slot != Slot.SAMPLE) {
+                panel.addView(text(when {
+                    review.contentNeeded.isNotEmpty() -> "Content needed · ${review.contentNeeded}"
+                    review.approved -> "Approved · ready to copy"
+                    else -> "Needs approval"
+                }, 14, muted))
+                panel.addView(button("Content checklist") { editContentNeeded(draft) })
+                if (review.contentNeeded.isEmpty()) {
+                    panel.addView(button(if (review.approved) "Reopen approval" else "Approve caption") {
+                        if (DraftStore(this).use { it.setApproval(draft, !review.approved) }) redraw()
+                        else refreshChangedDraft()
+                    })
+                }
+            }
+            if (draft.slot == Slot.SAMPLE || review.approved) panel.addView(button("Copy caption") {
+                if (DraftStore(this).use { it.canCopyCaption(draft) }) copyText("BAM caption", draft.caption, "Caption copied")
+                else refreshChangedDraft()
             })
         }
+        if (hasQueue && drafts.size > queueLimit) {
+            content.addView(button("Show older drafts") {
+                queueLimit += 30
+                displayed = null
+                redraw()
+            })
+        }
+    }
+
+    private fun refreshChangedDraft() {
+        Toast.makeText(this, "Draft changed. Review the latest version.", Toast.LENGTH_SHORT).show()
+        redraw()
+    }
+
+    private fun copyText(label: String, value: String, message: String) {
+        getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, value))
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun editContentNeeded(draft: Draft) {
+        val editor = input("Content still needed", draft.review.contentNeeded, 500).apply { minLines = 2 }
+        AlertDialog.Builder(this).setTitle("Content checklist")
+            .setMessage("List missing photos, details, or other materials. Clear the list when they’re ready.")
+            .setView(editor).setNegativeButton("Cancel", null).setPositiveButton("Save") { _, _ ->
+                if (DraftStore(this).use { it.setContentNeeded(draft, editor.text.toString()) }) redraw()
+                else refreshChangedDraft()
+            }.show()
+    }
+
+    private fun editImagePrompt(draft: Draft) {
+        val starter = "Create a Facebook image for Belenos Creations in Marion, Ohio. " +
+            "Use the following caption only as visual context. Keep the main subject clear, with room for cropping. " +
+            "Avoid added prices, store hours, logos, and text overlays.\n\nCaption:\n${draft.caption.take(1500)}"
+        val editor = input("Image prompt", draft.review.imagePrompt.ifEmpty { starter }, 2400).apply { minLines = 4 }
+        val dialog = AlertDialog.Builder(this).setTitle("Image prompt").setView(editor)
+            .setMessage("Copy this optional prompt into ChatGPT to make an image.")
+            .setNegativeButton("Cancel", null).setPositiveButton("Save prompt") { _, _ ->
+                if (DraftStore(this).use { it.setImagePrompt(draft, editor.text.toString()) }) redraw()
+                else refreshChangedDraft()
+            }.setNeutralButton("Copy prompt", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                val prompt = editor.text.toString().trim()
+                if (prompt.isEmpty()) editor.error = "Enter a prompt to copy."
+                else copyText("BAM image prompt", prompt, "Image prompt copied")
+            }
+        }
+        dialog.show()
     }
 
     private fun chooseCampaignDay() {

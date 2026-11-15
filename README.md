@@ -1,10 +1,24 @@
 ## BAM for Android
 
-BAM Personal 0.7.0 opens to a tile dashboard. Open **Schedule** for today's
+BAM Personal 0.8.0 opens to a tile dashboard. Open **Schedule** for today's
 draft timing, store hours, scheduling, and manual catch-up. Open **Draft
 inbox** to review, edit, and copy captions. Open **Campaign notes** for dated
 topics, confirmed facts, and skips. Open **Offline AI** to download the model
-or generate a test draft. Setup and due-draft alerts appear above the tiles.
+or generate a test draft. Drafts requiring action and setup or due-draft alerts
+appear above the tiles.
+
+Use **Content checklist** on a draft to record missing photos or details.
+The **Content needed** tile collects drafts with an outstanding checklist.
+Clear the checklist when the materials are ready to move the draft to **Needs
+approval**. Tap **Approve caption** to unlock **Copy caption** for manual
+posting. Changing the caption or adding a content requirement sends it back
+for review. Test drafts can be copied directly. Existing captions and timing
+survive an update and regular drafts start in the approval queue.
+
+**Image prompt** opens an optional editable starting prompt based on the
+caption. Save the prompt with its draft or copy it into ChatGPT to create the
+image. The prompt and caption can be edited separately. The checklist tracks
+what you still need and the image stays in your manual posting workflow.
 
 BAM 0.5.0 uses the approved Belenos Automatic Marketing wordmark and adaptive
 launcher icon. The screens follow Android's light or dark setting with the
@@ -17,8 +31,8 @@ LiteRT-LM. No account, computer, or paid AI API is required for drafting.
 1. Install the BAM APK and open the app.
 2. Open **Offline AI** and tap **Download offline AI**. Reopen BAM after the download to verify the model.
 3. Tap **Generate test draft**. In **Schedule**, turn on **Generate scheduled drafts** when ready.
-4. Open **Draft inbox**. Use **Edit caption** to make changes,
-   then tap **Copy caption** to post manually.
+4. Open **Draft inbox**. Edit and approve a regular draft before copying it
+   for manual posting.
 
 Use **Campaign notes and skips** to choose a date, supply an upcoming topic
 and confirmed details, or skip a slot already handled elsewhere. These

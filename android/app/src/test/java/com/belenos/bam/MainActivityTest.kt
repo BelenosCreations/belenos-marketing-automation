@@ -66,10 +66,54 @@ class MainActivityTest {
             editor.setText("Edited caption for Facebook")
             save.performClick()
 
+            assertTrue(root.descendants().filterIsInstance<Button>().none { it.text == "Copy caption" })
+            root.button("Approve caption").performClick()
             root.button("Copy caption").performClick()
             val clipboard = activity.getSystemService(ClipboardManager::class.java)
             assertEquals("Edited caption for Facebook", clipboard.primaryClip?.getItemAt(0)?.text)
             assertEquals(timing, DraftStore(context).use { it.recent().single().timing })
+        }
+    }
+
+    @Test fun dashboardRoutesMissingContentAndAllowsAnIndependentImagePrompt() {
+        val day = LocalDate.parse("2026-11-14")
+        val original = Draft(day, Slot.MORNING, "Ask us about custom prints.",
+            DraftTiming(Instant.parse("2026-11-14T15:08:00Z"), DraftOrigin.BACKGROUND))
+        DraftStore(context).use { store -> assertTrue(store.saveGenerated(original, Campaign())) }
+        Robolectric.buildActivity(MainActivity::class.java).setup().use { controller ->
+            shadowOf(Looper.getMainLooper()).idle()
+            val activity = controller.get()
+            val root = activity.findViewById<View>(android.R.id.content)
+            root.button("1 draft awaiting approval").performClick()
+            root.button("Content checklist").performClick()
+            val checklist = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
+            checklist.window!!.decorView.descendants().filterIsInstance<EditText>().single().setText("Product photo")
+            checklist.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            root.button("Back to dashboard").performClick()
+            root.button("1 draft with missing content").performClick()
+            assertTrue(root.descendants().filterIsInstance<TextView>().any { it.text == "Content needed · Product photo" })
+            assertTrue(root.descendants().filterIsInstance<Button>().none { it.text == "Approve caption" })
+
+            root.button("Image prompt").performClick()
+            val prompt = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
+            val promptEditor = prompt.window!!.decorView.descendants().filterIsInstance<EditText>().single()
+            assertTrue(promptEditor.text.contains(original.caption))
+            promptEditor.setText("A close-up of the finished print")
+            prompt.getButton(AlertDialog.BUTTON_NEUTRAL).performClick()
+            val clipboard = activity.getSystemService(ClipboardManager::class.java)
+            assertEquals("A close-up of the finished print", clipboard.primaryClip?.getItemAt(0)?.text)
+            prompt.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+
+            root.button("Content checklist").performClick()
+            val clear = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
+            clear.window!!.decorView.descendants().filterIsInstance<EditText>().single().setText("")
+            clear.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            root.button("Back to dashboard").performClick()
+            root.tile("Needs approval").performClick()
+            assertTrue(root.button("Approve caption").isShown)
+            val saved = DraftStore(context).use { it.recent().single() }
+            assertEquals(original.caption, saved.caption)
+            assertEquals("A close-up of the finished print", saved.review.imagePrompt)
         }
     }
 
