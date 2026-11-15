@@ -203,7 +203,7 @@ class DraftStoreTest {
                 db.execSQL("ALTER TABLE draft ADD COLUMN saved_at INTEGER")
                 db.execSQL("ALTER TABLE draft ADD COLUMN origin TEXT")
                 db.execSQL("UPDATE draft SET saved_at=?, origin=?",
-                    arrayOf(timing.savedAt.toEpochMilli(), timing.origin.name))
+                    arrayOf<Any>(timing.savedAt.toEpochMilli(), timing.origin.name))
             }
             db.version = version
         }
