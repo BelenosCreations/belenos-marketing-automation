@@ -100,9 +100,11 @@ class DraftShareProvider : ContentProvider() {
             else -> "image"
         }
         return MatrixCursor(columns).apply {
-            addRow(columns.map {
-                if (it == OpenableColumns.SIZE) bytes.size else "BAM-${ref.day}-${ref.slot.name.lowercase()}.$extension"
-            }.toTypedArray())
+            val values = Array<Any>(columns.size) { index ->
+                if (columns[index] == OpenableColumns.SIZE) bytes.size
+                else "BAM-${ref.day}-${ref.slot.name.lowercase()}.$extension"
+            }
+            addRow(values)
         }
     }
 
