@@ -6,6 +6,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.time.temporal.ChronoUnit
 
 enum class Slot(val title: String, val draftTime: LocalTime? = null) {
@@ -69,6 +71,14 @@ object Schedule {
             .filter { it != Slot.OPENING || day != today ||
                 now < day.atTime(LocalTime.NOON).atZone(eastern).toInstant() }
             .map { PlannedDraft(day, it) }
+    }
+
+    /** The intended Facebook posting time, never the AI generation or publication timestamp. */
+    fun postingTargetLabel(day: LocalDate, slot: Slot): String? {
+        val clock = slot.draftTime ?: return null
+        val dateText = day.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US))
+        val timeText = clock.format(DateTimeFormatter.ofPattern("h:mm a", Locale.US))
+        return "Post manually · $dateText at $timeText ET"
     }
 
     val eastern: ZoneId = ZoneId.of("America/New_York")
