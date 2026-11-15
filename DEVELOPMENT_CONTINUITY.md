@@ -5,7 +5,7 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 007
+BAM Continuity 008
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
@@ -13,6 +13,8 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 ## Last independently verified engineering checkpoint (2026-11-14)
 
+- PR **#181** added working Content needed and Needs approval queues, caption approval, and an editable image prompt for manual ChatGPT handoff in BAM Personal 0.8.0. SQLite upgrades preserve earlier captions, timing and campaign notes. The signed BAM Review Preview installs separately from prior previews, with its own inbox, settings and model download. [Exact-head Android #43667379147](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43667379147) and [general #43667379180](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43667379180) passed at `663061102e3f192de9ca5f193eb81436fef64808`. [Merged-main Android #43667566344](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43667566344) and [general #43667566371](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43667566371) passed at `db1ee96aac2cd5978f8c5cc4b60e4b1be5fd6f2c`. All 25 Android tests, 1,398 local Python tests and 80 JavaScript regression scripts passed. Both branches matched with zero ahead/behind and no open PRs before this handoff. Direct phone evidence remains pending.
+- Handoff PR **#180** established sequence **007**. [Merged-main Actions #43652393276](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43652393276) passed at `b459a01273f07c59a7131f7da10a0c5808f93c92`. Both branches matched before the draft review milestone.
 - PR **#179** moved the approved dashboard into native BAM Personal 0.7.0 with Schedule, Draft inbox, Campaign notes and Offline AI tiles and alerts driven by local state. Updated the product plan so the usable phone app and approved visible workflows come before shared infrastructure and additional background work. [Exact-head Android #43651833196](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43651833196) and [general #43651833192](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43651833192) passed at `bef443b8fce263c79c444ce724cd76296ff98470`. [Merged-main Android #43652022723](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43652022723) and [general #43652022728](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43652022728) passed at `a66a97490f47cdf5fe5376d89d538433032d8c9e`. All 1,398 local Python tests and 80 JavaScript regression scripts passed. The Android CI-built preview passed package checks. The branches matched with zero ahead/behind and no open PRs before the handoff. Direct phone verification and the remaining approved personal workflows are pending.
 - Handoff PR **#178** established sequence **006**. [Merged-main Actions #43650908830](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650908830) passed at `b2945c797f62f9e75b9e0c137256803df78d0d1a`. Both branches matched before the Android dashboard milestone.
 - PR **#177** sealed each reviewed SQLite table's ordered row digest, ID history and known-unused evidence from one read transaction. The disposable PostgreSQL test required a separately retained envelope digest and the correct table and restored rows before restarting the sequence. It refused replay with identical rows, mismatched table or row evidence, and modified ciphertext. [PR Actions #43650337216](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650337216) passed at `3b5ee3917cc8b2caaa3023328609c71a5633de3e`. [Merged-main Actions #43650517350](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43650517350) passed at `6b8ddf3a4b60773ea76a76330fafbad3b1b40c53`. All 1,398 local Python tests and 80 JavaScript regression scripts passed. Both branches matched after a non-force fast-forward, with zero ahead/behind and no open PRs before this handoff.
@@ -78,10 +80,6 @@ BAM has its own sequence. Put it on the first line of the copy block. Increment 
 
 Fetch current GitHub heads, PRs and exact-SHA Actions before resuming. A handoff-only merge can advance main after the engineering checkpoint above. If the handoff PR has already merged, verify the current main run and complete any outstanding non-force branch sync before editing.
 
-Android 0.8.0 is a candidate with local Content needed and Needs approval
-queues, caption approval and the optional manual image-prompt handoff. Verify
-the Android and general workflows before recording a new checkpoint.
-
 GitHub listed no deployments, environments or releases, and Pages was disabled. External deployment inventory, independently authenticated operator authority and provider reconciliation still require evidence.
 
 ## Next safe development milestone
@@ -93,8 +91,8 @@ campaign and model setup behavior. Prioritize the screens and workflows the
 owner can use now. The $0 spending limit and production activation restrictions
 still apply.
 
-1. Verify the native tile dashboard and the full phone workflow from offline model setup through generation, review, caption editing and copying, campaign notes and skips, store hours, and schedule controls. Record actual phone evidence when available. The prior direction to assume the 0.6.0 phone test passed remains a planning assumption.
-2. Continue the approved owner-facing workflow, starting with the remaining Content needed and Needs approval interactions and the optional image-prompt handoff. Use real app state for the dashboard. Approved direct platform features remain subject to provider authorization and existing activation restrictions. Facebook publishing is manual in the personal app.
+1. Verify the Android 0.8.0 tile dashboard on the owner's phone, including on-device model setup and draft generation, caption edit and approval, the content checklist, and copying a caption and image prompt. Record actual phone evidence when available. The prior direction to assume the 0.6.0 phone test passed remains a planning assumption.
+2. Continue the approved owner-facing image workflow by letting the owner bring a photo or ChatGPT-created image back to the same Android draft. Prefer the system picker and private local storage, provide a preview and replace/remove actions, and leave Facebook posting manual. Verify that an image change preserves the caption and that the owner can still review the current draft. Approved direct platform features remain subject to provider authorization and existing activation restrictions.
 3. After the visible workflow is usable, verify real morning and evening delivery using the [Android phone check](README.md#check-draft-timing-on-your-phone). Continue advanced security, backups, restoration and multiuser work after the owner-facing app milestones.
 
 ### Deferred shared deployment work
