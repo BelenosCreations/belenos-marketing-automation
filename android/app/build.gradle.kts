@@ -16,8 +16,8 @@ android {
     }
     buildTypes {
         debug {
-            applicationIdSuffix = ".preview"
-            manifestPlaceholders["bamLabel"] = "BAM Preview"
+            applicationIdSuffix = ".preview.review"
+            manifestPlaceholders["bamLabel"] = "BAM Review Preview"
         }
     }
     compileOptions {

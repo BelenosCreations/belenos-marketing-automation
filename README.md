@@ -97,6 +97,10 @@ missing, truncated, or checksum-mismatched download can be retried.
 
 ### Install the preview or sign a personal build
 
+The 0.8.0 **BAM Review Preview** installs alongside older previews. It uses
+its own draft inbox, settings, and model download. The owner-signed personal
+build can update an existing personal install signed with the same key.
+
 Starting with 0.4.0, the **BAM Preview** APK installs alongside 0.1.0 through
 0.3.0. It has its own inbox, settings and one-time model download. Pause
 automatic drafting in any older installation while testing the preview.

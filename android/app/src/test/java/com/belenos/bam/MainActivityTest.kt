@@ -86,6 +86,7 @@ class MainActivityTest {
             val root = activity.findViewById<View>(android.R.id.content)
             root.button("1 draft awaiting approval").performClick()
             root.button("Content checklist").performClick()
+            shadowOf(Looper.getMainLooper()).idle()
             val checklist = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
             checklist.window!!.decorView.descendants().filterIsInstance<EditText>().single().setText("Product photo")
             checklist.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
@@ -95,6 +96,7 @@ class MainActivityTest {
             assertTrue(root.descendants().filterIsInstance<Button>().none { it.text == "Approve caption" })
 
             root.button("Image prompt").performClick()
+            shadowOf(Looper.getMainLooper()).idle()
             val prompt = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
             val promptEditor = prompt.window!!.decorView.descendants().filterIsInstance<EditText>().single()
             assertTrue(promptEditor.text.contains(original.caption))
@@ -105,6 +107,7 @@ class MainActivityTest {
             prompt.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
 
             root.button("Content checklist").performClick()
+            shadowOf(Looper.getMainLooper()).idle()
             val clear = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
             clear.window!!.decorView.descendants().filterIsInstance<EditText>().single().setText("")
             clear.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
@@ -159,8 +162,12 @@ class MainActivityTest {
         }
     }
 
-    private fun View.button(label: String): Button =
-        descendants().filterIsInstance<Button>().single { it.text == label }
+    private fun View.button(label: String): Button {
+        val buttons = descendants().filterIsInstance<Button>().toList()
+        return checkNotNull(buttons.singleOrNull { it.text == label }) {
+            "Expected one '$label' button, found ${buttons.map { it.text }}"
+        }
+    }
 
     private fun View.tile(label: String): View =
         descendants().single { it.contentDescription?.startsWith("$label.") == true }

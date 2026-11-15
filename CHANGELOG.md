@@ -5,6 +5,7 @@
 - Added an editable, copyable image prompt kept separately from the caption.
 - Existing captions, timing and campaigns survive the database upgrade.
   Changing an approved caption returns it for review.
+- BAM Review Preview installs alongside earlier test builds.
 
 ## BAM Personal 0.7.0 dashboard (2026-11-14)
 
