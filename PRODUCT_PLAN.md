@@ -29,7 +29,11 @@ can save a missing-material checklist, resolve it, and approve a caption for
 manual copying. Keep the optional image prompt editable separately and let the
 owner copy it into ChatGPT when an image would help.
 An owner-selected image can be attached to the same personal draft with a
-local preview. Replacing or removing that image opens the draft for review.
+local preview. Replacing or removing that image opens the draft for review. Once the owner
+approves a caption with an image attached, an Android share action can send
+that one image through the system chooser to a manually selected app, with
+caption copy retained separately. The owner must review and publish from the
+destination; this is not a provider connection or automatic publishing.
 
 Verify the app's on-screen workflows on the owner's phone before expanding
 background work. Check actual scheduled delivery and reliability once those
