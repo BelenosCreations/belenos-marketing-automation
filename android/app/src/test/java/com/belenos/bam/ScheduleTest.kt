@@ -81,6 +81,19 @@ class ScheduleTest {
         assertEquals("Ask about a 20 oz tumbler.", Schedule.caption("Ask about a 20 oz tumbler."))
     }
 
+    @Test fun postingTargetsDescribeIntendedManualPublishingNotDraftCreation() {
+        val saturday = LocalDate.parse("2026-11-14")
+        assertEquals("Post manually · Sat, Nov 14 at 10:00 AM ET",
+            Schedule.postingTargetLabel(saturday, Slot.MORNING))
+        assertEquals("Post manually · Sat, Nov 14 at 11:30 AM ET",
+            Schedule.postingTargetLabel(saturday, Slot.OPENING))
+        assertEquals("Post manually · Sat, Nov 14 at 6:30 PM ET",
+            Schedule.postingTargetLabel(saturday, Slot.EVENING))
+        assertEquals("Post manually · Sun, Nov 15 at 10:00 AM ET",
+            Schedule.postingTargetLabel(saturday.plusDays(1), Slot.MORNING))
+        assertEquals(null, Schedule.postingTargetLabel(saturday, Slot.SAMPLE))
+    }
+
     @Test fun timingDistinguishesDraftTargetFromPostingTime() {
         val day = LocalDate.parse("2026-11-14")
         val saved = Instant.parse("2026-11-14T15:08:00Z")
