@@ -1,6 +1,7 @@
 package com.belenos.bam
 
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -9,12 +10,67 @@ import java.time.temporal.ChronoUnit
 
 enum class Slot(val title: String, val draftTime: LocalTime? = null) {
     MORNING("Morning · 10 AM", LocalTime.of(10, 0)),
-    OPENING("Opening reminder · 11:30 AM", LocalTime.of(10, 0)),
+    OPENING("Opening reminder · 11:30 AM", LocalTime.of(11, 30)),
     EVENING("Evening · 6:30 PM", LocalTime.of(18, 30)),
     SAMPLE("Test draft")
 }
 
+data class PlannedDraft(val day: LocalDate, val slot: Slot)
+
 object Schedule {
+    const val DEFAULT_LEAD_MINUTES = 120
+    val leadOptions = listOf(0, 15, 30, 60, 120, 240, 480, 720, 1440)
+
+    fun leadLabel(minutes: Int): String = when (minutes) {
+        0 -> "At posting time"
+        15, 30 -> "$minutes minutes before"
+        60 -> "1 hour before"
+        120 -> "2 hours before"
+        240 -> "4 hours before"
+        480 -> "8 hours before"
+        720 -> "12 hours before"
+        1440 -> "24 hours before"
+        else -> leadLabel(DEFAULT_LEAD_MINUTES)
+    }
+
+    fun validLead(minutes: Int): Int = minutes.takeIf { it in leadOptions } ?: DEFAULT_LEAD_MINUTES
+
+    /** Automatic generation can prepare tomorrow's posts when the lead window crosses midnight. */
+    fun automaticTargets(
+        now: Instant,
+        confirmedThrough: LocalDate,
+        leadMinutes: Int,
+        campaignFor: (LocalDate) -> Campaign = { Campaign() }
+    ): List<PlannedDraft> {
+        val day = now.atZone(eastern).toLocalDate()
+        val lead = Duration.ofMinutes(validLead(leadMinutes).toLong())
+        return (0L..1L).flatMap { offset ->
+            val plannedDay = day.plusDays(offset)
+            val campaign = campaignFor(plannedDay)
+            planned(plannedDay, confirmedThrough).filter { it !in campaign.skipped }
+                .filter { slot ->
+                    val posting = plannedDay.atTime(checkNotNull(slot.draftTime)).atZone(eastern).toInstant()
+                    !posting.minus(lead).isAfter(now) &&
+                        (offset == 0L || !posting.isBefore(now)) &&
+                        !(offset == 0L && slot == Slot.OPENING &&
+                            now >= plannedDay.atTime(LocalTime.NOON).atZone(eastern).toInstant())
+                }.map { PlannedDraft(plannedDay, it) }
+        }
+    }
+
+    /** Owner-initiated preparation ignores lead time but does not revive expired opening reminders. */
+    fun manualTargets(
+        day: LocalDate, now: Instant, confirmedThrough: LocalDate,
+        campaign: Campaign = Campaign()
+    ): List<PlannedDraft> {
+        val today = now.atZone(eastern).toLocalDate()
+        if (day < today || day > today.plusDays(1)) return emptyList()
+        return planned(day, confirmedThrough).filter { it !in campaign.skipped }
+            .filter { it != Slot.OPENING || day != today ||
+                now < day.atTime(LocalTime.NOON).atZone(eastern).toInstant() }
+            .map { PlannedDraft(day, it) }
+    }
+
     val eastern: ZoneId = ZoneId.of("America/New_York")
     private val deadline = LocalDate.of(2026, 12, 3)
     private val holidayClosure = LocalDate.of(2026, 12, 11)..LocalDate.of(2027, 1, 7)
