@@ -137,8 +137,8 @@ class MainActivityTest {
             root.tile("Schedule").performClick()
             assertTrue(root.descendants().filterIsInstance<Switch>().single().isShown)
             assertTrue(root.button("Confirm regular store hours").isShown)
-            assertTrue(root.button("Generate today's drafts now").isShown)
-            assertTrue(root.button("Generate tomorrow's drafts now").isShown)
+            assertTrue(!root.button("Generate today's drafts now").isShown)
+            assertTrue(!root.button("Generate tomorrow's drafts now").isShown)
             assertTrue(root.button("Generate in advance: 2 hours before").isShown)
             root.button("Generate in advance: 2 hours before").performClick()
             val leadDialog = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
