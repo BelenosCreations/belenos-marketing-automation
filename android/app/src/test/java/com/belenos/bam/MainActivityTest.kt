@@ -140,6 +140,25 @@ class MainActivityTest {
         }
     }
 
+    @Test fun olderApprovedDraftsAreReachableFromTheInbox() {
+        val day = LocalDate.parse("2026-11-14")
+        val timing = DraftTiming(Instant.parse("2026-11-14T15:08:00Z"), DraftOrigin.BACKGROUND)
+        DraftStore(context).use { store ->
+            for (offset in 0L..60L) {
+                assertTrue(store.saveGenerated(Draft(day.minusDays(offset), Slot.MORNING,
+                    "Caption $offset", timing), Campaign()))
+            }
+            val oldest = store.recent(61).last()
+            assertTrue(store.setApproval(oldest, true))
+        }
+        Robolectric.buildActivity(MainActivity::class.java).setup().use { controller ->
+            val root = controller.get().findViewById<View>(android.R.id.content)
+            root.tile("Draft inbox").performClick()
+            root.button("Show older drafts").performClick()
+            assertTrue(root.button("Copy caption").isShown)
+        }
+    }
+
     private fun View.button(label: String): Button =
         descendants().filterIsInstance<Button>().single { it.text == label }
 

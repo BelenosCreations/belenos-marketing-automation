@@ -60,7 +60,7 @@ class MainActivity : Activity() {
     private lateinit var automatic: Switch
     private lateinit var timingReport: TextView
     private var displayed: List<Draft>? = null
-    private var queueLimit = 30
+    private var draftLimit = 30
     private var checkingModel = false
     private var downloadMessage: String? = null
 
@@ -257,7 +257,7 @@ class MainActivity : Activity() {
         }
         page = destination
         displayed = null
-        queueLimit = 30
+        draftLimit = if (destination == Page.INBOX) 60 else 30
         pageHeader.visibility = if (page == Page.HOME) View.GONE else View.VISIBLE
         pageTitle.text = page.title
         for ((screen, view) in pages) view.visibility = if (screen == page) View.VISIBLE else View.GONE
@@ -393,22 +393,22 @@ class MainActivity : Activity() {
         }
         if (timingReport.text.toString() != report) timingReport.text = report
         when {
-            queue != null -> renderDrafts(DraftStore(this).use { it.recent(queueLimit + 1, queue) },
-                if (page == Page.CONTENT) "No drafts are waiting for content." else "No drafts are waiting for approval.",
-                hasQueue = true)
-            page == Page.INBOX -> renderDrafts(drafts, "Your drafts will appear here after generation.")
+            queue != null -> renderDrafts(DraftStore(this).use { it.recent(draftLimit + 1, queue) },
+                if (page == Page.CONTENT) "No drafts are waiting for content." else "No drafts are waiting for approval.")
+            page == Page.INBOX -> renderDrafts(DraftStore(this).use { it.recent(draftLimit + 1) },
+                "Your drafts will appear here after generation.")
         }
     }
 
     private fun draftCountLabel(count: Int) = if (count == 1) "1 draft" else "$count drafts"
 
-    private fun renderDrafts(drafts: List<Draft>, emptyMessage: String, hasQueue: Boolean = false) {
+    private fun renderDrafts(drafts: List<Draft>, emptyMessage: String) {
         if (drafts == displayed) return
         displayed = drafts
         val content = pages.getValue(page)
         content.removeAllViews()
         if (drafts.isEmpty()) content.addView(text(emptyMessage, 15, muted))
-        for (draft in if (hasQueue) drafts.take(queueLimit) else drafts) {
+        for (draft in drafts.take(draftLimit)) {
             val panel = card(content)
             val review = draft.review
             panel.addView(text(draft.slot.title, 17, bold = true))
@@ -429,8 +429,12 @@ class MainActivity : Activity() {
                 panel.addView(button("Content checklist") { editContentNeeded(draft) })
                 if (review.contentNeeded.isEmpty()) {
                     panel.addView(button(if (review.approved) "Reopen approval" else "Approve caption") {
-                        if (DraftStore(this).use { it.setApproval(draft, !review.approved) }) redraw()
-                        else refreshChangedDraft()
+                        if (DraftStore(this).use { it.setApproval(draft, !review.approved) }) {
+                            if (!review.approved && page == Page.APPROVAL) {
+                                Toast.makeText(this, "Caption approved. Copy it from Draft inbox.", Toast.LENGTH_SHORT).show()
+                            }
+                            redraw()
+                        } else refreshChangedDraft()
                     })
                 }
             }
@@ -439,9 +443,9 @@ class MainActivity : Activity() {
                 else refreshChangedDraft()
             })
         }
-        if (hasQueue && drafts.size > queueLimit) {
+        if (drafts.size > draftLimit) {
             content.addView(button("Show older drafts") {
-                queueLimit += 30
+                draftLimit += 30
                 displayed = null
                 redraw()
             })
