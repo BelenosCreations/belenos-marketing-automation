@@ -48,8 +48,9 @@ jobs:
             exit 1
           fi
           # The packaged APK must contain the exact approved owner-supplied brand derivatives.
+          apk_entries=$(unzip -Z1 "$preview")
           for asset in bam_approved_metallic_primary.webp bam_approved_flat_lockup.webp bam_approved_launcher_foreground.webp; do
-            if ! unzip -Z1 "$preview" | grep -Fq "$asset"; then
+            if ! grep -Fq "$asset" <<< "$apk_entries"; then
               echo "Missing approved BAM asset: $asset" >&2
               exit 1
             fi
