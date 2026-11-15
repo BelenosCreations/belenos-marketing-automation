@@ -118,10 +118,10 @@ class MainActivity : Activity() {
         val header = column().apply {
             setPadding(dp(22), dp(14), dp(22), dp(13))
             addView(ImageView(this@MainActivity).apply {
-                setImageResource(R.drawable.bam_wordmark_dark)
-                scaleType = ImageView.ScaleType.FIT_START
+                setImageResource(R.drawable.bam_approved_metallic_primary)
+                scaleType = ImageView.ScaleType.FIT_CENTER
                 contentDescription = "BAM — Belenos Automatic Marketing"
-            }, LinearLayout.LayoutParams(-1, dp(56)))
+            }, LinearLayout.LayoutParams(-1, dp(128)))
             addView(text("Belenos Creations · Facebook", 15, getColor(R.color.bam_silver)).apply {
                 setPadding(0, dp(7), 0, 0)
             })
