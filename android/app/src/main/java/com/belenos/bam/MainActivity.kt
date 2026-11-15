@@ -464,6 +464,10 @@ class MainActivity : Activity() {
                 if (DraftStore(this).use { it.canCopyCaption(draft) }) copyText("BAM caption", draft.caption, "Caption copied")
                 else refreshChangedDraft()
             })
+            if (draft.slot != Slot.SAMPLE && review.approved && review.imageId != null) {
+                panel.addView(button("Share approved image") { shareApprovedImage(draft) })
+                panel.addView(text("Choose Facebook or another app to finish posting. Copy the caption separately if needed.", 13, muted))
+            }
         }
         if (drafts.size > draftLimit) {
             content.addView(button("Show older drafts") {
@@ -549,6 +553,27 @@ class MainActivity : Activity() {
                     redraw()
                 }
             }
+        }
+    }
+
+    private fun shareApprovedImage(draft: Draft) {
+        // The displayed card may be stale. Check the current persisted approval,
+        // caption revision and exact attached image immediately before handoff.
+        val allowed = DraftStore(this).use { it.canShareImage(draft) }
+        if (!allowed) {
+            refreshChangedDraft()
+            return
+        }
+        val send = DraftShareProvider.shareIntent(this, draft) ?: run {
+            refreshChangedDraft()
+            return
+        }
+        try {
+            val chooser = Intent.createChooser(send, "Share approved draft image")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivity(chooser)
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(this, "No app can receive this image.", Toast.LENGTH_LONG).show()
         }
     }
 
