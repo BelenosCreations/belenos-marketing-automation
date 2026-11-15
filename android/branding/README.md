@@ -14,8 +14,9 @@ branding. Assets are in `android/app/src/main/res/drawable-nodpi/`:
   included for future light-surface views.
 
 All are cropped/resized directly from the owner's supplied `17472.png`
-and `17473.png` and are SHA-256 pinned by `test_branding.py`. No AI
-generation or redrawing. The original files and high-resolution asset
+and `17473.png`; only the white exterior outside the launcher image's
+existing gold rounded-square frame was made transparent. They are
+SHA-256 pinned by `test_branding.py`. No AI generation or redrawing. The original files and high-resolution asset
 package remain in the **Belenos Marketing** project Library.
 
 The app deliberately has no `<monochrome>` adaptive icon entry:
