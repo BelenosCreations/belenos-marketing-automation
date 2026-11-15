@@ -1,6 +1,6 @@
 ## BAM for Android
 
-BAM Personal 0.10.0 opens to a tile dashboard. Open **Schedule** for today's
+BAM Personal 0.11.0 opens to a tile dashboard. Open **Schedule** for today's
 draft timing, store hours, scheduling, and manual catch-up. Open **Draft
 inbox** to review, edit, and copy captions. Open **Campaign notes** for dated
 topics, confirmed facts, and skips. Open **Offline AI** to download the model
@@ -47,9 +47,20 @@ LiteRT-LM. No account, computer, or paid AI API is required for drafting.
 
 Use **Campaign notes and skips** to choose a date, supply an upcoming topic
 and confirmed details, or skip a slot already handled elsewhere. These
-settings apply to drafts that are still pending. **Generate due drafts now**
-checks today's missing slots even while automatic drafting is paused.
-Existing captions and skipped slots are left out of that run.
+settings apply to drafts that are still pending. **Generate today's drafts now** prepares the remaining morning, opening and
+evening posts even before their scheduled posting times. **Generate tomorrow's
+drafts now** prepares the following day's posts. Both work with automatic
+generation disabled. Posted-time slots, skipped posts, existing captions,
+approvals and attached images are preserved rather than replaced. Expired
+opening reminders are not revived.
+
+**Generate scheduled drafts** is optional and has a **Generate in advance**
+setting (at posting time, 15 or 30 minutes, 1, 2, 4, 8, 12 or 24 hours
+before). The default is 2 hours. This lead time applies to the scheduled
+posting times (10 AM, 11:30 AM, 6:30 PM Eastern); when necessary, BAM
+prepares tomorrow's post the previous day. A saved post stays in the
+approval queue until you finish reviewing it. Android may postpone periodic
+work, so no actual publishing time is guaranteed.
 
 BAM 0.6.0 asks the model for one short caption focused on a single subject.
 Before saving a new generated draft, BAM removes common AI labels, wrapping
@@ -63,9 +74,10 @@ GitHub build used an ephemeral debug signing key. The earlier app keeps its
 drafts. The new app has its own inbox and requires its own model download.
 Pause scheduling in the older app if you enable it in BAM Personal.
 
-The app targets 10 AM Eastern for morning drafts and for preparing the
-11:30 AM opening reminders on Thursday through Saturday. It targets 6:30 PM
-Eastern on Monday, Wednesday, Friday and Saturday for evening drafts.
+The posting schedule is 10 AM Eastern for morning posts, 11:30 AM
+for opening reminders Thursday through Saturday, and 6:30 PM
+Monday, Wednesday, Friday and Saturday for evening posts.
+Automatic draft generation occurs at the chosen lead time ahead of those posts.
 Android can defer background work while the phone is idle. Opening BAM
 checks for drafts due that day, and opening reminders expire at noon.
 The app uses the known holiday closures and requires reconfirmation of
@@ -108,7 +120,9 @@ missing, truncated, or checksum-mismatched download can be retried.
 
 ### Install the preview or sign a personal build
 
-The 0.10.0 **BAM Share Preview** installs alongside older preview apps.
+The 0.11.0 **BAM Early Draft Preview** installs alongside older previews.
+It has its own private drafts and offline AI model download. The 0.10.0
+**BAM Share Preview** installs alongside older preview apps.
 It has its own private inbox and offline model download. The Android
 share chooser grants only temporary read access to the one selected
 approved image. BAM rechecks the current approval and attachment
