@@ -38,7 +38,7 @@ class BrandTests(unittest.TestCase):
             "bam_approved_metallic_primary.webp":
                 "ef3e65e4a643a7062badd3885575068dea3055a750ef43447477afbe429ca393",
             "bam_approved_launcher_foreground.webp":
-                "e26d277917bd0035a38e39dd8b937ef0cace0c86d72b951fd479795dcd837388",
+                "005c6de6b6db298aae39710a78a950a556d6072868f7a55e641b560e6a8e39df",
             "bam_approved_flat_lockup.webp":
                 "2211406155d32c56a3ccecda6e6a25ad4378c21eb7de4e465feec8ccb09441ba",
         }
