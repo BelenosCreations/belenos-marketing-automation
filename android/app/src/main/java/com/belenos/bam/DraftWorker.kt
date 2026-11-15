@@ -85,6 +85,10 @@ class DraftWorker internal constructor(
                             val recent = store.recent(4).filter { it.slot != Slot.SAMPLE }.map { it.caption }
                             val text = generate(Schedule.prompt(target.day, target.slot, recent, campaign))
                             val finished = now()
+                            if (store.campaign(target.day) != campaign) {
+                                planChanged = true
+                                break
+                            }
                             val currentHours = confirmedThrough()
                             if (!isStopped && allowed() && target in candidates(finished)) {
                                 val hours = if (target.slot == Slot.OPENING)
