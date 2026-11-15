@@ -90,6 +90,16 @@ class DraftStoreTest {
         }
     }
 
+    @Test fun schemaFourUpgradeRetainsApprovalAndImagePrompt() {
+        seedLegacyStore(version = 4)
+        DraftStore(context).use { store ->
+            val draft = store.recent().single()
+            assertEquals(DraftReview(imagePrompt = "Saved prompt", approved = true, revision = 2), draft.review)
+            assertTrue(store.canCopyCaption(draft))
+            assertEquals("My edited caption", draft.caption)
+        }
+    }
+
     @Test fun reviewPersistsAndContentBlocksApprovalUntilItIsCleared() {
         val original = Draft(day, Slot.MORNING, "Caption", timing)
         DraftStore(context).use { store ->
@@ -204,6 +214,13 @@ class DraftStoreTest {
                 db.execSQL("ALTER TABLE draft ADD COLUMN origin TEXT")
                 db.execSQL("UPDATE draft SET saved_at=?, origin=?",
                     arrayOf<Any>(timing.savedAt.toEpochMilli(), timing.origin.name))
+            }
+            if (version >= 4) {
+                db.execSQL("ALTER TABLE draft ADD COLUMN content_needed TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE draft ADD COLUMN image_prompt TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE draft ADD COLUMN approved INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE draft ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE draft SET approved=1, revision=2, image_prompt='Saved prompt'")
             }
             db.version = version
         }

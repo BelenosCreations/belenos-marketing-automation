@@ -19,7 +19,8 @@ data class DraftReview(
     val contentNeeded: String = "",
     val imagePrompt: String = "",
     val approved: Boolean = false,
-    val revision: Long = 0
+    val revision: Long = 0,
+    val imageId: String? = null
 )
 
 data class Draft(

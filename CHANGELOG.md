@@ -1,3 +1,11 @@
+## BAM Personal 0.9.0 draft image attachments (2026-11-14)
+
+- Added Android picker, preview, replace, and remove actions for one image
+  attached to a draft. The original bytes and bounded thumbnail stay local.
+- Image changes retain the caption and checklist, and return the draft for
+  approval. Existing review data survives an owner-signed app update.
+- BAM Image Preview installs alongside earlier previews.
+
 ## BAM Personal 0.8.0 draft review and image prompts (2026-11-14)
 
 - Added live Android tiles for Content needed and Needs approval, with a

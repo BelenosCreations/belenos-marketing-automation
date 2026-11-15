@@ -37,8 +37,8 @@ jobs:
           "$sdk_tools/apksigner" verify "$preview"
           preview_info=$("$sdk_tools/aapt" dump badging "$preview")
           release_info=$("$sdk_tools/aapt" dump badging "$release")
-          grep -Fq "package: name='com.belenos.bam.owner.preview.review'" <<< "$preview_info"
-          grep -Fq "application-label:'BAM Review Preview'" <<< "$preview_info"
+          grep -Fq "package: name='com.belenos.bam.owner.preview.media'" <<< "$preview_info"
+          grep -Fq "application-label:'BAM Image Preview'" <<< "$preview_info"
           grep -Fq "package: name='com.belenos.bam.owner'" <<< "$release_info"
           grep -Fq "application-label:'BAM Personal'" <<< "$release_info"
           grep -Fxq "native-code: 'arm64-v8a'" <<< "$preview_info"
