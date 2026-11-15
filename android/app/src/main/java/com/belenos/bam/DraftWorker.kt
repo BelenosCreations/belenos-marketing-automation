@@ -53,13 +53,23 @@ class DraftWorker internal constructor(
         }
         fun confirmedThrough() = LocalDate.parse(settings.getString("hours_through", "2026-12-10"))
         val started = now()
-        val day = started.atZone(Schedule.eastern).toLocalDate()
+        val today = started.atZone(Schedule.eastern).toLocalDate()
+        val targetDay = if (manual) {
+            inputData.getString("target_day")?.takeIf { it.isNotBlank() }
+                ?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: today
+        } else today
         DraftStore(context).use { store ->
-            val campaign = store.campaign(day)
-            val slots = if (sample) listOf(Slot.SAMPLE) else Schedule.due(started, confirmedThrough(), campaign)
-                .filterNot { store.contains(day, it) }
+            fun candidates(at: Instant): List<PlannedDraft> =
+                when {
+                    sample -> listOf(PlannedDraft(at.atZone(Schedule.eastern).toLocalDate(), Slot.SAMPLE))
+                    manual -> Schedule.manualTargets(targetDay, at, confirmedThrough(), store.campaign(targetDay))
+                    else -> Schedule.automaticTargets(at, confirmedThrough(),
+                        settings.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES), store::campaign)
+                }
+            val slots = candidates(started).filterNot { store.contains(it.day, it.slot) && !sample }
             if (slots.isEmpty()) {
-                if (manual) settings.edit().putString("status", "No missing drafts are due today.").apply()
+                if (manual) settings.edit().putString("status",
+                    "No unprepared drafts available for ${if (targetDay == today) "today" else "tomorrow"}.").apply()
                 return@synchronized Result.success()
             }
             settings.edit().putString("status", "Writing on-device…").apply()
@@ -67,22 +77,24 @@ class DraftWorker internal constructor(
             var planChanged = false
             try {
                 withGenerator { generate ->
-                    for (slot in slots) {
+                    for (target in slots) {
                         if (isStopped || !allowed()) break
-                        val before = now()
-                        if (day != before.atZone(Schedule.eastern).toLocalDate()) break
-                        if (!sample && slot !in Schedule.due(before, confirmedThrough(), campaign)) continue
+                        if (target !in candidates(now())) continue
+                        val campaign = store.campaign(target.day)
                         try {
                             val recent = store.recent(4).filter { it.slot != Slot.SAMPLE }.map { it.caption }
-                            val text = generate(Schedule.prompt(day, slot, recent, campaign))
+                            val text = generate(Schedule.prompt(target.day, target.slot, recent, campaign))
                             val finished = now()
+                            if (store.campaign(target.day) != campaign) {
+                                planChanged = true
+                                break
+                            }
                             val currentHours = confirmedThrough()
-                            if (!isStopped && allowed() &&
-                                day == finished.atZone(Schedule.eastern).toLocalDate() &&
-                                (sample || slot in Schedule.due(finished, currentHours, campaign))) {
-                                val hours = if (slot == Slot.OPENING) Schedule.hours(day, currentHours) else null
+                            if (!isStopped && allowed() && target in candidates(finished)) {
+                                val hours = if (target.slot == Slot.OPENING)
+                                    Schedule.hours(target.day, currentHours) else null
                                 val caption = Schedule.caption(text, hours)
-                                val draft = Draft(day, slot, caption, DraftTiming(finished, origin))
+                                val draft = Draft(target.day, target.slot, caption, DraftTiming(finished, origin))
                                 if (!store.saveGenerated(draft, campaign)) {
                                     planChanged = true
                                     break
@@ -92,13 +104,13 @@ class DraftWorker internal constructor(
                             failed = true
                         }
                     }
-                    val status = when {
-                        planChanged -> "Campaign changed during drafting. Generate due drafts again."
-                        !failed -> "Draft inbox is up to date."
+                    val resultStatus = when {
+                        planChanged -> "Campaign changed during drafting. Generate again."
+                        !failed -> "Draft inbox is up to date. Review drafts before posting."
                         sample || manual -> "A draft could not be generated. Try again."
-                        else -> "A scheduled draft failed. BAM will retry."
+                        else -> "An automatic draft failed. BAM will retry."
                     }
-                    settings.edit().putString("status", status).apply()
+                    settings.edit().putString("status", resultStatus).apply()
                 }
             } catch (_: Exception) {
                 failed = true
@@ -143,12 +155,19 @@ class DraftWorker internal constructor(
             WorkManager.getInstance(context).cancelUniqueWork("catch-up")
         }
 
-        fun runOnce(context: Context, sample: Boolean, manual: Boolean = false) {
+        fun runOnce(context: Context, sample: Boolean, manual: Boolean = false,
+                    targetDay: LocalDate? = null) {
             WorkManager.getInstance(context).enqueueUniqueWork(
-                when { sample -> "sample-draft"; manual -> "manual-drafts"; else -> "catch-up" },
+                when {
+                    sample -> "sample-draft"
+                    manual && targetDay != null -> "manual-drafts-${targetDay}"
+                    manual -> "manual-drafts"
+                    else -> "catch-up"
+                },
                 ExistingWorkPolicy.KEEP,
                 OneTimeWorkRequestBuilder<DraftWorker>()
                     .setInputData(workDataOf("sample" to sample, "manual" to manual,
+                        "target_day" to (targetDay?.toString() ?: ""),
                         "app_catch_up" to (!sample && !manual))).build())
         }
     }

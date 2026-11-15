@@ -52,7 +52,7 @@ class MainActivityTest {
             })
             root.tile("Draft inbox").performClick()
             assertTrue(root.descendants().filterIsInstance<TextView>().any {
-                it.isShown && it.text == "Periodic background check · saved 10:08 AM ET · 8 min after target"
+                it.isShown && it.text == "Periodic background check · saved 10:08 AM ET · 8 min after posting time"
             })
 
             root.button("Edit caption").performClick()
@@ -137,6 +137,15 @@ class MainActivityTest {
             root.tile("Schedule").performClick()
             assertTrue(root.descendants().filterIsInstance<Switch>().single().isShown)
             assertTrue(root.button("Confirm regular store hours").isShown)
+            assertTrue(!root.button("Generate today's drafts now").isShown)
+            assertTrue(!root.button("Generate tomorrow's drafts now").isShown)
+            assertTrue(root.button("Generate in advance: 2 hours before").isShown)
+            root.button("Generate in advance: 2 hours before").performClick()
+            val leadDialog = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
+            assertEquals("Generate how far ahead of posting?", leadDialog.window!!.decorView
+                .descendants().filterIsInstance<TextView>()
+                .first { it.text == "Generate how far ahead of posting?" }.text)
+            leadDialog.dismiss()
             controller.get().onBackPressed()
 
             root.tile("Campaign notes").performClick()

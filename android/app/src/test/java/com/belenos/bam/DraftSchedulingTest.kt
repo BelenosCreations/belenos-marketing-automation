@@ -33,6 +33,8 @@ class DraftSchedulingTest {
     @Before fun setUp() {
         context = RuntimeEnvironment.getApplication()
         context.deleteDatabase("drafts.db")
+        context.getSharedPreferences("bam", Context.MODE_PRIVATE).edit()
+            .putInt("lead_minutes", 0).commit()
         val factory = object : WorkerFactory() {
             override fun createWorker(appContext: Context, workerClassName: String,
                 workerParameters: WorkerParameters): ListenableWorker? {
@@ -92,9 +94,47 @@ class DraftSchedulingTest {
         assertEquals(0, generated)
         DraftWorker.runOnce(context, sample = false, manual = true)
         assertEquals(WorkInfo.State.SUCCEEDED, workInfo("manual-drafts").state)
-        val draft = DraftStore(context).use { it.recent().single() }
-        assertEquals(Slot.MORNING, draft.slot)
-        assertEquals(DraftTiming(now, DraftOrigin.MANUAL), draft.timing)
+        val drafts = DraftStore(context).use { it.recent() }
+        assertEquals(setOf(Slot.MORNING, Slot.EVENING), drafts.map { it.slot }.toSet())
+        assertEquals(true, drafts.all { it.timing == DraftTiming(now, DraftOrigin.MANUAL) })
+    }
+
+    @Test fun automaticLeadTimeGeneratesBeforeTargetAndDoesNotReplaceApprovedDraft() {
+        now = Instant.parse("2026-11-14T13:00:00Z") // 8 AM ET
+        context.getSharedPreferences("bam", Context.MODE_PRIVATE).edit()
+            .putInt("lead_minutes", 120).commit()
+        setEnabled(true)
+        DraftWorker.runOnce(context, sample = false)
+        assertEquals(1, generated)
+        DraftStore(context).use { store ->
+            val draft = checkNotNull(store.find(day, Slot.MORNING))
+            assertEquals(DraftOrigin.APP_OPEN, draft.timing?.origin)
+            assertEquals("120 min before posting", draft.timing?.description(day, Slot.MORNING)
+                ?.substringAfterLast(" · "))
+            assertEquals(true, store.setApproval(draft, true))
+        }
+        now = Instant.parse("2026-11-14T14:31:00Z") // 9:31 AM ET
+        DraftWorker.runOnce(context, sample = false)
+        val drafts = DraftStore(context).use { it.recent().associateBy(Draft::slot) }
+        assertEquals(2, generated)
+        assertEquals(setOf(Slot.MORNING, Slot.OPENING), drafts.keys)
+        assertEquals(true, drafts.getValue(Slot.MORNING).review.approved)
+    }
+
+    @Test fun manualTodayAndTomorrowGenerateImmediatelyWhileAutomaticIsPaused() {
+        now = Instant.parse("2026-11-14T13:00:00Z")
+        setEnabled(false)
+        val tomorrow = day.plusDays(1)
+        DraftWorker.runOnce(context, sample = false, manual = true, targetDay = tomorrow)
+        assertEquals(setOf(PlannedDraft(tomorrow, Slot.MORNING)),
+            DraftStore(context).use { it.recent().map { d -> PlannedDraft(d.day, d.slot) }.toSet() })
+        DraftWorker.runOnce(context, sample = false, manual = true, targetDay = day)
+        assertEquals(4, generated)
+        val drafts = DraftStore(context).use { it.recent() }
+        assertEquals(4, drafts.size)
+        assertEquals(true, drafts.all { it.timing?.origin == DraftOrigin.MANUAL })
+        DraftWorker.runOnce(context, sample = false, manual = true, targetDay = day)
+        assertEquals(4, generated)
     }
 
     private fun setEnabled(enabled: Boolean) {

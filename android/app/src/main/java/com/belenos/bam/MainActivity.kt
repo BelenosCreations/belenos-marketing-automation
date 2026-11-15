@@ -63,6 +63,8 @@ class MainActivity : Activity() {
     private lateinit var download: Button
     private lateinit var sample: Button
     private lateinit var catchUp: Button
+    private lateinit var tomorrow: Button
+    private lateinit var leadButton: Button
     private lateinit var automatic: Switch
     private lateinit var timingReport: TextView
     private var displayed: List<Draft>? = null
@@ -204,9 +206,9 @@ class MainActivity : Activity() {
 
     private fun buildSchedule(content: LinearLayout) {
         val controls = card(content)
-        controls.addView(text("Draft schedule", 20, bold = true))
-        controls.addView(text("10 AM daily · Morning\n10 AM Thu–Sat · Draft the 11:30 AM opening reminder\n6:30 PM Mon, Wed, Fri, Sat · Evening", 15))
-        controls.addView(text("Eastern time. Android may delay background drafts. Opening reminders require confirmed hours.", 13, muted))
+        controls.addView(text("Posting schedule", 20, bold = true))
+        controls.addView(text("10 AM daily · Morning post\n11:30 AM Thu–Sat · Opening reminder\n6:30 PM Mon, Wed, Fri, Sat · Evening post", 15))
+        controls.addView(text("Eastern time. These are intended posting times; BAM prepares drafts earlier for your review. Posting is always manual.", 13, muted))
         automatic = Switch(this).apply {
             text = "Generate scheduled drafts"
             isChecked = preferences.getBoolean("enabled", false)
@@ -220,19 +222,44 @@ class MainActivity : Activity() {
             }
         }
         controls.addView(automatic)
+        leadButton = button("") {
+            val selected = Schedule.validLead(preferences.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES))
+            val options = Schedule.leadOptions
+            AlertDialog.Builder(this)
+                .setTitle("Generate how far ahead of posting?")
+                .setSingleChoiceItems(options.map(Schedule::leadLabel).toTypedArray(),
+                    options.indexOf(selected)) { dialog, which ->
+                    preferences.edit().putInt("lead_minutes", options[which]).apply()
+                    dialog.dismiss()
+                    if (automatic.isChecked) DraftWorker.runOnce(applicationContext, sample = false)
+                    redraw()
+                }
+                .setNegativeButton("Cancel", null).show()
+        }
+        controls.addView(leadButton)
+        controls.addView(text("Android may delay background generation; choose enough lead time to review drafts.", 13, muted))
         controls.addView(button("Confirm regular store hours") { confirmHours() })
-        catchUp = button("Generate due drafts now") {
-            preferences.edit().putString("status", "Checking for missing drafts…").apply()
-            DraftWorker.runOnce(applicationContext, sample = false, manual = true)
+        catchUp = button("Generate today's drafts now") {
+            preferences.edit().putString("status", "Preparing today's missing drafts…").apply()
+            DraftWorker.runOnce(applicationContext, sample = false, manual = true,
+                targetDay = LocalDate.now(Schedule.eastern))
             redraw()
         }
         controls.addView(catchUp)
+        tomorrow = button("Generate tomorrow's drafts now") {
+            preferences.edit().putString("status", "Preparing tomorrow's missing drafts…").apply()
+            DraftWorker.runOnce(applicationContext, sample = false, manual = true,
+                targetDay = LocalDate.now(Schedule.eastern).plusDays(1))
+            redraw()
+        }
+        controls.addView(tomorrow)
+        controls.addView(text("Generate now works even with automatic drafting off. Existing, edited, approved, and skipped drafts are preserved.", 13, muted))
         scheduleStatus = text("", 14, muted).apply {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         controls.addView(scheduleStatus)
         val timing = card(content)
-        timing.addView(text("Today's draft timing", 20, bold = true))
+        timing.addView(text("Today's posting times", 20, bold = true))
         timingReport = text("", 14, muted).apply { setTextIsSelectable(true) }
         timing.addView(timingReport)
     }
@@ -347,6 +374,9 @@ class MainActivity : Activity() {
         download.isEnabled = !pending && !checkingModel
         sample.visibility = if (ready) View.VISIBLE else View.GONE
         catchUp.visibility = if (ready) View.VISIBLE else View.GONE
+        tomorrow.visibility = if (ready) View.VISIBLE else View.GONE
+        leadButton.text = "Generate in advance: " + Schedule.leadLabel(
+            Schedule.validLead(preferences.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES)))
         automatic.isEnabled = ready || automatic.isChecked
         val currentStatus = when {
             checkingModel -> "Checking the offline model…"
@@ -371,7 +401,11 @@ class MainActivity : Activity() {
         val todaysDrafts = drafts.filter { it.day == day }.associateBy(Draft::slot)
         val planned = Schedule.planned(day, confirmedThrough)
         val draftCount = planned.count { it !in campaign.skipped || it in todaysDrafts }
-        val dueCount = Schedule.due(now, confirmedThrough, campaign).count { it !in todaysDrafts }
+        val dueCount = DraftStore(this).use { store ->
+            Schedule.automaticTargets(now, confirmedThrough,
+                preferences.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES), store::campaign)
+                .count { !store.contains(it.day, it.slot) }
+        }
         updateTile(Page.SCHEDULE, when (draftCount) {
             0 -> "No slots today"
             1 -> "1 slot today"
@@ -392,8 +426,8 @@ class MainActivity : Activity() {
             pending || checkingModel -> "Offline AI setup in progress" to Page.MODEL
             !ready -> "Set up offline AI to generate drafts" to Page.MODEL
             day > confirmedThrough -> "Confirm store hours for future opening reminders" to Page.SCHEDULE
-            dueCount == 1 -> "1 draft slot due" to Page.SCHEDULE
-            dueCount > 1 -> "$dueCount draft slots due" to Page.SCHEDULE
+            dueCount == 1 -> "1 draft ready to generate" to Page.SCHEDULE
+            dueCount > 1 -> "$dueCount drafts ready to generate" to Page.SCHEDULE
             else -> null
         }
         attention.visibility = if (alert == null) View.GONE else View.VISIBLE
@@ -406,7 +440,7 @@ class MainActivity : Activity() {
         }.map { slot ->
             val target = checkNotNull(slot.draftTime).format(timingClock)
             val detail = slotStatus(day, slot, now, slot in campaign.skipped, todaysDrafts[slot])
-            "${slot.title.substringBefore(" ·")} · target $target ET\n$detail"
+            "${slot.title.substringBefore(" ·")} · post at $target ET\n$detail"
         }
         val report = buildString {
             if (!automatic.isChecked) append("Automatic drafting is paused.\n\n")
