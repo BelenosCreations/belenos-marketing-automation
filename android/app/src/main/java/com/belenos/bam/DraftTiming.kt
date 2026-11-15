@@ -10,7 +10,7 @@ import java.util.Locale
 enum class DraftOrigin(val label: String) {
     BACKGROUND("Periodic background check"),
     APP_OPEN("App catch-up"),
-    MANUAL("Manual catch-up"),
+    MANUAL("Generated manually"),
     TEST("Test run"),
     UNKNOWN("Draft check")
 }
@@ -34,13 +34,14 @@ data class Draft(
 data class DraftTiming(val savedAt: Instant, val origin: DraftOrigin) {
     fun description(day: LocalDate, slot: Slot): String {
         val localTime = savedAt.atZone(Schedule.eastern).format(clockFormat)
-        val draftTime = slot.draftTime ?: return "${origin.label} · saved $localTime ET"
-        val target = day.atTime(draftTime).atZone(Schedule.eastern).toInstant()
+        val postTime = slot.draftTime ?: return "${origin.label} · saved $localTime ET"
+        val target = day.atTime(postTime).atZone(Schedule.eastern).toInstant()
         val delay = Duration.between(target, savedAt).toMinutes()
+        val early = Duration.between(savedAt, target).toMinutes()
         val timing = when {
-            savedAt < target -> "before target"
-            delay == 0L -> "within 1 min of target"
-            else -> "$delay min after target"
+            savedAt < target -> "$early min before posting"
+            delay == 0L -> "at posting time"
+            else -> "$delay min after posting time"
         }
         return "${origin.label} · saved $localTime ET · $timing"
     }
