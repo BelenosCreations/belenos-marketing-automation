@@ -16,6 +16,13 @@ When an actual functioning app warrants hosted testing **or** an essential devel
 
 ## Personal use comes first
 
+BAM's owner-approved branding (confirmed November 15, 2026) uses the
+**metallic gold, silver and teal BAM identity board and matching metallic
+Android launcher icon**, not the obsolete flat/SVG launcher. Android Personal
+0.12.0 packages only artwork derived by crop/resize from those originals.
+Keep the original project-library references as source of truth. Do not
+regenerate or visually redesign the approved artwork.
+
 Deliver a usable BAM Personal app on Android first. Use the approved mobile
 dashboard with large tiles and put anything that needs the owner's input above
 the tiles. Keep each tile connected to its real workflow. The owner should be
