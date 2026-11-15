@@ -94,9 +94,9 @@ class DraftSchedulingTest {
         assertEquals(0, generated)
         DraftWorker.runOnce(context, sample = false, manual = true)
         assertEquals(WorkInfo.State.SUCCEEDED, workInfo("manual-drafts").state)
-        val draft = DraftStore(context).use { it.recent().single() }
-        assertEquals(Slot.MORNING, draft.slot)
-        assertEquals(DraftTiming(now, DraftOrigin.MANUAL), draft.timing)
+        val drafts = DraftStore(context).use { it.recent() }
+        assertEquals(setOf(Slot.MORNING, Slot.EVENING), drafts.map { it.slot }.toSet())
+        assertEquals(true, drafts.all { it.timing == DraftTiming(now, DraftOrigin.MANUAL) })
     }
 
     @Test fun automaticLeadTimeGeneratesBeforeTargetAndDoesNotReplaceApprovedDraft() {
