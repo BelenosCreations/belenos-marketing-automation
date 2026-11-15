@@ -34,7 +34,7 @@ link stops returning image bytes after the revision changes.
 BAM 0.12.0 uses the owner's November 15 approved metallic gold/silver/teal
 primary logo in the app header, and the matching metallic Android launcher
 icon. Both images are packaged directly from the supplied original artwork
-without generative editing. The flat interface lockup is included as a
+without generative editing; white outside the icon's gold border is made transparent. The flat interface lockup is included as a
 separate asset. The legacy simplified SVG-era launcher assets have been
 removed from the Android build. The app follows the navy, silver, gold and
 teal BAM palette.
