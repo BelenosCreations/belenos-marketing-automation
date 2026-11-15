@@ -467,7 +467,13 @@ class MainActivity : Activity() {
             val panel = card(content)
             val review = draft.review
             panel.addView(text(draft.slot.title, 17, bold = true))
-            panel.addView(text(draft.day.format(DateTimeFormatter.ofPattern("EEE, MMM d")), 13, muted))
+            if (draft.slot == Slot.SAMPLE) {
+                panel.addView(text(draft.day.format(DateTimeFormatter.ofPattern("EEE, MMM d")), 13, muted))
+            } else {
+                Schedule.postingTargetLabel(draft.day, draft.slot)?.let {
+                    panel.addView(text(it, 14, getColor(R.color.bam_accent), bold = true))
+                }
+            }
             draft.timing?.let { panel.addView(text(it.description(draft.day, draft.slot), 13, muted)) }
             panel.addView(text(draft.caption, 16).apply {
                 setPadding(0, dp(10), 0, dp(9))
@@ -479,7 +485,8 @@ class MainActivity : Activity() {
             if (draft.slot != Slot.SAMPLE) {
                 panel.addView(text(when {
                     review.contentNeeded.isNotEmpty() -> "Content needed · ${review.contentNeeded}"
-                    review.approved -> "Approved · ready to copy"
+                    review.approved && review.imageId != null -> "Approved · ready to copy or share image manually"
+                    review.approved -> "Approved · ready to copy manually"
                     else -> "Needs approval"
                 }, 14, muted))
                 panel.addView(button("Content checklist") { editContentNeeded(draft) })
@@ -487,7 +494,7 @@ class MainActivity : Activity() {
                     panel.addView(button(if (review.approved) "Reopen approval" else "Approve caption") {
                         if (DraftStore(this).use { it.setApproval(draft, !review.approved) }) {
                             if (!review.approved && page == Page.APPROVAL) {
-                                Toast.makeText(this, "Caption approved. Copy it from Draft inbox.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, "Approved. Open Draft inbox to copy or share manually.", Toast.LENGTH_SHORT).show()
                             }
                             redraw()
                         } else refreshChangedDraft()
