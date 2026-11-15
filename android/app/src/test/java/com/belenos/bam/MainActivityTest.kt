@@ -90,6 +90,7 @@ class MainActivityTest {
             val checklist = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
             checklist.window!!.decorView.descendants().filterIsInstance<EditText>().single().setText("Product photo")
             checklist.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
             root.button("Back to dashboard").performClick()
             root.button("1 draft with missing content").performClick()
             assertTrue(root.descendants().filterIsInstance<TextView>().any { it.text == "Content needed · Product photo" })
@@ -105,12 +106,14 @@ class MainActivityTest {
             val clipboard = activity.getSystemService(ClipboardManager::class.java)
             assertEquals("A close-up of the finished print", clipboard.primaryClip?.getItemAt(0)?.text)
             prompt.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
 
             root.button("Content checklist").performClick()
             shadowOf(Looper.getMainLooper()).idle()
             val clear = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
             clear.window!!.decorView.descendants().filterIsInstance<EditText>().single().setText("")
             clear.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
             root.button("Back to dashboard").performClick()
             root.tile("Needs approval").performClick()
             assertTrue(root.button("Approve caption").isShown)
