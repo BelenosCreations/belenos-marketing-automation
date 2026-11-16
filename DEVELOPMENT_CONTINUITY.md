@@ -5,13 +5,25 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 014
+BAM Continuity 015
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
 BAM has its own sequence. Put it on the first line of the copy block. Increment it when issuing an updated handoff and keep it when repeating the same handoff. Across chats, use the highest verified BAM sequence recorded on main.
 
-## Last independently verified engineering checkpoint (2026-11-15)
+## Last independently verified engineering checkpoint
+
+- On November 16, verified handoff **PR #193** at
+  `ef12d9f38fe56a47926a6a204fd60951ffdefaa0` with successful [main CI #43761129195](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43761129195).
+  GitHub reported both branches identical and zero open PRs before the phone
+  validation handoff.
+- Recovered the original signed **BAM Brand Preview 0.12.0** from artifact
+  `14166749301` of [Android run #43727701472](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43727701472).
+  Both archive and extracted APK matched their recorded SHA-256 values.
+  The owner install ZIP contains the verified APK alone. The preview still
+  needs the [device checks in README](README.md#check-draft-timing-on-your-phone).
+  Keep the latest owner-confirmed phone run at version 0.10.0 until new device
+  results are available.
 
 - **PR #192** implemented a small owner-facing Android Draft inbox clarification: prepared regular drafts show **"Post manually · [date] at [time] ET"** separately from the AI draft saved timestamp; approved caption-only vs image-attached sharing states are labeled distinctly. Added deterministic local posting target and Robolectric inbox regression checks. No changes to automatic generation, AI model, approval security, social publishing or user data. The code is merged, **but the 0.12.0 APK already provided to the owner predates these UI additions**. The app build.gradle version and debug package remain 0.12.0; do not present the previous APK as if it already contains the new card labels. Exact-head Android [#43760463562](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43760463562) and general [#43760463684](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43760463684) passed at `3c09dc61e7876322063719ea05a62366eb47eef5`. Merged-main Android [#43760671207](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43760671207) and general [#43760671096](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43760671096) passed at `b7b1203db8a41ae6eedd777760f5b610af3fe760`.
 - **New approved future goal from the owner (2026-11-15):** one BAM account can manage several distinct business profiles, and **one user-selected ChatGPT data export can populate multiple independent business knowledge bases** *only after review*. Owner approves assignment and correction of extracted facts for each business; cross-business marketing, recent captions, schedules and data must not leak. The intended architecture is local retrieval of approved facts, **not weight training**, and explicit user import, not unattended account access. Reject/hold ambiguous, personal or sensitive passages by default. The full design, requirements, privacy boundaries and acceptance tests are committed in [`docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md`](docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md), with `PRODUCT_PLAN.md` updated. **No importer, data export, business switch, new database or actual personal knowledge has been added to BAM**. This remains behind current phone workflow and stability verification, in accordance with explicit prior priority.
@@ -101,7 +113,7 @@ campaign and model setup behavior. Prioritize the screens and workflows the
 owner can use now. The $0 spending limit and production activation restrictions
 still apply.
 
-1. **Validate installed BAM Brand Preview 0.12.0 on owner's ARM64 Android phone before requesting another large offline model download.** The previous merged-main [Android APK run #43727701472](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43727701472) supplied a real signed-debug installable app with owner-approved metallic logo/icon (not the unsigned release). Need actual observation that launcher colors/masking and app header match user-supplied images in light/dark themes. Do not assume appearance passed from APK inventory checks.
+1. **Validate BAM Brand Preview 0.12.0 on the owner's ARM64 Android phone before requesting another large offline model download.** The previous merged-main [Android APK run #43727701472](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43727701472) supplied a real signed-debug installable app with owner-approved metallic logo/icon (not the unsigned release). Need actual observation that launcher colors/masking and app header match user-supplied images in light/dark themes. Do not assume appearance passed from APK inventory checks.
 2. **Complete owner-visible early regular draft workflow.** The owner should open Schedule, choose lead time, then use Generate today's/tomorrow's drafts now to prepare regular non-sample drafts while automatic drafting is off. Confirm they can edit, attach image, resolve content checklist, approve and manually share the approved image to Facebook's composer, then cancel. Verify the intended 10 AM, 11:30 AM, 6:30 PM Eastern posting schedule is not confused with the earlier AI generation time. The **new main-branch draft-card "Post manually" text isn't in the owner's previously provided 0.12.0 APK** and should be included in a next preview only when a new phone test/build is warranted.
 3. **Validate actual unattended early preparation** with scheduling enabled, chosen lead, phone idle and saved time/source recorded. Do not claim delivery based on manual generation or opening the app.
 4. **Keep approved multi-business ChatGPT export knowledge import on the future roadmap**, after current personal Android app visible flows work. Follow `docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md`; no real data ingest, no training, no business profiles automatically inferred, no new paid services or live publishing, no multi-user/backend displacement of current app priorities.

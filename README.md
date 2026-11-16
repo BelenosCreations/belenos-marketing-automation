@@ -103,23 +103,32 @@ regular hours after December 10, 2026.
 
 ### Check draft timing on your phone
 
-In BAM Personal 0.3.0, **Today's draft timing** shows the Eastern target,
-whether the slot is still due, and the save time and delay for each new draft.
-Each draft also identifies the work that saved it: periodic background check,
-app catch-up, manual catch-up, or test. Captions already in the inbox keep their
-original text and display no inferred timing.
+Use the verified **BAM Brand Preview 0.12.0** installer from the
+[Android APK run](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43727701472).
 
-1. Download the model and generate a test draft. Read, edit and copy the caption.
-2. Add a dated campaign topic and confirmed facts, then verify they appear in
-   the next relevant caption. Test skipping one slot and use **Generate today's
-   drafts now** or **Generate tomorrow's drafts now** to check that existing
-   captions and skipped slots are preserved.
-3. Enable scheduling before an upcoming slot. Leave BAM using Home, let the
-   phone idle, and reopen BAM after the target. Record the slot, save time and
-   work source. A draft labeled **Periodic background check** whose save time
-   precedes reopening is evidence of background delivery for that run.
+1. **Branding.** Open the app and check the metallic launcher icon and the
+   dashboard logo in both light and dark mode. Record any clipping or color
+   change. This check works before downloading the offline model.
+2. **Regular draft and image share.** Once Offline AI is ready, turn
+   **Generate scheduled drafts** off in Schedule. Use **Generate today's drafts
+   now** or **Generate tomorrow's drafts now** and keep a later, unused slot
+   for the background check. In Draft inbox, edit a regular caption, attach a
+   test image and clear any resolved items in **Content checklist**. Tap
+   **Approve caption**, then **Share approved image**. Choose Facebook, check
+   that the image reaches the composer and cancel without posting. Record
+   whether Facebook appeared in the chooser and whether it displayed the image.
+   In this installer the slot heading gives the posting time and the saved time
+   records generation. The separate **Post manually** line is in later source.
+3. **Background preparation.** Choose a future slot with no existing draft or
+   skip. For a 10 AM Eastern slot with a two-hour lead, enable **Generate
+   scheduled drafts** before 8 AM. Press Home and let the phone idle. Reopen
+   during the lead window and record the reopen time. Check the draft's source
+   and saved time. Early background preparation is confirmed for that slot
+   when the source reads **Periodic background check** and the draft was saved
+   before both reopening and the posting target. Record the actual source
+   and timing if the draft appears later or through app catch-up.
 4. Repeat for a morning and an evening slot before replacing the existing
-   ChatGPT tasks. Facebook posting is manual.
+   ChatGPT tasks. Record the app version and Android version with the results.
 
 The Android CI suite uses simulated Android 15 and synthetic captions to
 exercise opening the inbox, editing and copying a caption, database upgrades,
@@ -141,10 +150,11 @@ missing, truncated, or checksum-mismatched download can be retried.
 
 The 0.12.0 **BAM Brand Preview** includes the approved metallic header and
 launcher. It installs separately from 0.11.0 and older previews, with its
-own draft inbox and a new on-device model download. **Do not install the
-unsigned release APK**; extract the Android Actions artifact ZIP and install
-`app-debug.apk`. On the phone, inspect the icon in the launcher and the
-metallic logo inside BAM. Automatic Facebook publishing is still disabled.
+own draft inbox and model storage. From the Android Actions artifact, extract
+and install `debug/app-debug.apk`. The signed installer has SHA-256
+`1ee195aa377e53db8f3ea95500fd5c1bb5f74dd30236858ec94f9a2889e09365`.
+Keep an existing working installation if Android rejects a replacement APK.
+Check the launcher and dashboard before starting the model download.
 
 The 0.11.0 **BAM Early Draft Preview** installs alongside older previews.
 It has its own private drafts and offline AI model download. The 0.10.0
