@@ -59,13 +59,18 @@ class BrandTests(unittest.TestCase):
         self.assertIn("setImageResource(R.drawable.bam_approved_metallic_primary)",
                       app_header)
         self.assertNotIn("R.drawable.bam_wordmark_dark", app_header)
+        android = "{http://schemas.android.com/apk/res/android}"
+        foreground = ET.parse(packaged / "drawable" / "bam_launcher_safe_foreground.xml").getroot()
+        self.assertEqual("inset", foreground.tag)
+        self.assertEqual("@drawable/bam_approved_launcher_foreground",
+                         foreground.attrib[android + "drawable"])
+        self.assertEqual("14%", foreground.attrib[android + "inset"])
         for icon in ("ic_launcher.xml", "ic_launcher_round.xml"):
             root = ET.parse(packaged / "mipmap-anydpi-v26" / icon).getroot()
             names = [element.tag for element in root]
             self.assertEqual(["background", "foreground"], names)
-            self.assertEqual("@drawable/bam_approved_launcher_foreground",
-                             root.find("foreground").attrib[
-                                 "{http://schemas.android.com/apk/res/android}drawable"])
+            self.assertEqual("@drawable/bam_launcher_safe_foreground",
+                             root.find("foreground").attrib[android + "drawable"])
             self.assertIsNone(root.find("monochrome"))
 
     def test_adaptive_icons_reference_bundled_resources(self):

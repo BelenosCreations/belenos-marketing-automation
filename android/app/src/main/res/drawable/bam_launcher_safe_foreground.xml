@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The bitmap's artwork spans 80 of the adaptive layer's 108 units.
+     A 14% inset on each side brings it to about 58 units inside the 66-unit safe zone. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/bam_approved_launcher_foreground"
+    android:inset="14%" />
