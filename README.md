@@ -1,6 +1,6 @@
 ## BAM for Android
 
-BAM Personal 0.12.0 opens to a tile dashboard. Open **Schedule** for today's
+BAM Personal 0.13.0 opens to a tile dashboard. Open **Schedule** for today's
 draft timing, store hours, scheduling, and manual catch-up. Open **Draft
 inbox** to review, edit, and copy captions. Open **Campaign notes** for dated
 topics, confirmed facts, and skips. Open **Offline AI** to download the model
@@ -39,12 +39,11 @@ separate asset. The legacy simplified SVG-era launcher assets have been
 removed from the Android build. The app follows the navy, silver, gold and
 teal BAM palette.
 
-**Next preview UX (unreleased):** Prepared regular drafts display their
-**manual posting target** (date and Eastern posting time) independently
-from the earlier time the offline AI saved them. Approved drafts indicate
-whether an image can be shared or a caption copied. Current BAM Brand
-Preview 0.12.0 still needs on-phone verification; these label changes
-will appear in a subsequent APK build, not retroactively in 0.12.0.
+**BAM 0.13 Preview** displays the manual posting target (date and
+Eastern posting time) separately from the time the offline AI saved the
+draft. Approved drafts show whether you can copy the caption or also share
+an image. The app adds padding around the approved launcher artwork to
+address the clipped wordmark seen on Samsung.
 
 **Future multi-business knowledge requirement:** One owner-provided ChatGPT
 export may contribute *reviewed, approved* business facts to several
@@ -103,8 +102,10 @@ regular hours after December 10, 2026.
 
 ### Check draft timing on your phone
 
-Use the verified **BAM Brand Preview 0.12.0** installer from the
-[Android APK run](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43727701472).
+On the owner's Samsung phone, 0.12.0 installed, displayed the dashboard in
+both themes, and shared an approved draft image to Facebook's composer without
+publishing. Unattended preparation still needs a phone
+result. Use these checks for the 0.13 preview.
 
 1. **Branding.** Open the app and check the metallic launcher icon and the
    dashboard logo in both light and dark mode. Record any clipping or color
@@ -117,8 +118,8 @@ Use the verified **BAM Brand Preview 0.12.0** installer from the
    **Approve caption**, then **Share approved image**. Choose Facebook, check
    that the image reaches the composer and cancel without posting. Record
    whether Facebook appeared in the chooser and whether it displayed the image.
-   In this installer the slot heading gives the posting time and the saved time
-   records generation. The separate **Post manually** line is in later source.
+   Check that **Post manually** shows the intended date and time in Eastern
+   time while the saved timestamp reflects when BAM generated the caption.
 3. **Background preparation.** Choose a future slot with no existing draft or
    skip. For a 10 AM Eastern slot with a two-hour lead, enable **Generate
    scheduled drafts** before 8 AM. Press Home and let the phone idle. Reopen
@@ -148,6 +149,14 @@ missing, truncated, or checksum-mismatched download can be retried.
 
 ### Install the preview or sign a personal build
 
+The 0.13.0 **BAM 0.13 Preview** installs alongside **BAM Brand Preview 0.12.0**.
+It starts with its own drafts, settings and offline model download. Keep
+0.12.0 installed to retain access to its drafts. Check the launcher icon
+before downloading the model. When testing automatic drafting, enable it
+in only one installed BAM app at a time. The CI artifact contains the signed
+preview at `debug/app-debug.apk` and a separate unsigned personal APK for
+owner-managed signing.
+
 The 0.12.0 **BAM Brand Preview** includes the approved metallic header and
 launcher. It installs separately from 0.11.0 and older previews, with its
 own draft inbox and model storage. From the Android Actions artifact, extract
@@ -158,8 +167,7 @@ Check the launcher and dashboard before starting the model download.
 
 On the owner's phone, 0.12.0 installed and displayed the approved dashboard
 logo in light and dark mode. The Samsung launcher clipped the right edge of
-the icon. The source now gives the approved icon more room inside the
-launcher mask. The existing installer still has its original icon sizing.
+the icon in 0.12.0. The 0.13 preview adds room inside the launcher mask.
 
 The 0.11.0 **BAM Early Draft Preview** installs alongside older previews.
 It has its own private drafts and offline AI model download. The 0.10.0

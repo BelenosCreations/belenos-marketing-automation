@@ -1,17 +1,16 @@
-## Unreleased — posting-target clarity and multi-business design (2026-11-15)
+## BAM Personal 0.13.0 — launcher fit and clearer draft timing (2026-11-16)
 
-- Android Draft inbox now distinguishes a post's intended date/time from the draft's saved/generation time, labels Facebook posting as manual, and clarifies when an approved image can be shared versus a caption copied.
-- Added deterministic target-time and Android UI regressions. No automatic publishing or change to draft scheduling.
-- Recorded a **future** owner-approved design for importing one selected ChatGPT export into multiple independent, reviewed, locally scoped business knowledge profiles. No export data, importer, multi-business switch or model training has been activated.
-
-- Recovered the original signed 0.12.0 Android installer from the verified
-  build. Clarified the phone checks for branding, regular draft approval,
-  Facebook image handoff and early background preparation.
-
-- Inset the approved Android launcher foreground for both adaptive icon
-  variants after the Samsung launcher clipped the right edge of the wordmark.
-  The owner verified that the dashboard logo displays in light and dark mode
-  on 0.12.0. Retest the launcher fit in a later phone preview.
+- Packaged the approved launcher artwork with added padding for Android masks.
+- Draft cards show the intended manual posting date and time in Eastern time,
+  separately from the caption save time. Approval labels distinguish caption
+  copying from attached-image sharing.
+- BAM 0.13 Preview installs alongside 0.12.0 with separate local drafts,
+  settings and model storage. CI checks both package IDs and version numbers.
+- The owner verified manual image handoff to Facebook on 0.12.0 without
+  publishing. Unattended Android preparation remains pending phone evidence.
+- Recovered the original signed 0.12.0 installer and documented the phone checks.
+- Recorded a future owner-approved design for importing one selected ChatGPT
+  export into multiple separately reviewed business knowledge profiles.
 
 ## BAM Personal 0.12.0 — approved metallic branding (2026-11-15)
 

@@ -5,13 +5,30 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 016
+BAM Continuity 017
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
 BAM has its own sequence. Put it on the first line of the copy block. Increment it when issuing an updated handoff and keep it when repeating the same handoff. Across chats, use the highest verified BAM sequence recorded on main.
 
 ## Last independently verified engineering checkpoint
+
+- Verified [PR #195](https://github.com/BelenosCreations/belenos-marketing-automation/pull/195)
+  at `41a92b3e123fdb23a59db711338e47643337a46d` with passing merged-main
+  [Android #43869792126](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43869792126)
+  and [general #43869792194](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43869792194).
+  Main and development matched and there were no open PRs before 0.13 packaging.
+- **November 16 phone report:** on BAM Brand Preview 0.12.0 the owner
+  confirmed the approved draft image reached Facebook without publishing.
+  The owner directed development to proceed on the assumption that unattended
+  drafting will succeed. Treat that as planning guidance. Actual background
+  source and save-time evidence on the phone are still pending.
+- **BAM Personal 0.13.0** packages the merged launcher padding and manual
+  posting target labels. The CI debug package `com.belenos.bam.owner.preview.personal13`
+  is labeled **BAM 0.13 Preview**, installs alongside 0.12.0, and has independent
+  drafts, model and settings. The owner-signable personal package remains
+  `com.belenos.bam.owner`. Check current GitHub run and packaging evidence before
+  marking any build or device result verified.
 
 - On November 16, verified [PR #194](https://github.com/BelenosCreations/belenos-marketing-automation/pull/194)
   at `48cd9406183f6a50011fb7b7fe9b7e8c3ec5cdc7` with successful [main CI #43864569703](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43864569703),
@@ -123,10 +140,21 @@ campaign and model setup behavior. Prioritize the screens and workflows the
 owner can use now. The $0 spending limit and production activation restrictions
 still apply.
 
-1. **Recheck launcher fit on the owner's Samsung phone in a later build.** The 0.12.0 install and dashboard in both themes are confirmed. Keep using that install for the remaining draft workflow checks.
-2. **Complete owner-visible early regular draft workflow.** The owner should open Schedule, choose lead time, then use Generate today's/tomorrow's drafts now to prepare regular non-sample drafts while automatic drafting is off. Confirm they can edit, attach image, resolve content checklist, approve and manually share the approved image to Facebook's composer, then cancel. Verify the intended 10 AM, 11:30 AM, 6:30 PM Eastern posting schedule is not confused with the earlier AI generation time. The **new main-branch draft-card "Post manually" text isn't in the owner's previously provided 0.12.0 APK** and should be included in a next preview only when a new phone test/build is warranted.
-3. **Validate actual unattended early preparation** with scheduling enabled, chosen lead, phone idle and saved time/source recorded. Do not claim delivery based on manual generation or opening the app.
-4. **Keep approved multi-business ChatGPT export knowledge import on the future roadmap**, after current personal Android app visible flows work. Follow `docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md`; no real data ingest, no training, no business profiles automatically inferred, no new paid services or live publishing, no multi-user/backend displacement of current app priorities.
+1. **Recheck launcher fit in BAM 0.13 Preview** on the owner's Samsung
+   phone. Check the full wordmark before starting the separate model download.
+2. **Recheck draft timing labels in 0.13.0.** Verify **Post manually** shows the
+   intended Eastern posting target and the save time shows earlier preparation.
+   The owner already confirmed Facebook image handoff in 0.12.0.
+3. **Collect actual unattended drafting evidence when available.** A saved
+   timestamp earlier than reopening the idle phone app and a **Periodic
+   background check** source count as evidence. Continue development under
+   the owner's assumed-pass instruction while that result is pending.
+4. **Keep the approved multi-business ChatGPT export design on the roadmap.**
+   After personal Android stability work, follow
+   `docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md` for the isolated offline prototype.
+   Use synthetic fixtures and an explicit owner review boundary. Real import,
+   model training and live integrations are still outside this milestone.
+
 
 ### Deferred shared deployment work
 
