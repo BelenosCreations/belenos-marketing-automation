@@ -50,6 +50,33 @@ workflows are usable. Advanced security, backup and restoration, PostgreSQL
 migration, and multiuser work remain on the roadmap for the shared app.
 Direct publishing and live analytics require approved provider access.
 
+## Next priority — owner-only Facebook Page discovery
+
+The owner moved Facebook connection ahead of Smart times, multi-business
+profiles, ChatGPT export import and shared hosting work. The first connection
+test is deliberately small: sign in to Facebook from BAM, grant Page-list
+access and see the eligible business Pages returned for the owner's account.
+This is provider authorization from BAM Personal. BAM account sign-in remains
+a separate feature.
+
+1. Confirm the supported Meta development-mode flow, Page-list permission,
+   test-user role and redirect configuration for an owner-controlled Meta app.
+   Choose a supported test setup within the current zero-cost budget.
+2. Build a simple **Connect Facebook** action. Request only the permissions
+   needed for discovery, starting with `pages_show_list` where supported.
+   Fetch the authorized Page list and display Page names. Use only the data
+   needed for discovery and keep access tokens and secrets out of logs and builds.
+3. Test cancellation, denied consent, expired authorization and an empty Page
+   list with fixtures. For the owner test, verify that a real Facebook sign-in
+   returns the expected Page, such as Belenos Creations if the account grants
+   access. Keep the first UI to sign-in, results and basic error feedback.
+
+Page discovery can proceed alongside editable local schedules and checklist
+improvements. Insights, data-driven Smart times, permanent Page-to-business
+links and connection polish follow later. Keep publishing scopes, publishing
+endpoints, job execution and automatic posting disabled throughout discovery.
+Existing manual Facebook sharing remains available for approved drafts.
+
 ## Approved future requirement — one ChatGPT export, separate business knowledge (November 15, 2026)
 
 The owner confirmed that **one BAM account should manage multiple independent
@@ -196,6 +223,9 @@ The selected target remains a dedicated BAM **Render Starter ($7/month base)** a
 **Exit evidence:** two separate real accounts plus same-business team members successfully use a hosted private workspace without cross-tenant exposure, with rollback and restore tested. No publication required yet.
 
 ### Gate C — Direct provider connections and read-only analytics
+
+The owner-only Page discovery test above can run ahead of the shared backend.
+This gate governs the later persistent connection and analytics integration.
 
 - Implement verified Meta authorization for eligible Facebook Pages and safe encrypted credential lifecycle.
 - Connect, list, refresh, disconnect and revoke Pages without exposing credentials or inheriting BAM login privileges.

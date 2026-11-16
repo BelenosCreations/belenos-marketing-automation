@@ -45,6 +45,12 @@ draft. Approved drafts show whether you can copy the caption or also share
 an image. The app adds padding around the approved launcher artwork to
 address the clipped wordmark seen on Samsung.
 
+**Next connection test:** Sign in to Facebook and list the authorized
+business Pages in an owner-only test. It is planned as a minimal read-only
+feature, alongside editable Android schedules and checklist improvements.
+BAM will keep automatic publishing disabled during this milestone.
+See [the Page discovery plan](PRODUCT_PLAN.md#next-priority--owner-only-facebook-page-discovery).
+
 **Future multi-business knowledge requirement:** One owner-provided ChatGPT
 export may contribute *reviewed, approved* business facts to several
 isolated business profiles under one BAM account. No raw export is
