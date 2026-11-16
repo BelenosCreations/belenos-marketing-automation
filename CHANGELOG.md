@@ -1,3 +1,12 @@
+## Android owner preview — Facebook Page discovery (2026-11-16)
+
+- Added a Facebook Pages screen and development-app sign-in for an explicitly
+  configured Android debug build. Page discovery reads and displays managed
+  Page names, with messages for denied access, cancellation and expiration.
+- Added fixtures for Page responses, paging and the disabled public build.
+  The real sign-in test requires an owner-configured Meta development app.
+  Automatic posting remains disabled.
+
 ## Roadmap update — Facebook Page discovery (2026-11-16)
 
 - Moved the owner-only Facebook sign-in and Page listing test ahead of

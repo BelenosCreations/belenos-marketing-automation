@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import android.provider.OpenableColumns
 import android.view.View
 import android.view.ViewGroup
@@ -70,9 +71,7 @@ class DraftShareProviderTest {
             assertEquals(bytes.size.toLong(), cursor.getLong(cursor.getColumnIndexOrThrow(OpenableColumns.SIZE)))
             assertTrue(cursor.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME)).endsWith(".png"))
         }
-        context.contentResolver.openInputStream(uri).use { input ->
-            assertArrayEquals(bytes, checkNotNull(input).readBytes())
-        }
+        assertArrayEquals(bytes, readApprovedImage(uri, bytes.size))
         DraftStore(context).use { store ->
             assertTrue(store.edit(approved, "Edited and requires reapproval"))
             assertFalse(store.canShareImage(approved))
@@ -103,9 +102,7 @@ class DraftShareProviderTest {
         assertThrows(FileNotFoundException::class.java) { context.contentResolver.openInputStream(oldUri) }
         val fresh = DraftStore(context).use { checkNotNull(it.find(day, Slot.EVENING)) }
         val current = checkNotNull(DraftShareProvider.uriFor(context, fresh))
-        context.contentResolver.openInputStream(current).use {
-            assertArrayEquals(replacement, checkNotNull(it).readBytes())
-        }
+        assertArrayEquals(replacement, readApprovedImage(current, replacement.size))
         DraftStore(context).use { store -> assertTrue(store.setImage(fresh, null)) }
         assertThrows(FileNotFoundException::class.java) { context.contentResolver.openInputStream(current) }
     }
@@ -146,6 +143,20 @@ class DraftShareProviderTest {
         val forged = android.net.Uri.parse("content://${context.packageName}.draftshare/image/2026-11-14/MORNING/0/not-a-uuid")
         assertNull(context.contentResolver.getType(forged))
         assertThrows(FileNotFoundException::class.java) { context.contentResolver.openInputStream(forged) }
+    }
+
+    private fun readApprovedImage(uri: Uri, expectedSize: Int): ByteArray {
+        val deadline = System.nanoTime() + 2_000_000_000L
+        return checkNotNull(context.contentResolver.openInputStream(uri)).use { stream ->
+            val bytes = ByteArrayOutputStream()
+            do {
+                bytes.write(stream.readBytes())
+                if (bytes.size() >= expectedSize) break
+                // Robolectric's file-backed pipe can reach EOF before the writer thread runs.
+                Thread.sleep(5)
+            } while (System.nanoTime() < deadline)
+            bytes.toByteArray()
+        }
     }
 
     private fun View.button(label: String): Button =
