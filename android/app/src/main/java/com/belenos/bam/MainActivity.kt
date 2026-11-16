@@ -41,7 +41,7 @@ class MainActivity : Activity() {
     private enum class Page(val title: String) {
         HOME("Dashboard"), INBOX("Draft inbox"), SCHEDULE("Schedule"),
         CONTENT("Content needed"), APPROVAL("Needs approval"),
-        CAMPAIGN("Campaign notes"), MODEL("Offline AI")
+        CAMPAIGN("Campaign notes"), MODEL("Offline AI"), FACEBOOK("Facebook Pages")
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -49,6 +49,7 @@ class MainActivity : Activity() {
     private val imageExecutor = Executors.newSingleThreadExecutor()
     private val preferences by lazy { getSharedPreferences("bam", Context.MODE_PRIVATE) }
     private val model by lazy { ModelFile(applicationContext) }
+    private val facebookDiscovery by lazy { FacebookPageDiscovery(this) }
     private val muted by lazy { getColor(R.color.bam_muted) }
     private val backToDashboard by lazy { OnBackInvokedCallback { show(Page.HOME) } }
     private var page = Page.HOME
@@ -149,6 +150,7 @@ class MainActivity : Activity() {
             addView(button("Campaign notes and skips") { chooseCampaignDay() })
         }
         buildModel(pages.getValue(Page.MODEL))
+        buildFacebookPages(pages.getValue(Page.FACEBOOK))
         setContentView(root)
         val restoredPage = Page.entries.firstOrNull { it.name == savedInstanceState?.getString("page") }
         show(restoredPage ?: Page.HOME)
@@ -202,6 +204,46 @@ class MainActivity : Activity() {
                 })
             }
         }
+        content.addView(button("Facebook Pages") { show(Page.FACEBOOK) })
+    }
+
+    private fun buildFacebookPages(content: LinearLayout) {
+        val section = card(content)
+        val result = text(
+            if (facebookDiscovery.configured) "Sign in to see the business Pages your account can access."
+            else "A configured Facebook test build is required to connect.",
+            15, muted).apply {
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        val pageNames = column()
+        val connect = Button(this).apply {
+            text = "Connect Facebook"
+            isEnabled = facebookDiscovery.configured
+            setOnClickListener {
+                isEnabled = false
+                pageNames.removeAllViews()
+                result.text = "Waiting for Facebook sign-in…"
+                facebookDiscovery.start { outcome ->
+                    isEnabled = true
+                    result.text = when (outcome) {
+                        is FacebookDiscoveryResult.Pages -> {
+                            for (page in outcome.pages) {
+                                pageNames.addView(this@MainActivity.text(page.name, 16))
+                            }
+                            if (outcome.pages.isEmpty()) "Facebook returned no Pages for this account."
+                            else "Facebook Pages you can access"
+                        }
+                        FacebookDiscoveryResult.Error.CANCELED -> "Facebook sign-in canceled."
+                        FacebookDiscoveryResult.Error.DENIED -> "Page list access was declined."
+                        FacebookDiscoveryResult.Error.EXPIRED -> "Facebook authorization expired. Sign in again."
+                        FacebookDiscoveryResult.Error.UNAVAILABLE -> "Could not load Pages from Facebook. Try again."
+                    }
+                }
+            }
+        }
+        section.addView(result)
+        section.addView(connect)
+        section.addView(pageNames)
     }
 
     private fun buildSchedule(content: LinearLayout) {
@@ -339,6 +381,7 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         modelExecutor.shutdown()
         imageExecutor.shutdown()
+        facebookDiscovery.close()
         super.onDestroy()
     }
 
@@ -561,7 +604,7 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != PICK_IMAGE) return
+        if (facebookDiscovery.onActivityResult(requestCode, resultCode, data) || requestCode != PICK_IMAGE) return
         val target = imageTarget ?: return
         imageTarget = null
         if (resultCode != RESULT_OK) return

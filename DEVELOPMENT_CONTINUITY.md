@@ -5,13 +5,23 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 018
+BAM Continuity 019
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
 BAM has its own sequence. Put it on the first line of the copy block. Increment it when issuing an updated handoff and keep it when repeating the same handoff. Across chats, use the highest verified BAM sequence recorded on main.
 
 ## Last independently verified engineering checkpoint
+
+- Verified [PR #198](https://github.com/BelenosCreations/belenos-marketing-automation/pull/198)
+  at `fc1d00043dfab9dc9c499991ad9687e44934e5c0` with passing
+  [main CI #43898778267](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43898778267).
+  Main and development matched before Android Page discovery work.
+- Android Page discovery adds a small Facebook Pages screen, explicitly
+  configured debug-only Meta SDK login, and a Page-list GET limited to
+  Page name and ID. Standard builds omit the app configuration. Verify
+  current CI and follow the [private test setup](docs/FACEBOOK_PAGE_DISCOVERY.md)
+  to exercise real consent and Page discovery on the owner's phone.
 
 - Verified [PR #197](https://github.com/BelenosCreations/belenos-marketing-automation/pull/197)
   at `d8778d734944491666f34075a391ada1d7b1845c` with passing main
@@ -150,14 +160,13 @@ campaign and model setup behavior. Prioritize the screens and workflows the
 owner can use now. The $0 spending limit and production activation restrictions
 still apply.
 
-**Start with owner-only Facebook Page discovery.** Verify the supported
-development-mode login flow and minimum Page-list access. Build a small
-connection screen and list the business Pages Meta returns. Verify success
-with the owner after fixture tests cover denial, cancellation, expiry and
-empty results. Keep publishing permissions, endpoints, workers and autopost
-disabled. No new hosting or spending. Editable schedule settings and
-checklist improvements can proceed alongside this test. Smart times based
-on Facebook insights, multi-business profiles and import follow later.
+**Next verify owner-only Facebook Page discovery on the phone.** Set up
+an owner-controlled Meta app in Development mode, configure its Android
+debug package and signer, privately build the preview and verify sign-in
+and the expected managed Page. Keep publishing permissions, endpoints,
+workers and autopost disabled. While setup is pending, editable local
+schedule settings and checklist improvements may proceed. Smart times
+based on Facebook insights, multi-business profiles and import follow later.
 
 1. **Recheck launcher fit in BAM 0.13 Preview** on the owner's Samsung
    phone. Check the full wordmark before starting the separate model download.

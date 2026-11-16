@@ -14,6 +14,7 @@ import android.widget.Switch
 import java.time.Instant
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -33,6 +34,15 @@ class MainActivityTest {
     @Before fun setUp() {
         context = RuntimeEnvironment.getApplication()
         context.deleteDatabase("drafts.db")
+    }
+
+    @Test fun facebookConnectionRequiresAnOwnerConfiguredBuild() {
+        Robolectric.buildActivity(MainActivity::class.java).setup().use { controller ->
+            val root = controller.get().findViewById<View>(android.R.id.content)
+            root.button("Facebook Pages").performClick()
+            assertFalse(root.button("Connect Facebook").isEnabled)
+            assertFalse(com.facebook.FacebookSdk.isInitialized())
+        }
     }
 
     @Test fun inboxShowsTimingAndCopiesTheEditedCaption() {
