@@ -5,13 +5,23 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 017
+BAM Continuity 018
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
 BAM has its own sequence. Put it on the first line of the copy block. Increment it when issuing an updated handoff and keep it when repeating the same handoff. Across chats, use the highest verified BAM sequence recorded on main.
 
 ## Last independently verified engineering checkpoint
+
+- Verified [PR #197](https://github.com/BelenosCreations/belenos-marketing-automation/pull/197)
+  at `d8778d734944491666f34075a391ada1d7b1845c` with passing main
+  [Android #43896124780](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43896124780)
+  and [general #43896124594](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43896124594).
+  Both branches matched at the 0.13.0 milestone.
+- The owner prioritized a simple Facebook sign-in and business Page listing
+  test while keeping autoposting blocked. See the Page discovery milestone in
+  [PRODUCT_PLAN.md](PRODUCT_PLAN.md#next-priority--owner-only-facebook-page-discovery).
+  The priority decision is confirmed. The connection test is pending.
 
 - Verified [PR #195](https://github.com/BelenosCreations/belenos-marketing-automation/pull/195)
   at `41a92b3e123fdb23a59db711338e47643337a46d` with passing merged-main
@@ -140,6 +150,15 @@ campaign and model setup behavior. Prioritize the screens and workflows the
 owner can use now. The $0 spending limit and production activation restrictions
 still apply.
 
+**Start with owner-only Facebook Page discovery.** Verify the supported
+development-mode login flow and minimum Page-list access. Build a small
+connection screen and list the business Pages Meta returns. Verify success
+with the owner after fixture tests cover denial, cancellation, expiry and
+empty results. Keep publishing permissions, endpoints, workers and autopost
+disabled. No new hosting or spending. Editable schedule settings and
+checklist improvements can proceed alongside this test. Smart times based
+on Facebook insights, multi-business profiles and import follow later.
+
 1. **Recheck launcher fit in BAM 0.13 Preview** on the owner's Samsung
    phone. Check the full wordmark before starting the separate model download.
 2. **Recheck draft timing labels in 0.13.0.** Verify **Post manually** shows the
@@ -153,7 +172,7 @@ still apply.
    After personal Android stability work, follow
    `docs/BUSINESS_KNOWLEDGE_IMPORT_DESIGN.md` for the isolated offline prototype.
    Use synthetic fixtures and an explicit owner review boundary. Real import,
-   model training and live integrations are still outside this milestone.
+   model training and production integrations are still outside this milestone.
 
 
 ### Deferred shared deployment work

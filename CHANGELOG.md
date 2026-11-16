@@ -1,3 +1,9 @@
+## Roadmap update — Facebook Page discovery (2026-11-16)
+
+- Moved the owner-only Facebook sign-in and Page listing test ahead of
+  Smart timing, multi-business profiles and shared hosting. Automatic
+  publishing remains disabled. The connection test has not shipped.
+
 ## BAM Personal 0.13.0 — launcher fit and clearer draft timing (2026-11-16)
 
 - Packaged the approved launcher artwork with added padding for Android masks.
