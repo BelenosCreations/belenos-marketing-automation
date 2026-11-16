@@ -26,8 +26,9 @@ android {
     }
     buildTypes {
         debug {
-            applicationIdSuffix = ".preview.personal13"
-            manifestPlaceholders["bamLabel"] = "BAM 0.13 Preview"
+            val facebookConfigured = facebookTestAppId.isNotEmpty()
+            applicationIdSuffix = if (facebookConfigured) ".preview.facebook" else ".preview.personal13"
+            manifestPlaceholders["bamLabel"] = if (facebookConfigured) "BAM Facebook Preview" else "BAM 0.13 Preview"
             resValue("string", "bam_facebook_test_app_id", facebookTestAppId)
             resValue("string", "bam_facebook_test_client_token", facebookTestClientToken)
         }

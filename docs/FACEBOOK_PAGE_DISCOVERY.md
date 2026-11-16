@@ -14,7 +14,7 @@ token cache. Each new attempt clears any prior cached SDK login.
 1. In the owner's Meta app, configure Facebook Login and the Android platform.
    Keep the app in Development mode and check that the person testing has a
    role on the app and access to the target business Page.
-2. Register debug package `com.belenos.bam.owner.preview.personal13`, launcher
+2. Register debug package `com.belenos.bam.owner.preview.facebook`, launcher
    class `com.belenos.bam.MainActivity`, and the Android key hash for the exact
    debug signing certificate used for this test. The CI debug key can change
    between builds. A locally built APK can use a private, stable debug key.
@@ -26,9 +26,10 @@ token cache. Each new attempt clears any prior cached SDK login.
    out of the repository. These client configuration values are visible in the
    resulting debug APK, so share a configured build only with the tester.
 4. Run `gradle -p android :app:assembleDebug` and install its signed debug APK.
-   Android requires the same signing certificate to update the installed
-   package. Use a separate device or a matching locally signed test build if
-   the installed preview uses another signer and its local drafts are needed.
+   **BAM Facebook Preview** installs alongside the regular BAM preview and
+   keeps separate local data. Facebook Page discovery does not require the
+   offline draft model. Reuse the same signing key when updating this
+   configured package.
 
 See [Meta's Android SDK guide](https://developers.facebook.com/docs/android/getting-started/),
 [development mode](https://developers.facebook.com/docs/apps/managing-development-cycle/),
@@ -38,7 +39,7 @@ and [permission reference](https://developers.facebook.com/docs/permissions/).
 
 - Open **Facebook Pages**, tap **Connect Facebook**, consent to Page access
   and check whether an eligible managed Page such as Belenos Creations appears.
-- Try cancellation and declined permission. Check for a readable message and
+- Try cancellation and declined permission. The SDK can report both as cancellation. Check for a readable message and
   retry from the same screen. Expired authorization also requires sign-in again.
   An authorized account with no Pages should show an empty result.
 - Verify BAM never asks for Page publishing permission. The preview only reads

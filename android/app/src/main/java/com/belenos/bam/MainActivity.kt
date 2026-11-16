@@ -233,7 +233,7 @@ class MainActivity : Activity() {
                             if (outcome.pages.isEmpty()) "Facebook returned no Pages for this account."
                             else "Facebook Pages you can access"
                         }
-                        FacebookDiscoveryResult.Error.CANCELED -> "Facebook sign-in canceled."
+                        FacebookDiscoveryResult.Error.CANCELED -> "Facebook sign-in canceled or Page access declined."
                         FacebookDiscoveryResult.Error.DENIED -> "Page list access was declined."
                         FacebookDiscoveryResult.Error.EXPIRED -> "Facebook authorization expired. Sign in again."
                         FacebookDiscoveryResult.Error.UNAVAILABLE -> "Could not load Pages from Facebook. Try again."
