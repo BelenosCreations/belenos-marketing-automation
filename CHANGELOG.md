@@ -4,6 +4,10 @@
 - Added deterministic target-time and Android UI regressions. No automatic publishing or change to draft scheduling.
 - Recorded a **future** owner-approved design for importing one selected ChatGPT export into multiple independent, reviewed, locally scoped business knowledge profiles. No export data, importer, multi-business switch or model training has been activated.
 
+- Recovered the original signed 0.12.0 Android installer from the verified
+  build. Clarified the phone checks for branding, regular draft approval,
+  Facebook image handoff and early background preparation.
+
 ## BAM Personal 0.12.0 — approved metallic branding (2026-11-15)
 
 - Replaced the simplified Android splash/header artwork with the owner's exact approved metallic BAM primary logo, and the simplified launcher foreground with the approved metallic square app icon. These are downsampled/cropped from the original supplied files, with only the launcher exterior white made transparent; never regenerated.
