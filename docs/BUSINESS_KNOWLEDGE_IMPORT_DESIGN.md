@@ -59,7 +59,7 @@ Knowledge retrieval should prefer a compact, relevant subset and enforce a stric
 
 ## Phasing
 
-**Now:** Keep the user-approved design in product plan and continuity. Continue verifying 0.12.0 Android branding, manual lead-time drafting, regular approval, image sharing, and real unattended timing.
+**Now:** The owner verified 0.12.0 image sharing to Facebook and directed development to proceed assuming unattended drafting will succeed. Actual background timing evidence remains pending. The 0.13.0 preview packages the launcher fit and timing-label refinements. Keep this design in the product plan and continuity.
 
 **Phase 1, after owner-visible app flows work:** Local, editable business profile and knowledge records; manual entry; explicit business switch with isolated recent captions and drafts. Only then enable business-aware prompt retrieval.
 
