@@ -171,6 +171,60 @@ class MainActivityTest {
         }
     }
 
+    @Test fun checklistResolutionKeepsRemainingItemsAndRejectsAnOutdatedDialog() {
+        val day = LocalDate.parse("2026-11-14")
+        val draft = Draft(day, Slot.MORNING, "Checklist draft",
+            DraftTiming(Instant.parse("2026-11-14T15:08:00Z"), DraftOrigin.BACKGROUND))
+        DraftStore(context).use { store ->
+            assertTrue(store.saveGenerated(draft, Campaign()))
+            assertTrue(store.setContentNeeded(checkNotNull(store.find(day, Slot.MORNING)),
+                "Product photo\nConfirm the price"))
+        }
+
+        Robolectric.buildActivity(MainActivity::class.java).setup().use { controller ->
+            val root = controller.get().findViewById<View>(android.R.id.content)
+            root.tile("Content needed").performClick()
+
+            fun openChecklist(): AlertDialog {
+                root.button("Resolve checklist items").performClick()
+                shadowOf(Looper.getMainLooper()).idle()
+                return ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
+            }
+
+            openChecklist().apply {
+                listView.setItemChecked(0, true)
+                getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            }
+            shadowOf(Looper.getMainLooper()).idle()
+            val stale = openChecklist()
+            DraftStore(context).use { store ->
+                val latest = checkNotNull(store.find(day, Slot.MORNING))
+                assertEquals("Confirm the price", latest.review.contentNeeded)
+                assertFalse(latest.review.approved)
+                assertTrue(store.setContentNeeded(latest, "Confirm the price\nConfirm pickup details"))
+            }
+            stale.listView.setItemChecked(0, true)
+            stale.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            openChecklist().apply {
+                assertEquals(2, listView.count)
+                listView.setItemChecked(0, true)
+                listView.setItemChecked(1, true)
+                getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            }
+            shadowOf(Looper.getMainLooper()).idle()
+            root.button("Back to dashboard").performClick()
+            root.tile("Needs approval").performClick()
+            assertTrue(root.button("Approve caption").isShown)
+            DraftStore(context).use { store ->
+                val latest = checkNotNull(store.find(day, Slot.MORNING))
+                assertEquals("", latest.review.contentNeeded)
+                assertFalse(latest.review.approved)
+            }
+        }
+    }
+
     @Test fun olderApprovedDraftsAreReachableFromTheInbox() {
         val day = LocalDate.parse("2026-11-14")
         val timing = DraftTiming(Instant.parse("2026-11-14T15:08:00Z"), DraftOrigin.BACKGROUND)

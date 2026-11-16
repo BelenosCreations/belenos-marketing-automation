@@ -5,13 +5,23 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 019
+BAM Continuity 020
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
 BAM has its own sequence. Put it on the first line of the copy block. Increment it when issuing an updated handoff and keep it when repeating the same handoff. Across chats, use the highest verified BAM sequence recorded on main.
 
 ## Last independently verified engineering checkpoint
+
+- Verified [PR #199](https://github.com/BelenosCreations/belenos-marketing-automation/pull/199)
+  at `f0dd98a962563afe936479d512819549d7f7f7f5` with passing
+  [Android #43901477327](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43901477327)
+  and [general #43901477302](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43901477302).
+  Main and development matched before checklist work.
+- Android checklist resolution lets the owner mark individual items ready
+  and keeps unresolved items. The final item sends the draft to Needs
+  approval. Revision checks deny stale updates. Verify current CI before
+  treating this change as a verified milestone.
 
 - Verified [PR #198](https://github.com/BelenosCreations/belenos-marketing-automation/pull/198)
   at `fc1d00043dfab9dc9c499991ad9687e44934e5c0` with passing
@@ -165,7 +175,8 @@ an owner-controlled Meta app in Development mode, configure its Android
 debug package and signer, privately build the preview and verify sign-in
 and the expected managed Page. Keep publishing permissions, endpoints,
 workers and autopost disabled. While setup is pending, editable local
-schedule settings and checklist improvements may proceed. Smart times
+schedule settings may proceed. Verify the checklist on the owner's phone
+when preparing the next preview. Smart times
 based on Facebook insights, multi-business profiles and import follow later.
 
 1. **Recheck launcher fit in BAM 0.13 Preview** on the owner's Samsung

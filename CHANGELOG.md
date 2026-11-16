@@ -1,3 +1,9 @@
+## Android preview — individual checklist resolution (2026-11-16)
+
+- Mark individual missing content items ready while keeping unchecked items.
+  The final item moves the draft to Needs approval. Existing notes use one
+  item per line, and a stale checklist cannot overwrite newer draft edits.
+
 ## Android owner preview — Facebook Page discovery (2026-11-16)
 
 - Added a Facebook Pages screen and development-app sign-in for an explicitly
