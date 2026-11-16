@@ -37,10 +37,13 @@ jobs:
           "$sdk_tools/apksigner" verify "$preview"
           preview_info=$("$sdk_tools/aapt" dump badging "$preview")
           release_info=$("$sdk_tools/aapt" dump badging "$release")
-          grep -Fq "package: name='com.belenos.bam.owner.preview.brand'" <<< "$preview_info"
-          grep -Fq "application-label:'BAM Brand Preview'" <<< "$preview_info"
+          grep -Fq "package: name='com.belenos.bam.owner.preview.personal13'" <<< "$preview_info"
+          grep -Fq "application-label:'BAM 0.13 Preview'" <<< "$preview_info"
           grep -Fq "package: name='com.belenos.bam.owner'" <<< "$release_info"
           grep -Fq "application-label:'BAM Personal'" <<< "$release_info"
+          for apk_info in "$preview_info" "$release_info"; do
+            grep -E "^package: .*versionCode='13' versionName='0[.]13[.]0'" <<< "$apk_info"
+          done
           grep -Fxq "native-code: 'arm64-v8a'" <<< "$preview_info"
           grep -Fxq "native-code: 'arm64-v8a'" <<< "$release_info"
           if grep -Fq 'application-debuggable' <<< "$release_info"; then
