@@ -156,6 +156,11 @@ and install `debug/app-debug.apk`. The signed installer has SHA-256
 Keep an existing working installation if Android rejects a replacement APK.
 Check the launcher and dashboard before starting the model download.
 
+On the owner's phone, 0.12.0 installed and displayed the approved dashboard
+logo in light and dark mode. The Samsung launcher clipped the right edge of
+the icon. The source now gives the approved icon more room inside the
+launcher mask. The existing installer still has its original icon sizing.
+
 The 0.11.0 **BAM Early Draft Preview** installs alongside older previews.
 It has its own private drafts and offline AI model download. The 0.10.0
 **BAM Share Preview** installs alongside older preview apps.

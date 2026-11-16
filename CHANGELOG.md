@@ -8,6 +8,11 @@
   build. Clarified the phone checks for branding, regular draft approval,
   Facebook image handoff and early background preparation.
 
+- Inset the approved Android launcher foreground for both adaptive icon
+  variants after the Samsung launcher clipped the right edge of the wordmark.
+  The owner verified that the dashboard logo displays in light and dark mode
+  on 0.12.0. Retest the launcher fit in a later phone preview.
+
 ## BAM Personal 0.12.0 — approved metallic branding (2026-11-15)
 
 - Replaced the simplified Android splash/header artwork with the owner's exact approved metallic BAM primary logo, and the simplified launcher foreground with the approved metallic square app icon. These are downsampled/cropped from the original supplied files, with only the launcher exterior white made transparent; never regenerated.

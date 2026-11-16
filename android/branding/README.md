@@ -9,7 +9,10 @@ branding. Assets are in `android/app/src/main/res/drawable-nodpi/`:
   `MainActivity`'s dark navigation header.
 - `bam_approved_launcher_foreground.webp`: the owner-approved square
   metallic icon centered in a transparent adaptive foreground for both
-  normal and round launchers.
+  normal and round launchers. Both launcher XMLs use a shared drawable
+  with a 14% inset on each side. The approved bitmap's artwork spans
+  80 units in the 108-unit layer, so this places about 58 units of artwork in
+  the 66-unit safe zone while retaining the pinned bitmap.
 - `bam_approved_flat_lockup.webp`: the approved flat interface variant
   included for future light-surface views.
 
