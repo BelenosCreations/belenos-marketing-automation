@@ -7,10 +7,11 @@ topics, confirmed facts, and skips. Open **Offline AI** to download the model
 or generate a test draft. Drafts requiring action and setup or due-draft alerts
 appear above the tiles.
 
-Use **Content checklist** on a draft to record missing photos or details.
-The **Content needed** tile collects drafts with an outstanding checklist.
-Clear the checklist when the materials are ready to move the draft to **Needs
-approval**. Tap **Approve caption** to unlock **Copy caption** for manual
+Use **Content checklist** on a draft to record missing photos or details, one
+item per line. The **Content needed** tile collects drafts with an outstanding
+checklist. Open **Resolve checklist items**, check the items that are ready,
+and tap **Mark ready**. Unchecked items stay on the checklist. Resolving the
+last item moves the draft to **Needs approval**. Tap **Approve caption** to unlock **Copy caption** for manual
 posting. Changing the caption or adding a content requirement sends it back
 for review. Test drafts can be copied directly. Existing captions and timing
 survive an update and regular drafts start in the approval queue.
