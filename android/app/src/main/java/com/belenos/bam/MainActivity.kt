@@ -533,6 +533,9 @@ class MainActivity : Activity() {
                     else -> "Needs approval"
                 }, 14, muted))
                 panel.addView(button("Content checklist") { editContentNeeded(draft) })
+                if (review.contentNeeded.isNotBlank()) {
+                    panel.addView(button("Resolve checklist items") { resolveContentNeeded(draft) })
+                }
                 if (review.contentNeeded.isEmpty()) {
                     panel.addView(button(if (review.approved) "Reopen approval" else "Approve caption") {
                         if (DraftStore(this).use { it.setApproval(draft, !review.approved) }) {
@@ -674,10 +677,25 @@ class MainActivity : Activity() {
     private fun editContentNeeded(draft: Draft) {
         val editor = input("Content still needed", draft.review.contentNeeded, 500).apply { minLines = 2 }
         AlertDialog.Builder(this).setTitle("Content checklist")
-            .setMessage("List missing photos, details, or other materials. Clear the list when they’re ready.")
+            .setMessage("Enter one missing photo, detail, or other item per line.")
             .setView(editor).setNegativeButton("Cancel", null).setPositiveButton("Save") { _, _ ->
                 if (DraftStore(this).use { it.setContentNeeded(draft, editor.text.toString()) }) redraw()
                 else refreshChangedDraft()
+            }.show()
+    }
+
+    private fun resolveContentNeeded(draft: Draft) {
+        val items = draft.review.contentNeeded.lines().filter { it.isNotBlank() }
+        AlertDialog.Builder(this).setTitle("Resolve checklist items")
+            .setMultiChoiceItems(items.toTypedArray(), null) { _, _, _ -> }
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Mark ready") { dialog, _ ->
+                val list = (dialog as AlertDialog).listView
+                val remaining = items.filterIndexed { index, _ -> !list.isItemChecked(index) }
+                if (remaining.size != items.size) {
+                    val saved = DraftStore(this).use { it.setContentNeeded(draft, remaining.joinToString("\n")) }
+                    if (saved) redraw() else refreshChangedDraft()
+                }
             }.show()
     }
 
