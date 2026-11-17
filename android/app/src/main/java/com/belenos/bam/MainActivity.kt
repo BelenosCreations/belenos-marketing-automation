@@ -31,9 +31,12 @@ import android.widget.TextView
 import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -67,6 +70,7 @@ class MainActivity : Activity() {
     private lateinit var tomorrow: Button
     private lateinit var leadButton: Button
     private lateinit var automatic: Switch
+    private lateinit var postingSummary: TextView
     private lateinit var timingReport: TextView
     private var displayed: List<Draft>? = null
     private var draftLimit = 30
@@ -249,7 +253,14 @@ class MainActivity : Activity() {
     private fun buildSchedule(content: LinearLayout) {
         val controls = card(content)
         controls.addView(text("Posting schedule", 20, bold = true))
-        controls.addView(text("10 AM daily · Morning post\n11:30 AM Thu–Sat · Opening reminder\n6:30 PM Mon, Wed, Fri, Sat · Evening post", 15))
+        postingSummary = text("", 15)
+        controls.addView(postingSummary)
+        controls.addView(button("Edit posting schedule") {
+            AlertDialog.Builder(this).setTitle("Choose a posting slot")
+                .setItems(postingSlots.map { it.title }.toTypedArray()) { _, index ->
+                    editPostingRule(postingSlots[index])
+                }.show()
+        })
         controls.addView(text("Eastern time. These are intended posting times; BAM prepares drafts earlier for your review. Posting is always manual.", 13, muted))
         automatic = Switch(this).apply {
             text = "Generate scheduled drafts"
@@ -410,6 +421,49 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
+    private fun editPostingRule(slot: Slot) {
+        val rule = PostingSchedule.read(preferences)[slot]
+        val controls = column().apply { setPadding(dp(22), 0, dp(22), 0) }
+        val time = input("Eastern time (HH:MM)", rule.time.toString(), 5).apply {
+            inputType = android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_TIME
+            setSingleLine()
+        }
+        controls.addView(text("Eastern time (24-hour HH:MM)", 14))
+        controls.addView(time)
+        if (slot == Slot.OPENING) controls.addView(text("Choose a time before noon.", 14, muted))
+        val days = PostingSchedule.eligibleDays(slot).sortedBy(DayOfWeek::getValue).associateWith { day ->
+            CheckBox(this).apply {
+                text = day.getDisplayName(TextStyle.FULL, Locale.US)
+                isChecked = day in rule.days
+                controls.addView(this)
+            }
+        }
+        controls.addView(text("Clear all days to pause this slot.", 14, muted))
+        val dialog = AlertDialog.Builder(this).setTitle("Edit " + slot.title)
+            .setView(ScrollView(this).apply { addView(controls) })
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val clock = runCatching { LocalTime.parse(time.text.toString().trim()) }.getOrNull()
+                if (clock == null) {
+                    time.error = "Enter a time in HH:MM format."
+                    return@setOnClickListener
+                }
+                val updated = PostingRule(clock, days.filterValues { it.isChecked }.keys)
+                if (!PostingSchedule.valid(slot, updated)) {
+                    time.error = "Enter an opening reminder time before noon."
+                    return@setOnClickListener
+                }
+                PostingSchedule.save(preferences, slot, updated)
+                dialog.dismiss()
+                if (automatic.isChecked) DraftWorker.runOnce(applicationContext, sample = false)
+                redraw()
+            }
+        }
+        dialog.show()
+    }
+
     private fun redraw() {
         val ready = model.ready()
         val pending = model.downloading()
@@ -442,11 +496,23 @@ class MainActivity : Activity() {
         val approvalCount = counts.getValue(DraftQueue.NEEDS_APPROVAL)
         val confirmedThrough = LocalDate.parse(preferences.getString("hours_through", "2026-12-10"))
         val todaysDrafts = drafts.filter { it.day == day }.associateBy(Draft::slot)
-        val planned = Schedule.planned(day, confirmedThrough)
+        val schedule = PostingSchedule.read(preferences)
+        val summary = postingSlots.joinToString("\n") { slot ->
+            val rule = schedule[slot]
+            val days = when (rule.days.size) {
+                0 -> "Paused"
+                7 -> "Daily"
+                else -> rule.days.sortedBy(DayOfWeek::getValue)
+                    .joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.US) }
+            }
+            "${slot.title} · ${rule.time.format(timingClock)} ET · $days"
+        }
+        if (postingSummary.text.toString() != summary) postingSummary.text = summary
+        val planned = Schedule.planned(day, confirmedThrough, schedule)
         val draftCount = planned.count { it !in campaign.skipped || it in todaysDrafts }
         val dueCount = DraftStore(this).use { store ->
             Schedule.automaticTargets(now, confirmedThrough,
-                preferences.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES), store::campaign)
+                preferences.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES), schedule, store::campaign)
                 .count { !store.contains(it.day, it.slot) }
         }
         updateTile(Page.SCHEDULE, when (draftCount) {
@@ -478,12 +544,13 @@ class MainActivity : Activity() {
             attention.text = alert.first
             attention.setOnClickListener { show(alert.second) }
         }
-        val timingRows = listOf(Slot.MORNING, Slot.OPENING, Slot.EVENING).filter { slot ->
+        val timingRows = postingSlots.filter { slot ->
             slot in planned || slot in todaysDrafts
         }.map { slot ->
-            val target = checkNotNull(slot.draftTime).format(timingClock)
-            val detail = slotStatus(day, slot, now, slot in campaign.skipped, todaysDrafts[slot])
-            "${slot.title.substringBefore(" ·")} · post at $target ET\n$detail"
+            val saved = todaysDrafts[slot]
+            val time = saved?.postingTime ?: schedule[slot].time
+            val detail = slotStatus(day, slot, now, slot in campaign.skipped, saved, time)
+            "${slot.title} · post at ${time.format(timingClock)} ET\n$detail"
         }
         val report = buildString {
             if (!automatic.isChecked) append("Automatic drafting is paused.\n\n")
@@ -513,7 +580,7 @@ class MainActivity : Activity() {
             if (draft.slot == Slot.SAMPLE) {
                 panel.addView(text(draft.day.format(DateTimeFormatter.ofPattern("EEE, MMM d")), 13, muted))
             } else {
-                Schedule.postingTargetLabel(draft.day, draft.slot)?.let {
+                Schedule.postingTargetLabel(draft.day, draft.slot, draft.postingTime)?.let {
                     panel.addView(text(it, 14, getColor(R.color.bam_accent), bold = true))
                 }
             }
@@ -737,7 +804,7 @@ class MainActivity : Activity() {
         controls.addView(facts)
         val skipControls = listOf(Slot.MORNING, Slot.OPENING, Slot.EVENING).associateWith { slot ->
             CheckBox(this).apply {
-                text = "Skip ${slot.title.substringBefore(" ·").lowercase()}"
+                text = "Skip ${slot.title.lowercase(Locale.US)}"
                 isChecked = slot in campaign.skipped
                 controls.addView(this)
             }

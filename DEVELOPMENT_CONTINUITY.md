@@ -5,13 +5,23 @@
 ## Short copyable resume instruction
 
 ```text
-BAM Continuity 020
+BAM Continuity 021
 Continue BAM development autonomously. Read DEVELOPMENT_CONTINUITY.md on main in BelenosCreations/belenos-marketing-automation and follow the verified checkpoint.
 ```
 
 BAM has its own sequence. Put it on the first line of the copy block. Increment it when issuing an updated handoff and keep it when repeating the same handoff. Across chats, use the highest verified BAM sequence recorded on main.
 
 ## Last independently verified engineering checkpoint
+
+- Verified [PR #200](https://github.com/BelenosCreations/belenos-marketing-automation/pull/200)
+  at `9ca761093266d3399a01e9b9be9b9192f2b674ac` with passing
+  [Android #43979884605](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43979884605)
+  and [general #43979885081](https://github.com/BelenosCreations/belenos-marketing-automation/actions/runs/43979885081).
+  Main and development matched before the scheduling change.
+- The Android scheduling change adds editable Eastern times and weekdays for
+  the three draft slots. Manual and scheduled generation share the settings.
+  Existing drafts keep their posting time. Verify current CI and exercise the
+  editor when preparing the next phone preview.
 
 - Verified [PR #199](https://github.com/BelenosCreations/belenos-marketing-automation/pull/199)
   at `f0dd98a962563afe936479d512819549d7f7f7f5` with passing
@@ -174,9 +184,8 @@ still apply.
 an owner-controlled Meta app in Development mode, configure its Android
 debug package and signer, privately build the preview and verify sign-in
 and the expected managed Page. Keep publishing permissions, endpoints,
-workers and autopost disabled. While setup is pending, editable local
-schedule settings may proceed. Verify the checklist on the owner's phone
-when preparing the next preview. Smart times
+workers and autopost disabled. While setup is pending, prepare a phone preview to verify the
+local schedule editor and individual checklist resolution. Smart times
 based on Facebook insights, multi-business profiles and import follow later.
 
 1. **Recheck launcher fit in BAM 0.13 Preview** on the owner's Samsung

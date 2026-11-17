@@ -29,12 +29,15 @@ data class Draft(
     val caption: String,
     val timing: DraftTiming? = null,
     val review: DraftReview = DraftReview()
-)
+) {
+    val postingTime: LocalTime? get() = timing?.postingTimeOverride ?: slot.draftTime
+}
 
-data class DraftTiming(val savedAt: Instant, val origin: DraftOrigin) {
+data class DraftTiming(val savedAt: Instant, val origin: DraftOrigin,
+                       val postingTimeOverride: LocalTime? = null) {
     fun description(day: LocalDate, slot: Slot): String {
         val localTime = savedAt.atZone(Schedule.eastern).format(clockFormat)
-        val postTime = slot.draftTime ?: return "${origin.label} · saved $localTime ET"
+        val postTime = postingTimeOverride ?: slot.draftTime ?: return "${origin.label} · saved $localTime ET"
         val target = day.atTime(postTime).atZone(Schedule.eastern).toInstant()
         val delay = Duration.between(target, savedAt).toMinutes()
         val early = Duration.between(savedAt, target).toMinutes()
@@ -51,11 +54,12 @@ data class DraftTiming(val savedAt: Instant, val origin: DraftOrigin) {
     }
 }
 
-fun slotStatus(day: LocalDate, slot: Slot, now: Instant, skipped: Boolean, saved: Draft?): String {
+fun slotStatus(day: LocalDate, slot: Slot, now: Instant, skipped: Boolean, saved: Draft?,
+               postingTime: LocalTime? = slot.draftTime): String {
     if (saved != null) return saved.timing?.description(day, slot) ?: "Saved · timing unavailable"
     if (skipped) return "Skipped for this date"
     val clock = now.atZone(Schedule.eastern).toLocalTime()
-    if (clock < checkNotNull(slot.draftTime)) return "Upcoming"
+    if (now < day.atTime(checkNotNull(postingTime)).atZone(Schedule.eastern).toInstant()) return "Upcoming"
     if (slot == Slot.OPENING && clock >= LocalTime.NOON) return "Missed · expired at noon"
     return "Due · waiting for draft"
 }

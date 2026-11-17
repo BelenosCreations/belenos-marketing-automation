@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 enum class DraftQueue(val predicate: String) {
@@ -13,14 +14,14 @@ enum class DraftQueue(val predicate: String) {
     NEEDS_APPROVAL("slot != 'SAMPLE' AND content_needed = '' AND approved = 0")
 }
 
-class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null, 5) {
+class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null, 6) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""CREATE TABLE draft (
             day TEXT NOT NULL, slot TEXT NOT NULL, caption TEXT NOT NULL,
             saved_at INTEGER, origin TEXT,
             content_needed TEXT NOT NULL DEFAULT '', image_prompt TEXT NOT NULL DEFAULT '',
             approved INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0,
-            image_id TEXT,
+            image_id TEXT, posting_minute INTEGER,
             PRIMARY KEY (day, slot)
         )""")
         createCampaigns(db)
@@ -43,6 +44,7 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
             db.execSQL("ALTER TABLE draft ADD COLUMN image_id TEXT")
             createImages(db)
         }
+        if (old < 6) db.execSQL("ALTER TABLE draft ADD COLUMN posting_minute INTEGER")
     }
 
     private fun createCampaigns(db: SQLiteDatabase) {
@@ -202,12 +204,13 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
     private fun readDrafts(where: String, args: Array<String>): List<Draft> =
         readableDatabase.rawQuery(
             "SELECT day, slot, caption, saved_at, origin, content_needed, image_prompt, approved, revision " +
-                ", image_id FROM draft WHERE $where ORDER BY day DESC, rowid DESC LIMIT ?", args
+                ", image_id, posting_minute FROM draft WHERE $where ORDER BY day DESC, rowid DESC LIMIT ?", args
         ).use { cursor ->
             buildList {
                 while (cursor.moveToNext()) {
                     val timing = if (cursor.isNull(3) || cursor.isNull(4)) null else
-                        DraftTiming(Instant.ofEpochMilli(cursor.getLong(3)), DraftOrigin.valueOf(cursor.getString(4)))
+                        DraftTiming(Instant.ofEpochMilli(cursor.getLong(3)), DraftOrigin.valueOf(cursor.getString(4)),
+                            if (cursor.isNull(10)) null else LocalTime.ofSecondOfDay(cursor.getLong(10) * 60))
                     add(Draft(LocalDate.parse(cursor.getString(0)), Slot.valueOf(cursor.getString(1)),
                         cursor.getString(2), timing, DraftReview(cursor.getString(5), cursor.getString(6),
                             cursor.getInt(7) != 0, cursor.getLong(8), cursor.getString(9))))
@@ -227,6 +230,7 @@ class DraftStore(context: Context) : SQLiteOpenHelper(context, "drafts.db", null
                 put("caption", draft.caption)
                 put("saved_at", timing.savedAt.toEpochMilli())
                 put("origin", timing.origin.name)
+                timing.postingTimeOverride?.let { put("posting_minute", it.toSecondOfDay() / 60) }
             }
             val previousSample = if (draft.slot == Slot.SAMPLE) find(draft.day, draft.slot) else null
             previousSample?.let { values.put("revision", it.review.revision + 1) }
