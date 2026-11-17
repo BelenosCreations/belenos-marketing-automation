@@ -62,9 +62,11 @@ class DraftWorker internal constructor(
             fun candidates(at: Instant): List<PlannedDraft> =
                 when {
                     sample -> listOf(PlannedDraft(at.atZone(Schedule.eastern).toLocalDate(), Slot.SAMPLE))
-                    manual -> Schedule.manualTargets(targetDay, at, confirmedThrough(), store.campaign(targetDay))
+                    manual -> Schedule.manualTargets(targetDay, at, confirmedThrough(),
+                        store.campaign(targetDay), PostingSchedule.read(settings))
                     else -> Schedule.automaticTargets(at, confirmedThrough(),
-                        settings.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES), store::campaign)
+                        settings.getInt("lead_minutes", Schedule.DEFAULT_LEAD_MINUTES),
+                        PostingSchedule.read(settings), store::campaign)
                 }
             val slots = candidates(started).filterNot { store.contains(it.day, it.slot) && !sample }
             if (slots.isEmpty()) {
@@ -94,7 +96,8 @@ class DraftWorker internal constructor(
                                 val hours = if (target.slot == Slot.OPENING)
                                     Schedule.hours(target.day, currentHours) else null
                                 val caption = Schedule.caption(text, hours)
-                                val draft = Draft(target.day, target.slot, caption, DraftTiming(finished, origin))
+                                val customTime = target.postingTime?.takeUnless { it == target.slot.draftTime }
+                                val draft = Draft(target.day, target.slot, caption, DraftTiming(finished, origin, customTime))
                                 if (!store.saveGenerated(draft, campaign)) {
                                     planChanged = true
                                     break

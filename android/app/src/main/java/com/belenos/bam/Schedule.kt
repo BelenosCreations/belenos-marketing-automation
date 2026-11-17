@@ -11,13 +11,13 @@ import java.util.Locale
 import java.time.temporal.ChronoUnit
 
 enum class Slot(val title: String, val draftTime: LocalTime? = null) {
-    MORNING("Morning · 10 AM", LocalTime.of(10, 0)),
-    OPENING("Opening reminder · 11:30 AM", LocalTime.of(11, 30)),
-    EVENING("Evening · 6:30 PM", LocalTime.of(18, 30)),
+    MORNING("Morning", LocalTime.of(10, 0)),
+    OPENING("Opening reminder", LocalTime.of(11, 30)),
+    EVENING("Evening", LocalTime.of(18, 30)),
     SAMPLE("Test draft")
 }
 
-data class PlannedDraft(val day: LocalDate, val slot: Slot)
+data class PlannedDraft(val day: LocalDate, val slot: Slot, val postingTime: LocalTime? = slot.draftTime)
 
 object Schedule {
     const val DEFAULT_LEAD_MINUTES = 120
@@ -42,6 +42,7 @@ object Schedule {
         now: Instant,
         confirmedThrough: LocalDate,
         leadMinutes: Int,
+        schedule: PostingSchedule = PostingSchedule.DEFAULT,
         campaignFor: (LocalDate) -> Campaign = { Campaign() }
     ): List<PlannedDraft> {
         val day = now.atZone(eastern).toLocalDate()
@@ -49,33 +50,33 @@ object Schedule {
         return (0L..1L).flatMap { offset ->
             val plannedDay = day.plusDays(offset)
             val campaign = campaignFor(plannedDay)
-            planned(plannedDay, confirmedThrough).filter { it !in campaign.skipped }
+            planned(plannedDay, confirmedThrough, schedule).filter { it !in campaign.skipped }
                 .filter { slot ->
-                    val posting = plannedDay.atTime(checkNotNull(slot.draftTime)).atZone(eastern).toInstant()
+                    val posting = plannedDay.atTime(schedule[slot].time).atZone(eastern).toInstant()
                     !posting.minus(lead).isAfter(now) &&
                         (offset == 0L || !posting.isBefore(now)) &&
                         !(offset == 0L && slot == Slot.OPENING &&
                             now >= plannedDay.atTime(LocalTime.NOON).atZone(eastern).toInstant())
-                }.map { PlannedDraft(plannedDay, it) }
+                }.map { PlannedDraft(plannedDay, it, schedule[it].time) }
         }
     }
 
     /** Owner-initiated preparation ignores lead time but does not revive expired opening reminders. */
     fun manualTargets(
         day: LocalDate, now: Instant, confirmedThrough: LocalDate,
-        campaign: Campaign = Campaign()
+        campaign: Campaign = Campaign(), schedule: PostingSchedule = PostingSchedule.DEFAULT
     ): List<PlannedDraft> {
         val today = now.atZone(eastern).toLocalDate()
         if (day < today || day > today.plusDays(1)) return emptyList()
-        return planned(day, confirmedThrough).filter { it !in campaign.skipped }
+        return planned(day, confirmedThrough, schedule).filter { it !in campaign.skipped }
             .filter { it != Slot.OPENING || day != today ||
                 now < day.atTime(LocalTime.NOON).atZone(eastern).toInstant() }
-            .map { PlannedDraft(day, it) }
+            .map { PlannedDraft(day, it, schedule[it].time) }
     }
 
     /** The intended Facebook posting time, never the AI generation or publication timestamp. */
-    fun postingTargetLabel(day: LocalDate, slot: Slot): String? {
-        val clock = slot.draftTime ?: return null
+    fun postingTargetLabel(day: LocalDate, slot: Slot, postingTime: LocalTime? = slot.draftTime): String? {
+        val clock = postingTime ?: return null
         val dateText = day.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US))
         val timeText = clock.format(DateTimeFormatter.ofPattern("h:mm a", Locale.US))
         return "Post manually · $dateText at $timeText ET"
@@ -84,8 +85,6 @@ object Schedule {
     val eastern: ZoneId = ZoneId.of("America/New_York")
     private val deadline = LocalDate.of(2026, 12, 3)
     private val holidayClosure = LocalDate.of(2026, 12, 11)..LocalDate.of(2027, 1, 7)
-    private val eveningDays = setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY,
-        DayOfWeek.FRIDAY, DayOfWeek.SATURDAY)
     private val topics = listOf("3D prints", "custom apparel", "textured resin-printed paintings",
         "tumblers", "pet memorials", "behind-the-scenes craftsmanship", "custom gift ideas")
     private val busyBImagery = Regex("🐝|\\b(?:bees?|beehives?|honeycomb)\\b", RegexOption.IGNORE_CASE)
@@ -115,19 +114,24 @@ object Schedule {
         }
     }
 
-    fun planned(day: LocalDate, confirmedThrough: LocalDate): List<Slot> = buildList {
+    fun planned(day: LocalDate, confirmedThrough: LocalDate,
+                schedule: PostingSchedule = PostingSchedule.DEFAULT): List<Slot> = buildList {
         if (day != LocalDate.of(2026, 11, 16) && day != LocalDate.of(2026, 11, 13)) {
-            add(Slot.MORNING)
-            if (hours(day, confirmedThrough) != null) add(Slot.OPENING)
+            if (day.dayOfWeek in schedule[Slot.MORNING].days) add(Slot.MORNING)
+            if (day.dayOfWeek in schedule[Slot.OPENING].days && hours(day, confirmedThrough) != null) {
+                add(Slot.OPENING)
+            }
         }
-        if (day.dayOfWeek in eveningDays && day != LocalDate.of(2026, 11, 13)) add(Slot.EVENING)
+        if (day.dayOfWeek in schedule[Slot.EVENING].days && day != LocalDate.of(2026, 11, 13)) add(Slot.EVENING)
     }
 
-    fun due(now: Instant, confirmedThrough: LocalDate, campaign: Campaign = Campaign()): List<Slot> {
+    fun due(now: Instant, confirmedThrough: LocalDate, campaign: Campaign = Campaign(),
+            schedule: PostingSchedule = PostingSchedule.DEFAULT): List<Slot> {
         val local = now.atZone(eastern)
         val clock = local.toLocalTime()
-        return planned(local.toLocalDate(), confirmedThrough).filter { slot ->
-            slot !in campaign.skipped && clock >= checkNotNull(slot.draftTime) &&
+        return planned(local.toLocalDate(), confirmedThrough, schedule).filter { slot ->
+            slot !in campaign.skipped &&
+                now >= local.toLocalDate().atTime(schedule[slot].time).atZone(eastern).toInstant() &&
                 (slot != Slot.OPENING || clock < LocalTime.NOON)
         }
     }

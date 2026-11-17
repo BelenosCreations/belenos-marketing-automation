@@ -9,7 +9,9 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
+import java.time.DayOfWeek
 import java.time.Instant
+import java.time.LocalTime
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 import org.junit.After
@@ -34,7 +36,7 @@ class DraftSchedulingTest {
         context = RuntimeEnvironment.getApplication()
         context.deleteDatabase("drafts.db")
         context.getSharedPreferences("bam", Context.MODE_PRIVATE).edit()
-            .putInt("lead_minutes", 0).commit()
+            .clear().putInt("lead_minutes", 0).commit()
         val factory = object : WorkerFactory() {
             override fun createWorker(appContext: Context, workerClassName: String,
                 workerParameters: WorkerParameters): ListenableWorker? {
@@ -135,6 +137,37 @@ class DraftSchedulingTest {
         assertEquals(true, drafts.all { it.timing?.origin == DraftOrigin.MANUAL })
         DraftWorker.runOnce(context, sample = false, manual = true, targetDay = day)
         assertEquals(4, generated)
+    }
+
+    @Test fun editedSlotControlsGenerationAndSavedTargetSurvivesLaterEdits() {
+        val settings = context.getSharedPreferences("bam", Context.MODE_PRIVATE)
+        val target = LocalTime.of(11, 0)
+        PostingSchedule.save(settings, Slot.MORNING, PostingRule(target, setOf(DayOfWeek.SATURDAY)))
+        now = Instant.parse("2026-11-14T15:30:00Z")
+        setEnabled(true)
+        DraftWorker.runOnce(context, sample = false)
+        assertEquals(0, generated)
+
+        now = Instant.parse("2026-11-14T16:03:00Z")
+        DraftWorker.runOnce(context, sample = false)
+        assertEquals(1, generated)
+        DraftStore(context).use { store ->
+            val draft = checkNotNull(store.find(day, Slot.MORNING))
+            assertEquals(target, draft.postingTime)
+            assertEquals("3 min after posting time",
+                draft.timing?.description(day, Slot.MORNING)?.substringAfterLast(" · "))
+            assertEquals(true, store.setApproval(draft, true))
+        }
+
+        PostingSchedule.save(settings, Slot.MORNING, PostingRule(LocalTime.of(9, 30), emptySet()))
+        val schedule = PostingSchedule.read(settings)
+        assertEquals(false, Slot.MORNING in Schedule.planned(day, day, schedule))
+        assertEquals(false, Slot.MORNING in Schedule.planned(day.plusDays(1), day.plusDays(1), schedule))
+        DraftStore(context).use { store ->
+            val draft = checkNotNull(store.find(day, Slot.MORNING))
+            assertEquals(target, draft.postingTime)
+            assertEquals(true, draft.review.approved)
+        }
     }
 
     private fun setEnabled(enabled: Boolean) {

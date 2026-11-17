@@ -7,11 +7,14 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Switch
+import java.time.DayOfWeek
 import java.time.Instant
+import java.time.LocalTime
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -222,6 +225,35 @@ class MainActivityTest {
                 assertEquals("", latest.review.contentNeeded)
                 assertFalse(latest.review.approved)
             }
+        }
+    }
+
+    @Test fun scheduleEditorSavesTimeAndWeekdaysWhileDraftingIsPaused() {
+        val settings = context.getSharedPreferences("bam", android.content.Context.MODE_PRIVATE)
+        settings.edit().clear().commit()
+        Robolectric.buildActivity(MainActivity::class.java).setup().use { controller ->
+            val root = controller.get().findViewById<View>(android.R.id.content)
+            root.tile("Schedule").performClick()
+            root.button("Edit posting schedule").performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+            val slotPicker = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
+            val slots = slotPicker.listView
+            slots.performItemClick(slots.getChildAt(0), 0, slots.adapter.getItemId(0))
+            shadowOf(Looper.getMainLooper()).idle()
+            val dialog = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog
+            val editor = dialog.window!!.decorView.descendants().filterIsInstance<EditText>().single()
+            editor.setText("09:15")
+            val weekdays = dialog.window!!.decorView.descendants().filterIsInstance<CheckBox>()
+            weekdays.forEach { it.isChecked = it.text == "Tuesday" }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertEquals(PostingRule(LocalTime.of(9, 15), setOf(DayOfWeek.TUESDAY)),
+                PostingSchedule.read(settings)[Slot.MORNING])
+            assertTrue(root.descendants().filterIsInstance<TextView>().any {
+                it.text.contains("Morning · 9:15 AM ET · Tue")
+            })
+            assertFalse(settings.getBoolean("enabled", false))
         }
     }
 

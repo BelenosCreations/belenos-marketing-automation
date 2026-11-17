@@ -1,3 +1,11 @@
+## Android preview — editable posting schedule (2026-11-16)
+
+- Edit the Eastern posting time and weekdays for the morning, opening reminder
+  and evening slots. Clear all days to pause a slot. Opening reminders still
+  require confirmed hours and expire at noon.
+- Scheduled and on-demand drafting use the same local settings. Saved drafts
+  retain their original timing and approval state after schedule edits.
+
 ## Android preview — individual checklist resolution (2026-11-16)
 
 - Mark individual missing content items ready while keeping unchecked items.

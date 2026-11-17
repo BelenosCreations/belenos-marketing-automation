@@ -82,7 +82,7 @@ opening reminders are not revived.
 **Generate scheduled drafts** is optional and has a **Generate in advance**
 setting (at posting time, 15 or 30 minutes, 1, 2, 4, 8, 12 or 24 hours
 before). The default is 2 hours. This lead time applies to the scheduled
-posting times (10 AM, 11:30 AM, 6:30 PM Eastern); when necessary, BAM
+Eastern posting times; when necessary, BAM
 prepares tomorrow's post the previous day. A saved post stays in the
 approval queue until you finish reviewing it. Android may postpone periodic
 work, so no actual publishing time is guaranteed.
@@ -99,9 +99,13 @@ GitHub build used an ephemeral debug signing key. The earlier app keeps its
 drafts. The new app has its own inbox and requires its own model download.
 Pause scheduling in the older app if you enable it in BAM Personal.
 
-The posting schedule is 10 AM Eastern for morning posts, 11:30 AM
+The default posting schedule is 10 AM Eastern for morning posts, 11:30 AM
 for opening reminders Thursday through Saturday, and 6:30 PM
 Monday, Wednesday, Friday and Saturday for evening posts.
+Open **Edit posting schedule** to choose a time and weekdays for each slot.
+Clear all days to pause that slot. Opening reminders use confirmed store
+days and must be set before noon. Changes apply to future draft generation.
+Saved drafts keep the posting time they had when prepared.
 Automatic draft generation occurs at the chosen lead time ahead of those posts.
 Android can defer background work while the phone is idle. Opening BAM
 checks for drafts due that day, and opening reminders expire at noon.
